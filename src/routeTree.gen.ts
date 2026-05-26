@@ -9,38 +9,132 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppPulseRouteImport } from './routes/app.pulse'
+import { Route as AppProfileRouteImport } from './routes/app.profile'
+import { Route as AppMy25RouteImport } from './routes/app.my25'
+import { Route as AppMomentsRouteImport } from './routes/app.moments'
+import { Route as AppHomeRouteImport } from './routes/app.home'
 
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPulseRoute = AppPulseRouteImport.update({
+  id: '/pulse',
+  path: '/pulse',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMy25Route = AppMy25RouteImport.update({
+  id: '/my25',
+  path: '/my25',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMomentsRoute = AppMomentsRouteImport.update({
+  id: '/moments',
+  path: '/moments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppHomeRoute = AppHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/home': typeof AppHomeRoute
+  '/app/moments': typeof AppMomentsRoute
+  '/app/my25': typeof AppMy25Route
+  '/app/profile': typeof AppProfileRoute
+  '/app/pulse': typeof AppPulseRoute
+  '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app/home': typeof AppHomeRoute
+  '/app/moments': typeof AppMomentsRoute
+  '/app/my25': typeof AppMy25Route
+  '/app/profile': typeof AppProfileRoute
+  '/app/pulse': typeof AppPulseRoute
+  '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/home': typeof AppHomeRoute
+  '/app/moments': typeof AppMomentsRoute
+  '/app/my25': typeof AppMy25Route
+  '/app/profile': typeof AppProfileRoute
+  '/app/pulse': typeof AppPulseRoute
+  '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/app/home'
+    | '/app/moments'
+    | '/app/my25'
+    | '/app/profile'
+    | '/app/pulse'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/app/home'
+    | '/app/moments'
+    | '/app/my25'
+    | '/app/profile'
+    | '/app/pulse'
+    | '/app'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/app/home'
+    | '/app/moments'
+    | '/app/my25'
+    | '/app/profile'
+    | '/app/pulse'
+    | '/app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +142,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/pulse': {
+      id: '/app/pulse'
+      path: '/pulse'
+      fullPath: '/app/pulse'
+      preLoaderRoute: typeof AppPulseRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/my25': {
+      id: '/app/my25'
+      path: '/my25'
+      fullPath: '/app/my25'
+      preLoaderRoute: typeof AppMy25RouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/moments': {
+      id: '/app/moments'
+      path: '/moments'
+      fullPath: '/app/moments'
+      preLoaderRoute: typeof AppMomentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/home': {
+      id: '/app/home'
+      path: '/home'
+      fullPath: '/app/home'
+      preLoaderRoute: typeof AppHomeRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppHomeRoute: typeof AppHomeRoute
+  AppMomentsRoute: typeof AppMomentsRoute
+  AppMy25Route: typeof AppMy25Route
+  AppProfileRoute: typeof AppProfileRoute
+  AppPulseRoute: typeof AppPulseRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppHomeRoute: AppHomeRoute,
+  AppMomentsRoute: AppMomentsRoute,
+  AppMy25Route: AppMy25Route,
+  AppProfileRoute: AppProfileRoute,
+  AppPulseRoute: AppPulseRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
