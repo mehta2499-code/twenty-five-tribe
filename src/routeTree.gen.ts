@@ -17,6 +17,7 @@ import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppMy25RouteImport } from './routes/app.my25'
 import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
+import { Route as AppGamesRouteImport } from './routes/app.games'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -58,10 +59,16 @@ const AppHomeRoute = AppHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGamesRoute = AppGamesRouteImport.update({
+  id: '/games',
+  path: '/games',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/app/games'
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app/games'
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/app/games'
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
@@ -184,10 +196,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/games': {
+      id: '/app/games'
+      path: '/games'
+      fullPath: '/app/games'
+      preLoaderRoute: typeof AppGamesRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppGamesRoute: typeof AppGamesRoute
   AppHomeRoute: typeof AppHomeRoute
   AppMomentsRoute: typeof AppMomentsRoute
   AppMy25Route: typeof AppMy25Route
@@ -197,6 +217,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppGamesRoute: AppGamesRoute,
   AppHomeRoute: AppHomeRoute,
   AppMomentsRoute: AppMomentsRoute,
   AppMy25Route: AppMy25Route,

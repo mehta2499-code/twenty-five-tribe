@@ -1,18 +1,26 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Grid2x2, Activity, Camera, User } from "lucide-react";
+import { Home, Grid2x2, Activity, Gamepad2, User } from "lucide-react";
 
 const tabs = [
   { to: "/app/home",    Icon: Home },
   { to: "/app/my25",    Icon: Grid2x2 },
   { to: "/app/pulse",   Icon: Activity },
-  { to: "/app/moments", Icon: Camera },
+  { to: "/app/games",   Icon: Gamepad2 },
   { to: "/app/profile", Icon: User },
 ] as const;
 
 export function BottomNav() {
   const { pathname } = useLocation();
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-background/85 backdrop-blur-xl border-t border-border">
+    <nav
+      className="fixed bottom-0 inset-x-0 z-40 border-t border-border/70"
+      style={{
+        background:
+          "linear-gradient(180deg, color-mix(in oklab, var(--background) 60%, transparent), color-mix(in oklab, var(--background) 92%, transparent))",
+        backdropFilter: "blur(22px) saturate(160%)",
+        WebkitBackdropFilter: "blur(22px) saturate(160%)",
+      }}
+    >
       <div className="mx-auto max-w-md flex items-center justify-around px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {tabs.map(({ to, Icon }) => {
           const active = pathname.startsWith(to);

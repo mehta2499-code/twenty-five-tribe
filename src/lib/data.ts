@@ -3,6 +3,7 @@ export type Friend = {
   name: string;
   initials: string;
   color: string;
+  avatar: string;
   postedToday: boolean;
   joinedDaysAgo: number;
   daysQuiet: number;
@@ -19,11 +20,21 @@ const NAMES = [
   "Aarav","Zoya","Ishan",
 ];
 
+// Curated pravatar ids for diverse, real-looking faces
+const PRAVATAR_IDS = [
+  12, 5, 13, 9, 16, 33, 47, 11, 26, 32,
+  68, 1, 60, 44, 24, 51, 20, 52, 25, 65,
+  14, 49, 7,
+];
+
+export const avatarUrl = (id: number) => `https://i.pravatar.cc/200?img=${id}`;
+
 export const FRIENDS: Friend[] = NAMES.map((name, i) => ({
   id: String(i + 1),
   name,
   initials: name.slice(0, 2).toUpperCase(),
   color: PALETTE[i % PALETTE.length],
+  avatar: avatarUrl(PRAVATAR_IDS[i]),
   postedToday: [0,1,3,5,8,9,12,14,17,20,22].includes(i),
   joinedDaysAgo: 30 + ((i * 47) % 600),
   daysQuiet: [3,21,7,1,30,2,5,14,0,8,15,1,22,4,10,2,9,17,3,1,6,28,2][i] ?? 0,
@@ -40,16 +51,21 @@ export type Moment = {
   tag: MomentTag;
   text: string;
   timeAgo: string;
+  photo?: string;
+  reactions?: number;
 };
 
 export const MOMENTS: Moment[] = [
-  { id: "m1", friendId: "2",  tag: "Mood",        text: "okay so the chai today was actually unreal. small wins.", timeAgo: "12m" },
-  { id: "m2", friendId: "1",  tag: "Milestone",   text: "signed the lease. tiny apartment, huge feelings.", timeAgo: "1h" },
-  { id: "m3", friendId: "9",  tag: "Thought",     text: "we romanticize being busy and call it a personality. stop.", timeAgo: "3h" },
-  { id: "m4", friendId: "4",  tag: "Life Update", text: "moving back to bangalore next month. round 2.", timeAgo: "5h" },
-  { id: "m5", friendId: "13", tag: "Mood",        text: "soft launch of my villain era. minor inconveniences only.", timeAgo: "7h" },
-  { id: "m6", friendId: "6",  tag: "Milestone",   text: "first paycheck from the side project. cried a little.", timeAgo: "9h" },
-  { id: "m7", friendId: "18", tag: "Thought",     text: "the older i get the more i text my mom for no reason.", timeAgo: "12h" },
+  { id: "m1", friendId: "1", tag: "Milestone",   text: "Just got promoted to Senior PM at Razorpay! Three years of grinding. 🙏", timeAgo: "12m", reactions: 12 },
+  { id: "m2", friendId: "2", tag: "Life Update", text: "Goa with the college gang this weekend. First trip where nobody cancelled.", timeAgo: "1h", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600", reactions: 18 },
+  { id: "m3", friendId: "3", tag: "Mood",        text: "Inexplicably anxious today. Anyone else just get random Sunday dread?", timeAgo: "3h", reactions: 8 },
+  { id: "m4", friendId: "4", tag: "Milestone",   text: "Got into the IIM Ahmedabad executive programme 🎉 2 years of applications finally worked.", timeAgo: "5h", reactions: 21 },
+  { id: "m5", friendId: "5", tag: "Thought",     text: "Unpopular opinion: phone calls > texts. We've lost something.", timeAgo: "7h", reactions: 15 },
+  { id: "m6", friendId: "9", tag: "Thought",     text: "we romanticize being busy and call it a personality. stop.", timeAgo: "9h", reactions: 9 },
+  { id: "m7", friendId: "13", tag: "Life Update", text: "moving back to bangalore next month. round 2.", timeAgo: "11h", photo: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=600", reactions: 7 },
+  { id: "m8", friendId: "6", tag: "Milestone",   text: "first paycheck from the side project. cried a little.", timeAgo: "14h", reactions: 24 },
+  { id: "m9", friendId: "18", tag: "Mood",       text: "the older i get the more i text my mom for no reason.", timeAgo: "18h", reactions: 11 },
+  { id: "m10", friendId: "15", tag: "Life Update", text: "Coldplay tonight. Twelve year old me would not believe this.", timeAgo: "21h", photo: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600", reactions: 19 },
 ];
 
 export const PULSE_WORDS = ["tired","grateful","anxious","lit","meh","soft","wired","okay","heavy","glowing"];
@@ -64,9 +80,34 @@ export const TODAYS_PULSES = FRIENDS.slice(0, 18).map((f, i) => ({
 }));
 
 export const WAITING_ROOM = [
-  { id: "w1", name: "Aanya", initials: "AA", mutuals: 4 },
-  { id: "w2", name: "Veer",  initials: "VE", mutuals: 2 },
-  { id: "w3", name: "Saanvi",initials: "SA", mutuals: 6 },
+  { id: "w1", name: "Aanya",  initials: "AA", mutuals: 4, avatar: avatarUrl(48) },
+  { id: "w2", name: "Veer",   initials: "VE", mutuals: 2, avatar: avatarUrl(58) },
+  { id: "w3", name: "Saanvi", initials: "SA", mutuals: 6, avatar: avatarUrl(45) },
 ];
 
-export const ME = { name: "You", initials: "YO" };
+export const ME = { name: "You", initials: "YO", avatar: avatarUrl(15) };
+
+// Games
+export type Game = {
+  id: string;
+  emoji: string;
+  name: string;
+  players: string;
+  description: string;
+  price: "Free" | string;
+};
+
+export const GAMES: Game[] = [
+  { id: "know-me",     emoji: "🧠", name: "How Well Do You Know Me?", players: "2 players", description: "Answer questions about yourself. Let your friend guess.", price: "Free" },
+  { id: "most-likely", emoji: "🎯", name: "Most Likely To",            players: "All 25",   description: "Vote on your circle. Results will surprise you.", price: "Free" },
+  { id: "truth-jar",   emoji: "🎲", name: "Truth Jar",                 players: "All 25",   description: "Drop anonymous questions. Answer in your own time.", price: "Free" },
+  { id: "memory-map",  emoji: "🗺️", name: "Memory Map",                players: "2 players", description: "Build a shared visual map of your friendship.", price: "₹29" },
+  { id: "rapid-fire",  emoji: "⚡", name: "Rapid Fire",                players: "2 players", description: "60 seconds. One word answers. How in sync are you?", price: "Free" },
+  { id: "late-night",  emoji: "🌙", name: "Late Night Packs",          players: "2 players", description: "Deep questions for 3am conversations.", price: "₹49" },
+];
+
+export const ACTIVE_GAMES = [
+  { id: "ag1", gameId: "most-likely", title: "Most Likely To", players: ["1","2","4","9"], progress: 0.6 },
+  { id: "ag2", gameId: "know-me",     title: "Know Me · Priya", players: ["2"],            progress: 0.3 },
+  { id: "ag3", gameId: "truth-jar",   title: "Truth Jar",       players: ["3","5","7"],     progress: 0.8 },
+];
