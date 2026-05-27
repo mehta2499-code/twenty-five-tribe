@@ -39,12 +39,6 @@ function My25() {
         </button>
       </header>
 
-      {SEATS_FILLED === SEATS_TOTAL && (
-        <p className="px-5 text-xs text-muted-foreground italic mb-2">
-          All 25 taken. Someone's gotta go for someone new to come in. That's just life.
-        </p>
-      )}
-
       <section className="px-4 grid grid-cols-5 gap-2.5">
         {seats.map((f, i) => (
           <button
@@ -62,7 +56,13 @@ function My25() {
           >
             {f ? (
               <>
-                <Avatar initials={f.initials} color={f.color} size={36} />
+                <Avatar
+                  src={f.avatar}
+                  initials={f.initials}
+                  color={f.color}
+                  size={40}
+                  ring={f.postedToday ? "active" : "none"}
+                />
                 <span className="text-[10px] mt-1 truncate w-full">{f.name}</span>
               </>
             ) : (
@@ -82,7 +82,7 @@ function My25() {
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelected(null)} />
           <div className="relative w-full max-w-md bg-surface rounded-t-3xl p-6 border-t border-border animate-soft-in">
             <div className="flex items-center gap-4">
-              <Avatar initials={selected.initials} color={selected.color} size={64} />
+              <Avatar src={selected.avatar} initials={selected.initials} color={selected.color} size={64} />
               <div className="flex-1">
                 <h3 className="text-xl font-bold">{selected.name}</h3>
                 <p className="text-xs text-muted-foreground">
@@ -132,7 +132,7 @@ function My25() {
             <ul className="space-y-2">
               {WAITING_ROOM.map((w) => (
                 <li key={w.id} className="flex items-center gap-3 rounded-2xl bg-background/60 border border-border p-3">
-                  <Avatar initials={w.initials} size={44} />
+                  <Avatar src={w.avatar} initials={w.initials} size={44} />
                   <div className="flex-1">
                     <div className="text-sm font-semibold">{w.name}</div>
                     <div className="text-xs text-muted-foreground">{w.mutuals} mutuals</div>

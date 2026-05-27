@@ -67,7 +67,7 @@ function Pulse() {
           <button
             disabled={!word || !emoji || !color}
             onClick={() => setStage("sent")}
-            className="w-full rounded-full bg-primary text-primary-foreground py-4 font-semibold disabled:opacity-40 hover:bg-primary-glow transition shadow-[0_10px_30px_-10px_var(--primary)]"
+            className="w-full rounded-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground py-4 font-semibold disabled:opacity-40 hover:brightness-110 transition shadow-[0_15px_40px_-10px_var(--primary)]"
           >
             Send Pulse
           </button>
@@ -78,19 +78,41 @@ function Pulse() {
 
   if (stage === "sent") {
     return (
-      <div className="min-h-[calc(100vh-7rem)] flex flex-col items-center justify-center px-6 text-center">
-        <div className="relative h-40 w-40 flex items-center justify-center">
-          <span className="absolute inset-0 rounded-full bg-primary/30 animate-pulse-ring" />
+      <div className="min-h-[calc(100vh-7rem)] flex flex-col items-center px-6 text-center pt-16">
+        <div className="relative h-48 w-48 flex items-center justify-center">
+          <span className="absolute inset-0 rounded-full bg-primary/25 animate-pulse-ring" />
           <span className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" style={{ animationDelay: "0.6s" }} />
-          <span className="h-20 w-20 rounded-full bg-primary shadow-[0_0_60px_var(--primary)]" />
+          <span className="absolute inset-0 rounded-full bg-primary/15 animate-pulse-ring" style={{ animationDelay: "1.2s" }} />
+          <span className="h-24 w-24 rounded-full bg-gradient-to-br from-primary to-primary-glow shadow-[0_0_80px_var(--primary)]" />
         </div>
         <p className="mt-10 text-xl font-semibold">Your 25 can feel you.</p>
-        <button
-          onClick={() => setStage("feed")}
-          className="mt-10 text-sm text-primary font-semibold"
-        >
-          See today's pulse →
-        </button>
+        <p className="mt-1 text-xs text-muted-foreground">No likes. No counts. Just presence.</p>
+
+        <div className="mt-10 w-full text-left">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold px-1">Today's pulse</h2>
+          <ul className="mt-3 space-y-2">
+            {TODAYS_PULSES.slice(0, 6).map((p) => {
+              const f = FRIENDS.find((x) => x.id === p.friendId)!;
+              return (
+                <li key={p.friendId} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-3 py-2.5">
+                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={40} />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">{f.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.word}</div>
+                  </div>
+                  <span className="text-xl">{p.emoji}</span>
+                  <span className="h-3 w-3 rounded-full" style={{ background: p.color, boxShadow: `0 0 10px ${p.color}` }} />
+                </li>
+              );
+            })}
+          </ul>
+          <button
+            onClick={() => setStage("feed")}
+            className="mt-4 w-full text-sm text-primary font-semibold"
+          >
+            See all 25 →
+          </button>
+        </div>
       </div>
     );
   }
@@ -104,7 +126,7 @@ function Pulse() {
           const f = FRIENDS.find((x) => x.id === p.friendId)!;
           return (
             <li key={p.friendId} className="flex items-center gap-3 rounded-2xl bg-card border border-border px-3 py-2.5">
-              <Avatar initials={f.initials} color={f.color} size={40} />
+              <Avatar src={f.avatar} initials={f.initials} color={f.color} size={40} />
               <div className="flex-1">
                 <div className="text-sm font-semibold">{f.name}</div>
                 <div className="text-xs text-muted-foreground">{p.word}</div>
