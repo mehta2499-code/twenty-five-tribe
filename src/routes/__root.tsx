@@ -78,6 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "25 — Your world. All 25 of them." },
       { property: "og:description", content: "A social app for your 25 closest people. No more, no less." },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "25 — Your world. All 25 of them." },
+      { name: "twitter:description", content: "A social app for your 25 closest people. No more, no less." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/074fc143-d4de-49fd-b8a8-c540c803849f/id-preview-814f2a46--cd199ca9-8d7c-4d25-82c7-6566a8a88a81.lovable.app-1779872820420.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/074fc143-d4de-49fd-b8a8-c540c803849f/id-preview-814f2a46--cd199ca9-8d7c-4d25-82c7-6566a8a88a81.lovable.app-1779872820420.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
