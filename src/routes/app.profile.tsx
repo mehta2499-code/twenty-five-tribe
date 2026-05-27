@@ -17,7 +17,7 @@ function Profile() {
   return (
     <div className="px-5 pt-8 pb-4">
       <div className="flex flex-col items-center text-center">
-        <Avatar initials={ME.initials} size={88} />
+        <Avatar src={ME.avatar} initials={ME.initials} size={88} />
         <h1 className="mt-4 text-xl font-bold">You</h1>
         <p className="text-xs text-muted-foreground mt-1">
           {SEATS_FILLED} of {SEATS_TOTAL} seats filled
