@@ -20,7 +20,6 @@ const NAMES = [
   "Aarav","Zoya","Ishan",
 ];
 
-// Curated pravatar ids for diverse, real-looking faces
 const PRAVATAR_IDS = [
   12, 5, 13, 9, 16, 33, 47, 11, 26, 32,
   68, 1, 60, 44, 24, 51, 20, 52, 25, 65,
@@ -40,7 +39,7 @@ export const FRIENDS: Friend[] = NAMES.map((name, i) => ({
   daysQuiet: [3,21,7,1,30,2,5,14,0,8,15,1,22,4,10,2,9,17,3,1,6,28,2][i] ?? 0,
 }));
 
-export const SEATS_FILLED = FRIENDS.length; // 23 / 25
+export const SEATS_FILLED = FRIENDS.length;
 export const SEATS_TOTAL = 25;
 
 export type MomentTag = "Life Update" | "Milestone" | "Mood" | "Thought";
@@ -87,7 +86,7 @@ export const WAITING_ROOM = [
 
 export const ME = { name: "You", initials: "YO", avatar: avatarUrl(15) };
 
-// Games
+// ============== Games ==============
 export type Game = {
   id: string;
   emoji: string;
@@ -97,17 +96,77 @@ export type Game = {
   price: "Free" | string;
 };
 
-export const GAMES: Game[] = [
+export const FRIENDSHIP_GAMES: Game[] = [
   { id: "know-me",     emoji: "🧠", name: "How Well Do You Know Me?", players: "2 players", description: "Answer questions about yourself. Let your friend guess.", price: "Free" },
   { id: "most-likely", emoji: "🎯", name: "Most Likely To",            players: "All 25",   description: "Vote on your circle. Results will surprise you.", price: "Free" },
   { id: "truth-jar",   emoji: "🎲", name: "Truth Jar",                 players: "All 25",   description: "Drop anonymous questions. Answer in your own time.", price: "Free" },
-  { id: "memory-map",  emoji: "🗺️", name: "Memory Map",                players: "2 players", description: "Build a shared visual map of your friendship.", price: "₹29" },
   { id: "rapid-fire",  emoji: "⚡", name: "Rapid Fire",                players: "2 players", description: "60 seconds. One word answers. How in sync are you?", price: "Free" },
-  { id: "late-night",  emoji: "🌙", name: "Late Night Packs",          players: "2 players", description: "Deep questions for 3am conversations.", price: "₹49" },
 ];
 
+// Back-compat alias
+export const GAMES = FRIENDSHIP_GAMES;
+
 export const ACTIVE_GAMES = [
-  { id: "ag1", gameId: "most-likely", title: "Most Likely To", players: ["1","2","4","9"], progress: 0.6 },
-  { id: "ag2", gameId: "know-me",     title: "Know Me · Priya", players: ["2"],            progress: 0.3 },
-  { id: "ag3", gameId: "truth-jar",   title: "Truth Jar",       players: ["3","5","7"],     progress: 0.8 },
+  { id: "ag1", gameId: "judgement",   title: "Judgement · Round 3",   players: ["1","2","4","9"], progress: 0.6, status: "Your turn" },
+  { id: "ag2", gameId: "trivia",      title: "IPL Legends · Priya",   players: ["2"],             progress: 0.4, status: "Waiting" },
+  { id: "ag3", gameId: "most-likely", title: "Most Likely To",        players: ["3","5","7"],     progress: 0.8, status: "Your turn" },
 ];
+
+export type TriviaPack = {
+  id: string;
+  emoji: string;
+  name: string;
+  tagline: string;
+  questions: number;
+  difficulty: 1 | 2 | 3;
+  price: "Free" | string;
+  gradient: string;
+};
+
+export const TRIVIA_PACKS: TriviaPack[] = [
+  { id: "ipl",       emoji: "🏏", name: "IPL Legends",     tagline: "Who knows their cricket?",       questions: 25, difficulty: 2, price: "Free", gradient: "linear-gradient(135deg,#1e3a8a,#7F77DD)" },
+  { id: "bolly00s",  emoji: "🎬", name: "Bollywood 2000s", tagline: "SRK or Salman?",                  questions: 30, difficulty: 2, price: "₹29",  gradient: "linear-gradient(135deg,#9b1c4a,#D4537E)" },
+  { id: "indiagk",   emoji: "🗺️", name: "India GK",        tagline: "How desi are you really?",        questions: 25, difficulty: 3, price: "Free", gradient: "linear-gradient(135deg,#0f5132,#1D9E75)" },
+  { id: "hindimusic",emoji: "🎵", name: "Hindi Music",     tagline: "Name the song from the lyrics",   questions: 30, difficulty: 3, price: "₹29",  gradient: "linear-gradient(135deg,#5b21b6,#A39CFF)" },
+  { id: "desilife",  emoji: "😂", name: "Desi Life",       tagline: "Only Indians will get this",      questions: 20, difficulty: 1, price: "Free", gradient: "linear-gradient(135deg,#9a3412,#E4B86C)" },
+];
+
+export type TriviaQ = { q: string; options: string[]; answer: number };
+
+export const TRIVIA_QUESTIONS: Record<string, TriviaQ[]> = {
+  ipl: [
+    { q: "Who has scored the most runs in IPL history?",       options: ["Rohit Sharma","Virat Kohli","David Warner","MS Dhoni"], answer: 1 },
+    { q: "Which team won the first ever IPL in 2008?",          options: ["CSK","RCB","Rajasthan Royals","Mumbai Indians"], answer: 2 },
+    { q: "Who holds the record for fastest IPL century?",       options: ["Chris Gayle","AB de Villiers","KL Rahul","Yusuf Pathan"], answer: 0 },
+    { q: "MS Dhoni's jersey number is?",                         options: ["7","17","27","77"], answer: 0 },
+    { q: "Most expensive IPL player in 2024 auction?",          options: ["Pat Cummins","Mitchell Starc","Cameron Green","Sam Curran"], answer: 1 },
+  ],
+  bolly00s: [
+    { q: "Who directed Kabhi Khushi Kabhie Gham (2001)?",        options: ["Karan Johar","Yash Chopra","Aditya Chopra","Sanjay Bhansali"], answer: 0 },
+    { q: "'All izz well' is a line from which film?",            options: ["3 Idiots","PK","Munna Bhai","Taare Zameen Par"], answer: 0 },
+    { q: "Lead actress in Kal Ho Naa Ho?",                       options: ["Rani Mukerji","Kareena Kapoor","Preity Zinta","Aishwarya Rai"], answer: 2 },
+    { q: "Which film made Hrithik Roshan a star?",               options: ["Mission Kashmir","Kaho Naa Pyaar Hai","Fiza","Yaadein"], answer: 1 },
+    { q: "'Mere paas Ma hai' — wait wrong era. Lagaan released in?", options: ["1999","2000","2001","2002"], answer: 2 },
+  ],
+  indiagk: [
+    { q: "Capital of Arunachal Pradesh?",                        options: ["Itanagar","Imphal","Aizawl","Kohima"], answer: 0 },
+    { q: "Which river is called Dakshin Ganga?",                 options: ["Krishna","Kaveri","Godavari","Narmada"], answer: 2 },
+    { q: "Who was India's first woman PM?",                      options: ["Sarojini Naidu","Indira Gandhi","Pratibha Patil","Sushma Swaraj"], answer: 1 },
+    { q: "National sport of India (officially)?",                options: ["Hockey","Cricket","Kabaddi","None declared"], answer: 3 },
+    { q: "Tallest statue in the world is in?",                   options: ["Gujarat","Maharashtra","Rajasthan","Karnataka"], answer: 0 },
+  ],
+  hindimusic: [
+    { q: "'Tum hi ho, tum hi ho' — singer?",                     options: ["Atif Aslam","Arijit Singh","Mohit Chauhan","Sonu Nigam"], answer: 1 },
+    { q: "'Kal ho naa ho' — music director?",                    options: ["A.R. Rahman","Shankar–Ehsaan–Loy","Pritam","Vishal–Shekhar"], answer: 1 },
+    { q: "Year of release: 'Pasoori'?",                          options: ["2020","2021","2022","2023"], answer: 2 },
+    { q: "'Channa mereya' is from?",                             options: ["ADHM","Dear Zindagi","Tamasha","Rockstar"], answer: 0 },
+    { q: "Who sang 'Kesariya'?",                                  options: ["Arijit Singh","Pritam","Jubin Nautiyal","Armaan Malik"], answer: 0 },
+  ],
+  desilife: [
+    { q: "What's the universal Indian response to 'kya kar raha hai'?", options: ["Kuch nahi, bata","Bas, free hu","Yaar abhi busy hu","Kaam kar raha"], answer: 0 },
+    { q: "Maggi cooking time as per packet vs reality?",          options: ["2 min vs 2 min","2 min vs 5 min","2 min vs 8 min","2 min vs 15 min"], answer: 2 },
+    { q: "Mom finds your earphones tangled. Her first words?",    options: ["Saaf karke rakh","Itna ganda kyun","Mera nahi","Tujhe sambhalna nahi aata"], answer: 3 },
+    { q: "Wedding shaadi DJ's mandatory opening song?",           options: ["Kala Chashma","London Thumakda","Bole Chudiyan","Mehndi Laga Ke Rakhna"], answer: 0 },
+    { q: "What does 'achha theek hai' really mean?",              options: ["Ok fine","I'm done arguing","Whatever you say","All of the above"], answer: 3 },
+  ],
+};
