@@ -4,7 +4,7 @@ import { Home, Grid2x2, Sparkles, Gamepad2, User } from "lucide-react";
 const tabs = [
   { to: "/app/home",    Icon: Home,     label: "Home" },
   { to: "/app/my25",    Icon: Grid2x2,  label: "My 25" },
-  { to: "/app/ai",      Icon: Sparkles, label: "AI" },
+  { to: "/app/pulse",   Icon: Sparkles, label: "AI" },
   { to: "/app/games",   Icon: Gamepad2, label: "Play" },
   { to: "/app/profile", Icon: User,     label: "You" },
 ] as const;
