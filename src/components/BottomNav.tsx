@@ -1,12 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Grid2x2, Activity, Gamepad2, User } from "lucide-react";
+import { Home, Grid2x2, Sparkles, Gamepad2, User } from "lucide-react";
 
 const tabs = [
-  { to: "/app/home",    Icon: Home,    label: "Home" },
-  { to: "/app/my25",    Icon: Grid2x2, label: "My 25" },
-  { to: "/app/pulse",   Icon: Activity,label: "Pulse" },
-  { to: "/app/games",   Icon: Gamepad2,label: "Play" },
-  { to: "/app/profile", Icon: User,    label: "You" },
+  { to: "/app/home",    Icon: Home,     label: "Home" },
+  { to: "/app/my25",    Icon: Grid2x2,  label: "My 25" },
+  { to: "/app/pulse",   Icon: Sparkles, label: "AI" },
+  { to: "/app/games",   Icon: Gamepad2, label: "Play" },
+  { to: "/app/profile", Icon: User,     label: "You" },
 ] as const;
 
 export function BottomNav() {
@@ -15,10 +15,10 @@ export function BottomNav() {
     <nav
       className="fixed bottom-0 inset-x-0 z-40"
       style={{
-        background: "rgba(13,13,15,0.85)",
-        backdropFilter: "blur(20px) saturate(160%)",
-        WebkitBackdropFilter: "blur(20px) saturate(160%)",
-        borderTop: "1px solid rgba(127,119,221,0.15)",
+        background: "rgba(26,82,118,0.55)",
+        backdropFilter: "blur(22px) saturate(170%)",
+        WebkitBackdropFilter: "blur(22px) saturate(170%)",
+        borderTop: "1px solid rgba(255,255,255,0.22)",
       }}
     >
       <div className="mx-auto max-w-md flex items-center justify-around px-4 py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -35,15 +35,15 @@ export function BottomNav() {
                 size={24}
                 strokeWidth={active ? 2.4 : 1.9}
                 style={{
-                  color: active ? "#7F77DD" : "#3A3A4A",
-                  filter: active ? "drop-shadow(0 0 10px rgba(127,119,221,0.55))" : undefined,
+                  color: active ? "#F7A8A0" : "rgba(255,255,255,0.55)",
+                  filter: active ? "drop-shadow(0 0 10px rgba(247,168,160,0.75))" : undefined,
                 }}
               />
               <span
                 className="mt-1 h-[3px] w-2 rounded-full transition-all"
                 style={{
-                  background: active ? "#7F77DD" : "transparent",
-                  boxShadow: active ? "0 0 8px rgba(127,119,221,0.7)" : "none",
+                  background: active ? "#F7A8A0" : "transparent",
+                  boxShadow: active ? "0 0 8px rgba(247,168,160,0.85)" : "none",
                 }}
               />
             </Link>

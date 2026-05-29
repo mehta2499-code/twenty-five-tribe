@@ -10,10 +10,11 @@ export const Route = createFileRoute("/app/moments")({
 });
 
 const TAG_VAR: Record<MomentTag, string> = {
-  "Life Update": "var(--drift-active)",
-  "Milestone":   "var(--tag-milestone)",
-  "Mood":        "var(--tag-mood)",
-  "Thought":     "var(--primary)",
+  "Life Update":   "#BFE9C9",
+  "Milestone":     "#FFD9A8",
+  "Mood":          "#F7A8A0",
+  "Thought":       "#E8DEFF",
+  "Remember When": "#F7A8A0",
 };
 
 function MomentsScreen() {
@@ -22,8 +23,8 @@ function MomentsScreen() {
   return (
     <>
       <header className="px-5 pt-6 pb-3">
-        <h1 className="font-display text-2xl font-bold">Moments</h1>
-        <p className="text-xs text-muted-foreground mt-1">Soft updates from your 25 — gone in 72 hours.</p>
+        <h1 className="font-display text-3xl font-black">Moments</h1>
+        <p className="text-xs text-white/75 mt-1">Soft updates from your 25 — gone in 72 hours.</p>
       </header>
 
       <section className="px-4 space-y-3">
@@ -33,18 +34,18 @@ function MomentsScreen() {
           return (
             <div
               key={m.id}
-              className="rounded-2xl bg-card border border-border p-4 flex gap-3"
+              className="glass p-4 flex gap-3"
               style={{ borderLeft: `3px solid ${c}` }}
             >
               <Avatar src={f.avatar} initials={f.initials} color={f.color} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm">
-                  <span className="font-semibold">{f.name}</span>{" "}
-                  <span className="text-muted-foreground">· {m.timeAgo} · {m.tag}</span>
+                  <span className="font-semibold text-white">{f.name}</span>{" "}
+                  <span className="text-white/70">· {m.timeAgo} · {m.tag}</span>
                 </div>
-                <p className="mt-1 text-[14px] text-foreground/90 leading-snug">{m.text}</p>
+                <p className="mt-1 text-[14px] text-white/95 leading-snug">{m.text}</p>
                 {m.photo && (
-                  <div className="mt-2 rounded-xl overflow-hidden border border-border">
+                  <div className="mt-2 rounded-xl overflow-hidden border border-white/20">
                     <img src={m.photo} alt="" className="w-full aspect-[4/3] object-cover" loading="lazy" />
                   </div>
                 )}
@@ -56,7 +57,7 @@ function MomentsScreen() {
 
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-1/2 translate-x-[10rem] z-30 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground flex items-center justify-center shadow-[0_15px_40px_-10px_var(--primary)] hover:scale-105 transition"
+        className="fab-gradient fixed bottom-24 right-1/2 translate-x-[10rem] z-30 h-14 w-14 rounded-full flex items-center justify-center hover:scale-105 transition"
         aria-label="New moment"
       >
         <Plus size={26} strokeWidth={2.6} />

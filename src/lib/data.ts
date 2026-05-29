@@ -10,8 +10,8 @@ export type Friend = {
 };
 
 const PALETTE = [
-  "#7F77DD", "#B58CE4", "#5BCFC1", "#E48CB0", "#E4B86C",
-  "#7CB4E4", "#9BE49E", "#E49B7C", "#C9A3F0", "#8AE4D2",
+  "#F7A8A0", "#FFC4BC", "#FFD9A8", "#BFE9C9", "#E8DEFF",
+  "#A8D4F0", "#FFB8A8", "#FFEAD0", "#D6E8FF", "#FFD0CC",
 ];
 
 const NAMES = [
@@ -42,7 +42,10 @@ export const FRIENDS: Friend[] = NAMES.map((name, i) => ({
 export const SEATS_FILLED = FRIENDS.length;
 export const SEATS_TOTAL = 25;
 
-export type MomentTag = "Life Update" | "Milestone" | "Mood" | "Thought";
+/** Friends drifting — quiet 14+ days */
+export const DRIFTING = FRIENDS.filter((f) => f.daysQuiet >= 14);
+
+export type MomentTag = "Life Update" | "Milestone" | "Mood" | "Thought" | "Remember When";
 
 export type Moment = {
   id: string;
@@ -52,13 +55,24 @@ export type Moment = {
   timeAgo: string;
   photo?: string;
   reactions?: number;
+  /** AI-generated nostalgic surface */
+  remember?: { year: string; cta: string };
 };
 
 export const MOMENTS: Moment[] = [
   { id: "m1", friendId: "1", tag: "Milestone",   text: "Just got promoted to Senior PM at Razorpay! Three years of grinding. 🙏", timeAgo: "12m", reactions: 12 },
+  { id: "rw1", friendId: "2", tag: "Remember When",
+    text: "Remember when you and Priya took that 2 AM auto back from Bandra and got stuck near Mahim? Exactly two years ago today.",
+    timeAgo: "AI · just now",
+    photo: "https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=600",
+    remember: { year: "2 years ago", cta: "Send her this memory" } },
   { id: "m2", friendId: "2", tag: "Life Update", text: "Goa with the college gang this weekend. First trip where nobody cancelled.", timeAgo: "1h", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600", reactions: 18 },
   { id: "m3", friendId: "3", tag: "Mood",        text: "Inexplicably anxious today. Anyone else just get random Sunday dread?", timeAgo: "3h", reactions: 8 },
   { id: "m4", friendId: "4", tag: "Milestone",   text: "Got into the IIM Ahmedabad executive programme 🎉 2 years of applications finally worked.", timeAgo: "5h", reactions: 21 },
+  { id: "rw2", friendId: "9", tag: "Remember When",
+    text: "You and Ananya haven't played Truth Jar in 47 days. Last time, she said you were the funniest person she knew. Rematch?",
+    timeAgo: "AI · 2h",
+    remember: { year: "47 days ago", cta: "Start a rematch" } },
   { id: "m5", friendId: "5", tag: "Thought",     text: "Unpopular opinion: phone calls > texts. We've lost something.", timeAgo: "7h", reactions: 15 },
   { id: "m6", friendId: "9", tag: "Thought",     text: "we romanticize being busy and call it a personality. stop.", timeAgo: "9h", reactions: 9 },
   { id: "m7", friendId: "13", tag: "Life Update", text: "moving back to bangalore next month. round 2.", timeAgo: "11h", photo: "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=600", reactions: 7 },
@@ -67,17 +81,6 @@ export const MOMENTS: Moment[] = [
   { id: "m10", friendId: "15", tag: "Life Update", text: "Coldplay tonight. Twelve year old me would not believe this.", timeAgo: "21h", photo: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600", reactions: 19 },
 ];
 
-export const PULSE_WORDS = ["tired","grateful","anxious","lit","meh","soft","wired","okay","heavy","glowing"];
-export const PULSE_EMOJI = ["😮‍💨","🥲","🔥","🌧️","✨","🫠","💫","🌙","☕️","🌿"];
-export const PULSE_COLORS = ["#7F77DD","#E48CB0","#5BCFC1","#E4B86C","#7CB4E4","#9BE49E","#C9A3F0","#8B8A9B"];
-
-export const TODAYS_PULSES = FRIENDS.slice(0, 18).map((f, i) => ({
-  friendId: f.id,
-  word: PULSE_WORDS[i % PULSE_WORDS.length],
-  emoji: PULSE_EMOJI[i % PULSE_EMOJI.length],
-  color: PULSE_COLORS[i % PULSE_COLORS.length],
-}));
-
 export const WAITING_ROOM = [
   { id: "w1", name: "Aanya",  initials: "AA", mutuals: 4, avatar: avatarUrl(48) },
   { id: "w2", name: "Veer",   initials: "VE", mutuals: 2, avatar: avatarUrl(58) },
@@ -85,6 +88,25 @@ export const WAITING_ROOM = [
 ];
 
 export const ME = { name: "You", initials: "YO", avatar: avatarUrl(15) };
+
+/** Friendship score grows with trivia, capsules, rematches */
+export const FRIENDSHIP_SCORE = { value: 847, max: 1000 };
+
+// ============== AI Roast & Toast lines ==============
+export const ROASTS: Record<string, string[]> = {
+  default: [
+    "Look, {name} has the energy of a phone that's been on 1% for six hours and still won't die. Respect, but also — charge up.",
+    "{name} responds to 'we should catch up' with 'yes definitely' and then enters a witness protection programme. Iconic.",
+    "If procrastination were an Olympic sport, {name} would still be filling out the registration form three days after the closing ceremony.",
+  ],
+};
+export const TOASTS: Record<string, string[]> = {
+  default: [
+    "To {name} — the friend who answers at 2 AM, never keeps score, and somehow remembers the small things you forgot you said. The world is softer because you're in it.",
+    "{name} doesn't show up loudly. They show up steadily. Which, if you've ever been the person being shown up for, is everything. Cheers.",
+    "Here's to {name} — proof that some people are not events in your life, they're seasons. And we're lucky to live in yours.",
+  ],
+};
 
 // ============== Games ==============
 export type Game = {
@@ -103,7 +125,6 @@ export const FRIENDSHIP_GAMES: Game[] = [
   { id: "rapid-fire",  emoji: "⚡", name: "Rapid Fire",                players: "2 players", description: "60 seconds. One word answers. How in sync are you?", price: "Free" },
 ];
 
-// Back-compat alias
 export const GAMES = FRIENDSHIP_GAMES;
 
 export const ACTIVE_GAMES = [
@@ -124,11 +145,11 @@ export type TriviaPack = {
 };
 
 export const TRIVIA_PACKS: TriviaPack[] = [
-  { id: "ipl",       emoji: "🏏", name: "IPL Legends",     tagline: "Who knows their cricket?",       questions: 25, difficulty: 2, price: "Free", gradient: "linear-gradient(135deg,#1e3a8a,#7F77DD)" },
-  { id: "bolly00s",  emoji: "🎬", name: "Bollywood 2000s", tagline: "SRK or Salman?",                  questions: 30, difficulty: 2, price: "₹29",  gradient: "linear-gradient(135deg,#9b1c4a,#D4537E)" },
-  { id: "indiagk",   emoji: "🗺️", name: "India GK",        tagline: "How desi are you really?",        questions: 25, difficulty: 3, price: "Free", gradient: "linear-gradient(135deg,#0f5132,#1D9E75)" },
-  { id: "hindimusic",emoji: "🎵", name: "Hindi Music",     tagline: "Name the song from the lyrics",   questions: 30, difficulty: 3, price: "₹29",  gradient: "linear-gradient(135deg,#5b21b6,#A39CFF)" },
-  { id: "desilife",  emoji: "😂", name: "Desi Life",       tagline: "Only Indians will get this",      questions: 20, difficulty: 1, price: "Free", gradient: "linear-gradient(135deg,#9a3412,#E4B86C)" },
+  { id: "ipl",       emoji: "🏏", name: "IPL Legends",     tagline: "Who knows their cricket?",       questions: 25, difficulty: 2, price: "Free", gradient: "linear-gradient(135deg,#1A5276,#2B8AC4)" },
+  { id: "bolly00s",  emoji: "🎬", name: "Bollywood 2000s", tagline: "SRK or Salman?",                  questions: 30, difficulty: 2, price: "₹29",  gradient: "linear-gradient(135deg,#9b1c4a,#F7A8A0)" },
+  { id: "indiagk",   emoji: "🗺️", name: "India GK",        tagline: "How desi are you really?",        questions: 25, difficulty: 3, price: "Free", gradient: "linear-gradient(135deg,#0f5132,#BFE9C9)" },
+  { id: "hindimusic",emoji: "🎵", name: "Hindi Music",     tagline: "Name the song from the lyrics",   questions: 30, difficulty: 3, price: "₹29",  gradient: "linear-gradient(135deg,#1A5276,#E8DEFF)" },
+  { id: "desilife",  emoji: "😂", name: "Desi Life",       tagline: "Only Indians will get this",      questions: 20, difficulty: 1, price: "Free", gradient: "linear-gradient(135deg,#9a3412,#FFD9A8)" },
 ];
 
 export type TriviaQ = { q: string; options: string[]; answer: number };
@@ -146,7 +167,7 @@ export const TRIVIA_QUESTIONS: Record<string, TriviaQ[]> = {
     { q: "'All izz well' is a line from which film?",            options: ["3 Idiots","PK","Munna Bhai","Taare Zameen Par"], answer: 0 },
     { q: "Lead actress in Kal Ho Naa Ho?",                       options: ["Rani Mukerji","Kareena Kapoor","Preity Zinta","Aishwarya Rai"], answer: 2 },
     { q: "Which film made Hrithik Roshan a star?",               options: ["Mission Kashmir","Kaho Naa Pyaar Hai","Fiza","Yaadein"], answer: 1 },
-    { q: "'Mere paas Ma hai' — wait wrong era. Lagaan released in?", options: ["1999","2000","2001","2002"], answer: 2 },
+    { q: "Lagaan released in?",                                   options: ["1999","2000","2001","2002"], answer: 2 },
   ],
   indiagk: [
     { q: "Capital of Arunachal Pradesh?",                        options: ["Itanagar","Imphal","Aizawl","Kohima"], answer: 0 },
@@ -166,7 +187,7 @@ export const TRIVIA_QUESTIONS: Record<string, TriviaQ[]> = {
     { q: "What's the universal Indian response to 'kya kar raha hai'?", options: ["Kuch nahi, bata","Bas, free hu","Yaar abhi busy hu","Kaam kar raha"], answer: 0 },
     { q: "Maggi cooking time as per packet vs reality?",          options: ["2 min vs 2 min","2 min vs 5 min","2 min vs 8 min","2 min vs 15 min"], answer: 2 },
     { q: "Mom finds your earphones tangled. Her first words?",    options: ["Saaf karke rakh","Itna ganda kyun","Mera nahi","Tujhe sambhalna nahi aata"], answer: 3 },
-    { q: "Wedding shaadi DJ's mandatory opening song?",           options: ["Kala Chashma","London Thumakda","Bole Chudiyan","Mehndi Laga Ke Rakhna"], answer: 0 },
+    { q: "Wedding DJ's mandatory opening song?",                  options: ["Kala Chashma","London Thumakda","Bole Chudiyan","Mehndi Laga Ke Rakhna"], answer: 0 },
     { q: "What does 'achha theek hai' really mean?",              options: ["Ok fine","I'm done arguing","Whatever you say","All of the above"], answer: 3 },
   ],
 };
