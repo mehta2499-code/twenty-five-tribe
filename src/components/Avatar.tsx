@@ -3,7 +3,7 @@ type Props = {
   src?: string;
   color?: string;
   size?: number;
-  ring?: "active" | "quiet" | "purple" | "none";
+  ring?: "active" | "quiet" | "purple" | "drift" | "none";
   className?: string;
 };
 
@@ -38,11 +38,14 @@ export function Avatar({
   if (ring === "none") return <div className={className}>{inner}</div>;
 
   const ringCls =
-    ring === "active" ? "ring-active" : ring === "purple" ? "ring-purple" : "ring-quiet";
+    ring === "active" ? "ring-active"
+    : ring === "purple" ? "ring-purple"
+    : ring === "drift" ? "ring-drift"
+    : "ring-quiet";
 
   return (
     <div className={`${ringCls} ${className}`} style={{ display: "inline-block" }}>
-      <div className="rounded-full bg-background p-[2px]">{inner}</div>
+      <div className="rounded-full p-[2px]" style={{ background: "#2B8AC4" }}>{inner}</div>
     </div>
   );
 }
