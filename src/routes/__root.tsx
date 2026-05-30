@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#0D0D0F" },
+      { name: "theme-color", content: "#0D1820" },
       { title: "25 — Your world. All 25 of them." },
       { name: "description", content: "A social app for your 25 closest people. No more, no less." },
       { property: "og:title", content: "25 — Your world. All 25 of them." },

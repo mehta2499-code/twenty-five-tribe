@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Flame, Wine, Sparkles, RotateCcw } from "lucide-react";
+import { Sparkles, RotateCcw } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FRIENDS, ROASTS, TOASTS, type Friend } from "@/lib/data";
 
 export const Route = createFileRoute("/app/pulse")({
-  component: AiScreen,
+  component: PulseScreen,
 });
 
 type Mode = "roast" | "toast";
@@ -23,50 +23,123 @@ function useTypewriter(text: string, speed = 18) {
       if (i < text.length) tRef.current = setTimeout(tick, speed);
     };
     tick();
-    return () => {
-      if (tRef.current) clearTimeout(tRef.current);
-    };
+    return () => { if (tRef.current) clearTimeout(tRef.current); };
   }, [text, speed]);
   return out;
 }
 
-function AiScreen() {
+const PULSE_COLORS = [
+  { word: "tired",    color: "#7B6FD4" },
+  { word: "grateful", color: "#D4A96A" },
+  { word: "anxious",  color: "#C94040" },
+  { word: "lit",      color: "#1D9E75" },
+  { word: "meh",      color: "#8A9CAA" },
+];
+
+function spaced(s: string) { return s.toUpperCase().split("").join(" "); }
+
+function PulseScreen() {
+  const [word, setWord] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  // Roast/Toast
   const [selected, setSelected] = useState<Friend>(FRIENDS[0]);
   const [mode, setMode] = useState<Mode | null>(null);
   const [seed, setSeed] = useState(0);
-
   const text = (() => {
     if (!mode) return "";
     const pool = mode === "roast" ? ROASTS.default : TOASTS.default;
     return pool[seed % pool.length].replaceAll("{name}", selected.name);
   })();
   const typed = useTypewriter(text);
+  function run(next: Mode) { setMode(next); setSeed((s) => s + 1); }
 
-  function run(next: Mode) {
-    setMode(next);
-    setSeed((s) => s + 1);
+  function sendPulse() {
+    if (!word.trim() && !picked) return;
+    setSent(true);
+    setTimeout(() => setSent(false), 3200);
   }
 
   return (
     <>
-      <header className="px-5 pt-7 pb-2">
-        <div className="flex items-center gap-2">
-          <Sparkles size={20} style={{ color: "#F7A8A0" }} />
-          <span className="text-[11px] uppercase tracking-[0.22em] text-white/75 font-semibold">
-            AI · Roast & Toast
-          </span>
-        </div>
-        <h1 className="font-display text-4xl font-black mt-2 leading-none">
-          Pick someone. <br />
-          <span className="italic font-bold" style={{ color: "#F7A8A0" }}>Let AI do the rest.</span>
+      <header className="px-6 pt-10 pb-2 text-center">
+        <p className="label-caps text-cool">{spaced("Pulse · Just for your 25")}</p>
+        <h1 className="font-display italic text-warm mt-4" style={{ fontSize: 30, lineHeight: 1.2 }}>
+          How are you<br />actually doing?
         </h1>
-        <p className="text-sm text-white/75 mt-3 max-w-sm">
-          Personalised. Sharp. A little dangerous. Strictly for your 25.
-        </p>
       </header>
 
-      <section className="px-4 mt-5">
-        <div className="glass-soft px-3 py-3">
+      <section className="px-8 mt-6">
+        <input
+          value={word}
+          onChange={(e) => setWord(e.target.value.slice(0, 18))}
+          placeholder="one word"
+          className="input-letterpress"
+        />
+
+        <div className="mt-7 flex justify-center gap-4 flex-wrap">
+          {PULSE_COLORS.map((p) => {
+            const active = picked === p.word;
+            return (
+              <button
+                key={p.word}
+                onClick={() => { setPicked(p.word); if (!word) setWord(p.word); }}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <div
+                  className="rounded-full transition"
+                  style={{
+                    width: 46,
+                    height: 46,
+                    background: p.color,
+                    boxShadow: active
+                      ? `0 0 0 3px #0D1820, 0 0 0 5px ${p.color}, 0 0 24px ${p.color}`
+                      : `0 0 14px ${p.color}55`,
+                    transform: active ? "scale(1.06)" : "scale(1)",
+                  }}
+                />
+                <span className="label-caps text-cool" style={{ fontSize: 9 }}>{spaced(p.word)}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={sendPulse}
+          className="btn-capsule mt-9 w-full py-4 font-display italic"
+          style={{ fontSize: 16 }}
+        >
+          Send pulse to your 25
+        </button>
+
+        {sent && (
+          <div className="relative mt-8 flex justify-center animate-soft-in">
+            <div
+              className="absolute inset-0 -m-6 rounded-full animate-purple-pulse"
+              style={{ pointerEvents: "none" }}
+            />
+            <p className="font-display italic text-warm text-glow-purple text-center" style={{ fontSize: 22 }}>
+              Your 25 can feel you.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* Divider */}
+      <hr className="hr-thin mx-8 my-10" />
+
+      {/* Roast & Toast */}
+      <section className="px-5">
+        <div className="flex items-center gap-2 px-1">
+          <Sparkles size={14} style={{ color: "#7B6FD4" }} />
+          <span className="label-caps text-cool">{spaced("AI · Roast & Toast")}</span>
+        </div>
+        <h2 className="font-display italic text-warm mt-3 px-1" style={{ fontSize: 22 }}>
+          Pick someone. Let AI do the rest.
+        </h2>
+
+        <div className="mt-5 rounded-2xl px-3 py-3" style={{ background: "#132030", border: "1px solid var(--border-cool)" }}>
           <div className="flex gap-3 overflow-x-auto -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {FRIENDS.slice(0, 18).map((f) => {
               const active = f.id === selected.id;
@@ -77,17 +150,8 @@ function AiScreen() {
                   className="flex flex-col items-center gap-1.5 shrink-0 transition"
                   style={{ transform: active ? "scale(1.06)" : "scale(1)" }}
                 >
-                  <Avatar
-                    src={f.avatar}
-                    initials={f.initials}
-                    color={f.color}
-                    size={56}
-                    ring={active ? "active" : "none"}
-                  />
-                  <span
-                    className="text-[12px] max-w-[64px] truncate"
-                    style={{ color: active ? "#FFFFFF" : "rgba(255,255,255,0.7)" }}
-                  >
+                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={52} ring={active ? "active" : "none"} />
+                  <span className="font-display italic max-w-[64px] truncate" style={{ fontSize: 11, color: active ? "#F2F0EB" : "#8A9CAA" }}>
                     {f.name}
                   </span>
                 </button>
@@ -95,73 +159,48 @@ function AiScreen() {
             })}
           </div>
         </div>
-      </section>
 
-      <section className="px-4 mt-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             onClick={() => run("roast")}
-            className="glass-strong py-4 font-bold text-base active:scale-[0.97] transition"
-            style={{ color: "#FFFFFF" }}
+            className="rounded-full py-3 font-display italic"
+            style={{ background: "transparent", border: "1px solid var(--border-cool)", color: "#F2F0EB" }}
           >
-            <span className="inline-flex items-center gap-2">
-              <Flame size={18} style={{ color: "#F7A8A0" }} /> Roast {selected.name}
-            </span>
+            🔥 Roast {selected.name}
           </button>
-          <button
-            onClick={() => run("toast")}
-            className="btn-coral rounded-[20px] py-4 font-bold text-base active:scale-[0.97] transition"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Wine size={18} /> Toast {selected.name}
-            </span>
+          <button onClick={() => run("toast")} className="btn-capsule py-3 font-display italic">
+            🥂 Toast {selected.name}
           </button>
         </div>
-      </section>
 
-      {mode && (
-        <section className="px-4 mt-5">
-          <div className="glass p-5 animate-soft-in">
+        {mode && (
+          <div className="card-editorial accent-bar-purple mt-5 p-5 animate-soft-in">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Avatar src={selected.avatar} initials={selected.initials} color={selected.color} size={36} />
                 <div>
-                  <div className="text-sm font-bold leading-tight">{selected.name}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-white/65">
-                    {mode === "roast" ? "🔥 Roast" : "🥂 Toast"} · AI
-                  </div>
+                  <div className="font-display text-warm" style={{ fontSize: 14 }}>{selected.name}</div>
+                  <div className="label-caps text-cool">{spaced(mode === "roast" ? "Roast · AI" : "Toast · AI")}</div>
                 </div>
               </div>
               <button
                 onClick={() => run(mode)}
                 aria-label="Regenerate"
-                className="h-9 w-9 rounded-full glass-soft flex items-center justify-center"
+                className="h-9 w-9 rounded-full flex items-center justify-center"
+                style={{ background: "#1A2D3E", border: "1px solid var(--border-cool)" }}
               >
                 <RotateCcw size={15} />
               </button>
             </div>
-            <p
-              className="mt-4 text-[16px] leading-relaxed font-display caret"
-              style={{ color: "#FFFFFF" }}
-            >
+            <p className="mt-4 font-display italic caret" style={{ fontSize: 16, lineHeight: 1.7, color: "#F2F0EB" }}>
               {typed}
             </p>
-            {typed.length === text.length && (
-              <div className="mt-5 flex gap-2.5">
-                <button className="flex-1 glass-soft py-3 text-sm font-semibold">
-                  Send to {selected.name}
-                </button>
-                <button className="flex-1 btn-coral rounded-[14px] py-3 text-sm font-bold">
-                  Save to Capsule
-                </button>
-              </div>
-            )}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
-      <p className="px-6 text-center text-[11px] text-white/55 italic mt-10">
-        AI only ever knows your 25. Never shared. Never trained on.
+      <p className="px-8 text-center font-display italic text-cool mt-10 mb-6" style={{ fontSize: 12 }}>
+        Pulses and Toasts stay inside your 25. Never shared. Never trained on.
       </p>
     </>
   );
