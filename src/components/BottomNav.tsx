@@ -15,10 +15,10 @@ export function BottomNav() {
     <nav
       className="fixed bottom-0 inset-x-0 z-40"
       style={{
-        background: "rgba(26,82,118,0.55)",
-        backdropFilter: "blur(22px) saturate(170%)",
-        WebkitBackdropFilter: "blur(22px) saturate(170%)",
-        borderTop: "1px solid rgba(255,255,255,0.22)",
+        background: "rgba(13,24,32,0.92)",
+        backdropFilter: "blur(18px) saturate(140%)",
+        WebkitBackdropFilter: "blur(18px) saturate(140%)",
+        borderTop: "1px solid rgba(122,150,170,0.15)",
       }}
     >
       <div className="mx-auto max-w-md flex items-center justify-around px-4 py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -32,18 +32,20 @@ export function BottomNav() {
               className="relative flex flex-col items-center py-1.5 px-3 active:scale-110 transition-transform"
             >
               <Icon
-                size={24}
-                strokeWidth={active ? 2.4 : 1.9}
+                size={22}
+                strokeWidth={active ? 2.2 : 1.7}
                 style={{
-                  color: active ? "#F7A8A0" : "rgba(255,255,255,0.55)",
-                  filter: active ? "drop-shadow(0 0 10px rgba(247,168,160,0.75))" : undefined,
+                  color: active ? "#D4A96A" : "rgba(138,156,170,0.7)",
+                  filter: active ? "drop-shadow(0 0 8px rgba(212,169,106,0.55))" : undefined,
                 }}
               />
               <span
-                className="mt-1 h-[3px] w-2 rounded-full transition-all"
+                className="mt-1.5 rounded-full transition-all"
                 style={{
-                  background: active ? "#F7A8A0" : "transparent",
-                  boxShadow: active ? "0 0 8px rgba(247,168,160,0.85)" : "none",
+                  width: active ? 6 : 0,
+                  height: 2,
+                  background: active ? "#D4A96A" : "transparent",
+                  boxShadow: active ? "0 0 6px rgba(212,169,106,0.75)" : "none",
                 }}
               />
             </Link>

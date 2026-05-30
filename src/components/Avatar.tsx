@@ -3,14 +3,14 @@ type Props = {
   src?: string;
   color?: string;
   size?: number;
-  ring?: "active" | "quiet" | "purple" | "drift" | "none";
+  ring?: "active" | "quiet" | "purple" | "drift" | "gold" | "none";
   className?: string;
 };
 
 export function Avatar({
   initials = "",
   src,
-  color = "#7F77DD",
+  color = "#7B6FD4",
   size = 56,
   ring = "none",
   className = "",
@@ -22,7 +22,7 @@ export function Avatar({
         width: size,
         height: size,
         background: src
-          ? "#22222A"
+          ? "#1A2D3E"
           : `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #000))`,
         fontSize: size * 0.36,
       }}
@@ -37,6 +37,14 @@ export function Avatar({
 
   if (ring === "none") return <div className={className}>{inner}</div>;
 
+  if (ring === "gold") {
+    return (
+      <div className={`ring-gold-glow ${className}`} style={{ display: "inline-block" }}>
+        {inner}
+      </div>
+    );
+  }
+
   const ringCls =
     ring === "active" ? "ring-active"
     : ring === "purple" ? "ring-purple"
@@ -45,7 +53,7 @@ export function Avatar({
 
   return (
     <div className={`${ringCls} ${className}`} style={{ display: "inline-block" }}>
-      <div className="rounded-full p-[2px]" style={{ background: "#2B8AC4" }}>{inner}</div>
+      <div className="rounded-full p-[2px]" style={{ background: "#0D1820" }}>{inner}</div>
     </div>
   );
 }
