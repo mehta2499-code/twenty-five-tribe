@@ -152,6 +152,66 @@ export const TRIVIA_PACKS: TriviaPack[] = [
   { id: "desilife",  emoji: "😂", name: "Desi Life",       tagline: "Only Indians will get this",      questions: 20, difficulty: 1, price: "Free", gradient: "linear-gradient(135deg,#9a3412,#FFD9A8)" },
 ];
 
+// ============== Memory Capsules ==============
+export type CapsuleMomentEntry = {
+  tag: MomentTag;
+  text: string;
+  date: string;
+};
+export type CapsulePulse = {
+  word: string;
+  emoji: string;
+  date: string;
+  color: string;
+};
+export type Capsule = {
+  id: string;
+  friendId: string;
+  years: string;
+  stats: { pulses: number; milestones: number; games: number };
+  story: CapsuleMomentEntry[];
+  pulses: CapsulePulse[];
+  photos: string[];
+  score: number;
+  scoreNote: string;
+};
+
+const CAPSULE_FRIEND_IDS = ["1","2","4","6","9","13","15","18"];
+
+const PHOTO_POOL = [
+  "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400",
+  "https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=400",
+  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400",
+  "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=400",
+  "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400",
+  "https://images.unsplash.com/photo-1530023367847-a683933f4172?w=400",
+];
+
+export const CAPSULES: Capsule[] = CAPSULE_FRIEND_IDS.map((fid, i) => {
+  const f = FRIENDS.find((x) => x.id === fid)!;
+  return {
+    id: `cap-${fid}`,
+    friendId: fid,
+    years: `${(2 + (i % 5))} years of friendship`,
+    stats: { pulses: 42 + i * 7, milestones: 6 + (i % 4), games: 19 + i * 3 },
+    story: [
+      { tag: "Milestone",   text: `The night ${f.name} called at 1 AM to say they got the job.`, date: "Mar 2023" },
+      { tag: "Life Update", text: `Goa trip — the one where nobody cancelled.`,                  date: "Jul 2023" },
+      { tag: "Mood",        text: `${f.name} sent the longest voice note about feeling lost. You listened twice.`, date: "Feb 2024" },
+      { tag: "Thought",     text: `"We romanticise being busy and call it a personality."`,      date: "Aug 2024" },
+      { tag: "Milestone",   text: `${f.name}'s engagement. You were the second to know.`,        date: "Jan 2025" },
+    ],
+    pulses: [
+      { word: "tired",    emoji: "😮‍💨", date: "Apr 2",  color: "#7B6FD4" },
+      { word: "grateful", emoji: "🤍",   date: "Jun 14", color: "#D4A96A" },
+      { word: "anxious",  emoji: "🌀",   date: "Sep 9",  color: "#C94040" },
+    ],
+    photos: PHOTO_POOL.slice(0, 6),
+    score: 92 - i * 3,
+    scoreNote: `Top 3% of all friendships on 25 · Judgement rivals, ${f.name} leads 26–21`,
+  };
+});
+
 export type TriviaQ = { q: string; options: string[]; answer: number };
 
 export const TRIVIA_QUESTIONS: Record<string, TriviaQ[]> = {
