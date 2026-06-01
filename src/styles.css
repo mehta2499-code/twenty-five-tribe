@@ -167,7 +167,13 @@
     background: var(--bg-card);
     border: 1px solid var(--border-cool);
   }
-  .card-premium { @apply card-editorial; }
+  .card-premium {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-cool);
+    position: relative;
+    overflow: hidden;
+  }
 
   .hr-thin {
     border: 0;
