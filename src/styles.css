@@ -108,7 +108,7 @@
   }
 }
 
-@layer utilities {
+/* Custom app utilities (plain CSS, not in @layer utilities to avoid v4 utility resolution) */
   .font-display { font-family: var(--font-display); letter-spacing: -0.005em; }
   .font-serif   { font-family: var(--font-display); }
 
@@ -259,7 +259,7 @@
   }
   .input-letterpress::placeholder { color: var(--text-muted); }
   .input-letterpress:focus { border-bottom-color: var(--accent-purple); }
-}
+/* end custom utilities */
 
 @keyframes shimmer {
   0% { background-position: 200% 0; }
