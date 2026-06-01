@@ -259,7 +259,7 @@
   }
   .input-letterpress::placeholder { color: var(--text-muted); }
   .input-letterpress:focus { border-bottom-color: var(--accent-purple); }
-}
+/* end custom utilities */
 
 @keyframes shimmer {
   0% { background-position: 200% 0; }
