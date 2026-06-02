@@ -339,12 +339,56 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ SECTION 7 — THE NUMBERS ============ */}
+      {/* ============ SECTION 6.5 — WHY NOW ============ */}
+      <section className="px-6 py-32 md:py-40" style={{ background: C.navy }}>
+        <div className="mx-auto max-w-5xl">
+          <Reveal>
+            <p className="uppercase text-center" style={{ color: C.coral, letterSpacing: "0.32em", fontSize: "0.75rem", fontWeight: 600 }}>
+              Why now
+            </p>
+          </Reveal>
+          <Reveal delay={100}>
+            <h2 className="mt-6 h-serif text-white text-center" style={{ fontSize: "clamp(2rem, 4.6vw, 3.25rem)", lineHeight: 1.15 }}>
+              The shift from attention
+              <br />
+              <span className="italic" style={{ color: C.coral }}>to intimacy is already here.</span>
+            </h2>
+          </Reveal>
+
+          <div className="mt-16 grid gap-6 md:grid-cols-2">
+            {[
+              { big: "63%", small: "of Gen Z planned a social media detox in 2025." },
+              { big: "55%", small: "have taken a break to manage digital fatigue." },
+              { big: "73%", small: "of young adults say social media hurts mental health." },
+              { big: "61%", small: "report sleep disruption from late-night scrolling." },
+            ].map((s, i) => (
+              <Reveal key={s.small} delay={i * 90}>
+                <div className="glass rounded-2xl p-7 h-full flex items-baseline gap-5">
+                  <div className="h-serif text-white" style={{ fontSize: "clamp(2.25rem, 5vw, 3.25rem)", lineHeight: 1 }}>
+                    {s.big}
+                  </div>
+                  <p className="text-white/80 leading-relaxed">{s.small}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={200}>
+            <p className="mt-16 text-center h-serif italic text-white/90 max-w-3xl mx-auto" style={{ fontSize: "clamp(1.1rem, 2.2vw, 1.5rem)", lineHeight: 1.5 }}>
+              The future of social media isn't bigger audiences.
+              <br />
+              It's smaller circles.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ============ SECTION 7 — MARKET OPPORTUNITY ============ */}
       <section className="px-6 py-32 md:py-40 text-center" style={{ background: C.blue }}>
         <div className="mx-auto max-w-5xl">
           <Reveal>
             <p className="uppercase" style={{ color: C.coral, letterSpacing: "0.32em", fontSize: "0.75rem", fontWeight: 600 }}>
-              The Market
+              Market Opportunity
             </p>
           </Reveal>
           <Reveal delay={100}>
@@ -353,25 +397,34 @@ function Landing() {
             </div>
           </Reveal>
           <Reveal delay={180}>
-            <p className="mt-4 text-white/85 text-lg md:text-xl">Instagram users in India.</p>
+            <p className="mt-4 text-white/85 text-lg md:text-xl">
+              Instagram users in India — the largest Instagram market in the world.
+            </p>
           </Reveal>
 
-          <div className="mt-20 grid gap-6 md:grid-cols-3">
+          <div className="mt-20 grid gap-6 md:grid-cols-2 lg:grid-cols-4 text-left">
             {[
-              { big: "34%", small: "seek alternatives" },
-              { big: "0",   small: "Indian apps cracked social" },
-              { big: "₹0",  small: "ads. Ever." },
+              { big: "79.1%", small: "of Indian Instagram users are aged 18–34." },
+              { big: "51M",   small: "Instagram users added in India in a single year." },
+              { big: "34%",   small: "of users seek an alternative every month." },
+              { big: "81%",   small: "of Indian Gen Z consume social media daily." },
             ].map((s, i) => (
               <Reveal key={s.small} delay={i * 100}>
-                <div className="glass rounded-2xl p-8 h-full">
-                  <div className="h-serif text-white" style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", lineHeight: 1 }}>
+                <div className="glass rounded-2xl p-7 h-full">
+                  <div className="h-serif text-white" style={{ fontSize: "clamp(2.25rem, 5vw, 3.25rem)", lineHeight: 1 }}>
                     {s.big}
                   </div>
-                  <p className="mt-3 text-white/80">{s.small}</p>
+                  <p className="mt-3 text-white/80 leading-relaxed">{s.small}</p>
                 </div>
               </Reveal>
             ))}
           </div>
+
+          <Reveal delay={250}>
+            <p className="mt-16 h-serif italic text-white/85 max-w-3xl mx-auto" style={{ fontSize: "clamp(1.05rem, 2vw, 1.35rem)", lineHeight: 1.55 }}>
+              The market isn't small. None of these platforms are designed for meaningful relationships.
+            </p>
+          </Reveal>
         </div>
       </section>
 
