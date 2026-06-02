@@ -462,7 +462,7 @@ function Landing() {
               </Reveal>
             ))}
           </div>
-          </div>
+
           <Reveal delay={150}>
             <p className="mt-10 text-center text-white/70 max-w-2xl mx-auto">
               Year 2 · 100K users · 5% on 25 Plus · <span className="text-white">₹50L ARR</span>. Unit economics work at 10,000 users — not 10 million.
