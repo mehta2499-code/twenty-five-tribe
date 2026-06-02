@@ -465,31 +465,62 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ SECTION 9 — CTA / FOOTER ============ */}
-      <section className="relative px-6 py-32 md:py-44 text-center overflow-hidden" style={{ background: C.blue }}>
+          <Reveal delay={150}>
+            <p className="mt-8 text-center text-white/70 max-w-2xl mx-auto">
+              Year 2 · 100K users · 5% on 25 Plus · <span className="text-white">₹50L ARR</span>. Unit economics work at 10,000 users — not 10 million.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ============ SECTION 9 — SEEKING / CTA ============ */}
+      <section className="relative px-6 py-32 md:py-44 overflow-hidden" style={{ background: C.blue }}>
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full opacity-30 blur-3xl"
           style={{ background: `radial-gradient(closest-side, ${C.coral}, transparent 70%)` }}
         />
-        <div className="relative mx-auto max-w-4xl">
+        <div className="relative mx-auto max-w-5xl text-center">
           <Reveal>
-            <p className="h-serif italic text-white" style={{ fontSize: "clamp(1.75rem, 4.4vw, 3.25rem)", lineHeight: 1.2 }}>
+            <p className="uppercase" style={{ color: C.coral, letterSpacing: "0.42em", fontSize: "0.78rem", fontWeight: 500 }}>
+              Seeking
+            </p>
+          </Reveal>
+          <Reveal delay={100}>
+            <h2 className="mt-6 h-serif italic text-white" style={{ fontSize: "clamp(1.75rem, 4.4vw, 3.25rem)", lineHeight: 1.2 }}>
               You have 500 followers.
               <br />
               You'd call 25 of them at 3 AM.
-            </p>
+            </h2>
           </Reveal>
-          <Reveal delay={150}>
-            <p className="mt-10 h-serif text-white/95 text-xl md:text-2xl">
-              We built the app for the 25.
+          <Reveal delay={180}>
+            <p className="mt-8 h-serif text-white/90 text-xl md:text-2xl">
+              We built the app for the 25 — and we're looking for the right people to build it with.
             </p>
           </Reveal>
 
-          <Reveal delay={250}>
-            <div className="mt-12 flex justify-center">
-              <Link
-                to="/app/home"
+          <div className="mt-16 grid gap-4 md:grid-cols-2 lg:grid-cols-3 text-left">
+            {[
+              "Incubation support",
+              "Product mentorship",
+              "Strategic guidance",
+              "Early-stage funding opportunities",
+              "Access to the startup ecosystem",
+              "Partnerships & introductions",
+            ].map((s, i) => (
+              <Reveal key={s} delay={i * 70}>
+                <div className="glass rounded-2xl p-5 h-full flex items-center gap-4">
+                  <span className="h-serif" style={{ color: C.coral, fontSize: "1.25rem" }}>✦</span>
+                  <span className="text-white/90">{s}</span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={300}>
+            <div className="mt-16 flex flex-col items-center gap-4">
+              <a
+                href="mailto:mehta2499@gmail.com"
                 className="inline-flex items-center justify-center rounded-full px-9 py-4 text-sm font-semibold uppercase transition-transform hover:-translate-y-0.5"
                 style={{
                   background: C.coral,
@@ -498,14 +529,17 @@ function Landing() {
                   boxShadow: "0 18px 50px -12px rgba(247,168,160,0.6)",
                 }}
               >
-                Join the Waitlist
+                Let's talk
+              </a>
+              <Link to="/app/home" className="text-white/70 hover:text-white text-sm underline underline-offset-4 decoration-white/30">
+                Preview the app →
               </Link>
             </div>
           </Reveal>
 
-          <Reveal delay={350}>
-            <p className="mt-16 text-white/70 text-sm">
-              Aman Mehta · <a href="mailto:mehta2499@gmail.com" className="underline decoration-white/30 underline-offset-4 hover:text-white">mehta2499@gmail.com</a>
+          <Reveal delay={400}>
+            <p className="mt-16 text-white/80">
+              Aman Mehta · <a href="tel:+917990552696" className="hover:text-white">+91 79905 52696</a> · <a href="mailto:mehta2499@gmail.com" className="underline decoration-white/30 underline-offset-4 hover:text-white">mehta2499@gmail.com</a>
             </p>
             <p className="mt-3 text-white/50 text-xs uppercase" style={{ letterSpacing: "0.28em" }}>
               © 2026 Twenty Five
