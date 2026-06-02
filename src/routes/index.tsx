@@ -462,16 +462,15 @@ function Landing() {
               </Reveal>
             ))}
           </div>
-        </div>
-      </section>
-
+          </div>
           <Reveal delay={150}>
-            <p className="mt-8 text-center text-white/70 max-w-2xl mx-auto">
+            <p className="mt-10 text-center text-white/70 max-w-2xl mx-auto">
               Year 2 · 100K users · 5% on 25 Plus · <span className="text-white">₹50L ARR</span>. Unit economics work at 10,000 users — not 10 million.
             </p>
           </Reveal>
         </div>
       </section>
+
 
       {/* ============ SECTION 9 — SEEKING / CTA ============ */}
       <section className="relative px-6 py-32 md:py-44 overflow-hidden" style={{ background: C.blue }}>
