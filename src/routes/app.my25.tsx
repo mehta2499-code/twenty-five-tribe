@@ -18,7 +18,6 @@ function driftMeta(days: number) {
 
 function My25() {
   const [selected, setSelected] = useState<Friend | null>(null);
-  void selected; void setSelected;
   const [waitingOpen, setWaitingOpen] = useState(false);
   const seats: (Friend | null)[] = Array.from({ length: SEATS_TOTAL }, (_, i) => FRIENDS[i] ?? null);
 
