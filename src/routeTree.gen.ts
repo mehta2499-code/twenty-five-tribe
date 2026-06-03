@@ -19,6 +19,7 @@ import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
 import { Route as AppGamesRouteImport } from './routes/app.games'
 import { Route as AppCapsulesRouteImport } from './routes/app.capsules'
+import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -70,6 +71,11 @@ const AppCapsulesRoute = AppCapsulesRouteImport.update({
   path: '/capsules',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSeatIdRoute = AppSeatIdRouteImport.update({
+  id: '/seat/$id',
+  path: '/seat/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
   '/app/': typeof AppIndexRoute
+  '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
   '/app': typeof AppIndexRoute
+  '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
   '/app/': typeof AppIndexRoute
+  '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/pulse'
     | '/app/'
+    | '/app/seat/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/pulse'
     | '/app'
+    | '/app/seat/$id'
   id:
     | '__root__'
     | '/'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/app/profile'
     | '/app/pulse'
     | '/app/'
+    | '/app/seat/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCapsulesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/seat/$id': {
+      id: '/app/seat/$id'
+      path: '/seat/$id'
+      fullPath: '/app/seat/$id'
+      preLoaderRoute: typeof AppSeatIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -234,6 +253,7 @@ interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppPulseRoute: typeof AppPulseRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppSeatIdRoute: typeof AppSeatIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -245,6 +265,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppPulseRoute: AppPulseRoute,
   AppIndexRoute: AppIndexRoute,
+  AppSeatIdRoute: AppSeatIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -256,3 +277,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
