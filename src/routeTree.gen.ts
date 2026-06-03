@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppThoughtsRouteImport } from './routes/app.thoughts'
 import { Route as AppPulseRouteImport } from './routes/app.pulse'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppMy25RouteImport } from './routes/app.my25'
@@ -19,6 +20,7 @@ import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
 import { Route as AppGamesRouteImport } from './routes/app.games'
 import { Route as AppCapsulesRouteImport } from './routes/app.capsules'
+import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -33,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThoughtsRoute = AppThoughtsRouteImport.update({
+  id: '/thoughts',
+  path: '/thoughts',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPulseRoute = AppPulseRouteImport.update({
@@ -70,6 +77,11 @@ const AppCapsulesRoute = AppCapsulesRouteImport.update({
   path: '/capsules',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSeatIdRoute = AppSeatIdRouteImport.update({
+  id: '/seat/$id',
+  path: '/seat/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,7 +93,9 @@ export interface FileRoutesByFullPath {
   '/app/my25': typeof AppMy25Route
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
+  '/app/thoughts': typeof AppThoughtsRoute
   '/app/': typeof AppIndexRoute
+  '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,7 +106,9 @@ export interface FileRoutesByTo {
   '/app/my25': typeof AppMy25Route
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
+  '/app/thoughts': typeof AppThoughtsRoute
   '/app': typeof AppIndexRoute
+  '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,7 +121,9 @@ export interface FileRoutesById {
   '/app/my25': typeof AppMy25Route
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
+  '/app/thoughts': typeof AppThoughtsRoute
   '/app/': typeof AppIndexRoute
+  '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,7 +137,9 @@ export interface FileRouteTypes {
     | '/app/my25'
     | '/app/profile'
     | '/app/pulse'
+    | '/app/thoughts'
     | '/app/'
+    | '/app/seat/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -130,7 +150,9 @@ export interface FileRouteTypes {
     | '/app/my25'
     | '/app/profile'
     | '/app/pulse'
+    | '/app/thoughts'
     | '/app'
+    | '/app/seat/$id'
   id:
     | '__root__'
     | '/'
@@ -142,7 +164,9 @@ export interface FileRouteTypes {
     | '/app/my25'
     | '/app/profile'
     | '/app/pulse'
+    | '/app/thoughts'
     | '/app/'
+    | '/app/seat/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/thoughts': {
+      id: '/app/thoughts'
+      path: '/thoughts'
+      fullPath: '/app/thoughts'
+      preLoaderRoute: typeof AppThoughtsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pulse': {
@@ -222,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCapsulesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/seat/$id': {
+      id: '/app/seat/$id'
+      path: '/seat/$id'
+      fullPath: '/app/seat/$id'
+      preLoaderRoute: typeof AppSeatIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -233,7 +271,9 @@ interface AppRouteChildren {
   AppMy25Route: typeof AppMy25Route
   AppProfileRoute: typeof AppProfileRoute
   AppPulseRoute: typeof AppPulseRoute
+  AppThoughtsRoute: typeof AppThoughtsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppSeatIdRoute: typeof AppSeatIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -244,7 +284,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppMy25Route: AppMy25Route,
   AppProfileRoute: AppProfileRoute,
   AppPulseRoute: AppPulseRoute,
+  AppThoughtsRoute: AppThoughtsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppSeatIdRoute: AppSeatIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

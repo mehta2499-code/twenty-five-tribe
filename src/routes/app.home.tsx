@@ -76,7 +76,8 @@ function TheTable() {
           return (
             <Link
               key={f.id}
-              to="/app/my25"
+              to="/app/seat/$id"
+              params={{ id: f.id }}
               className="absolute"
               style={{
                 left: `${x}%`,
@@ -123,19 +124,21 @@ function RelationshipMoments() {
         {RELATIONSHIP_MOMENTS.map((m) => {
           const f = FRIENDS.find((x) => x.id === m.friendId)!;
           return (
-            <li key={m.id} className="flex items-start gap-4">
-              <div className="pt-1 shrink-0">
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={36} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-display text-cream" style={{ fontSize: 18, lineHeight: 1.35 }}>
-                  {m.text}
-                </p>
-                <p className="font-display italic mt-1"
-                   style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                  {m.when}
-                </p>
-              </div>
+            <li key={m.id}>
+              <Link to="/app/seat/$id" params={{ id: f.id }} className="flex items-start gap-4">
+                <div className="pt-1 shrink-0">
+                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={36} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-display text-cream" style={{ fontSize: 18, lineHeight: 1.35 }}>
+                    {m.text}
+                  </p>
+                  <p className="font-display italic mt-1"
+                     style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                    {m.when}
+                  </p>
+                </div>
+              </Link>
             </li>
           );
         })}
