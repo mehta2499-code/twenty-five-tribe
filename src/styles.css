@@ -306,3 +306,31 @@
 }
 
 * { transition-timing-function: ease-in-out; }
+
+/* === Living room additions === */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --font-display: "Cormorant Garamond", Georgia, ui-serif, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* The Table — felt surface */
+.table-felt {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 50%, rgba(226,184,115,0.10) 0%, rgba(226,184,115,0.04) 40%, transparent 70%),
+    radial-gradient(ellipse 90% 70% at 50% 50%, #14293E 0%, #0E2236 60%, #091624 100%);
+}
+.candle-glow {
+  background: radial-gradient(circle, rgba(226,184,115,0.55) 0%, rgba(226,184,115,0.15) 40%, transparent 70%);
+  filter: blur(1px);
+}
+.seat-chip {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--accent-gold);
+  letter-spacing: 0.02em;
+}
+.hairline { height: 1px; background: linear-gradient(90deg, transparent, var(--border-cool) 20%, var(--border-cool) 80%, transparent); }
+.text-cream { color: var(--accent-cream); }
