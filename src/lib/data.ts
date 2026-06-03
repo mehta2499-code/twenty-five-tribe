@@ -276,8 +276,59 @@ export type RelationshipMoment = {
 };
 
 export const RELATIONSHIP_MOMENTS: RelationshipMoment[] = [
-  { id: "rm1", friendId: "1", text: "Aman thought about Rahul today.", when: "this morning" },
-  { id: "rm2", friendId: "2", text: "Priya joined your table.",         when: "yesterday" },
-  { id: "rm3", friendId: "5", text: "Simran described you as 'Always Shows Up'.", when: "two days ago" },
-  { id: "rm4", friendId: "9", text: "Ananya remembered the night you called at 1 AM.", when: "this week" },
+  { id: "rm1", friendId: "1", text: "Rahul described you as 'The one who always shows up'.", when: "this morning" },
+  { id: "rm2", friendId: "2", text: "Priya reserved a seat for Simran.",                     when: "yesterday" },
+  { id: "rm3", friendId: "9", text: "Ananya remembered your Goa trip.",                       when: "two days ago" },
+  { id: "rm4", friendId: "11", text: "Your friendship with Kabir turned 10 years old.",       when: "this week" },
+  { id: "rm5", friendId: "4", text: "Neha thought about you this week.",                      when: "Sunday" },
 ];
+
+/** "Thought of you" log — quiet pings, never notifications */
+export type Thought = {
+  id: string;
+  friendId: string;
+  direction: "from" | "to";
+  note?: string;
+  when: string;
+};
+export const THOUGHTS: Thought[] = [
+  { id: "t1", friendId: "1",  direction: "from", note: "saw a chai stall that reminded me of you", when: "this morning" },
+  { id: "t2", friendId: "9",  direction: "from", note: "the old Goa playlist came on shuffle",     when: "yesterday" },
+  { id: "t3", friendId: "4",  direction: "to",                                                       when: "two days ago" },
+  { id: "t4", friendId: "11", direction: "from", note: "ten years. of you. of us.",                when: "Sunday" },
+  { id: "t5", friendId: "13", direction: "to",                                                       when: "last week" },
+  { id: "t6", friendId: "2",  direction: "from", note: "the rain in Bombay, the auto in Mahim",    when: "last week" },
+];
+
+/** Why this person sits at your table */
+export const SEAT_REASONS: Record<string, string> = {
+  "1":  "Because nobody answers a 2 AM call quite like him.",
+  "2":  "Because she remembers the small things you forgot you said.",
+  "3":  "Day one. Before any of this.",
+  "4":  "Because she makes the loud world feel quiet.",
+  "5":  "Because she says the thing nobody else will.",
+  "6":  "Because his steadiness has held you up more than once.",
+  "9":  "Because some friendships are seasons. You're living in hers.",
+  "11": "Ten years. Same person. Different lives. Still each other's.",
+  "13": "Family — the kind you didn't have to be born into.",
+  "15": "Because the inside jokes have outlived three cities.",
+};
+
+/** Mutual descriptions — how this person has named you, and you them */
+export const MUTUAL_DESCRIPTIONS: Record<string, { they: string[]; you: string[] }> = {
+  default: {
+    they: ["The one who always shows up.", "Steady.", "Home, kind of."],
+    you:  ["A safe place.", "Funny in a way nobody else gets.", "The first call."],
+  },
+};
+
+/** Friendship timeline events */
+export const FRIENDSHIP_TIMELINE: Record<string, { year: string; text: string }[]> = {
+  default: [
+    { year: "Year 1",  text: "Met at a house party neither of you wanted to be at." },
+    { year: "Year 3",  text: "The trip where nobody cancelled." },
+    { year: "Year 5",  text: "The 1 AM call. The job. The crying." },
+    { year: "Year 7",  text: "Different cities. Same group chat." },
+    { year: "Today",   text: "Still here. Still seated." },
+  ],
+};
