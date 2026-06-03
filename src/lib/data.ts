@@ -251,3 +251,33 @@ export const TRIVIA_QUESTIONS: Record<string, TriviaQ[]> = {
     { q: "What does 'achha theek hai' really mean?",              options: ["Ok fine","I'm done arguing","Whatever you say","All of the above"], answer: 3 },
   ],
 };
+
+// ============== Relationship tags & moments (warm layer) ==============
+export type RelationshipTag = "Family" | "Ride or Die" | "Safe Place" | "Soul Mirror" | "Day One" | "Chosen" | "Anchor";
+
+export const RELATIONSHIP_TAGS: Record<string, RelationshipTag> = {
+  "1": "Ride or Die",
+  "2": "Soul Mirror",
+  "3": "Day One",
+  "4": "Safe Place",
+  "6": "Chosen",
+  "9": "Anchor",
+  "13": "Family",
+  "15": "Ride or Die",
+  "18": "Safe Place",
+  "20": "Day One",
+};
+
+export type RelationshipMoment = {
+  id: string;
+  friendId: string;
+  text: string;
+  when: string;
+};
+
+export const RELATIONSHIP_MOMENTS: RelationshipMoment[] = [
+  { id: "rm1", friendId: "1", text: "Aman thought about Rahul today.", when: "this morning" },
+  { id: "rm2", friendId: "2", text: "Priya joined your table.",         when: "yesterday" },
+  { id: "rm3", friendId: "5", text: "Simran described you as 'Always Shows Up'.", when: "two days ago" },
+  { id: "rm4", friendId: "9", text: "Ananya remembered the night you called at 1 AM.", when: "this week" },
+];
