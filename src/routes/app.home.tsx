@@ -76,7 +76,8 @@ function TheTable() {
           return (
             <Link
               key={f.id}
-              to="/app/my25"
+              to="/app/seat/$id"
+              params={{ id: f.id }}
               className="absolute"
               style={{
                 left: `${x}%`,
