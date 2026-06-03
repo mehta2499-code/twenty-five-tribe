@@ -45,20 +45,23 @@
 :root {
   --radius: 1rem;
 
-  /* Steel-blue editorial palette */
-  --bg-primary: #0D1820;
-  --bg-card: #132030;
-  --bg-surface: #1A2D3E;
+  /* Warm editorial palette — a digital living room */
+  --bg-primary: #0B1A2A;     /* deep navy night */
+  --bg-card:    #122538;     /* candle-lit surface */
+  --bg-surface: #1A3048;
+  --bg-cream:   #F3E9D2;     /* warm cream highlight */
+  --bg-felt:    #0E2236;     /* table felt */
 
   --accent-purple: #7B6FD4;
-  --accent-gold:   #D4A96A;
+  --accent-gold:   #E2B873;  /* warmer gold */
+  --accent-cream:  #F3E9D2;
   --accent-red:    #C94040;
   --accent-teal:   #1D9E75;
 
-  --text-primary:   #F2F0EB;
-  --text-secondary: #8A9CAA;
-  --text-muted:     #3D5060;
-  --border-cool: rgba(122,150,170,0.15);
+  --text-primary:   #F3E9D2;  /* cream as default text */
+  --text-secondary: #9FB0BF;
+  --text-muted:     #4A5E72;
+  --border-cool: rgba(243,233,210,0.08);
 
   /* Shadcn token bindings */
   --background: var(--bg-primary);
