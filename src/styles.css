@@ -2,6 +2,8 @@
 @source "../src";
 @import "tw-animate-css";
 
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter+Tight:wght@300;400;500;600&display=swap');
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -38,30 +40,37 @@
   --color-tag-milestone: var(--tag-milestone);
   --color-tag-mood: var(--tag-mood);
   --color-tag-thought: var(--tag-thought);
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: Georgia, "Times New Roman", ui-serif, serif;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, ui-serif, serif;
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 0.75rem;
 
-  /* Warm editorial palette — a digital living room */
-  --bg-primary: #0B1A2A;     /* deep navy night */
-  --bg-card:    #122538;     /* candle-lit surface */
-  --bg-surface: #1A3048;
-  --bg-cream:   #F3E9D2;     /* warm cream highlight */
-  --bg-felt:    #0E2236;     /* table felt */
+  /* Aged paper at dusk — warm, lived-in, Penguin-Classics-by-candlelight */
+  --bg-primary: #14100C;      /* warm near-black, walnut ink */
+  --bg-card:    #1E1814;      /* card surface, a shade warmer */
+  --bg-surface: #28201A;      /* raised surface */
+  --bg-cream:   #EFE6D2;      /* warm cream highlight (the page) */
+  --bg-felt:    #1A1310;
 
-  --accent-purple: #7B6FD4;
-  --accent-gold:   #E2B873;  /* warmer gold */
-  --accent-cream:  #F3E9D2;
-  --accent-red:    #C94040;
-  --accent-teal:   #1D9E75;
+  /* Accents — two-color discipline + supporting warmth */
+  --accent-oxblood: #8B2D2A;  /* the sacred mark */
+  --accent-bronze:  #C49560;  /* aged brass, candlelight */
+  --accent-ember:   #D87B3C;  /* a flicker, used sparingly */
+  --accent-sage:    #7C8F6F;  /* quiet contrast for "alive" states */
 
-  --text-primary:   #F3E9D2;  /* cream as default text */
-  --text-secondary: #9FB0BF;
-  --text-muted:     #4A5E72;
-  --border-cool: rgba(243,233,210,0.08);
+  /* Back-compat aliases (older components still reference these names) */
+  --accent-purple: var(--accent-oxblood);
+  --accent-gold:   var(--accent-bronze);
+  --accent-cream:  var(--bg-cream);
+  --accent-red:    var(--accent-oxblood);
+  --accent-teal:   var(--accent-sage);
+
+  --text-primary:   #EFE6D2;
+  --text-secondary: #B8A998;
+  --text-muted:     #6B5E51;
+  --border-cool: rgba(239,230,210,0.07);
 
   /* Shadcn token bindings */
   --background: var(--bg-primary);
@@ -72,27 +81,27 @@
   --card-foreground: var(--text-primary);
   --popover: var(--bg-card);
   --popover-foreground: var(--text-primary);
-  --primary: var(--accent-purple);
-  --primary-foreground: #FFFFFF;
-  --primary-glow: #A29AE5;
+  --primary: var(--accent-oxblood);
+  --primary-foreground: var(--bg-cream);
+  --primary-glow: #B85148;
   --secondary: var(--bg-surface);
   --secondary-foreground: var(--text-primary);
   --muted: var(--bg-surface);
   --muted-foreground: var(--text-secondary);
-  --accent: var(--accent-gold);
-  --accent-foreground: #0D1820;
-  --destructive: var(--accent-red);
+  --accent: var(--accent-bronze);
+  --accent-foreground: #14100C;
+  --destructive: var(--accent-oxblood);
   --border: var(--border-cool);
   --input: var(--bg-surface);
-  --ring: var(--accent-purple);
+  --ring: var(--accent-bronze);
 
-  --drift-active: var(--accent-teal);
-  --drift-quiet:  var(--accent-gold);
-  --drift-gone:   var(--accent-red);
+  --drift-active: var(--accent-sage);
+  --drift-quiet:  var(--accent-bronze);
+  --drift-gone:   var(--accent-oxblood);
 
-  --tag-life:      var(--accent-teal);
-  --tag-milestone: var(--accent-gold);
-  --tag-mood:      var(--accent-purple);
+  --tag-life:      var(--accent-sage);
+  --tag-milestone: var(--accent-bronze);
+  --tag-mood:      var(--accent-ember);
   --tag-thought:   var(--text-muted);
 }
 
@@ -107,230 +116,288 @@
   }
   body {
     font-family: var(--font-sans);
+    font-feature-settings: "ss01", "ss02";
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* faint paper grain — barely there, but the whole app feels warmer */
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(196,149,96,0.06) 0%, transparent 55%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.90  0 0 0 0 0.82  0 0 0 0.035 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    background-attachment: fixed;
   }
+  ::selection { background: var(--accent-bronze); color: #14100C; }
 }
 
-/* Custom app utilities (plain CSS, not in @layer utilities to avoid v4 utility resolution) */
-  .font-display { font-family: var(--font-display); letter-spacing: -0.005em; }
-  .font-serif   { font-family: var(--font-display); }
+/* === Typographic personality === */
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: "opsz" 96, "SOFT" 50;
+  letter-spacing: -0.012em;
+}
+.font-serif { font-family: var(--font-display); }
 
-  /* Spaced editorial caps label */
-  .label-caps {
-    font-family: var(--font-sans);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-  }
+/* The italic carries the brand's mischief — opt into more swash */
+.font-display.italic, .font-display em, em.font-display {
+  font-variation-settings: "opsz" 96, "SOFT" 80;
+}
 
-  .text-warm    { color: var(--text-primary); }
-  .text-cool    { color: var(--text-secondary); }
-  .text-faint   { color: var(--text-muted); }
+.label-caps {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 
-  /* Wordmark glow */
-  .text-glow-25 {
-    text-shadow: 0 0 60px rgba(123,111,212,0.45),
-                 0 0 18px rgba(123,111,212,0.25);
-  }
-  .text-glow-purple {
-    text-shadow: 0 0 28px rgba(123,111,212,0.55);
-  }
+.text-warm  { color: var(--text-primary); }
+.text-cool  { color: var(--text-secondary); }
+.text-faint { color: var(--text-muted); }
+.text-cream { color: var(--bg-cream); }
+.text-bronze { color: var(--accent-bronze); }
+.text-oxblood { color: var(--accent-oxblood); }
 
-  /* Editorial card */
-  .card-editorial {
-    background: var(--bg-card);
-    border-radius: 16px;
-    border: none;
-    position: relative;
-  }
-  .accent-bar-gold    { border-left: 4px solid var(--accent-gold); }
-  .accent-bar-teal    { border-left: 4px solid var(--accent-teal); }
-  .accent-bar-purple  { border-left: 4px solid var(--accent-purple); }
-  .accent-bar-muted   { border-left: 4px solid var(--text-muted); }
-  .accent-bar-red     { border-left: 4px solid var(--accent-red); }
+/* Wordmark */
+.text-glow-25 {
+  text-shadow: 0 0 60px rgba(216,123,60,0.18), 0 0 18px rgba(196,149,96,0.22);
+}
+.text-glow-purple { text-shadow: 0 0 28px rgba(216,123,60,0.35); }
 
-  /* Glass shims kept for back-compat */
-  .glass {
-    background: var(--bg-card);
-    border: 1px solid var(--border-cool);
-    border-radius: 16px;
-  }
-  .glass-strong {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-cool);
-    border-radius: 16px;
-  }
-  .glass-soft {
-    background: rgba(26,45,62,0.65);
-    border: 1px solid var(--border-cool);
-    border-radius: 14px;
-  }
-  .glass-row {
-    background: var(--bg-card);
-    border: 1px solid var(--border-cool);
-  }
-  .card-premium {
-    background: var(--bg-card);
-    border-radius: 16px;
-    border: 1px solid var(--border-cool);
-    position: relative;
-    overflow: hidden;
-  }
+/* === Cards (kept for back-compat; muted, almost invisible) === */
+.card-editorial {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-cool);
+  position: relative;
+}
+.card-premium {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-cool);
+  position: relative;
+  overflow: hidden;
+}
+.glass, .glass-strong, .glass-soft, .glass-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border-cool);
+  border-radius: 12px;
+}
 
-  .hr-thin {
-    border: 0;
-    height: 1px;
-    background: var(--border-cool);
-  }
+.accent-bar-gold   { border-left: 3px solid var(--accent-bronze); }
+.accent-bar-teal   { border-left: 3px solid var(--accent-sage); }
+.accent-bar-purple { border-left: 3px solid var(--accent-oxblood); }
+.accent-bar-muted  { border-left: 3px solid var(--text-muted); }
+.accent-bar-red    { border-left: 3px solid var(--accent-oxblood); }
 
-  /* Avatar rings */
-  .ring-active {
-    background: linear-gradient(135deg, var(--accent-gold), var(--accent-purple));
-    padding: 2px;
-    border-radius: 9999px;
-  }
-  .ring-quiet {
-    background: var(--border-cool);
-    padding: 2px;
-    border-radius: 9999px;
-  }
-  .ring-purple {
-    background: linear-gradient(135deg, var(--accent-purple), #A29AE5);
-    padding: 2px;
-    border-radius: 9999px;
-  }
-  .ring-drift {
-    background: linear-gradient(135deg, var(--accent-red), var(--accent-gold));
-    padding: 2px;
-    border-radius: 9999px;
-    box-shadow: 0 0 16px rgba(201,64,64,0.45);
-  }
-  .ring-gold-glow {
-    box-shadow: 0 0 12px rgba(212,169,106,0.35);
-    border-radius: 9999px;
-  }
+.hr-thin { border: 0; height: 1px; background: var(--border-cool); }
 
-  /* Editorial buttons */
-  .btn-coral {
-    background: var(--accent-purple);
-    color: #FFFFFF;
-    border-radius: 999px;
-  }
-  .btn-gold {
-    background: var(--accent-gold);
-    color: #0D1820;
-    border-radius: 999px;
-  }
-  .fab-gradient {
-    background: linear-gradient(135deg, var(--accent-purple), #4F45A3);
-    color: #FFFFFF;
-    box-shadow: 0 10px 32px rgba(123,111,212,0.45);
-  }
-  .btn-capsule {
-    background: linear-gradient(135deg, #4F45A3, #7B6FD4);
-    color: #FFFFFF;
-    box-shadow: 0 10px 30px rgba(79,69,163,0.45);
-    border-radius: 999px;
-  }
+/* === Avatar rings === */
+.ring-active {
+  background: linear-gradient(135deg, var(--accent-bronze), var(--accent-ember));
+  padding: 2px;
+  border-radius: 9999px;
+}
+.ring-quiet { background: var(--border-cool); padding: 2px; border-radius: 9999px; }
+.ring-purple {
+  background: linear-gradient(135deg, var(--accent-oxblood), #B85148);
+  padding: 2px; border-radius: 9999px;
+}
+.ring-drift {
+  background: linear-gradient(135deg, var(--accent-oxblood), var(--accent-bronze));
+  padding: 2px; border-radius: 9999px;
+  box-shadow: 0 0 16px rgba(139,45,42,0.35);
+}
+.ring-gold-glow {
+  box-shadow: 0 0 14px rgba(196,149,96,0.45), 0 0 32px rgba(216,123,60,0.25);
+  border-radius: 9999px;
+}
 
-  /* Tag accent glows kept lite */
-  .accent-milestone { box-shadow: inset 4px 0 0 var(--accent-gold); }
-  .accent-life      { box-shadow: inset 4px 0 0 var(--accent-teal); }
-  .accent-mood      { box-shadow: inset 4px 0 0 var(--accent-purple); }
-  .accent-thought   { box-shadow: inset 4px 0 0 var(--text-muted); }
-  .accent-drift {
-    box-shadow: inset 4px 0 0 var(--accent-red), 0 0 18px rgba(201,64,64,0.25);
-  }
+/* === Buttons === */
+.btn-coral, .btn-oxblood {
+  background: var(--accent-oxblood);
+  color: var(--bg-cream);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.btn-gold, .btn-bronze {
+  background: var(--accent-bronze);
+  color: #14100C;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+.btn-cream {
+  background: var(--bg-cream);
+  color: #14100C;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+.fab-gradient {
+  background: linear-gradient(135deg, var(--accent-oxblood), #5A1E1C);
+  color: var(--bg-cream);
+  box-shadow: 0 10px 32px rgba(139,45,42,0.45);
+}
+.btn-capsule {
+  background: linear-gradient(135deg, var(--accent-oxblood), var(--accent-bronze));
+  color: var(--bg-cream);
+  box-shadow: 0 10px 30px rgba(139,45,42,0.35);
+  border-radius: 999px;
+}
 
-  .header-fade {
-    background: linear-gradient(to bottom, rgba(13,24,32,0.85) 0%, rgba(13,24,32,0) 100%);
-  }
+/* === Tag bars === */
+.accent-milestone { box-shadow: inset 3px 0 0 var(--accent-bronze); }
+.accent-life      { box-shadow: inset 3px 0 0 var(--accent-sage); }
+.accent-mood      { box-shadow: inset 3px 0 0 var(--accent-ember); }
+.accent-thought   { box-shadow: inset 3px 0 0 var(--text-muted); }
+.accent-drift     { box-shadow: inset 3px 0 0 var(--accent-oxblood), 0 0 18px rgba(139,45,42,0.18); }
 
-  /* Underlined letterpress input */
-  .input-letterpress {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border-cool);
-    color: var(--text-primary);
-    font-family: var(--font-display);
-    font-size: 28px;
-    text-align: center;
-    outline: none;
-    padding: 12px 0;
-    width: 100%;
-  }
-  .input-letterpress::placeholder { color: var(--text-muted); }
-  .input-letterpress:focus { border-bottom-color: var(--accent-purple); }
-/* end custom utilities */
+.header-fade {
+  background: linear-gradient(to bottom, rgba(20,16,12,0.92) 0%, rgba(20,16,12,0) 100%);
+}
 
+/* Letterpress input — for ceremony screens */
+.input-letterpress {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-cool);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 28px;
+  text-align: center;
+  outline: none;
+  padding: 12px 0;
+  width: 100%;
+}
+.input-letterpress::placeholder { color: var(--text-muted); font-style: italic; }
+.input-letterpress:focus { border-bottom-color: var(--accent-bronze); }
+
+/* === Motion (slow, weighted, never bouncy) === */
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 }
 .shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+  background: linear-gradient(90deg, rgba(239,230,210,0.04), rgba(239,230,210,0.12), rgba(239,230,210,0.04));
   background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
+  animation: shimmer 2.4s linear infinite;
 }
 
 @keyframes soft-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-soft-in { animation: soft-in 0.4s ease-out both; }
+.animate-soft-in { animation: soft-in 0.6s cubic-bezier(0.22,0.61,0.36,1) both; }
 
 @keyframes heart-pop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.3); }
-  100% { transform: scale(1); }
+  0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); }
 }
-.animate-heart-pop { animation: heart-pop 0.32s ease-out; }
+.animate-heart-pop { animation: heart-pop 0.4s cubic-bezier(0.22,0.61,0.36,1); }
 
-@keyframes purple-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(123,111,212,0.0), 0 0 18px rgba(123,111,212,0.45); }
-  50%      { box-shadow: 0 0 0 8px rgba(123,111,212,0.10), 0 0 36px rgba(123,111,212,0.7); }
+@keyframes ember-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(216,123,60,0.0), 0 0 18px rgba(196,149,96,0.35); }
+  50%     { box-shadow: 0 0 0 8px rgba(216,123,60,0.06), 0 0 36px rgba(216,123,60,0.55); }
 }
-.animate-purple-pulse { animation: purple-pulse 1.8s ease-in-out infinite; }
-.animate-coral-pulse  { animation: purple-pulse 1.8s ease-in-out infinite; }
+.animate-purple-pulse, .animate-coral-pulse, .animate-ember-pulse {
+  animation: ember-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes candle-flicker {
+  0%, 100% { opacity: 0.95; transform: scale(1); }
+  45%      { opacity: 1; transform: scale(1.04); }
+  55%      { opacity: 0.92; transform: scale(0.99); }
+}
+.candle-flicker { animation: candle-flicker 4.2s ease-in-out infinite; }
+
+@keyframes die-spin {
+  0%   { transform: rotate(0deg) scale(1); }
+  60%  { transform: rotate(540deg) scale(1.08); }
+  100% { transform: rotate(720deg) scale(1); }
+}
+.die-spinning { animation: die-spin 1.4s cubic-bezier(0.22,0.61,0.36,1); }
+
+@keyframes orbit-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.orbit-spinning { animation: orbit-spin 1.4s cubic-bezier(0.22,0.61,0.36,1); }
 
 @keyframes blink-caret {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%, 100% { opacity: 1; } 50% { opacity: 0; }
 }
 .caret::after {
-  content: "▍";
-  margin-left: 2px;
+  content: "▍"; margin-left: 2px;
   animation: blink-caret 0.9s steps(1) infinite;
-  color: var(--accent-purple);
+  color: var(--accent-bronze);
 }
 
-* { transition-timing-function: ease-in-out; }
+* { transition-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1); }
 
-/* === Living room additions === */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
-
-:root {
-  --font-display: "Cormorant Garamond", Georgia, ui-serif, serif;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-}
-
-/* The Table — felt surface */
+/* === The Table — felt surface, candlelight === */
 .table-felt {
   background:
-    radial-gradient(ellipse 70% 55% at 50% 50%, rgba(226,184,115,0.10) 0%, rgba(226,184,115,0.04) 40%, transparent 70%),
-    radial-gradient(ellipse 90% 70% at 50% 50%, #14293E 0%, #0E2236 60%, #091624 100%);
+    radial-gradient(ellipse 65% 50% at 50% 50%, rgba(216,123,60,0.10) 0%, rgba(196,149,96,0.04) 40%, transparent 72%),
+    radial-gradient(ellipse 90% 70% at 50% 50%, #221813 0%, #1A130F 60%, #120C09 100%);
+  position: relative;
+}
+.table-felt::after {
+  /* faint ring engraving */
+  content: "";
+  position: absolute; inset: 6%;
+  border-radius: 50%;
+  border: 1px solid rgba(196,149,96,0.06);
+  pointer-events: none;
 }
 .candle-glow {
-  background: radial-gradient(circle, rgba(226,184,115,0.55) 0%, rgba(226,184,115,0.15) 40%, transparent 70%);
-  filter: blur(1px);
+  background: radial-gradient(circle, rgba(216,123,60,0.55) 0%, rgba(196,149,96,0.18) 40%, transparent 70%);
+  filter: blur(2px);
 }
+
+/* italic chip used for seat role labels */
 .seat-chip {
   font-family: var(--font-display);
   font-style: italic;
   font-size: 11px;
-  color: var(--accent-gold);
-  letter-spacing: 0.02em;
+  font-weight: 400;
+  color: var(--accent-bronze);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.7);
 }
-.hairline { height: 1px; background: linear-gradient(90deg, transparent, var(--border-cool) 20%, var(--border-cool) 80%, transparent); }
-.text-cream { color: var(--accent-cream); }
+
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-cool) 20%, var(--border-cool) 80%, transparent);
+}
+
+/* Empty-chair glyph for unfilled seats with no label */
+.empty-chair {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px dashed rgba(196,149,96,0.25);
+  background: rgba(20,16,12,0.4);
+}
+.empty-chair-labeled {
+  border-color: rgba(196,149,96,0.45);
+  background: rgba(196,149,96,0.05);
+}
+
+/* Roll-the-Table die affordance */
+.die-tile {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2A2018, #1A130F);
+  border: 1px solid rgba(196,149,96,0.25);
+  box-shadow: inset 0 1px 0 rgba(239,230,210,0.06), 0 4px 14px rgba(0,0,0,0.5);
+  color: var(--accent-bronze);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+}
+
+/* Reverence overlay for the Empty Chair Sunday ritual */
+.reverence-veil {
+  background: radial-gradient(ellipse at 50% 38%, rgba(20,16,12,0.6) 0%, rgba(10,7,5,0.96) 70%);
+}
