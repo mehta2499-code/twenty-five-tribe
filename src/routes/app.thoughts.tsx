@@ -37,10 +37,7 @@ function ThoughtsPage() {
 
 
       <section className="px-6 mt-10">
-        <p className="seat-chip text-center tracking-[0.3em] uppercase mb-5"
-           style={{ fontStyle: "normal", fontSize: 10 }}>
-          They thought of you
-        </p>
+        <p className="label-caps text-center mb-5">{VOICE.thoughts.incomingHeader}</p>
         <ul className="space-y-7">
           {from.map((t) => {
             const f = FRIENDS.find((x) => x.id === t.friendId)!;
@@ -54,7 +51,7 @@ function ThoughtsPage() {
                     </p>
                     {t.note && (
                       <p className="font-display italic mt-1" style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.45 }}>
-                        “{t.note}”
+                        "{t.note}"
                       </p>
                     )}
                     <p className="font-display italic mt-1" style={{ color: "var(--text-muted)", fontSize: 12 }}>
@@ -71,10 +68,7 @@ function ThoughtsPage() {
       <div className="hairline mx-12 mt-12" />
 
       <section className="px-6 mt-12">
-        <p className="seat-chip text-center tracking-[0.3em] uppercase mb-5"
-           style={{ fontStyle: "normal", fontSize: 10 }}>
-          You thought of them
-        </p>
+        <p className="label-caps text-center mb-5">{VOICE.thoughts.outgoingHeader}</p>
         <ul className="space-y-5">
           {to.map((t) => {
             const f = FRIENDS.find((x) => x.id === t.friendId)!;
@@ -90,7 +84,7 @@ function ThoughtsPage() {
                   </p>
                 </div>
                 <Link to="/app/seat/$id" params={{ id: f.id }} className="font-display italic"
-                      style={{ color: "var(--accent-gold)", fontSize: 13 }}>
+                      style={{ color: "var(--accent-bronze)", fontSize: 13 }}>
                   sit with them →
                 </Link>
               </li>
@@ -100,9 +94,10 @@ function ThoughtsPage() {
       </section>
 
       <p className="text-center font-display italic mt-14 px-8"
-         style={{ color: "var(--text-muted)", fontSize: 12 }}>
-        No likes. No reads. Just a hand on your shoulder.
+         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.03em" }}>
+        {VOICE.thoughts.footer}
       </p>
     </div>
   );
 }
+
