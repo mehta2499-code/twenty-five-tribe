@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { ME, SEATS_FILLED, SEATS_TOTAL, FRIENDSHIP_SCORE } from "@/lib/data";
+import { ME, SEATS_FILLED, SEATS_TOTAL, ME_DESCRIPTIONS, QUIETLY } from "@/lib/data";
+import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/profile")({
   component: Profile,
@@ -10,66 +11,97 @@ export const Route = createFileRoute("/app/profile")({
 function spaced(s: string) { return s.toUpperCase().split("").join(" "); }
 
 const ITEMS: { label: string; note: string; to?: "/app/capsules" }[] = [
-  { label: "Memory Capsules", note: "Save a friendship forever.", to: "/app/capsules" },
-  { label: "Privacy", note: "Everything here is private. Promise." },
-  { label: "Notifications", note: "Only when it matters." },
-  { label: "Reshuffle your 25", note: "It's allowed. Encouraged, even." },
+  { label: "Memory Capsules", note: "The friendships you've made permanent.", to: "/app/capsules" },
+  { label: "Privacy",         note: "Nothing here is browsable by strangers." },
+  { label: "Notifications",   note: "Sunday at 9pm. That's it." },
+  { label: "Reshuffle the room", note: "Seats are yours. Rearrange anytime." },
 ];
 
-function FriendshipScoreCard() {
-  const pct = (FRIENDSHIP_SCORE.value / FRIENDSHIP_SCORE.max) * 100;
+function HowTheySeeYou() {
   return (
-    <div className="card-editorial accent-bar-purple p-5 mt-7">
-      <div className="flex items-center gap-2">
-        <Sparkles size={12} style={{ color: "#7B6FD4" }} />
-        <span className="label-caps" style={{ color: "#7B6FD4" }}>{spaced("Friendship Score")}</span>
+    <section className="mt-9">
+      <p className="label-caps text-center">{spaced(VOICE.you.seeingMe)}</p>
+      <ul className="mt-5 space-y-4">
+        {ME_DESCRIPTIONS.map((d, i) => (
+          <li key={i} className="text-center px-4">
+            <p className="font-display italic text-cream"
+               style={{ fontSize: 19, lineHeight: 1.45, letterSpacing: "-0.01em" }}>
+              "{d.quote}"
+            </p>
+            <p className="font-display italic mt-1"
+               style={{ color: "var(--text-muted)", fontSize: 12 }}>
+              — {d.from}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function QuietlyHappening() {
+  const items = [
+    { n: QUIETLY.momentsThisMonth, label: "moments this month" },
+    { n: QUIETLY.thoughtsExchanged, label: "thoughts exchanged" },
+    { n: QUIETLY.verdictsCast, label: "verdicts cast" },
+  ];
+  return (
+    <section className="mt-10">
+      <p className="label-caps text-center mb-5">{spaced(VOICE.you.quietly)}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {items.map((i) => (
+          <div key={i.label} className="text-center">
+            <div className="font-display text-cream" style={{ fontSize: 32, lineHeight: 1 }}>
+              {i.n}
+            </div>
+            <div className="font-display italic mt-1.5" style={{ color: "var(--text-muted)", fontSize: 11, lineHeight: 1.3 }}>
+              {i.label}
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="font-display font-bold text-warm text-glow-purple" style={{ fontSize: 56, lineHeight: 1 }}>
-          {FRIENDSHIP_SCORE.value}
-        </span>
-        <span className="font-display italic text-cool" style={{ fontSize: 16 }}> / {FRIENDSHIP_SCORE.max}</span>
-      </div>
-      <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{ background: "#0D1820" }}>
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${pct}%`, background: "linear-gradient(90deg,#7B6FD4,#A29AE5)" }}
-        />
-      </div>
-      <p className="font-display italic text-cool mt-3" style={{ fontSize: 13, lineHeight: 1.55 }}>
-        Grows with trivia, capsules, and rematches. <span className="text-warm">+24 this week.</span>
-      </p>
-    </div>
+    </section>
   );
 }
 
 function Profile() {
   return (
-    <div className="px-5 pt-8 pb-4">
+    <div className="px-5 pt-9 pb-4">
       <div className="flex flex-col items-center text-center">
         <div className="ring-active inline-block">
-          <div className="rounded-full p-[3px]" style={{ background: "#0D1820" }}>
-            <Avatar src={ME.avatar} initials={ME.initials} size={92} />
+          <div className="rounded-full p-[3px]" style={{ background: "var(--bg-primary)" }}>
+            <Avatar src={ME.avatar} initials={ME.initials} size={104} />
           </div>
         </div>
-        <h1 className="mt-4 font-display italic text-warm" style={{ fontSize: 30 }}>You</h1>
-        <p className="label-caps text-cool mt-1.5">{spaced(`${SEATS_FILLED} of ${SEATS_TOTAL} seats filled`)}</p>
+        <h1 className="mt-5 font-display italic text-cream" style={{ fontSize: 36, letterSpacing: "-0.01em" }}>
+          {ME.name}
+        </h1>
+        <p className="label-caps mt-2">{spaced(`seat 0 of ${SEATS_TOTAL} · the head of your table`)}</p>
+        <p className="font-display italic mt-1" style={{ color: "var(--text-muted)", fontSize: 12 }}>
+          {SEATS_FILLED} seats taken so far.
+        </p>
       </div>
 
-      <FriendshipScoreCard />
+      <div className="hairline mx-8 mt-9" />
 
-      <div className="mt-6 card-editorial overflow-hidden">
+      <HowTheySeeYou />
+
+      <div className="hairline mx-8 mt-10" />
+
+      <QuietlyHappening />
+
+      <div className="mt-10 card-editorial overflow-hidden">
         {ITEMS.map((i, idx) => {
           const inner = (
             <>
               <div className="flex-1">
-                <div className="font-display text-warm" style={{ fontSize: 15 }}>{i.label}</div>
-                <div className="font-display italic text-cool mt-0.5" style={{ fontSize: 12 }}>{i.note}</div>
+                <div className="font-display text-cream" style={{ fontSize: 15 }}>{i.label}</div>
+                <div className="font-display italic mt-0.5" style={{ color: "var(--text-muted)", fontSize: 12 }}>{i.note}</div>
               </div>
               <ChevronRight size={16} className="text-cool" />
             </>
           );
-          const cls = "w-full text-left px-4 py-4 hover:bg-white/5 transition flex items-center";
+          const cls = "w-full text-left px-4 py-4 hover:bg-white/[0.03] transition flex items-center";
           const style = { borderTop: idx === 0 ? "none" : "1px solid var(--border-cool)" } as const;
           return i.to ? (
             <Link key={i.label} to={i.to} className={cls} style={style}>{inner}</Link>
@@ -79,11 +111,11 @@ function Profile() {
         })}
       </div>
 
-      <Link to="/" className="block text-center label-caps text-cool mt-8 underline-offset-4 hover:underline">
+      <Link to="/" className="block text-center label-caps mt-8 underline-offset-4 hover:underline">
         {spaced("Sign out")}
       </Link>
-      <p className="text-center font-display italic text-cool mt-6" style={{ fontSize: 11 }}>
-        No followers. No likes. Just 25 humans.
+      <p className="text-center font-display italic mt-6" style={{ color: "var(--text-muted)", fontSize: 11 }}>
+        {VOICE.you.footer}
       </p>
     </div>
   );
