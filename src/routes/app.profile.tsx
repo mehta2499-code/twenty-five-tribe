@@ -10,9 +10,9 @@ export const Route = createFileRoute("/app/profile")({
 
 function spaced(s: string) { return s.toUpperCase().split("").join(" "); }
 
-const ITEMS: { label: string; note: string; to?: "/app/capsules" }[] = [
+const ITEMS: { label: string; note: string; to?: "/app/capsules" | "/app/privacy" }[] = [
   { label: "Memory Capsules", note: "The friendships you've made permanent.", to: "/app/capsules" },
-  { label: "Privacy",         note: "Nothing here is browsable by strangers." },
+  { label: "Privacy",         note: "Screenshots, screen recording, blur.", to: "/app/privacy" },
   { label: "Notifications",   note: "Sunday at 9pm. That's it." },
   { label: "Reshuffle the room", note: "Seats are yours. Rearrange anytime." },
 ];

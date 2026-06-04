@@ -129,12 +129,32 @@ function SeatPage() {
 
       {!isReserved && (
         <>
+          <section className="px-6 mt-10">
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { glyph: "❤",  label: "Thought" },
+                { glyph: "📸", label: "Memory" },
+                { glyph: "🎤", label: "Voice" },
+                { glyph: "🎵", label: "Song" },
+              ].map((a) => (
+                <button key={a.label}
+                  className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
+                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}>
+                  <span style={{ fontSize: 18 }}>{a.glyph}</span>
+                  <span className="font-display italic text-cool" style={{ fontSize: 11 }}>{a.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
           <Section label="why they're here">
             <p className="font-display italic text-cream text-center mx-auto max-w-[22rem]"
                style={{ fontSize: 22, lineHeight: 1.45 }}>
               "{reason}"
             </p>
           </Section>
+
+
 
           <Section label="how they see you">
             <ul className="space-y-3 text-center">
