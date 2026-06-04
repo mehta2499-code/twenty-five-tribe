@@ -95,7 +95,7 @@ function TheTable({ onRoll, rolling }: { onRoll: () => void; rolling: boolean })
           if (slot.kind === "filled") {
             const f = slot.friend;
             const tag = RELATIONSHIP_TAGS[f.id];
-            const showLabel = LABELED_SEAT_INDICES.has(i) && !!tag;
+            const showLabel = LABELED_POSITION_INDICES.has(i) && !!tag;
             return (
               <Link
                 key={`f-${f.id}`}
