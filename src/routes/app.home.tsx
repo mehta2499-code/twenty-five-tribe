@@ -23,18 +23,32 @@ function TheTable({ onRoll, rolling }: { onRoll: () => void; rolling: boolean })
   const seated = FRIENDS.slice(0, 14);
   const cx = 50, cy = 50, rx = 42, ry = 36;
 
-  // Build the ring: each position is either a seated friend, a saved-seat (ghost label), or an empty chair.
+  // Distribute 14 filled seats evenly across the 22-slot ring so the table looks
+  // properly populated. Saved-seats win their assigned index; everything else fills
+  // around a Bresenham-style stride.
   const ring = useMemo(() => {
-    const arr: ({ kind: "filled"; friend: typeof FRIENDS[number] } | { kind: "saved"; note: string } | { kind: "empty" })[] = [];
+    const arr: ({ kind: "filled"; friend: typeof FRIENDS[number] } | { kind: "saved"; note: string } | { kind: "empty" })[] =
+      new Array(SEATS).fill(null).map(() => ({ kind: "empty" }));
+
+    for (const s of SAVED_SEATS) {
+      if (s.seatIndex >= 0 && s.seatIndex < SEATS) arr[s.seatIndex] = { kind: "saved", note: s.note };
+    }
+
+    // pick `seated.length` indices spread across remaining empties
+    const remaining: number[] = arr.map((_, i) => i).filter((i) => arr[i].kind === "empty");
+    const need = Math.min(seated.length, remaining.length);
+    const picks = new Set<number>();
+    for (let k = 0; k < need; k++) {
+      const idx = remaining[Math.round((k * remaining.length) / need)];
+      picks.add(idx);
+    }
     let f = 0;
-    for (let i = 0; i < SEATS; i++) {
-      const saved = SAVED_SEATS.find((s) => s.seatIndex === i);
-      if (saved) { arr.push({ kind: "saved", note: saved.note }); continue; }
-      if (f < seated.length) { arr.push({ kind: "filled", friend: seated[f++] }); continue; }
-      arr.push({ kind: "empty" });
+    for (const idx of Array.from(picks).sort((a, b) => a - b)) {
+      arr[idx] = { kind: "filled", friend: seated[f++] };
     }
     return arr;
   }, [seated]);
+
 
   return (
     <section className="px-5 pt-3">
