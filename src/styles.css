@@ -324,6 +324,24 @@
 }
 .orbit-spinning { animation: orbit-spin 1.4s cubic-bezier(0.22,0.61,0.36,1); }
 
+/* Always-on slow drift for the outer dot ring */
+.orbit-slow { animation: orbit-spin 120s linear infinite; transform-origin: 50% 50%; }
+.orbit-fast { animation-duration: 1.4s; animation-timing-function: cubic-bezier(0.22,0.61,0.36,1); }
+
+/* Breathing aura behind the table — extremely subtle */
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.04); }
+}
+.breathe { animation: breathe 7s ease-in-out infinite; }
+
+/* Tiny pulse for the soft dots */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 0.9;  transform: translate(-50%, -50%) scale(1.4); }
+}
+.soft-pulse { animation: soft-pulse 5.5s ease-in-out infinite; }
+
 @keyframes blink-caret {
   0%, 100% { opacity: 1; } 50% { opacity: 0; }
 }
