@@ -8,96 +8,57 @@ export const Route = createFileRoute("/app/thoughts")({
 });
 
 function ThoughtsPage() {
-  const from = THOUGHTS.filter((t) => t.direction === "from");
-  const to   = THOUGHTS.filter((t) => t.direction === "to");
+  const incoming = THOUGHTS.filter((t) => t.direction === "from");
 
   return (
     <div className="pb-8">
-      <header className="px-6 pt-9 pb-2 text-center">
-        <p className="label-caps">{VOICE.thoughts.header}</p>
-        <h1 className="font-display italic text-cream mt-3" style={{ fontSize: 34, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
-          {VOICE.thoughts.headline}
+      <header className="px-6 pt-12 pb-2 text-center">
+        <p className="label-caps">thought of you</p>
+        <h1 className="font-display italic text-cream mt-4"
+            style={{ fontSize: 32, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+          Quiet pings.
         </h1>
-        <p className="font-display italic mt-3" style={{ color: "var(--text-muted)", fontSize: 13 }}>
-          {VOICE.thoughts.sub}
-        </p>
       </header>
 
-      {/* Let-someone-know card */}
-      <section className="px-5 mt-7">
-        <button className="w-full card-editorial p-5 flex items-center gap-4 text-left active:scale-[0.995] transition"
-                style={{ borderLeft: "3px solid var(--accent-bronze)" }}>
-          <div className="die-tile" aria-hidden>♡</div>
-          <div className="flex-1">
-            <div className="font-display italic text-cream" style={{ fontSize: 18 }}>{VOICE.thoughts.sendCTA}</div>
-            <div className="font-display italic" style={{ color: "var(--text-muted)", fontSize: 12 }}>{VOICE.thoughts.sendHint}</div>
-          </div>
-        </button>
-      </section>
-
-
-      <section className="px-6 mt-10">
-        <p className="label-caps text-center mb-5">{VOICE.thoughts.incomingHeader}</p>
-        <ul className="space-y-7">
-          {from.map((t) => {
-            const f = FRIENDS.find((x) => x.id === t.friendId)!;
-            return (
-              <li key={t.id}>
-                <Link to="/app/seat/$id" params={{ id: f.id }} className="flex items-start gap-4">
-                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={42} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-display text-cream" style={{ fontSize: 17, lineHeight: 1.35 }}>
-                      <span className="italic">{f.name}</span> thought of you.
-                    </p>
-                    {t.note && (
-                      <p className="font-display italic mt-1" style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.45 }}>
-                        "{t.note}"
-                      </p>
-                    )}
-                    <p className="font-display italic mt-1" style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                      {t.when}
-                    </p>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <div className="hairline mx-12 mt-12" />
-
-      <section className="px-6 mt-12">
-        <p className="label-caps text-center mb-5">{VOICE.thoughts.outgoingHeader}</p>
-        <ul className="space-y-5">
-          {to.map((t) => {
-            const f = FRIENDS.find((x) => x.id === t.friendId)!;
-            return (
-              <li key={t.id} className="flex items-center gap-4">
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={36} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-display italic text-cream" style={{ fontSize: 15 }}>
-                    you reached for <span className="text-cream">{f.name}</span>
-                  </p>
-                  <p className="font-display italic" style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                    {t.when}
-                  </p>
+      <section className="px-6 mt-14 space-y-14">
+        {incoming.map((t) => {
+          const f = FRIENDS.find((x) => x.id === t.friendId)!;
+          return (
+            <Link
+              key={t.id}
+              to="/app/seat/$id"
+              params={{ id: f.id }}
+              className="block text-center active:scale-[0.99] transition"
+            >
+              <div className="flex justify-center">
+                <div className="rounded-full"
+                     style={{ boxShadow: "0 0 0 1px rgba(196,149,96,0.25), 0 0 28px rgba(216,123,60,0.18)" }}>
+                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={112} />
                 </div>
-                <Link to="/app/seat/$id" params={{ id: f.id }} className="font-display italic"
-                      style={{ color: "var(--accent-bronze)", fontSize: 13 }}>
-                  sit with them →
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+              </div>
+              <p className="font-display italic text-cream mt-5"
+                 style={{ fontSize: 20 }}>
+                {f.name} thought of you.
+              </p>
+              {t.note && (
+                <p className="font-display italic mx-auto mt-3 max-w-[20rem]"
+                   style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.5 }}>
+                  "{t.note}"
+                </p>
+              )}
+              <p className="font-display italic mt-3"
+                 style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}>
+                {t.when}
+              </p>
+            </Link>
+          );
+        })}
       </section>
 
-      <p className="text-center font-display italic mt-14 px-8"
-         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.03em" }}>
+      <p className="text-center font-display italic mt-16 px-8"
+         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}>
         {VOICE.thoughts.footer}
       </p>
     </div>
   );
 }
-
