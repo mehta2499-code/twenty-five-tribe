@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WalkthroughRouteImport } from './routes/walkthrough'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as AppRouteImport } from './routes/app'
@@ -17,6 +18,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppThoughtsRouteImport } from './routes/app.thoughts'
 import { Route as AppPulseRouteImport } from './routes/app.pulse'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
+import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
 import { Route as AppMy25RouteImport } from './routes/app.my25'
 import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
@@ -24,6 +26,11 @@ import { Route as AppGamesRouteImport } from './routes/app.games'
 import { Route as AppCapsulesRouteImport } from './routes/app.capsules'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 
+const WalkthroughRoute = WalkthroughRouteImport.update({
+  id: '/walkthrough',
+  path: '/walkthrough',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -64,6 +71,11 @@ const AppProfileRoute = AppProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPrivacyRoute = AppPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMy25Route = AppMy25RouteImport.update({
   id: '/my25',
   path: '/my25',
@@ -100,11 +112,13 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/claim': typeof ClaimRoute
   '/onboarding': typeof OnboardingRoute
+  '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
+  '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
   '/app/thoughts': typeof AppThoughtsRoute
@@ -115,11 +129,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/claim': typeof ClaimRoute
   '/onboarding': typeof OnboardingRoute
+  '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
+  '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
   '/app/thoughts': typeof AppThoughtsRoute
@@ -132,11 +148,13 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/claim': typeof ClaimRoute
   '/onboarding': typeof OnboardingRoute
+  '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
+  '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
   '/app/thoughts': typeof AppThoughtsRoute
@@ -150,11 +168,13 @@ export interface FileRouteTypes {
     | '/app'
     | '/claim'
     | '/onboarding'
+    | '/walkthrough'
     | '/app/capsules'
     | '/app/games'
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
+    | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
     | '/app/thoughts'
@@ -165,11 +185,13 @@ export interface FileRouteTypes {
     | '/'
     | '/claim'
     | '/onboarding'
+    | '/walkthrough'
     | '/app/capsules'
     | '/app/games'
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
+    | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
     | '/app/thoughts'
@@ -181,11 +203,13 @@ export interface FileRouteTypes {
     | '/app'
     | '/claim'
     | '/onboarding'
+    | '/walkthrough'
     | '/app/capsules'
     | '/app/games'
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
+    | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
     | '/app/thoughts'
@@ -198,10 +222,18 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   ClaimRoute: typeof ClaimRoute
   OnboardingRoute: typeof OnboardingRoute
+  WalkthroughRoute: typeof WalkthroughRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/walkthrough': {
+      id: '/walkthrough'
+      path: '/walkthrough'
+      fullPath: '/walkthrough'
+      preLoaderRoute: typeof WalkthroughRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -258,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/privacy': {
+      id: '/app/privacy'
+      path: '/privacy'
+      fullPath: '/app/privacy'
+      preLoaderRoute: typeof AppPrivacyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/my25': {
       id: '/app/my25'
       path: '/my25'
@@ -309,6 +348,7 @@ interface AppRouteChildren {
   AppHomeRoute: typeof AppHomeRoute
   AppMomentsRoute: typeof AppMomentsRoute
   AppMy25Route: typeof AppMy25Route
+  AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
   AppPulseRoute: typeof AppPulseRoute
   AppThoughtsRoute: typeof AppThoughtsRoute
@@ -322,6 +362,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppMomentsRoute: AppMomentsRoute,
   AppMy25Route: AppMy25Route,
+  AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
   AppPulseRoute: AppPulseRoute,
   AppThoughtsRoute: AppThoughtsRoute,
@@ -336,6 +377,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   ClaimRoute: ClaimRoute,
   OnboardingRoute: OnboardingRoute,
+  WalkthroughRoute: WalkthroughRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

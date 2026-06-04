@@ -419,3 +419,6 @@
 .reverence-veil {
   background: radial-gradient(ellipse at 50% 38%, rgba(20,16,12,0.6) 0%, rgba(10,7,5,0.96) 70%);
 }
+
+/* Privacy: blur whole app when tab is hidden (best-effort screenshot deterrent on web) */
+html.privacy-blur body { filter: blur(28px) saturate(0.6); transition: filter 80ms ease; }
