@@ -181,16 +181,22 @@ function RollPanel({ result, onClose }: { result: NonNullable<RollResult>; onClo
            style={{ fontSize: 14, lineHeight: 1.5 }}>
           Send them something that has nothing to do with anything.
         </p>
-        <div className="mt-6 flex items-center justify-center gap-5 text-2xl">
-          {[{ id: "song", glyph: "♪" }, { id: "photo", glyph: "◐" }, { id: "voice", glyph: "◍" }, { id: "msg", glyph: "✎" }].map((a) => (
+        <div className="mt-7 grid grid-cols-4 gap-3">
+          {[
+            { id: "song",  glyph: "♪", label: "Song" },
+            { id: "photo", glyph: "◐", label: "Photo" },
+            { id: "voice", glyph: "◍", label: "Voice note" },
+            { id: "msg",   glyph: "✎", label: "Message" },
+          ].map((a) => (
             <button key={a.id}
-                    className="w-12 h-12 rounded-full flex items-center justify-center active:scale-95 transition"
-                    style={{ background: "var(--bg-surface)", color: "var(--accent-bronze)" }}>
-              {a.glyph}
+                    className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
+                    style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}>
+              <span style={{ color: "var(--accent-bronze)", fontSize: 20 }}>{a.glyph}</span>
+              <span className="font-display italic text-cream" style={{ fontSize: 12 }}>{a.label}</span>
             </button>
           ))}
         </div>
-        <button onClick={onClose} className="mt-7 label-caps text-cool">close</button>
+        <button onClick={onClose} className="mt-6 label-caps text-cool">close</button>
       </div>
     </div>
   );
