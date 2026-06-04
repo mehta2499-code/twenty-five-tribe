@@ -3,13 +3,14 @@ import { ArrowLeft } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
   FRIENDS,
-  RELATIONSHIP_TAGS,
   SEAT_REASONS,
   MUTUAL_DESCRIPTIONS,
   FRIENDSHIP_TIMELINE,
   THOUGHTS,
   CAPSULES,
+  getSeatMeta,
 } from "@/lib/data";
+import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/seat/$id")({
   component: SeatPage,
