@@ -96,4 +96,29 @@ export const VOICE = {
   ] as const,
 
   seatFooter: "One of twenty-five. Irreplaceable.",
+
+  reservation: {
+    pickHeader: "your contacts",
+    pickSub: "Choose someone who's already in your life. We don't browse the rest.",
+    roleHeader: "what role do they play?",
+    roleSub: "Pick the truest one. You can change it later.",
+    confirmHeader: "reserve this seat",
+    sendingTo: (name: string) => `${name} will get this:`,
+    waMessage: (fromName: string) =>
+      `${fromName} reserved one of their 25 seats for you. Apparently you're one of the people that matter most. Claim your seat.`,
+    cta: "Reserve their seat",
+    done: (name: string) => `${name}'s seat is held. You'll know when they sit down.`,
+    badgeReserved: "seat reserved · awaiting them",
+    badgeAccepted: "seated",
+    resend: "Send the reservation again",
+  },
+
+  claim: {
+    eyebrow: "you have a seat waiting",
+    headline: (name: string) => `${name} reserved one of their 25 for you.`,
+    sub: "Twenty-five seats. No more. They picked you on purpose.",
+    accept: "Take the seat",
+    decline: "Not right now",
+    footer: "You can leave the table any time. Nobody's keeping score.",
+  },
 };

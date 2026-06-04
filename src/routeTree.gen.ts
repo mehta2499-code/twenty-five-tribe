@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
@@ -26,6 +27,11 @@ import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClaimRoute = ClaimRouteImport.update({
+  id: '/claim',
+  path: '/claim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -92,6 +98,7 @@ const AppSeatIdRoute = AppSeatIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/claim': typeof ClaimRoute
   '/onboarding': typeof OnboardingRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/games': typeof AppGamesRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/claim': typeof ClaimRoute
   '/onboarding': typeof OnboardingRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/games': typeof AppGamesRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
+  '/claim': typeof ClaimRoute
   '/onboarding': typeof OnboardingRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/games': typeof AppGamesRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
+    | '/claim'
     | '/onboarding'
     | '/app/capsules'
     | '/app/games'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/claim'
     | '/onboarding'
     | '/app/capsules'
     | '/app/games'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
+    | '/claim'
     | '/onboarding'
     | '/app/capsules'
     | '/app/games'
@@ -184,6 +196,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  ClaimRoute: typeof ClaimRoute
   OnboardingRoute: typeof OnboardingRoute
 }
 
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claim': {
+      id: '/claim'
+      path: '/claim'
+      fullPath: '/claim'
+      preLoaderRoute: typeof ClaimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -314,6 +334,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  ClaimRoute: ClaimRoute,
   OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport

@@ -359,3 +359,56 @@ export const QUIETLY = {
   thoughtsExchanged: 9,
   verdictsCast: 3,
 };
+
+// ============== Seat system ==============
+// A seat is a relationship reservation, not a contact.
+export type SeatState = "EMPTY" | "RESERVED" | "ACCEPTED" | "DECLINED";
+
+/** Roles a user can assign when reserving a seat. */
+export const ROLES = [
+  "Ride or Die",
+  "Day One",
+  "Family",
+  "Chaos Partner",
+  "Safe Place",
+  "Mentor",
+  "Always Shows Up",
+  "Soul Mirror",
+  "The One",
+] as const;
+export type Role = (typeof ROLES)[number];
+
+export type SeatMeta = {
+  friendId: string;
+  state: SeatState;
+  role: Role;
+  phone?: string;
+  reservedAt?: string;
+};
+
+/** Per-friend seat metadata. Default state is ACCEPTED if not listed here. */
+export const SEAT_META: Record<string, SeatMeta> = {
+  "1":  { friendId: "1",  state: "ACCEPTED", role: "Ride or Die" },
+  "2":  { friendId: "2",  state: "ACCEPTED", role: "Soul Mirror" },
+  "3":  { friendId: "3",  state: "ACCEPTED", role: "Day One" },
+  "4":  { friendId: "4",  state: "ACCEPTED", role: "Safe Place" },
+  "5":  { friendId: "5",  state: "ACCEPTED", role: "Chaos Partner" },
+  "6":  { friendId: "6",  state: "ACCEPTED", role: "Always Shows Up" },
+  // Reserved seats — person picked, invitation sent, not yet claimed
+  "7":  { friendId: "7",  state: "RESERVED", role: "Mentor",  phone: "+91 98•••••12", reservedAt: "3 days ago" },
+  "10": { friendId: "10", state: "RESERVED", role: "Family",  phone: "+91 99•••••44", reservedAt: "yesterday" },
+  "20": { friendId: "20", state: "RESERVED", role: "The One", phone: "+91 90•••••07", reservedAt: "an hour ago" },
+};
+
+export function getSeatMeta(friendId: string): SeatMeta {
+  return SEAT_META[friendId] ?? { friendId, state: "ACCEPTED", role: "Always Shows Up" };
+}
+
+/** Demo "seat waiting for you" shown on /claim */
+export const INCOMING_RESERVATION = {
+  fromName: "Aman",
+  fromInitials: "AM",
+  fromAvatar: avatarUrl(33),
+  role: "Ride or Die" as Role,
+  reservedAt: "a few minutes ago",
+};

@@ -1,104 +1,81 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { ROLES, type Role, avatarUrl } from "@/lib/data";
+import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
       { title: "Set your table — 25" },
-      { name: "description", content: "Build a table of people, not a profile." },
+      { name: "description", content: "Reserve seats for the people who matter most." },
     ],
   }),
   component: Onboarding,
 });
 
-// ---------- Types ----------
-type Seat = {
-  name: string;
-  // playful answers: which prompts this person was tagged for
-  tags: string[];
-  // optional free-text "the one thing"
-  oneThing?: string;
-};
-
-type Vibe = "chaos" | "calm" | "loyal" | "mystery" | null;
-
-// ---------- Playful prompts ----------
-// User taps a prompt then types a name. We attach the prompt as a "tag" on that seat.
-const PROMPTS: { id: string; q: string; aside: string }[] = [
-  { id: "2am",      q: "Who would you call at 2 AM?",                        aside: "No judgement. We've all been there." },
-  { id: "zombie",   q: "Who survives the zombie apocalypse with you?",       aside: "Pick someone with cardio." },
-  { id: "real",     q: "Who knows the real you?",                            aside: "Like, the embarrassing real you." },
-  { id: "shows",    q: "Who always shows up?",                               aside: "Even when it's raining. Even when it's far." },
-  { id: "chaos",    q: "Who is pure chaos (and you love them for it)?",      aside: "Every table needs one." },
-  { id: "honest",   q: "Who tells you the truth when you don't want it?",    aside: "The friend with the eyebrow raise." },
-  { id: "laugh",    q: "Who makes you laugh until it hurts?",                aside: "You're smiling thinking about them. Don't lie." },
-  { id: "home",     q: "Who feels like home?",                               aside: "The one whose silence isn't awkward." },
+// ---------- Mock contacts (in a real app this comes from the OS contact picker) ----------
+type Contact = { id: string; name: string; phone: string; avatar: string };
+const MOCK_CONTACTS: Contact[] = [
+  { id: "c1",  name: "Rahul Mehta",     phone: "+91 98•••••12", avatar: avatarUrl(12) },
+  { id: "c2",  name: "Priya Nair",      phone: "+91 99•••••08", avatar: avatarUrl(5)  },
+  { id: "c3",  name: "Arjun Kapoor",    phone: "+91 98•••••44", avatar: avatarUrl(13) },
+  { id: "c4",  name: "Neha Sharma",     phone: "+91 90•••••21", avatar: avatarUrl(9)  },
+  { id: "c5",  name: "Simran Bedi",     phone: "+91 70•••••33", avatar: avatarUrl(16) },
+  { id: "c6",  name: "Kabir Anand",     phone: "+91 87•••••91", avatar: avatarUrl(68) },
+  { id: "c7",  name: "Tara Krishnan",   phone: "+91 91•••••55", avatar: avatarUrl(1)  },
+  { id: "c8",  name: "Aditya Bose",     phone: "+91 99•••••02", avatar: avatarUrl(60) },
+  { id: "c9",  name: "Meera Pillai",    phone: "+91 88•••••77", avatar: avatarUrl(44) },
+  { id: "c10", name: "Yash Khurana",    phone: "+91 98•••••39", avatar: avatarUrl(51) },
+  { id: "c11", name: "Riya D'Souza",    phone: "+91 70•••••18", avatar: avatarUrl(20) },
+  { id: "c12", name: "Karan Joshi",     phone: "+91 90•••••64", avatar: avatarUrl(52) },
 ];
 
-const VIBES: { id: NonNullable<Vibe>; emoji: string; label: string; line: string }[] = [
-  { id: "chaos",   emoji: "🎲", label: "A little chaos", line: "Plot twists welcome." },
-  { id: "calm",    emoji: "🌿", label: "Mostly calm",    line: "Soft hours. Long phone calls." },
-  { id: "loyal",   emoji: "🛟", label: "Ride-or-die",    line: "Few people. Held tight." },
-  { id: "mystery", emoji: "🌙", label: "Bit of mystery", line: "Inside jokes only." },
-];
+type Reservation = { contact: Contact; role: Role };
 
-// ---------- Component ----------
 function Onboarding() {
   const navigate = useNavigate();
+  // 0 welcome → 1 name → 2 contacts permission → 3 pick a contact → 4 assign role → 5 confirm/send → 6 reveal
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
-  const [vibe, setVibe] = useState<Vibe>(null);
-  const [seats, setSeats] = useState<Seat[]>([]);
-  const [activePromptIdx, setActivePromptIdx] = useState(0);
-  const [draftName, setDraftName] = useState("");
-  const [draftOneThing, setDraftOneThing] = useState("");
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [picked, setPicked] = useState<Contact | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
+  const [query, setQuery] = useState("");
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
-  const activePrompt = PROMPTS[activePromptIdx % PROMPTS.length];
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return MOCK_CONTACTS.filter(
+      (c) =>
+        !reservations.find((r) => r.contact.id === c.id) &&
+        (!q || c.name.toLowerCase().includes(q)),
+    );
+  }, [query, reservations]);
 
-  const addSeat = () => {
-    const n = draftName.trim();
-    if (!n) return;
-    // If this name already exists, append the tag + oneThing instead of duplicating
-    setSeats((prev) => {
-      const existing = prev.find((s) => s.name.toLowerCase() === n.toLowerCase());
-      if (existing) {
-        return prev.map((s) =>
-          s === existing
-            ? {
-                ...s,
-                tags: Array.from(new Set([...s.tags, activePrompt.id])),
-                oneThing: draftOneThing.trim() || s.oneThing,
-              }
-            : s,
-        );
-      }
-      return [
-        ...prev,
-        {
-          name: n,
-          tags: [activePrompt.id],
-          oneThing: draftOneThing.trim() || undefined,
-        },
-      ];
-    });
-    setDraftName("");
-    setDraftOneThing("");
-    setActivePromptIdx((i) => i + 1);
-  };
-
-  const skipPrompt = () => {
-    setDraftName("");
-    setDraftOneThing("");
-    setActivePromptIdx((i) => i + 1);
+  const confirm = () => {
+    if (!picked || !role) return;
+    setReservations((p) => [...p, { contact: picked, role }]);
+    setPicked(null);
+    setRole(null);
+    setStep(3); // back to picker for the next seat
   };
 
   const finish = () => {
     try {
       localStorage.setItem(
         "twentyfive.onboarding",
-        JSON.stringify({ name, vibe, seats, completedAt: Date.now() }),
+        JSON.stringify({
+          name,
+          reservations: reservations.map((r) => ({
+            name: r.contact.name,
+            phone: r.contact.phone,
+            role: r.role,
+            state: "RESERVED",
+            reservedAt: Date.now(),
+          })),
+          completedAt: Date.now(),
+        }),
       );
     } catch {}
     navigate({ to: "/app/home" });
@@ -109,7 +86,6 @@ function Onboarding() {
       className="min-h-screen w-full text-foreground relative overflow-hidden"
       style={{ fontFamily: "'Inter Tight', 'Inter', system-ui, sans-serif" }}
     >
-      {/* warm candle backdrop */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -129,27 +105,23 @@ function Onboarding() {
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col px-6 py-10">
         {/* progress dots */}
-        <div className="flex items-center justify-center gap-2 mb-12">
+        <div className="flex items-center justify-center gap-2 mb-10">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div
               key={i}
               className="h-[6px] rounded-full transition-all duration-500"
               style={{
                 width: i === step ? 28 : 6,
-                background:
-                  i <= step ? "#C49560" : "rgba(255,255,255,0.18)",
+                background: i <= step ? "#C49560" : "rgba(255,255,255,0.18)",
               }}
             />
           ))}
         </div>
 
-        {/* steps */}
         <div className="flex-1 flex flex-col">
           {step === 0 && (
             <StepWrap>
-              <p className="uppercase tracking-[0.32em] text-[0.7rem] text-[#C49560] mb-6">
-                hi.
-              </p>
+              <Eyebrow>hi.</Eyebrow>
               <h1
                 className="font-normal leading-[1.05] text-white"
                 style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "clamp(2.5rem, 8vw, 3.5rem)" }}
@@ -159,12 +131,11 @@ function Onboarding() {
                 <span className="italic text-[#E8B98A]">Let's set the table.</span>
               </h1>
               <p className="mt-8 text-white/70 leading-relaxed">
-                No usernames. No followers. No "interests."
-                Just the people. We'll start with a few questions —
-                the kind a friend would actually ask.
+                Twenty-five seats. No more, no less. You'll reserve each one
+                for someone real — a person, a role, a reason.
               </p>
               <p className="mt-4 text-white/50 text-sm italic">
-                (We promise not to make you fill out a form.)
+                We don't browse your contacts. You pick. We hold the seats.
               </p>
               <Spacer />
               <BigBtn onClick={() => setStep(1)}>Pull up a chair</BigBtn>
@@ -195,131 +166,107 @@ function Onboarding() {
 
           {step === 2 && (
             <StepWrap>
-              <Eyebrow>between us</Eyebrow>
-              <Title>What's your table like?</Title>
-              <p className="mt-3 text-white/60 text-sm">
-                No wrong answer. Just curious.
+              <Eyebrow>a small ask</Eyebrow>
+              <Title>Can we see your contacts?</Title>
+              <p className="mt-4 text-white/65 leading-relaxed">
+                Only so you can <em>pick</em> from them. We never read your
+                contact list, never store the rest, never suggest anyone.
+                You do the choosing — always.
               </p>
-              <div className="mt-8 grid gap-3">
-                {VIBES.map((v) => {
-                  const active = vibe === v.id;
-                  return (
-                    <button
-                      key={v.id}
-                      onClick={() => setVibe(v.id)}
-                      className="text-left rounded-2xl border px-5 py-4 transition-all"
-                      style={{
-                        background: active ? "rgba(196,149,96,0.12)" : "rgba(255,255,255,0.03)",
-                        borderColor: active ? "#C49560" : "rgba(255,255,255,0.10)",
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{v.emoji}</span>
-                        <span
-                          className="text-white text-lg"
-                          style={{ fontFamily: "'Fraunces', Georgia, serif" }}
-                        >
-                          {v.label}
-                        </span>
-                      </div>
-                      <p className="mt-1 ml-9 text-white/55 text-sm">{v.line}</p>
-                    </button>
-                  );
-                })}
+              <div
+                className="mt-8 rounded-3xl p-5 flex items-center gap-4"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <div
+                  className="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl"
+                  style={{ background: "rgba(196,149,96,0.15)" }}
+                >
+                  📇
+                </div>
+                <div className="flex-1">
+                  <p className="text-white text-sm">Contacts</p>
+                  <p className="text-white/50 text-xs">used only for the picker, on-device</p>
+                </div>
               </div>
               <Spacer />
-              <BigBtn disabled={!vibe} onClick={() => setStep(3)}>
-                Okay, noted.
-              </BigBtn>
+              <BigBtn onClick={() => setStep(3)}>Allow contacts</BigBtn>
+              <button
+                onClick={() => setStep(3)}
+                className="mt-3 text-center text-white/40 text-xs hover:text-white/60 transition"
+              >
+                Skip — I'll add them by hand
+              </button>
             </StepWrap>
           )}
 
           {step === 3 && (
             <StepWrap>
-              <Eyebrow>now the fun part</Eyebrow>
-              <Title>Let's seat a few people.</Title>
-              <p className="mt-3 text-white/60 text-sm">
-                I'll ask. You answer with a name. Or skip — your call.
-                {seats.length > 0 && (
-                  <>
-                    {" "}
-                    <span className="text-[#C49560]">
-                      {seats.length} seated so far.
-                    </span>
-                  </>
-                )}
+              <Eyebrow>your contacts</Eyebrow>
+              <Title>Who gets a seat?</Title>
+              <p className="mt-3 text-white/55 text-sm">
+                {reservations.length === 0
+                  ? "Start with one. You'll add more in your own time."
+                  : `${reservations.length} reserved. Keep going, or finish whenever.`}
               </p>
 
-              <div
-                className="mt-8 rounded-3xl p-6"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search contacts…"
+                className="mt-6 w-full bg-transparent border-b border-white/15 pb-2 text-white placeholder:text-white/30 focus:outline-none focus:border-[#C49560] transition text-sm"
+              />
+
+              <ul
+                className="mt-4 -mx-2 max-h-[44vh] overflow-y-auto"
+                style={{ scrollbarWidth: "thin" }}
               >
-                <p className="uppercase tracking-[0.28em] text-[0.65rem] text-[#C49560]">
-                  question {activePromptIdx + 1}
-                </p>
-                <p
-                  className="mt-4 text-white text-2xl leading-snug"
-                  style={{ fontFamily: "'Fraunces', Georgia, serif" }}
-                >
-                  {activePrompt.q}
-                </p>
-                <p className="mt-2 text-white/50 text-sm italic">
-                  {activePrompt.aside}
-                </p>
+                {filtered.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      onClick={() => {
+                        setPicked(c);
+                        setStep(4);
+                      }}
+                      className="w-full flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-white/[0.04] active:bg-white/[0.07] transition text-left"
+                    >
+                      <img
+                        src={c.avatar}
+                        alt=""
+                        loading="lazy"
+                        className="h-11 w-11 rounded-full object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-[15px] truncate">{c.name}</p>
+                        <p className="text-white/45 text-xs truncate">{c.phone}</p>
+                      </div>
+                      <span className="text-white/30 text-lg">›</span>
+                    </button>
+                  </li>
+                ))}
+                {filtered.length === 0 && (
+                  <li className="text-white/40 text-sm text-center py-8 italic">
+                    No one left to seat.
+                  </li>
+                )}
+              </ul>
 
-                <input
-                  value={draftName}
-                  onChange={(e) => setDraftName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addSeat()}
-                  placeholder="A name…"
-                  className="mt-6 w-full bg-transparent border-b border-white/15 pb-2 text-white text-lg placeholder:text-white/25 focus:outline-none focus:border-[#C49560] transition"
-                />
-                <input
-                  value={draftOneThing}
-                  onChange={(e) => setDraftOneThing(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addSeat()}
-                  placeholder="One thing only they would do… (optional)"
-                  className="mt-4 w-full bg-transparent border-b border-white/10 pb-2 text-white/90 text-sm placeholder:text-white/25 focus:outline-none focus:border-[#C49560] transition"
-                />
-
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={skipPrompt}
-                    className="flex-1 rounded-full border border-white/15 text-white/70 py-3 text-sm hover:bg-white/5 transition"
-                  >
-                    Skip
-                  </button>
-                  <button
-                    onClick={addSeat}
-                    disabled={!draftName.trim()}
-                    className="flex-[2] rounded-full py-3 text-sm font-medium disabled:opacity-40 transition"
-                    style={{ background: "#C49560", color: "#14100C" }}
-                  >
-                    Seat them
-                  </button>
-                </div>
-              </div>
-
-              {seats.length > 0 && (
-                <div className="mt-6">
-                  <p className="uppercase tracking-[0.28em] text-[0.65rem] text-white/40 mb-3">
-                    at the table
+              {reservations.length > 0 && (
+                <div className="mt-5">
+                  <p className="uppercase tracking-[0.28em] text-[0.6rem] text-white/40 mb-3">
+                    reserved
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {seats.map((s, i) => (
+                    {reservations.map((r) => (
                       <span
-                        key={i}
-                        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white/90"
+                        key={r.contact.id}
+                        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-white/85"
                         style={{
-                          background: "rgba(196,149,96,0.10)",
-                          border: "1px solid rgba(196,149,96,0.35)",
+                          background: "rgba(196,149,96,0.08)",
+                          border: "1px dashed rgba(196,149,96,0.4)",
                         }}
                       >
-                        <span className="h-2 w-2 rounded-full bg-[#C49560]" />
-                        {s.name}
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#C49560]" />
+                        {r.contact.name.split(" ")[0]} · {r.role.toLowerCase()}
                       </span>
                     ))}
                   </div>
@@ -328,23 +275,114 @@ function Onboarding() {
 
               <Spacer />
               <BigBtn
-                disabled={seats.length < 1}
-                onClick={() => setStep(4)}
+                disabled={reservations.length < 1}
+                onClick={() => setStep(5)}
               >
-                {seats.length < 3
-                  ? `Continue${seats.length ? ` with ${seats.length}` : ""}`
-                  : "I've got my people"}
+                {reservations.length < 1
+                  ? "Reserve at least one seat"
+                  : `Done — ${reservations.length} ${reservations.length === 1 ? "seat" : "seats"} held`}
               </BigBtn>
-              {seats.length === 0 && (
-                <p className="mt-3 text-center text-white/40 text-xs">
-                  Seat at least one person to keep going.
-                </p>
-              )}
             </StepWrap>
           )}
 
-          {step === 4 && (
-            <FinalStep name={name} seats={seats} onFinish={finish} />
+          {step === 4 && picked && (
+            <StepWrap>
+              <button
+                onClick={() => {
+                  setPicked(null);
+                  setStep(3);
+                }}
+                className="self-start mb-4 text-white/50 text-sm hover:text-white/80"
+              >
+                ← back
+              </button>
+              <Eyebrow>{VOICE.reservation.roleHeader}</Eyebrow>
+              <div className="mt-2 flex items-center gap-3">
+                <img src={picked.avatar} alt="" className="h-14 w-14 rounded-full object-cover" />
+                <div>
+                  <p
+                    className="text-white text-2xl leading-tight"
+                    style={{ fontFamily: "'Fraunces', Georgia, serif" }}
+                  >
+                    {picked.name}
+                  </p>
+                  <p className="text-white/45 text-xs">{picked.phone}</p>
+                </div>
+              </div>
+              <p className="mt-5 text-white/55 text-sm">{VOICE.reservation.roleSub}</p>
+
+              <div className="mt-6 grid grid-cols-2 gap-2">
+                {ROLES.map((r) => {
+                  const active = role === r;
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => setRole(r)}
+                      className="rounded-2xl px-4 py-3 text-sm text-left transition"
+                      style={{
+                        background: active ? "rgba(196,149,96,0.16)" : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${active ? "#C49560" : "rgba(255,255,255,0.10)"}`,
+                        color: "white",
+                        fontFamily: "'Fraunces', Georgia, serif",
+                      }}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Spacer />
+              <BigBtn disabled={!role} onClick={() => setStep(45)}>
+                Continue
+              </BigBtn>
+            </StepWrap>
+          )}
+
+          {step === 45 && picked && role && (
+            <StepWrap>
+              <Eyebrow>{VOICE.reservation.confirmHeader}</Eyebrow>
+              <Title>Reserve {picked.name.split(" ")[0]}'s seat?</Title>
+              <p className="mt-3 text-white/55 text-sm">
+                {VOICE.reservation.sendingTo(picked.name.split(" ")[0])}
+              </p>
+
+              {/* WhatsApp-style message preview */}
+              <div
+                className="mt-5 rounded-2xl p-4 text-[14px] leading-relaxed text-white/90"
+                style={{
+                  background: "rgba(45,90,55,0.18)",
+                  border: "1px solid rgba(120,200,140,0.18)",
+                  fontFamily: "'Inter Tight', system-ui, sans-serif",
+                }}
+              >
+                {VOICE.reservation.waMessage(name.trim().split(" ")[0] || "Someone")}
+                <div className="mt-3 text-[11px] text-white/40">via WhatsApp · {picked.phone}</div>
+              </div>
+
+              <div className="mt-5 flex items-center gap-3 text-white/70 text-xs">
+                <span
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1"
+                  style={{ background: "rgba(196,149,96,0.10)", border: "1px solid rgba(196,149,96,0.35)" }}
+                >
+                  role · {role.toLowerCase()}
+                </span>
+                <span className="text-white/40">seat will be held until they claim it</span>
+              </div>
+
+              <Spacer />
+              <BigBtn onClick={confirm}>{VOICE.reservation.cta}</BigBtn>
+              <button
+                onClick={() => setStep(4)}
+                className="mt-3 text-center text-white/45 text-xs hover:text-white/70 transition"
+              >
+                Change role
+              </button>
+            </StepWrap>
+          )}
+
+          {step === 5 && (
+            <FinalStep name={name} reservations={reservations} onFinish={finish} />
           )}
         </div>
       </div>
@@ -352,19 +390,17 @@ function Onboarding() {
   );
 }
 
-// ---------- Final reveal ----------
 function FinalStep({
   name,
-  seats,
+  reservations,
   onFinish,
 }: {
   name: string;
-  seats: Seat[];
+  reservations: Reservation[];
   onFinish: () => void;
 }) {
-  const seatCount = seats.length;
-  const remaining = Math.max(0, 25 - seatCount);
-  const featured = useMemo(() => seats.slice(0, 6), [seats]);
+  const taken = reservations.length;
+  const remaining = Math.max(0, 25 - taken);
 
   return (
     <StepWrap>
@@ -379,51 +415,36 @@ function FinalStep({
       </h1>
 
       <p className="mt-6 text-white/70 leading-relaxed">
-        {seatCount === 1
-          ? "One seat taken. A start."
-          : `${seatCount} seats taken.`}{" "}
+        {taken === 1 ? "One seat reserved. A start." : `${taken} seats reserved.`}{" "}
         {remaining > 0 && (
-          <>
-            <span className="text-white/50">
-              {remaining} kept open for whoever wanders in next.
-            </span>
-          </>
+          <span className="text-white/50">
+            {remaining} kept open for whoever wanders in next.
+          </span>
         )}
       </p>
 
-      {/* tiny table preview */}
-      <div className="mt-8 flex flex-wrap gap-2">
-        {featured.map((s, i) => (
+      <div className="mt-8 space-y-2">
+        {reservations.slice(0, 6).map((r) => (
           <div
-            key={i}
-            className="flex items-center gap-2 rounded-full px-3 py-2"
+            key={r.contact.id}
+            className="flex items-center gap-3 rounded-2xl px-3 py-3"
             style={{
-              background: "rgba(196,149,96,0.10)",
-              border: "1px solid rgba(196,149,96,0.35)",
+              background: "rgba(196,149,96,0.08)",
+              border: "1px dashed rgba(196,149,96,0.35)",
             }}
           >
-            <div
-              className="h-6 w-6 rounded-full flex items-center justify-center text-[0.7rem] text-[#14100C] font-medium"
-              style={{ background: "#C49560" }}
-            >
-              {s.name.slice(0, 1).toUpperCase()}
+            <img src={r.contact.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm truncate">{r.contact.name}</p>
+              <p className="text-white/45 text-xs">{r.role.toLowerCase()} · awaiting them</p>
             </div>
-            <span className="text-white/90 text-sm">{s.name}</span>
+            <span className="text-[#C49560] text-[10px] uppercase tracking-[0.2em]">held</span>
           </div>
-        ))}
-        {Array.from({ length: Math.min(remaining, 6) }).map((_, i) => (
-          <div
-            key={`ghost-${i}`}
-            className="h-9 w-9 rounded-full"
-            style={{ border: "1px dashed rgba(255,255,255,0.18)" }}
-          />
         ))}
       </div>
 
-      <p className="mt-8 italic text-white/60 text-sm">
-        We'll remember the small things you told us. They'll show up later —
-        in memories, in nudges, in the moments you needed someone and
-        forgot they were already here.
+      <p className="mt-8 italic text-white/55 text-sm">
+        Their seat is reserved. When they sit down, you'll know — quietly.
       </p>
 
       <Spacer />
@@ -435,7 +456,6 @@ function FinalStep({
   );
 }
 
-// ---------- Small bits ----------
 function StepWrap({ children }: { children: React.ReactNode }) {
   return <div className="flex-1 flex flex-col animate-[fade_400ms_ease-out]">{children}</div>;
 }
@@ -472,12 +492,8 @@ function BigBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="mt-8 w-full rounded-full py-4 font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-      style={{
-        background: disabled ? "rgba(255,255,255,0.08)" : "#C49560",
-        color: disabled ? "rgba(255,255,255,0.5)" : "#14100C",
-        fontFamily: "'Inter Tight', system-ui, sans-serif",
-      }}
+      className="w-full rounded-full py-4 text-sm font-medium transition disabled:opacity-40 active:scale-[0.98]"
+      style={{ background: "#C49560", color: "#14100C" }}
     >
       {children}
     </button>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { Avatar } from "@/components/Avatar";
-import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
+import { FRIENDS, ME, RELATIONSHIP_MOMENTS, getSeatMeta } from "@/lib/data";
 import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/home")({
@@ -67,6 +67,8 @@ function Orbit({ onRoll, rolling }: { onRoll: () => void; rolling: boolean }) {
           const r = 32;
           const x = 50 + r * Math.cos(angle);
           const y = 50 + r * Math.sin(angle);
+          const meta = getSeatMeta(f.id);
+          const reserved = meta.state === "RESERVED";
           return (
             <Link
               key={f.id}
@@ -75,13 +77,21 @@ function Orbit({ onRoll, rolling }: { onRoll: () => void; rolling: boolean }) {
               className="absolute"
               style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
             >
-              <div className="rounded-full transition-transform active:scale-95"
-                   style={{
-                     boxShadow: f.postedToday
-                       ? "0 0 0 1px rgba(196,149,96,0.45), 0 0 22px rgba(216,123,60,0.35)"
-                       : "0 8px 24px rgba(0,0,0,0.5)",
-                   }}>
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={62} />
+              <div
+                className="rounded-full transition-transform active:scale-95"
+                style={{
+                  padding: reserved ? 3 : 0,
+                  border: reserved ? "1px dashed rgba(196,149,96,0.55)" : "none",
+                  boxShadow: reserved
+                    ? "0 0 18px rgba(196,149,96,0.18)"
+                    : f.postedToday
+                      ? "0 0 0 1px rgba(196,149,96,0.45), 0 0 22px rgba(216,123,60,0.35)"
+                      : "0 8px 24px rgba(0,0,0,0.5)",
+                  opacity: reserved ? 0.7 : 1,
+                  filter: reserved ? "grayscale(0.3)" : "none",
+                }}
+              >
+                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={reserved ? 56 : 62} />
               </div>
             </Link>
           );
