@@ -332,3 +332,30 @@ export const FRIENDSHIP_TIMELINE: Record<string, { year: string; text: string }[
     { year: "Today",   text: "Still here. Still seated." },
   ],
 };
+
+/**
+ * "Save a Seat" — ghost labels on empty chairs.
+ * Stored as { seatIndex, note }; surfaced on the Table as a labeled empty chair.
+ */
+export type SavedSeat = { seatIndex: number; note: string };
+export const SAVED_SEATS: SavedSeat[] = [
+  { seatIndex: 7,  note: "the friend I haven't met yet" },
+  { seatIndex: 17, note: "whoever ends up being my person" },
+];
+
+
+/** How the user's 25 have described them (used on the You screen) */
+export const ME_DESCRIPTIONS: { quote: string; from: string }[] = [
+  { quote: "The one who always shows up.", from: "Rahul" },
+  { quote: "Steady, in a world that isn't.", from: "Priya" },
+  { quote: "Home, kind of.", from: "Ananya" },
+  { quote: "The first call when something good happens.", from: "Kabir" },
+  { quote: "Funny in a way nobody else gets.", from: "Neha" },
+];
+
+/** Soft counters for the You screen — non-competitive, no metric can go down */
+export const QUIETLY = {
+  momentsThisMonth: 14,
+  thoughtsExchanged: 9,
+  verdictsCast: 3,
+};

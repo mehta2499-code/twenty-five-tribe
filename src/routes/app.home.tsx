@@ -1,126 +1,229 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Avatar } from "@/components/Avatar";
 import {
   FRIENDS, ME, SEATS_TOTAL,
-  RELATIONSHIP_TAGS, RELATIONSHIP_MOMENTS,
+  RELATIONSHIP_TAGS, RELATIONSHIP_MOMENTS, SAVED_SEATS,
 } from "@/lib/data";
+import { VOICE } from "@/lib/copy";
 import { MomentSheet } from "@/components/MomentSheet";
 
 export const Route = createFileRoute("/app/home")({
   component: Home,
 });
 
-/**
- * The Table — a digital living room.
- * Avatars arranged around an oval, viewed from above.
- * No dashboard, no feed. Just your people.
- */
-function TheTable() {
-  // Seat the first 14 friends around the oval. Empty seats stay empty — the table is never full.
-  const seated = FRIENDS.slice(0, 14);
-  const SEATS = 14;
+const SEATS = 20; // visible seats around the oval; centre is "you"
 
-  // Oval geometry (percent of the container box)
-  const cx = 50;
-  const cy = 50;
-  const rx = 42; // horizontal radius
-  const ry = 36; // vertical radius
+/** Curated set of seat *positions* that show a role label (max ~5 — keeps the table from feeling like a name tag wall) */
+const LABELED_POSITION_INDICES = new Set([0, 5, 10, 14]);
+
+
+type RollResult = { friend: typeof FRIENDS[number]; phase: "spinning" | "settled" } | null;
+
+function TheTable({ onRoll, rolling }: { onRoll: () => void; rolling: boolean }) {
+  const seated = FRIENDS.slice(0, 14);
+  const cx = 50, cy = 50, rx = 42, ry = 36;
+
+  // Distribute 14 filled seats evenly across the 22-slot ring so the table looks
+  // properly populated. Saved-seats win their assigned index; everything else fills
+  // around a Bresenham-style stride.
+  const ring = useMemo(() => {
+    const arr: ({ kind: "filled"; friend: typeof FRIENDS[number] } | { kind: "saved"; note: string } | { kind: "empty" })[] =
+      new Array(SEATS).fill(null).map(() => ({ kind: "empty" }));
+
+    for (const s of SAVED_SEATS) {
+      if (s.seatIndex >= 0 && s.seatIndex < SEATS) arr[s.seatIndex] = { kind: "saved", note: s.note };
+    }
+
+    // pick `seated.length` indices spread across remaining empties
+    const remaining: number[] = arr.map((_, i) => i).filter((i) => arr[i].kind === "empty");
+    const need = Math.min(seated.length, remaining.length);
+    const picks = new Set<number>();
+    for (let k = 0; k < need; k++) {
+      const idx = remaining[Math.round((k * remaining.length) / need)];
+      picks.add(idx);
+    }
+    let f = 0;
+    for (const idx of Array.from(picks).sort((a, b) => a - b)) {
+      arr[idx] = { kind: "filled", friend: seated[f++] };
+    }
+    return arr;
+  }, [seated]);
+
 
   return (
-    <section className="px-5 pt-2">
-      <div className="text-center mb-6">
-        <p className="seat-chip tracking-[0.3em] uppercase" style={{ fontStyle: "normal", fontSize: 10 }}>
-          The Table
-        </p>
-        <h1 className="font-display italic mt-3 text-cream"
-            style={{ fontSize: 34, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
-          These are your people.
+    <section className="px-5 pt-3">
+      <div className="text-center mb-7">
+        <p className="label-caps">{VOICE.table.header}</p>
+        <h1 className="font-display italic mt-4 text-cream"
+            style={{ fontSize: 38, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+          {VOICE.table.headline}
         </h1>
-        <p className="font-display italic mt-2" style={{ color: "var(--text-secondary)", fontSize: 15 }}>
-          {seated.length} seats taken · {SEATS_TOTAL - seated.length} kept open
+        <p className="font-display italic mt-3" style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+          {VOICE.table.subhead(seated.length, SEATS_TOTAL - seated.length)}
         </p>
       </div>
 
-      {/* The oval table */}
       <div
-        className="relative mx-auto table-felt"
+        className={`relative mx-auto table-felt ${rolling ? "orbit-spinning" : ""}`}
         style={{
           width: "100%",
           maxWidth: 380,
           aspectRatio: "1 / 1",
           borderRadius: "50%",
-          boxShadow:
-            "inset 0 0 60px rgba(0,0,0,0.55), 0 30px 80px -20px rgba(0,0,0,0.6)",
+          boxShadow: "inset 0 0 60px rgba(0,0,0,0.55), 0 30px 80px -20px rgba(0,0,0,0.6)",
         }}
       >
-        {/* Candle in the center — you */}
+        {/* You — the candle at the centre */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="candle-glow absolute" style={{ width: 140, height: 140 }} />
+          <div className="candle-glow candle-flicker absolute" style={{ width: 160, height: 160 }} />
           <div className="relative flex flex-col items-center">
-            <Avatar src={ME.avatar} initials={ME.initials} size={56} ring="gold" />
-            <p className="font-display italic mt-2 text-cream" style={{ fontSize: 14 }}>
+            <Avatar src={ME.avatar} initials={ME.initials} size={58} ring="gold" />
+            <p className="font-display italic mt-2 text-cream" style={{ fontSize: 13, opacity: 0.85 }}>
               you
             </p>
           </div>
         </div>
 
-        {/* Seats around the oval */}
-        {seated.map((f, i) => {
+        {ring.map((slot, i) => {
           const angle = (i / SEATS) * Math.PI * 2 - Math.PI / 2;
           const x = cx + rx * Math.cos(angle);
           const y = cy + ry * Math.sin(angle);
-          const tag = RELATIONSHIP_TAGS[f.id];
-          const showLabel = !!tag && i % 2 === 0; // only label a few — feels handmade
-          return (
-            <Link
-              key={f.id}
-              to="/app/seat/$id"
-              params={{ id: f.id }}
-              className="absolute"
-              style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                transform: "translate(-50%, -50%)",
-              }}
-            >
-              <div className="flex flex-col items-center">
-                <Avatar
-                  src={f.avatar}
-                  initials={f.initials}
-                  color={f.color}
-                  size={42}
-                  ring={f.postedToday ? "gold" : "none"}
-                />
-                {showLabel && (
-                  <span className="seat-chip mt-1 whitespace-nowrap"
-                        style={{ textShadow: "0 1px 4px rgba(0,0,0,0.7)" }}>
-                    {tag}
+
+          const wrapStyle = { left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" } as const;
+
+          if (slot.kind === "filled") {
+            const f = slot.friend;
+            const tag = RELATIONSHIP_TAGS[f.id];
+            const showLabel = LABELED_POSITION_INDICES.has(i) && !!tag;
+            return (
+              <Link
+                key={`f-${f.id}`}
+                to="/app/seat/$id"
+                params={{ id: f.id }}
+                className="absolute"
+                style={wrapStyle}
+              >
+                <div className="flex flex-col items-center">
+                  <Avatar
+                    src={f.avatar}
+                    initials={f.initials}
+                    color={f.color}
+                    size={40}
+                    ring={f.postedToday ? "gold" : "none"}
+                  />
+                  {showLabel && (
+                    <span className="seat-chip mt-1 whitespace-nowrap">
+                      {tag}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            );
+          }
+
+          if (slot.kind === "saved") {
+            return (
+              <div key={`s-${i}`} className="absolute" style={wrapStyle}>
+                <div className="flex flex-col items-center" style={{ width: 92 }}>
+                  <div className="empty-chair empty-chair-labeled" />
+                  <span className="seat-chip mt-1 text-center leading-tight"
+                        style={{ fontSize: 9.5, color: "var(--text-secondary)", maxWidth: 92 }}>
+                    {slot.note}
                   </span>
-                )}
+                </div>
               </div>
-            </Link>
+            );
+          }
+
+
+          return (
+            <div key={`e-${i}`} className="absolute" style={wrapStyle}>
+              <div className="empty-chair" />
+            </div>
           );
         })}
       </div>
 
+      {/* Roll the Table — the playful core loop, ambient on the Table */}
+      <div className="mt-7 flex items-center justify-center gap-3">
+        <button
+          onClick={onRoll}
+          aria-label={VOICE.table.rollPrompt}
+          className={`die-tile ${rolling ? "die-spinning" : ""} active:scale-95 transition`}
+        >
+          ⚄
+        </button>
+        <div className="text-left">
+          <button
+            onClick={onRoll}
+            className="font-display italic text-cream block"
+            style={{ fontSize: 17, letterSpacing: "-0.01em" }}
+          >
+            {VOICE.table.rollPrompt}
+          </button>
+          <p className="font-display italic text-cool" style={{ fontSize: 12 }}>
+            {VOICE.table.rollHint}
+          </p>
+        </div>
+      </div>
+
       <p className="text-center font-display italic mt-6"
-         style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-        Tap a seat to sit with them.
+         style={{ color: "var(--text-muted)", fontSize: 12 }}>
+        {VOICE.table.tableTooltip}
       </p>
     </section>
   );
 }
 
+function RollPanel({ result, onClose }: { result: NonNullable<RollResult>; onClose: () => void }) {
+  const f = result.friend;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-24"
+         style={{ background: "rgba(20,16,12,0.78)", backdropFilter: "blur(14px)" }}>
+      <div className="w-full max-w-md card-editorial p-6 animate-soft-in"
+           style={{ background: "var(--bg-card)", border: "1px solid var(--border-cool)" }}>
+        <div className="flex items-center gap-4">
+          <Avatar src={f.avatar} initials={f.initials} color={f.color} size={56} ring="gold" />
+          <div className="flex-1">
+            <p className="label-caps">the table chose</p>
+            <h3 className="font-display italic text-cream mt-1" style={{ fontSize: 26, lineHeight: 1.1 }}>
+              {f.name}.
+            </h3>
+          </div>
+        </div>
+        <p className="font-display italic text-cool mt-4" style={{ fontSize: 15, lineHeight: 1.5 }}>
+          Send them something that has nothing to do with anything.
+        </p>
+
+        <div className="mt-5 grid gap-2">
+          {VOICE.rollActions.map((a) => (
+            <button key={a.id}
+                    className="text-left px-4 py-3 rounded-xl transition active:scale-[0.99]"
+                    style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}>
+              <div className="font-display text-cream" style={{ fontSize: 16 }}>{a.label}</div>
+              <div className="font-display italic text-cool" style={{ fontSize: 12 }}>{a.hint}</div>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5 flex items-center justify-between">
+          <button onClick={onClose} className="label-caps text-cool">close</button>
+          <Link to="/app/seat/$id" params={{ id: f.id }} onClick={onClose}
+                className="font-display italic" style={{ color: "var(--accent-bronze)", fontSize: 14 }}>
+            sit with them →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RelationshipMoments() {
   return (
-    <section className="px-8 mt-12">
-      <p className="seat-chip text-center tracking-[0.3em] uppercase mb-6"
-         style={{ fontStyle: "normal", fontSize: 10 }}>
-        From your table today
-      </p>
-      <ul className="space-y-7">
+    <section className="px-7 mt-10">
+      <p className="label-caps text-center mb-5">{VOICE.table.momentsHeader}</p>
+      <ul className="space-y-6">
         {RELATIONSHIP_MOMENTS.map((m) => {
           const f = FRIENDS.find((x) => x.id === m.friendId)!;
           return (
@@ -130,11 +233,11 @@ function RelationshipMoments() {
                   <Avatar src={f.avatar} initials={f.initials} color={f.color} size={36} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-display text-cream" style={{ fontSize: 18, lineHeight: 1.35 }}>
+                  <p className="font-display text-cream" style={{ fontSize: 17, lineHeight: 1.4, letterSpacing: "-0.01em" }}>
                     {m.text}
                   </p>
                   <p className="font-display italic mt-1"
-                     style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                     style={{ color: "var(--text-muted)", fontSize: 12 }}>
                     {m.when}
                   </p>
                 </div>
@@ -149,49 +252,52 @@ function RelationshipMoments() {
 
 function Home() {
   const [sheet, setSheet] = useState(false);
+  const [roll, setRoll] = useState<RollResult>(null);
+  const rolling = roll?.phase === "spinning";
+
+  const onRoll = () => {
+    const candidates = FRIENDS.slice(0, 14);
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    setRoll({ friend: pick, phase: "spinning" });
+    setTimeout(() => setRoll({ friend: pick, phase: "settled" }), 1400);
+  };
 
   return (
     <>
-      {/* Quiet header — almost not there */}
-      <header className="px-6 pt-8 pb-2 flex items-center justify-center">
+      <header className="px-6 pt-9 pb-2 flex items-center justify-center">
         <span className="font-display italic text-cream"
-              style={{ fontSize: 28, letterSpacing: "0.02em" }}>
-          twenty&nbsp;five
+              style={{ fontSize: 26, letterSpacing: "0.01em" }}>
+          {VOICE.brand}
         </span>
       </header>
 
-      <TheTable />
+      <TheTable onRoll={onRoll} rolling={rolling} />
 
       <div className="hairline mx-12 mt-12" />
 
       <RelationshipMoments />
 
-      {/* A gentle invitation, not a CTA */}
-      <div className="px-8 mt-14 text-center">
-        <p className="font-display italic" style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-          Someone missing?
+      <div className="px-8 mt-12 text-center">
+        <p className="font-display italic" style={{ color: "var(--text-muted)", fontSize: 13 }}>
+          {VOICE.table.reserveAside}
         </p>
         <button
           onClick={() => setSheet(true)}
-          className="mt-3 font-display italic underline underline-offset-4"
-          style={{ color: "var(--accent-gold)", fontSize: 18 }}
+          className="mt-3 font-display italic underline underline-offset-4 decoration-1"
+          style={{ color: "var(--accent-bronze)", fontSize: 18 }}
         >
-          Reserve a seat
+          {VOICE.table.reserve}
         </button>
       </div>
 
       <p className="text-center font-display italic mt-14 mb-4"
-         style={{ color: "var(--text-muted)", fontSize: 12 }}>
-        Twenty-five chairs. No more, no less.
+         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}>
+        {VOICE.brandLine}
       </p>
 
-      <button
-        onClick={() => setSheet(true)}
-        aria-label="Share a moment"
-        className="fab-gradient fixed bottom-24 right-1/2 translate-x-[10rem] z-30 h-14 w-14 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition"
-      >
-        <Plus size={26} strokeWidth={2.2} />
-      </button>
+      {roll?.phase === "settled" && (
+        <RollPanel result={roll} onClose={() => setRoll(null)} />
+      )}
 
       <MomentSheet open={sheet} onClose={() => setSheet(false)} />
     </>
