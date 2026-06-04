@@ -339,9 +339,10 @@ export const FRIENDSHIP_TIMELINE: Record<string, { year: string; text: string }[
  */
 export type SavedSeat = { seatIndex: number; note: string };
 export const SAVED_SEATS: SavedSeat[] = [
-  { seatIndex: 17, note: "the friend I haven't met yet" },
-  { seatIndex: 21, note: "whoever ends up being my person" },
+  { seatIndex: 7,  note: "the friend I haven't met yet" },
+  { seatIndex: 17, note: "whoever ends up being my person" },
 ];
+
 
 /** How the user's 25 have described them (used on the You screen) */
 export const ME_DESCRIPTIONS: { quote: string; from: string }[] = [
