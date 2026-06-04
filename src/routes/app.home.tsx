@@ -12,10 +12,11 @@ export const Route = createFileRoute("/app/home")({
   component: Home,
 });
 
-const SEATS = 22; // visible seats around the oval; centre is "you"
+const SEATS = 20; // visible seats around the oval; centre is "you"
 
-/** Curated set of seat indices that show a role label (max ~5 — keeps the table from feeling like a name tag wall) */
-const LABELED_SEAT_INDICES = new Set([0, 4, 9, 13, 18]);
+/** Curated set of seat *positions* that show a role label (max ~5 — keeps the table from feeling like a name tag wall) */
+const LABELED_POSITION_INDICES = new Set([0, 5, 10, 14]);
+
 
 type RollResult = { friend: typeof FRIENDS[number]; phase: "spinning" | "settled" } | null;
 
