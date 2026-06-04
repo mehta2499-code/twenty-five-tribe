@@ -124,15 +124,17 @@ function TheTable({ onRoll, rolling }: { onRoll: () => void; rolling: boolean })
           if (slot.kind === "saved") {
             return (
               <div key={`s-${i}`} className="absolute" style={wrapStyle}>
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center" style={{ width: 92 }}>
                   <div className="empty-chair empty-chair-labeled" />
-                  <span className="seat-chip mt-1 whitespace-nowrap" style={{ maxWidth: 110, fontSize: 10, color: "var(--text-secondary)" }}>
+                  <span className="seat-chip mt-1 text-center leading-tight"
+                        style={{ fontSize: 9.5, color: "var(--text-secondary)", maxWidth: 92 }}>
                     {slot.note}
                   </span>
                 </div>
               </div>
             );
           }
+
 
           return (
             <div key={`e-${i}`} className="absolute" style={wrapStyle}>
