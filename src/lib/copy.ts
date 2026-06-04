@@ -5,8 +5,8 @@
  */
 
 export const VOICE = {
-  brandLine: "Twenty-five chairs. No more, no less.",
-  brand: "twenty five",
+  brandLine: "25 chairs. No more, no less.",
+  brand: "25",
 
   table: {
     header: "your table",

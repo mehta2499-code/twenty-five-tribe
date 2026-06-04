@@ -73,7 +73,7 @@ function Orbit({ rolling }: { rolling: boolean }) {
       <div className="mt-5 text-center">
         <Link to="/app/my25" className="font-display italic"
               style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.04em" }}>
-          {INNER_COUNT} close · {OUTER_DOTS} more · open the table
+          {INNER_COUNT} close · {OUTER_DOTS} more · Open the table
         </Link>
       </div>
     </section>
