@@ -34,12 +34,13 @@ function SeatPage() {
     );
   }
 
-  const tag = RELATIONSHIP_TAGS[f.id];
+  const meta = getSeatMeta(f.id);
+  const isReserved = meta.state === "RESERVED";
   const reason = SEAT_REASONS[f.id] ?? "Because they belong here.";
   const desc = MUTUAL_DESCRIPTIONS[f.id] ?? MUTUAL_DESCRIPTIONS.default;
   const timeline = FRIENDSHIP_TIMELINE[f.id] ?? FRIENDSHIP_TIMELINE.default;
-  const thoughts = THOUGHTS.filter((t) => t.friendId === f.id);
-  const capsule = CAPSULES.find((c) => c.friendId === f.id);
+  const thoughts = isReserved ? [] : THOUGHTS.filter((t) => t.friendId === f.id);
+  const capsule = isReserved ? undefined : CAPSULES.find((c) => c.friendId === f.id);
 
   const Section = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <section className="px-8 mt-14">
@@ -62,20 +63,69 @@ function SeatPage() {
 
       {/* Portrait */}
       <section className="px-6 pt-8 text-center">
-        <div className="inline-block"
-             style={{ boxShadow: "0 0 0 1px rgba(196,149,96,0.25), 0 0 40px rgba(216,123,60,0.18)", borderRadius: 9999 }}>
+        <div
+          className="inline-block"
+          style={{
+            boxShadow: isReserved
+              ? "0 0 0 1px rgba(196,149,96,0.35), 0 0 0 4px rgba(20,16,12,1), 0 0 0 5px rgba(196,149,96,0.25)"
+              : "0 0 0 1px rgba(196,149,96,0.25), 0 0 40px rgba(216,123,60,0.18)",
+            borderRadius: 9999,
+            opacity: isReserved ? 0.75 : 1,
+            filter: isReserved ? "grayscale(0.25)" : "none",
+          }}
+        >
           <Avatar src={f.avatar} initials={f.initials} color={f.color} size={148} />
         </div>
         <h1 className="font-display italic text-cream mt-6" style={{ fontSize: 38, lineHeight: 1.05 }}>
           {f.name}
         </h1>
-        {tag && (
-          <p className="font-display italic mt-2"
-             style={{ color: "var(--accent-bronze)", fontSize: 13, letterSpacing: "0.02em" }}>
-            {tag.toLowerCase()}
+        <p
+          className="font-display italic mt-2"
+          style={{ color: "var(--accent-bronze)", fontSize: 13, letterSpacing: "0.02em" }}
+        >
+          {meta.role.toLowerCase()}
+        </p>
+        <p
+          className="mt-3 inline-block uppercase tracking-[0.24em]"
+          style={{
+            fontSize: 10,
+            color: isReserved ? "var(--accent-bronze)" : "var(--text-muted)",
+            padding: "4px 10px",
+            borderRadius: 999,
+            background: isReserved ? "rgba(196,149,96,0.10)" : "transparent",
+            border: isReserved ? "1px dashed rgba(196,149,96,0.45)" : "none",
+          }}
+        >
+          {isReserved ? VOICE.reservation.badgeReserved : VOICE.reservation.badgeAccepted}
+        </p>
+        {isReserved && meta.reservedAt && (
+          <p className="font-display italic mt-2" style={{ color: "var(--text-muted)", fontSize: 11 }}>
+            reserved {meta.reservedAt}{meta.phone ? ` · ${meta.phone}` : ""}
           </p>
         )}
       </section>
+
+      {isReserved && (
+        <section className="px-8 mt-10 text-center">
+          <p
+            className="font-display italic text-cream mx-auto max-w-[22rem]"
+            style={{ fontSize: 18, lineHeight: 1.5 }}
+          >
+            Their chair is held. The rest of this page fills in when they take it.
+          </p>
+          <button
+            className="mt-6 rounded-full px-5 py-3 text-xs"
+            style={{
+              background: "rgba(196,149,96,0.12)",
+              border: "1px solid rgba(196,149,96,0.4)",
+              color: "var(--accent-bronze)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {VOICE.reservation.resend}
+          </button>
+        </section>
+      )}
 
       <Section label="why they're here">
         <p className="font-display italic text-cream text-center mx-auto max-w-[22rem]"
