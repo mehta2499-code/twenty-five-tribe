@@ -541,7 +541,7 @@ function Landing() {
               Aman Mehta · <a href="tel:+917990552696" className="hover:text-white">+91 79905 52696</a> · <a href="mailto:mehta2499@gmail.com" className="underline decoration-white/30 underline-offset-4 hover:text-white">mehta2499@gmail.com</a>
             </p>
             <p className="mt-3 text-white/50 text-xs uppercase" style={{ letterSpacing: "0.28em" }}>
-              © 2026 Twenty Five
+              © 2026 25
             </p>
           </Reveal>
         </div>
