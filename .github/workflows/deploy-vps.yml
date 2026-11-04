@@ -1,0 +1,78 @@
+name: Deploy to VPS
+
+# Builds 25 as a Node server and ships it to your VPS on every push to main.
+# Needs repository secrets VPS_HOST, VPS_USER and VPS_SSH_KEY
+# (deploy/setup-server.sh prints them). Skips with a warning until they're set.
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["supabase/**", "**/*.md"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+    steps:
+      - name: Check secrets are set
+        id: check
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "::warning::Add VPS_HOST, VPS_USER and VPS_SSH_KEY under Settings → Secrets and variables → Actions, then run this workflow again."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
+
+      - uses: oven-sh/setup-bun@v2
+        if: steps.check.outputs.ready == 'true'
+
+      - name: Install and build for Node
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          bun install --frozen-lockfile
+          NITRO_PRESET=node-server bunx vite build
+          test -f .output/server/index.mjs
+
+      - name: Set up SSH
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload and switch to the new version
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          RELEASE="$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::7}"
+          APP=/var/www/twentyfive
+          SSH="ssh -i ~/.ssh/deploy_key $VPS_USER@$VPS_HOST"
+          $SSH "mkdir -p $APP/releases/$RELEASE"
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" .output/ "$VPS_USER@$VPS_HOST:$APP/releases/$RELEASE/"
+          # Point "current" at the new release, restart, and keep the last 5 releases.
+          $SSH "ln -sfn $APP/releases/$RELEASE $APP/current \
+            && sudo /usr/bin/systemctl restart twentyfive \
+            && cd $APP/releases && ls -1t | tail -n +6 | xargs -r rm -rf"
+
+      - name: Check the site is up
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/")
+            echo "Attempt $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 5
+          done
+          echo "::error::The app didn't answer after deploy. On the server, run: sudo systemctl status twentyfive"
+          exit 1
