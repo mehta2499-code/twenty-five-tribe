@@ -10,18 +10,26 @@ export const Route = createFileRoute("/app/home")({
 });
 
 const INNER_COUNT = 6;
-const OUTER_DOTS  = 19;
+const OUTER_DOTS = 19;
 
-type RollResult = { friend: typeof FRIENDS[number]; phase: "spinning" | "settled" } | null;
+type RollResult = { friend: (typeof FRIENDS)[number]; phase: "spinning" | "settled" } | null;
 
 function Orbit({ rolling }: { rolling: boolean }) {
   const inner = useMemo(() => FRIENDS.slice(0, INNER_COUNT), []);
 
   return (
     <section className="px-5 pt-2">
-      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 340, aspectRatio: "1 / 1" }}>
-        <div className="absolute inset-0 rounded-full breathe pointer-events-none"
-             style={{ background: "radial-gradient(circle at 50% 50%, rgba(216,123,60,0.10) 0%, rgba(196,149,96,0.04) 38%, transparent 70%)" }} />
+      <div
+        className="relative mx-auto"
+        style={{ width: "100%", maxWidth: 340, aspectRatio: "1 / 1" }}
+      >
+        <div
+          className="absolute inset-0 rounded-full breathe pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 50%, rgba(43,138,196,0.10) 0%, rgba(43,138,196,0.04) 38%, transparent 70%)",
+          }}
+        />
 
         <div className={`absolute inset-0 orbit-slow ${rolling ? "orbit-fast" : ""}`}>
           {Array.from({ length: OUTER_DOTS }).map((_, i) => {
@@ -30,10 +38,21 @@ function Orbit({ rolling }: { rolling: boolean }) {
             const x = 50 + r * Math.cos(angle);
             const y = 50 + r * Math.sin(angle);
             return (
-              <span key={i} className="absolute soft-pulse"
-                    style={{ left: `${x}%`, top: `${y}%`, width: 5, height: 5, borderRadius: 999,
-                             background: "rgba(196,149,96,0.55)", boxShadow: "0 0 8px rgba(216,123,60,0.45)",
-                             transform: "translate(-50%, -50%)", animationDelay: `${(i % 6) * 0.4}s` }} />
+              <span
+                key={i}
+                className="absolute soft-pulse"
+                style={{
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  width: 5,
+                  height: 5,
+                  borderRadius: 999,
+                  background: "rgba(43,138,196,0.55)",
+                  boxShadow: "0 0 8px rgba(43,138,196,0.45)",
+                  transform: "translate(-50%, -50%)",
+                  animationDelay: `${(i % 6) * 0.4}s`,
+                }}
+              />
             );
           })}
         </div>
@@ -46,33 +65,53 @@ function Orbit({ rolling }: { rolling: boolean }) {
           const meta = getSeatMeta(f.id);
           const reserved = meta.state === "RESERVED";
           return (
-            <Link key={f.id} to="/app/seat/$id" params={{ id: f.id }} className="absolute"
-                  style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}>
-              <div className="rounded-full transition-transform active:scale-95"
-                   style={{
-                     padding: reserved ? 3 : 0,
-                     border: reserved ? "1px dashed rgba(196,149,96,0.55)" : "none",
-                     boxShadow: reserved ? "0 0 18px rgba(196,149,96,0.18)"
-                       : f.postedToday ? "0 0 0 1px rgba(196,149,96,0.45), 0 0 22px rgba(216,123,60,0.35)"
-                       : "0 8px 24px rgba(0,0,0,0.5)",
-                     opacity: reserved ? 0.7 : 1,
-                     filter: reserved ? "grayscale(0.3)" : "none",
-                   }}>
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={reserved ? 54 : 60} />
+            <Link
+              key={f.id}
+              to="/app/seat/$id"
+              params={{ id: f.id }}
+              className="absolute"
+              style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
+            >
+              <div
+                className="rounded-full transition-transform active:scale-95"
+                style={{
+                  padding: reserved ? 3 : 0,
+                  border: reserved ? "1px dashed rgba(43,138,196,0.55)" : "none",
+                  boxShadow: reserved
+                    ? "0 0 18px rgba(43,138,196,0.18)"
+                    : f.postedToday
+                      ? "0 0 0 1px rgba(43,138,196,0.45), 0 0 22px rgba(43,138,196,0.35)"
+                      : "0 8px 24px rgba(0,0,0,0.5)",
+                  opacity: reserved ? 0.7 : 1,
+                  filter: reserved ? "grayscale(0.3)" : "none",
+                }}
+              >
+                <Avatar
+                  src={f.avatar}
+                  initials={f.initials}
+                  color={f.color}
+                  size={reserved ? 54 : 60}
+                />
               </div>
             </Link>
           );
         })}
 
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="candle-glow candle-flicker absolute" style={{ width: 130, height: 130 }} />
+          <div
+            className="candle-glow candle-flicker absolute"
+            style={{ width: 130, height: 130 }}
+          />
           <Avatar src={ME.avatar} initials={ME.initials} size={64} ring="gold" />
         </div>
       </div>
 
       <div className="mt-5 text-center">
-        <Link to="/app/my25" className="font-display italic"
-              style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.04em" }}>
+        <Link
+          to="/app/my25"
+          className="font-display italic"
+          style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.04em" }}
+        >
           {INNER_COUNT} close · {OUTER_DOTS} more · Open the table
         </Link>
       </div>
@@ -82,8 +121,13 @@ function Orbit({ rolling }: { rolling: boolean }) {
 
 function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment: () => void }) {
   const items = [
-    { glyph: "📸", label: "Share a moment", onClick: onAddMoment, to: undefined as string | undefined },
-    { glyph: "❤",  label: "Send a thought", onClick: undefined, to: "/app/thoughts" },
+    {
+      glyph: "📸",
+      label: "Share a moment",
+      onClick: onAddMoment,
+      to: undefined as string | undefined,
+    },
+    { glyph: "❤", label: "Send a thought", onClick: undefined, to: "/app/thoughts" },
     { glyph: "➕", label: "Reserve a seat", onClick: undefined, to: "/app/my25" },
     { glyph: "🎲", label: "Roll the table", onClick: onRoll, to: undefined },
   ];
@@ -100,12 +144,20 @@ function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment
               </span>
             </>
           );
-          const cls = "flex items-center gap-3 px-4 py-4 rounded-2xl active:scale-[0.99] transition text-left";
-          const style = { background: "var(--bg-surface)", border: "1px solid var(--border-cool)" } as const;
+          const cls =
+            "flex items-center gap-3 px-4 py-4 rounded-2xl active:scale-[0.99] transition text-left";
+          const style = {
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-cool)",
+          } as const;
           return it.to ? (
-            <Link key={it.label} to={it.to} className={cls} style={style}>{inner}</Link>
+            <Link key={it.label} to={it.to} className={cls} style={style}>
+              {inner}
+            </Link>
           ) : (
-            <button key={it.label} onClick={it.onClick} className={cls} style={style}>{inner}</button>
+            <button key={it.label} onClick={it.onClick} className={cls} style={style}>
+              {inner}
+            </button>
           );
         })}
       </div>
@@ -152,13 +204,17 @@ function StartHere() {
         <p className="font-display italic text-cream" style={{ fontSize: 20, lineHeight: 1.3 }}>
           {nudge.headline}
         </p>
-        <p className="font-display italic mt-2"
-           style={{ color: "var(--text-muted)", fontSize: 13 }}>
+        <p
+          className="font-display italic mt-2"
+          style={{ color: "var(--text-muted)", fontSize: 13 }}
+        >
           {nudge.body}
         </p>
-        <Link to={nudge.to}
-              className="inline-block mt-5 rounded-full px-5 py-2.5 font-display italic"
-              style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)", fontSize: 13 }}>
+        <Link
+          to={nudge.to}
+          className="inline-block mt-5 rounded-full px-5 py-2.5 font-display italic"
+          style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)", fontSize: 13 }}
+        >
           {nudge.cta}
         </Link>
       </div>
@@ -169,34 +225,46 @@ function StartHere() {
 function RollPanel({ result, onClose }: { result: NonNullable<RollResult>; onClose: () => void }) {
   const f = result.friend;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-28"
-         style={{ background: "rgba(20,16,12,0.78)", backdropFilter: "blur(14px)" }}>
-      <div className="w-full max-w-md card-editorial p-7 animate-soft-in text-center"
-           style={{ background: "var(--bg-card)" }}>
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-28"
+      style={{ background: "rgba(14,42,69,0.45)", backdropFilter: "blur(14px)" }}
+    >
+      <div
+        className="w-full max-w-md card-editorial p-7 animate-soft-in text-center"
+        style={{ background: "var(--bg-card)" }}
+      >
         <Avatar src={f.avatar} initials={f.initials} color={f.color} size={92} ring="gold" />
         <h3 className="font-display italic text-cream mt-5" style={{ fontSize: 30 }}>
           {f.name}
         </h3>
-        <p className="font-display italic text-cool mt-3 mx-auto max-w-[18rem]"
-           style={{ fontSize: 14, lineHeight: 1.5 }}>
+        <p
+          className="font-display italic text-cool mt-3 mx-auto max-w-[18rem]"
+          style={{ fontSize: 14, lineHeight: 1.5 }}
+        >
           Send them something that has nothing to do with anything.
         </p>
         <div className="mt-7 grid grid-cols-4 gap-3">
           {[
-            { id: "song",  glyph: "♪", label: "Song" },
+            { id: "song", glyph: "♪", label: "Song" },
             { id: "photo", glyph: "◐", label: "Photo" },
             { id: "voice", glyph: "◍", label: "Voice note" },
-            { id: "msg",   glyph: "✎", label: "Message" },
+            { id: "msg", glyph: "✎", label: "Message" },
           ].map((a) => (
-            <button key={a.id}
-                    className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
-                    style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}>
+            <button
+              key={a.id}
+              className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
+              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
+            >
               <span style={{ color: "var(--accent-bronze)", fontSize: 20 }}>{a.glyph}</span>
-              <span className="font-display italic text-cream" style={{ fontSize: 12 }}>{a.label}</span>
+              <span className="font-display italic text-cream" style={{ fontSize: 12 }}>
+                {a.label}
+              </span>
             </button>
           ))}
         </div>
-        <button onClick={onClose} className="mt-6 label-caps text-cool">close</button>
+        <button onClick={onClose} className="mt-6 label-caps text-cool">
+          close
+        </button>
       </div>
     </div>
   );
@@ -215,8 +283,10 @@ function TodayAtTheTable() {
               <Link to="/app/seat/$id" params={{ id: f.id }} className="flex items-center gap-4">
                 <Avatar src={f.avatar} initials={f.initials} color={f.color} size={44} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-display text-cream"
-                     style={{ fontSize: 16, lineHeight: 1.45, letterSpacing: "-0.005em" }}>
+                  <p
+                    className="font-display text-cream"
+                    style={{ fontSize: 16, lineHeight: 1.45, letterSpacing: "-0.005em" }}
+                  >
                     {m.text}
                   </p>
                 </div>
@@ -243,15 +313,32 @@ function Home() {
 
   return (
     <>
-      <header className="px-6 pt-10 pb-6 flex items-center justify-between">
-        <span className="w-9" />
-        <span className="font-display italic text-cream"
-              style={{ fontSize: 22, letterSpacing: "0.02em" }}>
-          {VOICE.brand}
-        </span>
-        <Link to="/app/profile" aria-label="You">
-          <Avatar src={ME.avatar} initials={ME.initials} size={34} />
-        </Link>
+      <header className="band px-6 pt-[max(2.25rem,calc(env(safe-area-inset-top)+1rem))] pb-8">
+        <div className="flex items-center justify-between">
+          <span
+            className="display text-white"
+            style={{ fontSize: 44, lineHeight: 1, fontWeight: 900, letterSpacing: "-0.05em" }}
+          >
+            {VOICE.brand}
+            <span className="flame" style={{ color: "var(--coral)" }}>
+              .
+            </span>
+          </span>
+          <Link
+            to="/app/profile"
+            aria-label="You"
+            className="rounded-full"
+            style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.6)" }}
+          >
+            <Avatar src={ME.avatar} initials={ME.initials} size={40} />
+          </Link>
+        </div>
+        <p
+          className="sub mt-4 display"
+          style={{ fontSize: 22, fontStyle: "italic", fontWeight: 500 }}
+        >
+          The only people that matter.
+        </p>
       </header>
 
       <Orbit rolling={rolling} />
@@ -262,13 +349,17 @@ function Home() {
 
       <TodayAtTheTable />
 
-      <p className="text-center font-display italic mt-16 mb-4 px-8"
-         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.05em" }}>
+      <p
+        className="text-center font-display italic mt-16 mb-4 px-8"
+        style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.05em" }}
+      >
         {VOICE.brandLine}
       </p>
 
       {roll?.phase === "settled" && <RollPanel result={roll} onClose={() => setRoll(null)} />}
-      {adding && <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />}
+      {adding && (
+        <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
+      )}
     </>
   );
 }

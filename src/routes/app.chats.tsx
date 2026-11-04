@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { StreakBadge, SnapViewer, clientOnly } from "@/components/SocialUI";
+import { StreakBadge, SnapViewer, clientOnly, PageBand } from "@/components/SocialUI";
 import { seatedFriends, timeAgo, useSocial, type ChatMessage, type Snap } from "@/lib/social";
 
 export const Route = createFileRoute("/app/chats")({
@@ -36,15 +36,11 @@ function Chats() {
 
   return (
     <div className="pb-6">
-      <header className="px-6 pt-12 pb-2 text-center">
-        <p className="label-caps">chats</p>
-        <h1
-          className="font-display italic text-cream mt-4"
-          style={{ fontSize: 32, lineHeight: 1.05, letterSpacing: "-0.02em" }}
-        >
-          Only your 25 can text you.
-        </h1>
-      </header>
+      <PageBand
+        eyebrow="chats"
+        title="Only your 25 can text you."
+        sub="Streaks, snaps and the group gossip. Nobody else."
+      />
 
       {unopened.length > 0 && (
         <section className="mt-8">

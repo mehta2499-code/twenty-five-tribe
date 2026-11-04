@@ -23,20 +23,25 @@ function useTypewriter(text: string, speed = 18) {
       if (i < text.length) tRef.current = setTimeout(tick, speed);
     };
     tick();
-    return () => { if (tRef.current) clearTimeout(tRef.current); };
+    return () => {
+      if (tRef.current) clearTimeout(tRef.current);
+    };
   }, [text, speed]);
   return out;
 }
 
 const PULSE_COLORS = [
-  { word: "tired",    color: "#7B6FD4" },
-  { word: "grateful", color: "#D4A96A" },
-  { word: "anxious",  color: "#C94040" },
-  { word: "lit",      color: "#1D9E75" },
-  { word: "meh",      color: "#8A9CAA" },
+  { word: "tired", color: "var(--blue)" },
+  { word: "grateful", color: "var(--blue-deep)" },
+  { word: "anxious", color: "var(--coral-deep)" },
+  { word: "lit", color: "var(--mint)" },
+  { word: "meh", color: "var(--text-muted)" },
 ];
 
-function spaced(s: string) { return s.toUpperCase().split("").join(" "); }
+// Uppercase and letter-spacing come from the .label-caps style.
+function spaced(s: string) {
+  return s;
+}
 
 function PulseScreen() {
   const [word, setWord] = useState("");
@@ -53,7 +58,10 @@ function PulseScreen() {
     return pool[seed % pool.length].replaceAll("{name}", selected.name);
   })();
   const typed = useTypewriter(text);
-  function run(next: Mode) { setMode(next); setSeed((s) => s + 1); }
+  function run(next: Mode) {
+    setMode(next);
+    setSeed((s) => s + 1);
+  }
 
   function sendPulse() {
     if (!word.trim() && !picked) return;
@@ -65,8 +73,13 @@ function PulseScreen() {
     <>
       <header className="px-6 pt-10 pb-2 text-center">
         <p className="label-caps text-cool">{spaced("Pulse · Just for your 25")}</p>
-        <h1 className="font-display italic text-warm mt-4" style={{ fontSize: 30, lineHeight: 1.2 }}>
-          How are you<br />actually doing?
+        <h1
+          className="font-display italic text-warm mt-4"
+          style={{ fontSize: 30, lineHeight: 1.2 }}
+        >
+          How are you
+          <br />
+          actually doing?
         </h1>
       </header>
 
@@ -84,7 +97,10 @@ function PulseScreen() {
             return (
               <button
                 key={p.word}
-                onClick={() => { setPicked(p.word); if (!word) setWord(p.word); }}
+                onClick={() => {
+                  setPicked(p.word);
+                  if (!word) setWord(p.word);
+                }}
                 className="flex flex-col items-center gap-1.5"
               >
                 <div
@@ -94,12 +110,14 @@ function PulseScreen() {
                     height: 46,
                     background: p.color,
                     boxShadow: active
-                      ? `0 0 0 3px #0D1820, 0 0 0 5px ${p.color}, 0 0 24px ${p.color}`
+                      ? `0 0 0 3px #fff, 0 0 0 5px ${p.color}, 0 0 24px ${p.color}`
                       : `0 0 14px ${p.color}55`,
                     transform: active ? "scale(1.06)" : "scale(1)",
                   }}
                 />
-                <span className="label-caps text-cool" style={{ fontSize: 9 }}>{spaced(p.word)}</span>
+                <span className="label-caps text-cool" style={{ fontSize: 9 }}>
+                  {spaced(p.word)}
+                </span>
               </button>
             );
           })}
@@ -119,7 +137,10 @@ function PulseScreen() {
               className="absolute inset-0 -m-6 rounded-full animate-purple-pulse"
               style={{ pointerEvents: "none" }}
             />
-            <p className="font-display italic text-warm text-glow-purple text-center" style={{ fontSize: 22 }}>
+            <p
+              className="font-display italic text-warm text-glow-purple text-center"
+              style={{ fontSize: 22 }}
+            >
               Your 25 can feel you.
             </p>
           </div>
@@ -132,26 +153,44 @@ function PulseScreen() {
       {/* Roast & Toast */}
       <section className="px-5">
         <div className="flex items-center gap-2 px-1">
-          <Sparkles size={14} style={{ color: "#7B6FD4" }} />
+          <Sparkles size={14} style={{ color: "var(--blue)" }} />
           <span className="label-caps text-cool">{spaced("AI · Roast & Toast")}</span>
         </div>
         <h2 className="font-display italic text-warm mt-3 px-1" style={{ fontSize: 22 }}>
           Pick someone. Let AI do the rest.
         </h2>
 
-        <div className="mt-5 rounded-2xl px-3 py-3" style={{ background: "#132030", border: "1px solid var(--border-cool)" }}>
+        <div
+          className="mt-5 rounded-2xl px-3 py-3"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-cool)" }}
+        >
           <div className="flex gap-3 overflow-x-auto -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {FRIENDS.slice(0, 18).map((f) => {
               const active = f.id === selected.id;
               return (
                 <button
                   key={f.id}
-                  onClick={() => { setSelected(f); setMode(null); }}
+                  onClick={() => {
+                    setSelected(f);
+                    setMode(null);
+                  }}
                   className="flex flex-col items-center gap-1.5 shrink-0 transition"
                   style={{ transform: active ? "scale(1.06)" : "scale(1)" }}
                 >
-                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={52} ring={active ? "active" : "none"} />
-                  <span className="font-display italic max-w-[64px] truncate" style={{ fontSize: 11, color: active ? "#F2F0EB" : "#8A9CAA" }}>
+                  <Avatar
+                    src={f.avatar}
+                    initials={f.initials}
+                    color={f.color}
+                    size={52}
+                    ring={active ? "active" : "none"}
+                  />
+                  <span
+                    className="font-display italic max-w-[64px] truncate"
+                    style={{
+                      fontSize: 11,
+                      color: active ? "var(--text-primary)" : "var(--text-muted)",
+                    }}
+                  >
                     {f.name}
                   </span>
                 </button>
@@ -164,7 +203,11 @@ function PulseScreen() {
           <button
             onClick={() => run("roast")}
             className="rounded-full py-3 font-display italic"
-            style={{ background: "transparent", border: "1px solid var(--border-cool)", color: "#F2F0EB" }}
+            style={{
+              background: "transparent",
+              border: "1px solid var(--border-cool)",
+              color: "var(--text-primary)",
+            }}
           >
             🔥 Roast {selected.name}
           </button>
@@ -177,29 +220,44 @@ function PulseScreen() {
           <div className="card-editorial accent-bar-purple mt-5 p-5 animate-soft-in">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Avatar src={selected.avatar} initials={selected.initials} color={selected.color} size={36} />
+                <Avatar
+                  src={selected.avatar}
+                  initials={selected.initials}
+                  color={selected.color}
+                  size={36}
+                />
                 <div>
-                  <div className="font-display text-warm" style={{ fontSize: 14 }}>{selected.name}</div>
-                  <div className="label-caps text-cool">{spaced(mode === "roast" ? "Roast · AI" : "Toast · AI")}</div>
+                  <div className="font-display text-warm" style={{ fontSize: 14 }}>
+                    {selected.name}
+                  </div>
+                  <div className="label-caps text-cool">
+                    {spaced(mode === "roast" ? "Roast · AI" : "Toast · AI")}
+                  </div>
                 </div>
               </div>
               <button
                 onClick={() => run(mode)}
                 aria-label="Regenerate"
                 className="h-9 w-9 rounded-full flex items-center justify-center"
-                style={{ background: "#1A2D3E", border: "1px solid var(--border-cool)" }}
+                style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
               >
                 <RotateCcw size={15} />
               </button>
             </div>
-            <p className="mt-4 font-display italic caret" style={{ fontSize: 16, lineHeight: 1.7, color: "#F2F0EB" }}>
+            <p
+              className="mt-4 font-display italic caret"
+              style={{ fontSize: 16, lineHeight: 1.7, color: "var(--text-primary)" }}
+            >
               {typed}
             </p>
           </div>
         )}
       </section>
 
-      <p className="px-8 text-center font-display italic text-cool mt-10 mb-6" style={{ fontSize: 12 }}>
+      <p
+        className="px-8 text-center font-display italic text-cool mt-10 mb-6"
+        style={{ fontSize: 12 }}
+      >
         Pulses and Toasts stay inside your 25. Never shared. Never trained on.
       </p>
     </>

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 
@@ -8,6 +8,7 @@ export const Route = createFileRoute("/app")({
 
 function AppLayout() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     try {
@@ -34,8 +35,7 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <div className="pointer-events-none fixed top-0 inset-x-0 h-24 z-10 header-fade" />
-      <div className="mx-auto max-w-md pb-28 relative">
+      <div key={pathname} className="mx-auto max-w-md pb-28 relative page-in">
         <Outlet />
       </div>
       <BottomNav />

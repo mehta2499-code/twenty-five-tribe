@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PageBand } from "@/components/SocialUI";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, MOMENTS } from "@/lib/data";
 import { VOICE } from "@/lib/copy";
@@ -19,21 +20,21 @@ function MomentsScreen() {
 
   return (
     <>
-      <header className="px-6 pt-12 pb-2 text-center">
-        <p className="label-caps">moments</p>
-        <h1 className="font-display italic text-cream mt-4"
-            style={{ fontSize: 32, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
-          What's worth remembering.
-        </h1>
-      </header>
+      <PageBand
+        eyebrow="moments"
+        title="What's worth remembering."
+        sub="Everything here fades in 72 hours."
+      />
 
       {empty ? (
         <section className="px-8 mt-20 text-center">
           <p className="font-display italic text-cream" style={{ fontSize: 18, lineHeight: 1.5 }}>
             Share your first moment.
           </p>
-          <p className="font-display italic mt-3"
-             style={{ color: "var(--text-muted)", fontSize: 13 }}>
+          <p
+            className="font-display italic mt-3"
+            style={{ color: "var(--text-muted)", fontSize: 13 }}
+          >
             A photo. A voice note. A milestone. The small things.
           </p>
           <button
@@ -52,11 +53,17 @@ function MomentsScreen() {
               <article key={m.id}>
                 <Link to="/app/seat/$id" params={{ id: f.id }} className="block">
                   {m.photo && (
-                    <div className="mb-5 overflow-hidden rounded-2xl"
-                         style={{ border: "1px solid var(--border-cool)" }}>
-                      <img src={m.photo} alt="" loading="lazy"
-                           className="w-full aspect-[5/4] object-cover"
-                           style={{ filter: "saturate(0.9) brightness(0.95)" }} />
+                    <div
+                      className="mb-5 overflow-hidden rounded-2xl"
+                      style={{ border: "1px solid var(--border-cool)" }}
+                    >
+                      <img
+                        src={m.photo}
+                        alt=""
+                        loading="lazy"
+                        className="w-full aspect-[5/4] object-cover"
+                        style={{ filter: "saturate(0.9) brightness(0.95)" }}
+                      />
                     </div>
                   )}
                   <div className="flex items-center gap-3">
@@ -65,8 +72,10 @@ function MomentsScreen() {
                       {f.name}
                     </span>
                   </div>
-                  <p className="mt-3 font-display text-cream"
-                     style={{ fontSize: 18, lineHeight: 1.5, letterSpacing: "-0.005em" }}>
+                  <p
+                    className="mt-3 font-display text-cream"
+                    style={{ fontSize: 18, lineHeight: 1.5, letterSpacing: "-0.005em" }}
+                  >
                     {m.text}
                   </p>
                 </Link>
@@ -76,8 +85,10 @@ function MomentsScreen() {
         </section>
       )}
 
-      <p className="text-center font-display italic mt-16 mb-4 px-8"
-         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}>
+      <p
+        className="text-center font-display italic mt-16 mb-4 px-8"
+        style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}
+      >
         {VOICE.moments.sub}
       </p>
 
@@ -91,11 +102,13 @@ function MomentsScreen() {
           bottom: "6.5rem",
           background: "var(--accent-bronze)",
           color: "var(--bg-primary)",
-          boxShadow: "0 10px 30px rgba(216,123,60,0.45)",
+          boxShadow: "0 10px 30px rgba(43,138,196,0.45)",
         }}
       >
         <Plus size={18} strokeWidth={2.4} />
-        <span className="font-display italic" style={{ fontSize: 13 }}>Add Moment</span>
+        <span className="font-display italic" style={{ fontSize: 13 }}>
+          Add Moment
+        </span>
       </button>
 
       {adding && (

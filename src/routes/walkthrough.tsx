@@ -55,7 +55,7 @@ function Walkthrough() {
                 width: idx === i ? 22 : 6,
                 height: 6,
                 borderRadius: 999,
-                background: idx <= i ? "var(--accent-bronze)" : "rgba(196,149,96,0.22)",
+                background: idx <= i ? "var(--accent-bronze)" : "rgba(43,138,196,0.22)",
                 transition: "all 280ms ease",
               }}
             />

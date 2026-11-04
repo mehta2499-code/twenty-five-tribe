@@ -4,9 +4,9 @@ import type { MomentTag } from "@/lib/data";
 
 const TAGS: { tag: MomentTag; color: string }[] = [
   { tag: "Life Update", color: "var(--tag-life)" },
-  { tag: "Milestone",   color: "var(--tag-milestone)" },
-  { tag: "Mood",        color: "var(--tag-mood)" },
-  { tag: "Thought",     color: "var(--tag-thought)" },
+  { tag: "Milestone", color: "var(--tag-milestone)" },
+  { tag: "Mood", color: "var(--tag-mood)" },
+  { tag: "Thought", color: "var(--tag-thought)" },
 ];
 
 export function MomentSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -17,11 +17,16 @@ export function MomentSheet({ open, onClose }: { open: boolean; onClose: () => v
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-[rgba(14,42,69,0.45)] backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative w-full max-w-md bg-surface rounded-t-3xl p-5 border-t border-border animate-soft-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">New Moment</h2>
-          <button onClick={onClose} className="text-muted-foreground"><X size={20} /></button>
+          <button onClick={onClose} className="text-muted-foreground">
+            <X size={20} />
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -37,9 +42,7 @@ export function MomentSheet({ open, onClose }: { open: boolean; onClose: () => v
                   background: active
                     ? `color-mix(in oklab, ${t.color} 22%, transparent)`
                     : "transparent",
-                  borderColor: active
-                    ? t.color
-                    : "var(--border)",
+                  borderColor: active ? t.color : "var(--border)",
                 }}
               >
                 {t.tag}
@@ -73,7 +76,9 @@ export function MomentSheet({ open, onClose }: { open: boolean; onClose: () => v
             className={`relative h-6 w-11 rounded-full transition ${expires ? "bg-primary" : "bg-border"}`}
             aria-pressed={expires}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${expires ? "left-[1.5rem]" : "left-0.5"}`} />
+            <span
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${expires ? "left-[1.5rem]" : "left-0.5"}`}
+            />
           </button>
         </label>
 

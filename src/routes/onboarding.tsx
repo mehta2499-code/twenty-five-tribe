@@ -91,7 +91,7 @@ function Onboarding() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(800px 600px at 30% 10%, rgba(196,149,96,0.18), transparent 60%), radial-gradient(700px 700px at 80% 90%, rgba(139,45,42,0.22), transparent 60%), #14100C",
+            "radial-gradient(600px 500px at 15% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(600px 600px at 90% 100%, rgba(247,168,160,0.55), transparent 60%), #2B8AC4",
         }}
       />
       <div
@@ -112,7 +112,7 @@ function Onboarding() {
               className="h-[6px] rounded-full transition-all duration-500"
               style={{
                 width: i === step ? 28 : 6,
-                background: i <= step ? "#C49560" : "rgba(255,255,255,0.18)",
+                background: i <= step ? "#fff" : "rgba(255,255,255,0.18)",
               }}
             />
           ))}
@@ -128,13 +128,13 @@ function Onboarding() {
               >
                 You're here.
                 <br />
-                <span className="italic text-[#E8B98A]">Let's set the table.</span>
+                <span className="italic text-white/90">Let's set the table.</span>
               </h1>
               <p className="mt-8 text-white/70 leading-relaxed">
                 Twenty-five seats. No more, no less. You'll reserve each one
                 for someone real — a person, a role, a reason.
               </p>
-              <p className="mt-4 text-white/50 text-sm italic">
+              <p className="mt-4 text-white/80 text-sm italic">
                 We don't browse your contacts. You pick. We hold the seats.
               </p>
               <Spacer />
@@ -154,7 +154,7 @@ function Onboarding() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Riya, Ro, the menace"
-                className="mt-8 w-full bg-transparent border-b border-white/20 pb-3 text-white text-2xl placeholder:text-white/30 focus:outline-none focus:border-[#C49560] transition"
+                className="mt-8 w-full bg-transparent border-b border-white/20 pb-3 text-white text-2xl placeholder:text-white/70 focus:outline-none focus:border-white transition"
                 style={{ fontFamily: "'Fraunces', Georgia, serif" }}
               />
               <Spacer />
@@ -175,24 +175,24 @@ function Onboarding() {
               </p>
               <div
                 className="mt-8 rounded-3xl p-5 flex items-center gap-4"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
                 <div
                   className="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl"
-                  style={{ background: "rgba(196,149,96,0.15)" }}
+                  style={{ background: "rgba(255,255,255,0.2)" }}
                 >
                   📇
                 </div>
                 <div className="flex-1">
                   <p className="text-white text-sm">Contacts</p>
-                  <p className="text-white/50 text-xs">used only for the picker, on-device</p>
+                  <p className="text-white/80 text-xs">used only for the picker, on-device</p>
                 </div>
               </div>
               <Spacer />
               <BigBtn onClick={() => setStep(3)}>Allow contacts</BigBtn>
               <button
                 onClick={() => setStep(3)}
-                className="mt-3 text-center text-white/40 text-xs hover:text-white/60 transition"
+                className="mt-3 text-center text-white/75 text-xs hover:text-white/60 transition"
               >
                 Skip — I'll add them by hand
               </button>
@@ -203,7 +203,7 @@ function Onboarding() {
             <StepWrap>
               <Eyebrow>your contacts</Eyebrow>
               <Title>Who gets a seat?</Title>
-              <p className="mt-3 text-white/55 text-sm">
+              <p className="mt-3 text-white/85 text-sm">
                 {reservations.length === 0
                   ? "Start with one. You'll add more in your own time."
                   : `${reservations.length} reserved. Keep going, or finish whenever.`}
@@ -213,7 +213,7 @@ function Onboarding() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search contacts…"
-                className="mt-6 w-full bg-transparent border-b border-white/15 pb-2 text-white placeholder:text-white/30 focus:outline-none focus:border-[#C49560] transition text-sm"
+                className="mt-6 w-full bg-transparent border-b border-white/15 pb-2 text-white placeholder:text-white/70 focus:outline-none focus:border-white transition text-sm"
               />
 
               <ul
@@ -237,14 +237,14 @@ function Onboarding() {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-[15px] truncate">{c.name}</p>
-                        <p className="text-white/45 text-xs truncate">{c.phone}</p>
+                        <p className="text-white/80 text-xs truncate">{c.phone}</p>
                       </div>
-                      <span className="text-white/30 text-lg">›</span>
+                      <span className="text-white/70 text-lg">›</span>
                     </button>
                   </li>
                 ))}
                 {filtered.length === 0 && (
-                  <li className="text-white/40 text-sm text-center py-8 italic">
+                  <li className="text-white/75 text-sm text-center py-8 italic">
                     No one left to seat.
                   </li>
                 )}
@@ -252,7 +252,7 @@ function Onboarding() {
 
               {reservations.length > 0 && (
                 <div className="mt-5">
-                  <p className="uppercase tracking-[0.28em] text-[0.6rem] text-white/40 mb-3">
+                  <p className="uppercase tracking-[0.28em] text-[0.6rem] text-white/75 mb-3">
                     reserved
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -261,11 +261,11 @@ function Onboarding() {
                         key={r.contact.id}
                         className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-white/85"
                         style={{
-                          background: "rgba(196,149,96,0.08)",
-                          border: "1px dashed rgba(196,149,96,0.4)",
+                          background: "rgba(43,138,196,0.08)",
+                          border: "1px dashed rgba(43,138,196,0.4)",
                         }}
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#C49560]" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#fff]" />
                         {r.contact.name.split(" ")[0]} · {r.role.toLowerCase()}
                       </span>
                     ))}
@@ -292,7 +292,7 @@ function Onboarding() {
                   setPicked(null);
                   setStep(3);
                 }}
-                className="self-start mb-4 text-white/50 text-sm hover:text-white/80"
+                className="self-start mb-4 text-white/80 text-sm hover:text-white/80"
               >
                 ← back
               </button>
@@ -306,10 +306,10 @@ function Onboarding() {
                   >
                     {picked.name}
                   </p>
-                  <p className="text-white/45 text-xs">{picked.phone}</p>
+                  <p className="text-white/80 text-xs">{picked.phone}</p>
                 </div>
               </div>
-              <p className="mt-5 text-white/55 text-sm">{VOICE.reservation.roleSub}</p>
+              <p className="mt-5 text-white/85 text-sm">{VOICE.reservation.roleSub}</p>
 
               <div className="mt-6 grid grid-cols-2 gap-2">
                 {ROLES.map((r) => {
@@ -320,8 +320,8 @@ function Onboarding() {
                       onClick={() => setRole(r)}
                       className="rounded-2xl px-4 py-3 text-sm text-left transition"
                       style={{
-                        background: active ? "rgba(196,149,96,0.16)" : "rgba(255,255,255,0.04)",
-                        border: `1px solid ${active ? "#C49560" : "rgba(255,255,255,0.10)"}`,
+                        background: active ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.12)",
+                        border: `1px solid ${active ? "#fff" : "rgba(255,255,255,0.10)"}`,
                         color: "white",
                         fontFamily: "'Fraunces', Georgia, serif",
                       }}
@@ -343,7 +343,7 @@ function Onboarding() {
             <StepWrap>
               <Eyebrow>{VOICE.reservation.confirmHeader}</Eyebrow>
               <Title>Reserve {picked.name.split(" ")[0]}'s seat?</Title>
-              <p className="mt-3 text-white/55 text-sm">
+              <p className="mt-3 text-white/85 text-sm">
                 {VOICE.reservation.sendingTo(picked.name.split(" ")[0])}
               </p>
 
@@ -357,24 +357,24 @@ function Onboarding() {
                 }}
               >
                 {VOICE.reservation.waMessage(name.trim().split(" ")[0] || "Someone")}
-                <div className="mt-3 text-[11px] text-white/40">via WhatsApp · {picked.phone}</div>
+                <div className="mt-3 text-[11px] text-white/75">via WhatsApp · {picked.phone}</div>
               </div>
 
               <div className="mt-5 flex items-center gap-3 text-white/70 text-xs">
                 <span
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1"
-                  style={{ background: "rgba(196,149,96,0.10)", border: "1px solid rgba(196,149,96,0.35)" }}
+                  style={{ background: "rgba(43,138,196,0.10)", border: "1px solid rgba(43,138,196,0.35)" }}
                 >
                   role · {role.toLowerCase()}
                 </span>
-                <span className="text-white/40">seat will be held until they claim it</span>
+                <span className="text-white/75">seat will be held until they claim it</span>
               </div>
 
               <Spacer />
               <BigBtn onClick={confirm}>{VOICE.reservation.cta}</BigBtn>
               <button
                 onClick={() => setStep(4)}
-                className="mt-3 text-center text-white/45 text-xs hover:text-white/70 transition"
+                className="mt-3 text-center text-white/80 text-xs hover:text-white/70 transition"
               >
                 Change role
               </button>
@@ -411,13 +411,13 @@ function FinalStep({
       >
         Hey {name.trim().split(" ")[0] || "you"}.
         <br />
-        <span className="italic text-[#E8B98A]">These are your people.</span>
+        <span className="italic text-white/90">These are your people.</span>
       </h1>
 
       <p className="mt-6 text-white/70 leading-relaxed">
         {taken === 1 ? "One seat reserved. A start." : `${taken} seats reserved.`}{" "}
         {remaining > 0 && (
-          <span className="text-white/50">
+          <span className="text-white/80">
             {remaining} kept open for whoever wanders in next.
           </span>
         )}
@@ -429,27 +429,27 @@ function FinalStep({
             key={r.contact.id}
             className="flex items-center gap-3 rounded-2xl px-3 py-3"
             style={{
-              background: "rgba(196,149,96,0.08)",
-              border: "1px dashed rgba(196,149,96,0.35)",
+              background: "rgba(43,138,196,0.08)",
+              border: "1px dashed rgba(43,138,196,0.35)",
             }}
           >
             <img src={r.contact.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm truncate">{r.contact.name}</p>
-              <p className="text-white/45 text-xs">{r.role.toLowerCase()} · awaiting them</p>
+              <p className="text-white/80 text-xs">{r.role.toLowerCase()} · awaiting them</p>
             </div>
-            <span className="text-[#C49560] text-[10px] uppercase tracking-[0.2em]">held</span>
+            <span className="text-[#fff] text-[10px] uppercase tracking-[0.2em]">held</span>
           </div>
         ))}
       </div>
 
-      <p className="mt-8 italic text-white/55 text-sm">
+      <p className="mt-8 italic text-white/85 text-sm">
         Their seat is reserved. When they sit down, you'll know — quietly.
       </p>
 
       <Spacer />
       <BigBtn onClick={onFinish}>Open the table</BigBtn>
-      <p className="mt-3 text-center text-white/30 text-xs">
+      <p className="mt-3 text-center text-white/70 text-xs">
         one of twenty-five. irreplaceable.
       </p>
     </StepWrap>
@@ -461,7 +461,7 @@ function StepWrap({ children }: { children: React.ReactNode }) {
 }
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="uppercase tracking-[0.32em] text-[0.7rem] text-[#C49560] mb-4">
+    <p className="uppercase tracking-[0.32em] text-[0.7rem] text-[#fff] mb-4">
       {children}
     </p>
   );
@@ -493,7 +493,7 @@ function BigBtn({
       onClick={onClick}
       disabled={disabled}
       className="w-full rounded-full py-4 text-sm font-medium transition disabled:opacity-40 active:scale-[0.98]"
-      style={{ background: "#C49560", color: "#14100C" }}
+      style={{ background: "#fff", color: "var(--blue-deep)", fontWeight: 700 }}
     >
       {children}
     </button>

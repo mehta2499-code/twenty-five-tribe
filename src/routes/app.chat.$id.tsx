@@ -118,10 +118,10 @@ function ChatThread() {
                   ? s.reels.find((r) => r.id === shareId)
                   : undefined;
             const bubble = {
-              background: mine
-                ? "linear-gradient(135deg,#5A1E1C,var(--accent-oxblood))"
-                : "var(--bg-surface)",
+              background: mine ? "var(--blue-deep)" : "var(--bg-surface)",
               border: mine ? "none" : "1px solid var(--border-cool)",
+              color: mine ? "#fff" : "var(--text-primary)",
+              boxShadow: mine ? "var(--shadow-pop)" : "var(--shadow-card)",
               borderRadius: 18,
               borderBottomRightRadius: mine ? 6 : 18,
               borderBottomLeftRadius: mine ? 18 : 6,
@@ -131,7 +131,7 @@ function ChatThread() {
                 <div className="max-w-[78%] px-3.5 py-2.5" style={bubble}>
                   {m.text && (
                     <p
-                      className="text-cream"
+                      className=""
                       style={{
                         fontSize: 15,
                         lineHeight: 1.4,
@@ -144,7 +144,7 @@ function ChatThread() {
                   )}
                   {m.snapId &&
                     (mine ? (
-                      <p className="font-display italic text-cream" style={{ fontSize: 14 }}>
+                      <p className="font-semibold" style={{ fontSize: 14 }}>
                         ▶ Snap sent{snap?.openedBy.includes(id) ? " · opened" : ""}
                       </p>
                     ) : snap && !snap.openedBy.includes("me") ? (
@@ -170,7 +170,7 @@ function ChatThread() {
                         alt=""
                         className="rounded-xl w-48 aspect-square object-cover"
                       />
-                      <p className="mt-1.5 text-cream truncate w-48" style={{ fontSize: 12 }}>
+                      <p className="mt-1.5 truncate w-48" style={{ fontSize: 12 }}>
                         {shared.caption}
                       </p>
                     </Link>
@@ -180,7 +180,7 @@ function ChatThread() {
                       className="tabular-nums"
                       style={{
                         fontSize: 10,
-                        color: mine ? "rgba(239,230,210,0.6)" : "var(--text-muted)",
+                        color: mine ? "rgba(255,255,255,0.8)" : "var(--text-muted)",
                       }}
                     >
                       {clock(m.at)}

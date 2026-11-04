@@ -29,7 +29,7 @@ function Claim() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(800px 600px at 30% 10%, rgba(196,149,96,0.22), transparent 60%), radial-gradient(700px 700px at 80% 90%, rgba(139,45,42,0.22), transparent 60%), #14100C",
+            "radial-gradient(600px 500px at 15% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(600px 600px at 90% 100%, rgba(247,168,160,0.55), transparent 60%), #2B8AC4",
         }}
       />
       <div
@@ -44,7 +44,7 @@ function Claim() {
       <section className="relative z-10 mx-auto max-w-md px-6 py-20 text-center">
         {phase === "intro" ? (
           <>
-            <p className="uppercase tracking-[0.32em] text-[0.7rem]" style={{ color: "#C49560" }}>
+            <p className="uppercase tracking-[0.32em] text-[0.7rem]" style={{ color: "var(--coral)" }}>
               {VOICE.claim.eyebrow}
             </p>
 
@@ -52,7 +52,7 @@ function Claim() {
               <div
                 className="rounded-full p-[3px]"
                 style={{
-                  background: "radial-gradient(circle at 50% 50%, rgba(196,149,96,0.55), rgba(196,149,96,0.05) 70%)",
+                  background: "radial-gradient(circle at 50% 50%, rgba(43,138,196,0.55), rgba(43,138,196,0.05) 70%)",
                 }}
               >
                 <Avatar src={r.fromAvatar} initials={r.fromInitials} size={132} />
@@ -68,7 +68,7 @@ function Claim() {
 
             <p
               className="mt-5 italic"
-              style={{ color: "#E8B98A", fontFamily: "'Fraunces', Georgia, serif", fontSize: 18 }}
+              style={{ color: "var(--blue-deep)", fontFamily: "'Fraunces', Georgia, serif", fontSize: 18 }}
             >
               role: {r.role.toLowerCase()}
             </p>
@@ -77,36 +77,36 @@ function Claim() {
               {VOICE.claim.sub}
             </p>
 
-            <p className="mt-2 text-white/35 text-xs">reserved {r.reservedAt}</p>
+            <p className="mt-2 text-white/75 text-xs">reserved {r.reservedAt}</p>
 
             <div className="mt-12 flex flex-col gap-3">
               <button
                 onClick={() => setPhase("accepted")}
                 className="rounded-full py-4 text-sm font-medium transition active:scale-[0.98]"
-                style={{ background: "#C49560", color: "#14100C" }}
+                style={{ background: "#fff", color: "var(--blue-deep)", fontWeight: 700 }}
               >
                 {VOICE.claim.accept}
               </button>
               <button
                 onClick={() => navigate({ to: "/" })}
-                className="rounded-full py-3 text-sm text-white/55 hover:text-white/80 transition"
+                className="rounded-full py-3 text-sm text-white/85 hover:text-white/80 transition"
               >
                 {VOICE.claim.decline}
               </button>
             </div>
 
-            <p className="mt-10 text-white/30 text-xs italic">{VOICE.claim.footer}</p>
+            <p className="mt-10 text-white/70 text-xs italic">{VOICE.claim.footer}</p>
           </>
         ) : (
           <>
-            <p className="uppercase tracking-[0.32em] text-[0.7rem]" style={{ color: "#C49560" }}>
+            <p className="uppercase tracking-[0.32em] text-[0.7rem]" style={{ color: "var(--coral)" }}>
               seat accepted
             </p>
             <h1
               className="mt-8 leading-[1.1] text-white"
               style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "clamp(2rem, 7vw, 2.6rem)" }}
             >
-              You're at <span className="italic" style={{ color: "#E8B98A" }}>{r.fromName}'s</span> table.
+              You're at <span className="italic" style={{ color: "var(--blue-deep)" }}>{r.fromName}'s</span> table.
             </h1>
             <p className="mt-6 text-white/65 leading-relaxed">
               They'll know in a quiet way. No notification storm.
@@ -114,7 +114,7 @@ function Claim() {
             <button
               onClick={() => navigate({ to: "/onboarding" })}
               className="mt-12 rounded-full py-4 px-8 text-sm font-medium"
-              style={{ background: "#C49560", color: "#14100C" }}
+              style={{ background: "#fff", color: "var(--blue-deep)", fontWeight: 700 }}
             >
               Set up your own table
             </button>

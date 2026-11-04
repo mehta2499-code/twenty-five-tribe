@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
@@ -24,7 +31,7 @@ export function Sheet({
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center"
-      style={{ background: "rgba(20,16,12,0.78)", backdropFilter: "blur(14px)" }}
+      style={{ background: "rgba(14,42,69,0.45)", backdropFilter: "blur(14px)" }}
       onClick={onClose}
     >
       <div
@@ -100,7 +107,7 @@ export function FriendPicker({
                 style={{
                   padding: 2,
                   background: on ? "var(--accent-bronze)" : "transparent",
-                  boxShadow: on ? "0 0 16px rgba(216,123,60,0.45)" : "none",
+                  boxShadow: on ? "0 0 16px rgba(43,138,196,0.45)" : "none",
                 }}
               >
                 <Avatar src={f.avatar} initials={f.initials} color={f.color} size={52} />
@@ -177,7 +184,7 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
           <div
             className="h-full"
             style={{
-              background: "var(--bg-cream)",
+              background: "#fff",
               width: `${(left / snap.seconds) * 100}%`,
               transition: "width 1s linear",
             }}
@@ -190,13 +197,13 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
             color={sender?.color}
             size={34}
           />
-          <span className="font-display italic text-cream" style={{ fontSize: 15 }}>
+          <span className="font-semibold text-white" style={{ fontSize: 15 }}>
             {sender?.name ?? "You"}
           </span>
-          <span className="ml-auto tabular-nums text-cream" style={{ fontSize: 13 }}>
+          <span className="ml-auto tabular-nums text-white" style={{ fontSize: 13 }}>
             {left}s
           </span>
-          <X size={20} className="text-cream" />
+          <X size={20} className="text-white" />
         </div>
       </div>
       <div
@@ -211,7 +218,8 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
             className="relative font-display italic text-center px-6 py-3 mx-6"
             style={{
               fontSize: snap.image ? 20 : 30,
-              color: "#EFE6D2",
+              color: "#fff",
+              textShadow: "0 2px 12px rgba(0,0,0,0.35)",
               background: snap.image ? "rgba(0,0,0,0.45)" : "transparent",
               borderRadius: 14,
             }}
@@ -231,9 +239,9 @@ export function Toast({ text, onDone }: { text: string; onDone: () => void }) {
   }, [onDone]);
   return (
     <div
-      className="fixed left-1/2 -translate-x-1/2 bottom-28 z-[80] px-5 py-3 rounded-full animate-soft-in font-display italic text-cream"
+      className="fixed left-1/2 -translate-x-1/2 bottom-32 z-[80] px-5 py-3 rounded-full animate-soft-in font-semibold text-white"
       style={{
-        background: "rgba(40,32,26,0.96)",
+        background: "var(--navy)",
         border: "1px solid var(--border-cool)",
         fontSize: 14,
       }}
@@ -270,4 +278,78 @@ export function clientOnly<P extends object>(Screen: ComponentType<P>) {
     useEffect(() => setReady(true), []);
     return ready ? <Screen {...props} /> : <div className="min-h-screen" />;
   };
+}
+
+/** Light tap feedback on phones that support it. */
+export function buzz(ms = 12) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    // Not supported; no-op.
+  }
+}
+
+const CONFETTI_COLOURS = ["#2B8AC4", "#F7A8A0", "#FFC542", "#1A5276", "#17926F", "#ffffff"];
+
+/** A one-shot burst of confetti from the middle of the screen. Change `fire` to replay. */
+export function Confetti({ fire }: { fire: number }) {
+  if (!fire) return null;
+  return (
+    <div
+      key={fire}
+      className="fixed inset-0 z-[90] pointer-events-none overflow-hidden"
+      aria-hidden="true"
+    >
+      <div className="absolute left-1/2 top-1/2">
+        {Array.from({ length: 36 }).map((_, i) => {
+          const angle = (i / 36) * Math.PI * 2;
+          const dist = 140 + ((i * 37) % 120);
+          const style = {
+            background: CONFETTI_COLOURS[i % CONFETTI_COLOURS.length],
+            border: i % 6 === 5 ? "1px solid #C9E2F4" : "none",
+            ["--dx" as string]: `${Math.cos(angle) * dist}px`,
+            ["--dy" as string]: `${Math.sin(angle) * dist + 160}px`,
+            ["--rot" as string]: `${((i * 97) % 720) - 360}deg`,
+            animationDelay: `${(i % 5) * 20}ms`,
+          } as CSSProperties;
+          return <span key={i} className="confetti-piece" style={style} />;
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** The blue band from the homepage, used at the top of each tab. */
+export function PageBand({
+  eyebrow,
+  title,
+  sub,
+  align = "center",
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  sub?: string;
+  align?: "center" | "left";
+  children?: ReactNode;
+}) {
+  return (
+    <header
+      className={`band px-6 pt-[max(2.75rem,calc(env(safe-area-inset-top)+1.5rem))] pb-7 ${align === "center" ? "text-center" : ""}`}
+    >
+      <p className="label-caps">{eyebrow}</p>
+      <h1
+        className="font-display mt-3"
+        style={{ fontSize: 34, lineHeight: 1.05, textWrap: "balance" }}
+      >
+        {title}
+      </h1>
+      {sub && (
+        <p className="sub mt-2" style={{ fontSize: 14, lineHeight: 1.45 }}>
+          {sub}
+        </p>
+      )}
+      {children}
+    </header>
+  );
 }

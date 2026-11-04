@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Heart, ImagePlus, MessageCircle, Plus, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
+import { FriendPicker, Sheet, Toast, clientOnly, PageBand, buzz } from "@/components/SocialUI";
 import { CommentsSheet, FeedTabs, personOf } from "@/components/FeedUI";
 import { fileToImage, friendById, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
@@ -32,6 +32,7 @@ function PostCard({
     const now = Date.now();
     if (now - lastTap.current < 300) {
       social.like("post", post.id);
+      buzz();
       setBurst((b) => b + 1);
     }
     lastTap.current = now;
@@ -124,7 +125,7 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
         onClick={() => fileRef.current?.click()}
         className="w-full aspect-square rounded-2xl overflow-hidden flex items-center justify-center"
         style={{
-          border: image ? "none" : "1px dashed rgba(196,149,96,0.4)",
+          border: image ? "none" : "1px dashed rgba(43,138,196,0.4)",
           background: "var(--bg-surface)",
         }}
       >
@@ -201,16 +202,15 @@ function Feed() {
 
   return (
     <>
-      <header className="px-6 pt-12 pb-6 text-center">
-        <p className="label-caps">feed</p>
-        <h1
-          className="font-display italic text-cream mt-4 mb-6"
-          style={{ fontSize: 32, lineHeight: 1.05, letterSpacing: "-0.02em" }}
-        >
-          Just your people.
-        </h1>
-        <FeedTabs active="posts" />
-      </header>
+      <PageBand
+        eyebrow="feed"
+        title="Just your people."
+        sub="No ads. No strangers. It ends when you're caught up."
+      >
+        <div className="mt-5 flex justify-center">
+          <FeedTabs active="posts" />
+        </div>
+      </PageBand>
 
       <div className="space-y-6">
         {s.posts.map((p) => (
@@ -239,7 +239,7 @@ function Feed() {
           bottom: "6.5rem",
           background: "var(--accent-bronze)",
           color: "var(--bg-primary)",
-          boxShadow: "0 10px 30px rgba(216,123,60,0.45)",
+          boxShadow: "0 10px 30px rgba(43,138,196,0.45)",
         }}
       >
         <Plus size={18} strokeWidth={2.4} />

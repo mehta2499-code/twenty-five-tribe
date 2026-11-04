@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, Toast } from "@/components/SocialUI";
+import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
 import { ME } from "@/lib/data";
 import { friendById, leaderboard, social, useSocial, type GameId } from "@/lib/social";
 
@@ -114,7 +114,8 @@ function ResultCard({
   const isBest = score > prevBest;
   useEffect(() => {
     social.recordScore(game, score);
-  }, [game, score]);
+    if (score > prevBest) buzz(40);
+  }, [game, score, prevBest]);
   const [challenging, setChallenging] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const board = leaderboard(s, game);
@@ -166,6 +167,7 @@ function ResultCard({
         />
       )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
+      <Confetti fire={isBest ? 1 : 0} />
     </div>
   );
 }
@@ -335,7 +337,7 @@ export function Leaderboard() {
               className="flex items-center gap-3 px-4 py-3"
               style={{
                 borderTop: i ? "1px solid var(--border-cool)" : "none",
-                background: me ? "rgba(196,149,96,0.08)" : "transparent",
+                background: me ? "rgba(43,138,196,0.08)" : "transparent",
               }}
             >
               <span

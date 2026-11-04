@@ -27,7 +27,11 @@ function SeatPage() {
         <p className="font-display italic text-cool" style={{ fontSize: 18 }}>
           This seat is empty.
         </p>
-        <Link to="/app/home" className="block mt-6 font-display italic" style={{ color: "var(--accent-bronze)" }}>
+        <Link
+          to="/app/home"
+          className="block mt-6 font-display italic"
+          style={{ color: "var(--accent-bronze)" }}
+        >
           Back to the table
         </Link>
       </div>
@@ -67,8 +71,8 @@ function SeatPage() {
           className="inline-block"
           style={{
             boxShadow: isReserved
-              ? "0 0 0 1px rgba(196,149,96,0.35), 0 0 0 4px rgba(20,16,12,1), 0 0 0 5px rgba(196,149,96,0.25)"
-              : "0 0 0 1px rgba(196,149,96,0.25), 0 0 40px rgba(216,123,60,0.18)",
+              ? "0 0 0 1px rgba(43,138,196,0.35), 0 0 0 4px #fff, 0 0 0 5px rgba(43,138,196,0.25)"
+              : "0 0 0 1px rgba(43,138,196,0.25), 0 0 40px rgba(43,138,196,0.18)",
             borderRadius: 9999,
             opacity: isReserved ? 0.75 : 1,
             filter: isReserved ? "grayscale(0.25)" : "none",
@@ -76,7 +80,10 @@ function SeatPage() {
         >
           <Avatar src={f.avatar} initials={f.initials} color={f.color} size={148} />
         </div>
-        <h1 className="font-display italic text-cream mt-6" style={{ fontSize: 38, lineHeight: 1.05 }}>
+        <h1
+          className="font-display italic text-cream mt-6"
+          style={{ fontSize: 38, lineHeight: 1.05 }}
+        >
           {f.name}
         </h1>
         <p
@@ -92,15 +99,19 @@ function SeatPage() {
             color: isReserved ? "var(--accent-bronze)" : "var(--text-muted)",
             padding: "4px 10px",
             borderRadius: 999,
-            background: isReserved ? "rgba(196,149,96,0.10)" : "transparent",
-            border: isReserved ? "1px dashed rgba(196,149,96,0.45)" : "none",
+            background: isReserved ? "rgba(43,138,196,0.10)" : "transparent",
+            border: isReserved ? "1px dashed rgba(43,138,196,0.45)" : "none",
           }}
         >
           {isReserved ? VOICE.reservation.badgeReserved : VOICE.reservation.badgeAccepted}
         </p>
         {isReserved && meta.reservedAt && (
-          <p className="font-display italic mt-2" style={{ color: "var(--text-muted)", fontSize: 11 }}>
-            reserved {meta.reservedAt}{meta.phone ? ` · ${meta.phone}` : ""}
+          <p
+            className="font-display italic mt-2"
+            style={{ color: "var(--text-muted)", fontSize: 11 }}
+          >
+            reserved {meta.reservedAt}
+            {meta.phone ? ` · ${meta.phone}` : ""}
           </p>
         )}
       </section>
@@ -116,8 +127,8 @@ function SeatPage() {
           <button
             className="mt-6 rounded-full px-5 py-3 text-xs"
             style={{
-              background: "rgba(196,149,96,0.12)",
-              border: "1px solid rgba(196,149,96,0.4)",
+              background: "rgba(43,138,196,0.12)",
+              border: "1px solid rgba(43,138,196,0.4)",
               color: "var(--accent-bronze)",
               letterSpacing: "0.04em",
             }}
@@ -132,29 +143,36 @@ function SeatPage() {
           <section className="px-6 mt-10">
             <div className="grid grid-cols-4 gap-2">
               {[
-                { glyph: "❤",  label: "Thought" },
+                { glyph: "❤", label: "Thought" },
                 { glyph: "📸", label: "Memory" },
                 { glyph: "🎤", label: "Voice" },
                 { glyph: "🎵", label: "Song" },
               ].map((a) => (
-                <button key={a.label}
+                <button
+                  key={a.label}
                   className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
-                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}>
+                  style={{
+                    background: "var(--bg-surface)",
+                    border: "1px solid var(--border-cool)",
+                  }}
+                >
                   <span style={{ fontSize: 18 }}>{a.glyph}</span>
-                  <span className="font-display italic text-cool" style={{ fontSize: 11 }}>{a.label}</span>
+                  <span className="font-display italic text-cool" style={{ fontSize: 11 }}>
+                    {a.label}
+                  </span>
                 </button>
               ))}
             </div>
           </section>
 
           <Section label="why they're here">
-            <p className="font-display italic text-cream text-center mx-auto max-w-[22rem]"
-               style={{ fontSize: 22, lineHeight: 1.45 }}>
+            <p
+              className="font-display italic text-cream text-center mx-auto max-w-[22rem]"
+              style={{ fontSize: 22, lineHeight: 1.45 }}
+            >
               "{reason}"
             </p>
           </Section>
-
-
 
           <Section label="how they see you">
             <ul className="space-y-3 text-center">
@@ -181,12 +199,24 @@ function SeatPage() {
               <ul className="space-y-5">
                 {thoughts.map((t) => (
                   <li key={t.id} className="text-center">
-                    <p className="font-display italic text-cream" style={{ fontSize: 16, lineHeight: 1.45 }}>
-                      {t.direction === "from" ? `${f.name} thought of you` : `you thought of ${f.name}`}
-                      {t.note ? <> — <span className="text-cool">"{t.note}"</span></> : null}
+                    <p
+                      className="font-display italic text-cream"
+                      style={{ fontSize: 16, lineHeight: 1.45 }}
+                    >
+                      {t.direction === "from"
+                        ? `${f.name} thought of you`
+                        : `you thought of ${f.name}`}
+                      {t.note ? (
+                        <>
+                          {" "}
+                          — <span className="text-cool">"{t.note}"</span>
+                        </>
+                      ) : null}
                     </p>
-                    <p className="font-display italic mt-1"
-                       style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}>
+                    <p
+                      className="font-display italic mt-1"
+                      style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}
+                    >
                       {t.when}
                     </p>
                   </li>
@@ -196,14 +226,24 @@ function SeatPage() {
           )}
 
           <Section label="timeline">
-            <ol className="relative ml-2 pl-6"
-                style={{ borderLeft: "1px solid var(--border-cool)" }}>
+            <ol
+              className="relative ml-2 pl-6"
+              style={{ borderLeft: "1px solid var(--border-cool)" }}
+            >
               {timeline.map((e, i) => (
                 <li key={i} className="mb-6 last:mb-0 relative">
-                  <span className="absolute -left-[29px] top-2 w-2 h-2 rounded-full"
-                        style={{ background: "var(--accent-bronze)", boxShadow: "0 0 8px rgba(196,149,96,0.6)" }} />
+                  <span
+                    className="absolute -left-[29px] top-2 w-2 h-2 rounded-full"
+                    style={{
+                      background: "var(--accent-bronze)",
+                      boxShadow: "0 0 8px rgba(43,138,196,0.6)",
+                    }}
+                  />
                   <p className="label-caps">{e.year}</p>
-                  <p className="font-display italic text-cream mt-1" style={{ fontSize: 16, lineHeight: 1.45 }}>
+                  <p
+                    className="font-display italic text-cream mt-1"
+                    style={{ fontSize: 16, lineHeight: 1.45 }}
+                  >
                     {e.text}
                   </p>
                 </li>
@@ -215,10 +255,18 @@ function SeatPage() {
             <Section label="memories">
               <div className="grid grid-cols-3 gap-2">
                 {capsule.photos.slice(0, 6).map((p, i) => (
-                  <div key={i} className="aspect-square overflow-hidden"
-                       style={{ borderRadius: 8, border: "1px solid var(--border-cool)" }}>
-                    <img src={p} alt="" loading="lazy" className="w-full h-full object-cover"
-                         style={{ filter: "saturate(0.9) brightness(0.95)" }} />
+                  <div
+                    key={i}
+                    className="aspect-square overflow-hidden"
+                    style={{ borderRadius: 8, border: "1px solid var(--border-cool)" }}
+                  >
+                    <img
+                      src={p}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      style={{ filter: "saturate(0.9) brightness(0.95)" }}
+                    />
                   </div>
                 ))}
               </div>
@@ -227,8 +275,10 @@ function SeatPage() {
         </>
       )}
 
-      <p className="text-center font-display italic mt-16 px-8"
-         style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}>
+      <p
+        className="text-center font-display italic mt-16 px-8"
+        style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}
+      >
         One of twenty-five. Irreplaceable.
       </p>
     </div>

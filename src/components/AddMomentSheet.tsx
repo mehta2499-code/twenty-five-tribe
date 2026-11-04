@@ -5,14 +5,17 @@ import { FRIENDS, getSeatMeta } from "@/lib/data";
 type MomentKind = "photo" | "voice" | "thought" | "milestone" | "memory";
 
 const KINDS: { id: MomentKind; glyph: string; label: string }[] = [
-  { id: "photo",     glyph: "📸", label: "Photo" },
-  { id: "voice",     glyph: "🎤", label: "Voice" },
-  { id: "thought",   glyph: "✍",  label: "Thought" },
+  { id: "photo", glyph: "📸", label: "Photo" },
+  { id: "voice", glyph: "🎤", label: "Voice" },
+  { id: "thought", glyph: "✍", label: "Thought" },
   { id: "milestone", glyph: "🏆", label: "Milestone" },
-  { id: "memory",    glyph: "📍", label: "Memory" },
+  { id: "memory", glyph: "📍", label: "Memory" },
 ];
 
-export function AddMomentSheet({ onClose, onConfirm }: {
+export function AddMomentSheet({
+  onClose,
+  onConfirm,
+}: {
   onClose: () => void;
   onConfirm: (kind: MomentKind, friendIds: string[], text: string) => void;
 }) {
@@ -29,23 +32,33 @@ export function AddMomentSheet({ onClose, onConfirm }: {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(20,16,12,0.78)", backdropFilter: "blur(14px)" }}
+      style={{ background: "rgba(14,42,69,0.45)", backdropFilter: "blur(14px)" }}
       onClick={onClose}
     >
       <div
         className="w-full max-w-md card-editorial p-6 animate-soft-in"
-        style={{ background: "var(--bg-card)", borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "85vh", overflowY: "auto" }}
+        style={{
+          background: "var(--bg-card)",
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          maxHeight: "85vh",
+          overflowY: "auto",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-1">
           <p className="label-caps">add a moment</p>
-          <button onClick={onClose} className="label-caps text-cool">close</button>
+          <button onClick={onClose} className="label-caps text-cool">
+            close
+          </button>
         </div>
 
         {!kind && (
           <>
-            <h3 className="font-display italic text-cream mt-2"
-                style={{ fontSize: 24, lineHeight: 1.2 }}>
+            <h3
+              className="font-display italic text-cream mt-2"
+              style={{ fontSize: 24, lineHeight: 1.2 }}
+            >
               What kind of moment?
             </h3>
             <div className="mt-6 grid grid-cols-1 gap-2">
@@ -71,8 +84,10 @@ export function AddMomentSheet({ onClose, onConfirm }: {
 
         {kind && (
           <>
-            <h3 className="font-display italic text-cream mt-2"
-                style={{ fontSize: 22, lineHeight: 1.2 }}>
+            <h3
+              className="font-display italic text-cream mt-2"
+              style={{ fontSize: 22, lineHeight: 1.2 }}
+            >
               Say something.
             </h3>
             <textarea
@@ -105,13 +120,15 @@ export function AddMomentSheet({ onClose, onConfirm }: {
                       style={{
                         padding: 2,
                         background: on ? "var(--accent-bronze)" : "transparent",
-                        boxShadow: on ? "0 0 16px rgba(216,123,60,0.45)" : "none",
+                        boxShadow: on ? "0 0 16px rgba(43,138,196,0.45)" : "none",
                       }}
                     >
                       <Avatar src={f.avatar} initials={f.initials} color={f.color} size={48} />
                     </div>
-                    <span className="font-display italic mt-1.5 text-cool truncate w-full text-center"
-                          style={{ fontSize: 11 }}>
+                    <span
+                      className="font-display italic mt-1.5 text-cool truncate w-full text-center"
+                      style={{ fontSize: 11 }}
+                    >
                       {f.name}
                     </span>
                   </button>

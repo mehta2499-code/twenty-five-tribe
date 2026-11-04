@@ -18,7 +18,9 @@ function Privacy() {
   const toggle = () => {
     const next = !allow;
     setAllow(next);
-    try { localStorage.setItem("tf.privacy.allowScreenshots", next ? "1" : "0"); } catch {}
+    try {
+      localStorage.setItem("tf.privacy.allowScreenshots", next ? "1" : "0");
+    } catch {}
   };
 
   return (
@@ -31,12 +33,16 @@ function Privacy() {
 
       <section className="px-7 pt-8 text-center">
         <p className="label-caps">privacy</p>
-        <h1 className="font-display italic text-cream mt-3"
-            style={{ fontSize: 30, lineHeight: 1.15 }}>
+        <h1
+          className="font-display italic text-cream mt-3"
+          style={{ fontSize: 30, lineHeight: 1.15 }}
+        >
           What's in 25 stays in 25.
         </h1>
-        <p className="font-display italic mt-4 mx-auto"
-           style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.55, maxWidth: "22rem" }}>
+        <p
+          className="font-display italic mt-4 mx-auto"
+          style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.55, maxWidth: "22rem" }}
+        >
           These are private rooms. We do what we can to keep them that way.
         </p>
       </section>
@@ -47,8 +53,10 @@ function Privacy() {
             <p className="font-display text-cream" style={{ fontSize: 15 }}>
               Allow screenshots
             </p>
-            <p className="font-display italic mt-1"
-               style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.45 }}>
+            <p
+              className="font-display italic mt-1"
+              style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.45 }}
+            >
               Off by default. When off, the app blurs when you leave it.
             </p>
           </div>
@@ -57,8 +65,10 @@ function Privacy() {
             aria-pressed={allow}
             className="relative shrink-0 transition"
             style={{
-              width: 44, height: 26, borderRadius: 999,
-              background: allow ? "var(--accent-bronze)" : "rgba(196,149,96,0.18)",
+              width: 44,
+              height: 26,
+              borderRadius: 999,
+              background: allow ? "var(--accent-bronze)" : "rgba(43,138,196,0.18)",
               border: "1px solid var(--border-cool)",
             }}
           >
@@ -66,18 +76,22 @@ function Privacy() {
               className="absolute top-0.5 transition-all"
               style={{
                 left: allow ? 20 : 2,
-                width: 20, height: 20, borderRadius: 999,
+                width: 20,
+                height: 20,
+                borderRadius: 999,
                 background: "var(--bg-cream)",
               }}
             />
           </button>
         </div>
 
-        <p className="font-display italic mt-5 px-2"
-           style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.55 }}>
-          On Android we use FLAG_SECURE to block screenshots and screen recording.
-          On iOS we detect screenshots and remind both sides what this space is.
-          On the web, we blur the screen when the app loses focus.
+        <p
+          className="font-display italic mt-5 px-2"
+          style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.55 }}
+        >
+          On Android we use FLAG_SECURE to block screenshots and screen recording. On iOS we detect
+          screenshots and remind both sides what this space is. On the web, we blur the screen when
+          the app loses focus.
         </p>
       </section>
     </div>

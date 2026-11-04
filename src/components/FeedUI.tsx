@@ -24,16 +24,21 @@ export function personOf(id: string) {
 
 export function FeedTabs({ active }: { active: "posts" | "reels" }) {
   const tab = (on: boolean) => ({
-    fontSize: 15,
-    color: on ? "var(--text-primary)" : "var(--text-muted)",
-    borderBottom: on ? "1px solid var(--accent-bronze)" : "1px solid transparent",
+    fontSize: 14,
+    fontWeight: 700,
+    color: on ? "#fff" : "var(--blue-deep)",
+    background: on ? "var(--blue-deep)" : "transparent",
+    transition: "background-color 260ms var(--spring), color 200ms",
   });
   return (
-    <div className="flex justify-center gap-8">
-      <Link to="/app/feed" className="font-display italic pb-1" style={tab(active === "posts")}>
+    <div
+      className="inline-flex rounded-full p-1"
+      style={{ background: "#fff", boxShadow: "var(--shadow-card)" }}
+    >
+      <Link to="/app/feed" className="rounded-full px-5 py-1.5" style={tab(active === "posts")}>
         Posts
       </Link>
-      <Link to="/app/reels" className="font-display italic pb-1" style={tab(active === "reels")}>
+      <Link to="/app/reels" className="rounded-full px-5 py-1.5" style={tab(active === "reels")}>
         Reels
       </Link>
     </div>

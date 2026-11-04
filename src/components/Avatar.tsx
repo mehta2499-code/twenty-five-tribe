@@ -10,7 +10,7 @@ type Props = {
 export function Avatar({
   initials = "",
   src,
-  color = "#7B6FD4",
+  color = "var(--blue)",
   size = 56,
   ring = "none",
   className = "",
@@ -22,13 +22,19 @@ export function Avatar({
         width: size,
         height: size,
         background: src
-          ? "#1A2D3E"
+          ? "var(--bg-surface)"
           : `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #000))`,
         fontSize: size * 0.36,
       }}
     >
       {src ? (
-        <img src={src} alt={initials} loading="lazy" draggable={false} className="h-full w-full object-cover" />
+        <img
+          src={src}
+          alt={initials}
+          loading="lazy"
+          draggable={false}
+          className="h-full w-full object-cover"
+        />
       ) : (
         initials
       )}
@@ -46,14 +52,19 @@ export function Avatar({
   }
 
   const ringCls =
-    ring === "active" ? "ring-active"
-    : ring === "purple" ? "ring-purple"
-    : ring === "drift" ? "ring-drift"
-    : "ring-quiet";
+    ring === "active"
+      ? "ring-active"
+      : ring === "purple"
+        ? "ring-purple"
+        : ring === "drift"
+          ? "ring-drift"
+          : "ring-quiet";
 
   return (
     <div className={`${ringCls} ${className}`} style={{ display: "inline-block" }}>
-      <div className="rounded-full p-[2px]" style={{ background: "#0D1820" }}>{inner}</div>
+      <div className="rounded-full p-[2px]" style={{ background: "var(--bg-surface)" }}>
+        {inner}
+      </div>
     </div>
   );
 }

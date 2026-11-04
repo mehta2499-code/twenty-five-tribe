@@ -186,7 +186,7 @@ function seed(): SocialState {
       id: uid(),
       from: "1",
       to: ["me"],
-      bg: "linear-gradient(160deg,#8B2D2A,#C49560)",
+      bg: "linear-gradient(160deg,#F7A8A0,#D9534A)",
       caption: "call me when free",
       seconds: 3,
       at: now - 70 * MIN,
@@ -518,7 +518,7 @@ export const social = {
         openedBy: [],
         at: Date.now(),
         seconds: 5,
-        bg: "linear-gradient(160deg,#28201A,#8B2D2A 60%,#D87B3C)",
+        bg: "linear-gradient(160deg,#2B8AC4,#1A5276)",
         caption: SNAP_BACKS[Math.floor(Math.random() * SNAP_BACKS.length)],
       };
       set((s) => ({

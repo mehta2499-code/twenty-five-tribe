@@ -7,7 +7,7 @@ type Suit = "♠" | "♥" | "♦" | "♣";
 type Card = { suit: Suit; rank: string; value: number };
 
 const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
-const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
+const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 
 function makeDeck(): Card[] {
   const d: Card[] = [];
@@ -20,7 +20,15 @@ function sortHand(cards: Card[]) {
   return [...cards].sort((a, b) => order[a.suit] - order[b.suit] || a.value - b.value);
 }
 
-function PlayingCard({ card, small, faceDown }: { card?: Card; small?: boolean; faceDown?: boolean }) {
+function PlayingCard({
+  card,
+  small,
+  faceDown,
+}: {
+  card?: Card;
+  small?: boolean;
+  faceDown?: boolean;
+}) {
   const w = small ? 38 : 50;
   const h = small ? 54 : 72;
   if (faceDown || !card) {
@@ -28,7 +36,8 @@ function PlayingCard({ card, small, faceDown }: { card?: Card; small?: boolean; 
       <div
         className="rounded-md border border-white/10"
         style={{
-          width: w, height: h,
+          width: w,
+          height: h,
           background: "linear-gradient(135deg,#534AB7,#22222A)",
         }}
       />
@@ -65,22 +74,26 @@ function Seat({
   trick?: Card;
 }) {
   const posClasses = {
-    top:    "top-4 left-1/2 -translate-x-1/2 flex-col items-center",
+    top: "top-4 left-1/2 -translate-x-1/2 flex-col items-center",
     bottom: "bottom-44 left-1/2 -translate-x-1/2 flex-col items-center",
-    left:   "left-3 top-1/2 -translate-y-1/2 flex-col items-center",
-    right:  "right-3 top-1/2 -translate-y-1/2 flex-col items-center",
+    left: "left-3 top-1/2 -translate-y-1/2 flex-col items-center",
+    right: "right-3 top-1/2 -translate-y-1/2 flex-col items-center",
   }[position];
 
   return (
     <div className={`absolute flex ${posClasses}`}>
       <div className={active ? "animate-turn-pulse" : ""}>
-        <Avatar src={player.avatar} initials={player.name.slice(0,2)} size={48} />
+        <Avatar src={player.avatar} initials={player.name.slice(0, 2)} size={48} />
       </div>
       <span className="mt-1 text-[11px] font-semibold">{player.name}</span>
       <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <span>Bid <span className="text-foreground font-semibold">{bid ?? "—"}</span></span>
+        <span>
+          Bid <span className="text-foreground font-semibold">{bid ?? "—"}</span>
+        </span>
         <span>·</span>
-        <span>Won <span className="text-foreground font-semibold">{score ?? 0}</span></span>
+        <span>
+          Won <span className="text-foreground font-semibold">{score ?? 0}</span>
+        </span>
       </div>
       {trick && (
         <div className="mt-2">
@@ -102,7 +115,7 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
 
   const players = useMemo(
     () => [FRIENDS[1], FRIENDS[3], FRIENDS[8]], // Priya, Neha, Ananya
-    []
+    [],
   );
 
   const deck = useMemo(() => makeDeck(), []);
@@ -127,7 +140,7 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
     const others: Record<string, Card> = {
       p1: deck[20 + (13 - hand.length)],
       p2: deck[33 + (13 - hand.length)],
-      p3: deck[46 + (13 - hand.length) % 6],
+      p3: deck[46 + ((13 - hand.length) % 6)],
     };
     setTrick({ me: c, ...others });
     setTimeout(() => {
@@ -147,24 +160,31 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
     }, 1100);
   }
 
-  const meScore = (won.me >= (bids.me ?? 0))
-    ? (bids.me ?? 0) * 10 + (won.me - (bids.me ?? 0))
-    : -((bids.me ?? 0) * 10);
+  const meScore =
+    won.me >= (bids.me ?? 0)
+      ? (bids.me ?? 0) * 10 + (won.me - (bids.me ?? 0))
+      : -((bids.me ?? 0) * 10);
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col animate-soft-in">
       <header className="flex items-center justify-between px-5 pt-5 pb-3">
         <div>
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">🇮🇳 Judgement</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            🇮🇳 Judgement
+          </span>
           <h2 className="text-lg font-bold">Call Break · Round 3 of 5</h2>
         </div>
-        <button onClick={onClose} className="text-muted-foreground"><X size={22} /></button>
+        <button onClick={onClose} className="text-muted-foreground">
+          <X size={22} />
+        </button>
       </header>
 
       {phase === "lobby" && (
         <div className="flex-1 flex flex-col px-5">
           <div className="card-premium accent-thought p-4">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Active game</div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">
+              Active game
+            </div>
             <div className="mt-1 text-sm font-semibold">Judgement · Round 3</div>
             <div className="mt-3 flex -space-x-2">
               {[FRIENDS[0], ...players].map((f) => (
@@ -175,10 +195,15 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          <p className="mt-6 text-[11px] uppercase tracking-widest text-muted-foreground">Invite from your 25</p>
+          <p className="mt-6 text-[11px] uppercase tracking-widest text-muted-foreground">
+            Invite from your 25
+          </p>
           <div className="mt-2 flex-1 overflow-y-auto pr-1 space-y-2">
             {FRIENDS.slice(0, 8).map((f) => (
-              <div key={f.id} className="flex items-center gap-3 rounded-2xl bg-card border border-border p-3">
+              <div
+                key={f.id}
+                className="flex items-center gap-3 rounded-2xl bg-card border border-border p-3"
+              >
                 <Avatar src={f.avatar} initials={f.initials} size={40} />
                 <div className="flex-1 text-sm font-semibold">{f.name}</div>
                 <button className="text-xs font-semibold text-primary border border-primary/40 px-3 py-1.5 rounded-full">
@@ -196,7 +221,9 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
                 ) : (
                   <div className="h-9 w-9 rounded-full border border-dashed border-primary/40" />
                 )}
-                <span className="text-[10px] text-muted-foreground">{i === 0 ? "You" : (p as { name: string }).name}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {i === 0 ? "You" : (p as { name: string }).name}
+                </span>
               </div>
             ))}
             <span className="ml-auto text-[10px] text-muted-foreground">All seats filled</span>
@@ -229,29 +256,59 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
             </button>
             {scoreOpen && (
               <div className="mt-1 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 p-3 text-xs space-y-1">
-                {["R1","R2","R3"].map((r, i) => (
+                {["R1", "R2", "R3"].map((r, i) => (
                   <div key={r} className="grid grid-cols-5 gap-2 text-muted-foreground">
                     <span>{r}</span>
-                    <span>You {[28,-30,meScore][i] ?? 0}</span>
-                    <span>Priya {[40,20,30][i]}</span>
-                    <span>Neha {[-20,30,10][i]}</span>
-                    <span>Ananya {[10,40,20][i]}</span>
+                    <span>You {[28, -30, meScore][i] ?? 0}</span>
+                    <span>Priya {[40, 20, 30][i]}</span>
+                    <span>Neha {[-20, 30, 10][i]}</span>
+                    <span>Ananya {[10, 40, 20][i]}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <Seat position="top"   player={players[1]} bid={bids.p2} score={won.p2} active={false} trick={trick.p2} />
-          <Seat position="left"  player={players[0]} bid={bids.p1} score={won.p1} active={false} trick={trick.p1} />
-          <Seat position="right" player={players[2]} bid={bids.p3} score={won.p3} active={false} trick={trick.p3} />
-          <Seat position="bottom" player={{ name: "You", avatar: ME.avatar }} bid={bids.me} score={won.me} active={phase === "playing"} trick={trick.me} />
+          <Seat
+            position="top"
+            player={players[1]}
+            bid={bids.p2}
+            score={won.p2}
+            active={false}
+            trick={trick.p2}
+          />
+          <Seat
+            position="left"
+            player={players[0]}
+            bid={bids.p1}
+            score={won.p1}
+            active={false}
+            trick={trick.p1}
+          />
+          <Seat
+            position="right"
+            player={players[2]}
+            bid={bids.p3}
+            score={won.p3}
+            active={false}
+            trick={trick.p3}
+          />
+          <Seat
+            position="bottom"
+            player={{ name: "You", avatar: ME.avatar }}
+            bid={bids.me}
+            score={won.me}
+            active={phase === "playing"}
+            trick={trick.me}
+          />
 
           {/* Bidding modal */}
           {phase === "bidding" && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-20">
               <div className="card-premium p-6 w-[88%] max-w-sm text-center">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">Spades are trump</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Spades are trump
+                </p>
                 <h3 className="mt-2 text-xl font-bold">How many tricks will you win?</h3>
                 <div className="mt-6 flex items-center justify-center gap-5">
                   <button
@@ -287,13 +344,18 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-muted-foreground">Final · 5 rounds</p>
               <div className="mt-6 w-full max-w-sm space-y-2">
                 {[
-                  { n: "Priya",  s: 92 },
-                  { n: "You",    s: meScore + 38 },
+                  { n: "Priya", s: 92 },
+                  { n: "You", s: meScore + 38 },
                   { n: "Ananya", s: 68 },
-                  { n: "Neha",   s: 12 },
+                  { n: "Neha", s: 12 },
                 ].map((r, i) => (
-                  <div key={r.n} className="flex justify-between rounded-xl bg-card border border-border px-4 py-2.5 text-sm">
-                    <span className="font-semibold">{i + 1}. {r.n}</span>
+                  <div
+                    key={r.n}
+                    className="flex justify-between rounded-xl bg-card border border-border px-4 py-2.5 text-sm"
+                  >
+                    <span className="font-semibold">
+                      {i + 1}. {r.n}
+                    </span>
                     <span className="tabular-nums">{r.s}</span>
                   </div>
                 ))}
@@ -302,7 +364,10 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
                 <button className="flex-1 rounded-full bg-surface-2 border border-border py-3 font-semibold text-sm">
                   Save to history
                 </button>
-                <button onClick={onClose} className="flex-1 rounded-full fab-gradient text-white py-3 font-bold text-sm">
+                <button
+                  onClick={onClose}
+                  className="flex-1 rounded-full fab-gradient text-white py-3 font-bold text-sm"
+                >
                   Rematch
                 </button>
               </div>
@@ -317,7 +382,10 @@ export function JudgementGame({ onClose }: { onClose: () => void }) {
                   <button
                     key={`${c.suit}${c.rank}`}
                     onClick={() => playCard(c)}
-                    style={{ marginLeft: i === 0 ? 0 : -14, transform: `translateY(${i % 2 ? -2 : 0}px)` }}
+                    style={{
+                      marginLeft: i === 0 ? 0 : -14,
+                      transform: `translateY(${i % 2 ? -2 : 0}px)`,
+                    }}
                     className="hover:-translate-y-2 active:translate-y-0 transition-transform"
                   >
                     <PlayingCard card={c} />

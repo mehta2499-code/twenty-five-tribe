@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Heart, MessageCircle, Music2, Plus, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
+import { FriendPicker, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { CommentsSheet, FeedTabs, personOf } from "@/components/FeedUI";
 import { fileToImage, social, timeAgo, useSocial, type Reel } from "@/lib/social";
 
@@ -27,11 +27,12 @@ function ReelCard({
     const now = Date.now();
     if (now - lastTap.current < 300) {
       social.like("reel", reel.id);
+      buzz();
       setBurst((b) => b + 1);
     }
     lastTap.current = now;
   };
-  const action = "flex flex-col items-center gap-1 text-cream";
+  const action = "flex flex-col items-center gap-1 text-white";
 
   return (
     <section
@@ -64,9 +65,9 @@ function ReelCard({
           <Heart
             key={burst}
             size={110}
-            fill="#EFE6D2"
+            fill="#fff"
             className="absolute left-1/2 top-1/2 heart-burst"
-            style={{ color: "#EFE6D2" }}
+            style={{ color: "#fff" }}
           />
         )}
       </div>
@@ -80,7 +81,7 @@ function ReelCard({
           <Heart
             size={30}
             fill={liked ? "var(--accent-oxblood)" : "none"}
-            style={{ color: liked ? "var(--accent-oxblood)" : "#EFE6D2" }}
+            style={{ color: liked ? "var(--accent-oxblood)" : "#fff" }}
           />
           <span className="tabular-nums" style={{ fontSize: 12 }}>
             {reel.likes.length}
@@ -97,7 +98,7 @@ function ReelCard({
         </button>
       </div>
 
-      <div className="absolute left-4 right-20 bottom-6 text-cream">
+      <div className="absolute left-4 right-20 bottom-6 text-white">
         <div className="flex items-center gap-2.5">
           <Avatar src={by.avatar} initials={by.initials} color={by.color} size={32} />
           <span className="font-display" style={{ fontSize: 15 }}>
@@ -128,7 +129,7 @@ function NewReelSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
         style={{
           aspectRatio: "9 / 16",
           maxHeight: "42vh",
-          border: media ? "none" : "1px dashed rgba(196,149,96,0.4)",
+          border: media ? "none" : "1px dashed rgba(43,138,196,0.4)",
           background: "var(--bg-surface)",
         }}
       >
