@@ -162,6 +162,7 @@ function OnlineTrivia({
   return (
     <TriviaGame
       pack={pack}
+      seed={game.state.seed ?? 1}
       opponent={opponent}
       onClose={onClose}
       onFinish={(score, total) => {

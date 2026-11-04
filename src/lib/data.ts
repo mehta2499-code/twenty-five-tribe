@@ -318,7 +318,7 @@ export const TRIVIA_PACKS: TriviaPack[] = [
     tagline: "SRK or Salman?",
     questions: 30,
     difficulty: 2,
-    price: "₹29",
+    price: "Free",
     gradient: "linear-gradient(135deg,#9b1c4a,#F7A8A0)",
   },
   {
@@ -338,7 +338,7 @@ export const TRIVIA_PACKS: TriviaPack[] = [
     tagline: "Name the song from the lyrics",
     questions: 30,
     difficulty: 3,
-    price: "₹29",
+    price: "Free",
     gradient: "linear-gradient(135deg,#1A5276,#E8DEFF)",
   },
   {
@@ -429,133 +429,9 @@ export const CAPSULES: Capsule[] = CAPSULE_FRIEND_IDS.map((fid, i) => {
   };
 });
 
-export type TriviaQ = { q: string; options: string[]; answer: number };
 
-export const TRIVIA_QUESTIONS: Record<string, TriviaQ[]> = {
-  ipl: [
-    {
-      q: "Who has scored the most runs in IPL history?",
-      options: ["Rohit Sharma", "Virat Kohli", "David Warner", "MS Dhoni"],
-      answer: 1,
-    },
-    {
-      q: "Which team won the first ever IPL in 2008?",
-      options: ["CSK", "RCB", "Rajasthan Royals", "Mumbai Indians"],
-      answer: 2,
-    },
-    {
-      q: "Who holds the record for fastest IPL century?",
-      options: ["Chris Gayle", "AB de Villiers", "KL Rahul", "Yusuf Pathan"],
-      answer: 0,
-    },
-    { q: "MS Dhoni's jersey number is?", options: ["7", "17", "27", "77"], answer: 0 },
-    {
-      q: "Most expensive IPL player in 2024 auction?",
-      options: ["Pat Cummins", "Mitchell Starc", "Cameron Green", "Sam Curran"],
-      answer: 1,
-    },
-  ],
-  bolly00s: [
-    {
-      q: "Who directed Kabhi Khushi Kabhie Gham (2001)?",
-      options: ["Karan Johar", "Yash Chopra", "Aditya Chopra", "Sanjay Bhansali"],
-      answer: 0,
-    },
-    {
-      q: "'All izz well' is a line from which film?",
-      options: ["3 Idiots", "PK", "Munna Bhai", "Taare Zameen Par"],
-      answer: 0,
-    },
-    {
-      q: "Lead actress in Kal Ho Naa Ho?",
-      options: ["Rani Mukerji", "Kareena Kapoor", "Preity Zinta", "Aishwarya Rai"],
-      answer: 2,
-    },
-    {
-      q: "Which film made Hrithik Roshan a star?",
-      options: ["Mission Kashmir", "Kaho Naa Pyaar Hai", "Fiza", "Yaadein"],
-      answer: 1,
-    },
-    { q: "Lagaan released in?", options: ["1999", "2000", "2001", "2002"], answer: 2 },
-  ],
-  indiagk: [
-    {
-      q: "Capital of Arunachal Pradesh?",
-      options: ["Itanagar", "Imphal", "Aizawl", "Kohima"],
-      answer: 0,
-    },
-    {
-      q: "Which river is called Dakshin Ganga?",
-      options: ["Krishna", "Kaveri", "Godavari", "Narmada"],
-      answer: 2,
-    },
-    {
-      q: "Who was India's first woman PM?",
-      options: ["Sarojini Naidu", "Indira Gandhi", "Pratibha Patil", "Sushma Swaraj"],
-      answer: 1,
-    },
-    {
-      q: "National sport of India (officially)?",
-      options: ["Hockey", "Cricket", "Kabaddi", "None declared"],
-      answer: 3,
-    },
-    {
-      q: "Tallest statue in the world is in?",
-      options: ["Gujarat", "Maharashtra", "Rajasthan", "Karnataka"],
-      answer: 0,
-    },
-  ],
-  hindimusic: [
-    {
-      q: "'Tum hi ho, tum hi ho' — singer?",
-      options: ["Atif Aslam", "Arijit Singh", "Mohit Chauhan", "Sonu Nigam"],
-      answer: 1,
-    },
-    {
-      q: "'Kal ho naa ho' — music director?",
-      options: ["A.R. Rahman", "Shankar–Ehsaan–Loy", "Pritam", "Vishal–Shekhar"],
-      answer: 1,
-    },
-    { q: "Year of release: 'Pasoori'?", options: ["2020", "2021", "2022", "2023"], answer: 2 },
-    {
-      q: "'Channa mereya' is from?",
-      options: ["ADHM", "Dear Zindagi", "Tamasha", "Rockstar"],
-      answer: 0,
-    },
-    {
-      q: "Who sang 'Kesariya'?",
-      options: ["Arijit Singh", "Pritam", "Jubin Nautiyal", "Armaan Malik"],
-      answer: 0,
-    },
-  ],
-  desilife: [
-    {
-      q: "What's the universal Indian response to 'kya kar raha hai'?",
-      options: ["Kuch nahi, bata", "Bas, free hu", "Yaar abhi busy hu", "Kaam kar raha"],
-      answer: 0,
-    },
-    {
-      q: "Maggi cooking time as per packet vs reality?",
-      options: ["2 min vs 2 min", "2 min vs 5 min", "2 min vs 8 min", "2 min vs 15 min"],
-      answer: 2,
-    },
-    {
-      q: "Mom finds your earphones tangled. Her first words?",
-      options: ["Saaf karke rakh", "Itna ganda kyun", "Mera nahi", "Tujhe sambhalna nahi aata"],
-      answer: 3,
-    },
-    {
-      q: "Wedding DJ's mandatory opening song?",
-      options: ["Kala Chashma", "London Thumakda", "Bole Chudiyan", "Mehndi Laga Ke Rakhna"],
-      answer: 0,
-    },
-    {
-      q: "What does 'achha theek hai' really mean?",
-      options: ["Ok fine", "I'm done arguing", "Whatever you say", "All of the above"],
-      answer: 3,
-    },
-  ],
-};
+export { type TriviaQ } from "@/lib/trivia";
+
 
 // ============== Relationship tags & moments (warm layer) ==============
 export type RelationshipTag =

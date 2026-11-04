@@ -11,6 +11,8 @@ import { newGame, type KState, type Seat } from "@/lib/kachuful";
 
 export type TriviaState = {
   pack: string;
+  /** Picks the questions and their order; the same for both players. */
+  seed?: number;
   results: Record<string, { score: number; total: number; at: number }>;
 };
 
@@ -115,7 +117,7 @@ export async function startKachuful(friends: Person[], bots: number, length: "sh
 export async function startTriviaChallenge(packId: string, friend: Person) {
   const me = myId();
   const id = uuid();
-  const state: TriviaState = { pack: packId, results: {} };
+  const state: TriviaState = { pack: packId, seed: Math.floor(Math.random() * 2 ** 31), results: {} };
   const { error } = await supabase
     .from("games")
     .insert({ id, kind: "trivia", host: me, players: [me, friend.id], state, version: 0 });

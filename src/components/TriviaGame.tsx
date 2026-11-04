@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, buzz } from "@/components/SocialUI";
-import { ME, TRIVIA_QUESTIONS, type TriviaPack } from "@/lib/data";
+import { ME, type TriviaPack } from "@/lib/data";
+import { buildRound, markSeen, newSeed } from "@/lib/trivia";
 import { social, useSocial } from "@/lib/social";
 
 const SECONDS = 10;
@@ -18,7 +19,10 @@ export function TriviaGame({
   onClose,
   opponent,
   onFinish,
+  seed,
 }: {
+  /** Challenges pass a shared seed so both friends get the same round. */
+  seed?: number;
   pack: TriviaPack;
   onClose: () => void;
   opponent?: Opponent;
@@ -26,7 +30,7 @@ export function TriviaGame({
 }) {
   const s = useSocial();
   const me = s.me ?? { name: "You", avatar: ME.avatar, initials: ME.initials };
-  const questions = TRIVIA_QUESTIONS[pack.id] ?? [];
+  const [questions] = useState(() => buildRound(pack.id, seed ?? newSeed(), seed === undefined));
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -39,9 +43,10 @@ export function TriviaGame({
   useEffect(() => {
     if (!done || finished.current) return;
     finished.current = true;
+    markSeen(pack.id, questions);
     social.recordScore("trivia", score);
     onFinish?.(score, questions.length);
-  }, [done, score, questions.length, onFinish]);
+  }, [done, score, questions, pack.id, onFinish]);
 
   useEffect(() => {
     if (revealed || done) return;

@@ -10,7 +10,8 @@ import { gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
-import { TRIVIA_PACKS, TRIVIA_QUESTIONS, type TriviaPack } from "@/lib/data";
+import { TRIVIA_PACKS, type TriviaPack } from "@/lib/data";
+import { ROUND, bankSize } from "@/lib/trivia";
 import {
   botSeats,
   listMyGames,
@@ -265,7 +266,7 @@ function Games() {
         <div className="flex gap-3 overflow-x-auto px-5 pb-2 no-scrollbar">
           {TRIVIA_PACKS.map((p) => {
             const free = p.price === "Free";
-            const count = TRIVIA_QUESTIONS[p.id]?.length ?? 0;
+            const count = bankSize(p.id);
             return (
               <button
                 key={p.id}
@@ -289,7 +290,7 @@ function Games() {
                       {p.name}
                     </div>
                     <div className="meta mt-0.5 line-clamp-2" style={{ fontSize: 12.5 }}>
-                      {count} questions · {p.tagline}
+                      {ROUND} of {count} questions · {p.tagline}
                     </div>
                   </div>
                 </div>
