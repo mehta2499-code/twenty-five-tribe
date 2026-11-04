@@ -2,13 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { PageBand } from "@/components/SocialUI";
+import { PageBand, demoOnly } from "@/components/SocialUI";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, MOMENTS } from "@/lib/data";
 import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/moments")({
-  component: MomentsScreen,
+  component: demoOnly(MomentsScreen, "Moments"),
 });
 
 const KEEP = new Set(["Milestone", "Life Update", "Remember When"]);

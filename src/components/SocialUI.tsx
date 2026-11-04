@@ -6,6 +6,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
@@ -15,8 +16,8 @@ import {
   streakStatus,
   useSocial,
   type Snap,
+  meView,
 } from "@/lib/social";
-import { ME } from "@/lib/data";
 
 /** Bottom sheet in the app's walnut-and-bronze style. */
 export function Sheet({
@@ -192,8 +193,8 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
         </div>
         <div className="flex items-center gap-3 mt-3">
           <Avatar
-            src={sender?.avatar ?? ME.avatar}
-            initials={sender?.initials ?? ME.initials}
+            src={sender ? sender.avatar || undefined : meView().avatar}
+            initials={sender?.initials ?? meView().initials}
             color={sender?.color}
             size={34}
           />
@@ -352,4 +353,35 @@ export function PageBand({
       {children}
     </header>
   );
+}
+
+/**
+ * Screens that only have sample content so far. Signed in, they say so plainly
+ * instead of showing made-up people.
+ */
+export function demoOnly<P extends object>(Screen: ComponentType<P>, title: string) {
+  return function DemoOnlyScreen(props: P) {
+    const s = useSocial();
+    if (s.mode !== "live") return <Screen {...props} />;
+    return (
+      <div className="pb-8">
+        <PageBand
+          eyebrow="coming soon"
+          title={title}
+          sub="We're building this for real friends. Here's what's live today."
+        />
+        <div className="px-6 mt-8 grid gap-3">
+          <Link to="/app/chats" className="card-editorial px-5 py-4 font-semibold text-cream">
+            Chats and snaps →
+          </Link>
+          <Link to="/app/feed" className="card-editorial px-5 py-4 font-semibold text-cream">
+            Feed and reels →
+          </Link>
+          <Link to="/app/games" className="card-editorial px-5 py-4 font-semibold text-cream">
+            Games →
+          </Link>
+        </div>
+      </div>
+    );
+  };
 }

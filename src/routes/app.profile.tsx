@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { ME, SEATS_TOTAL, ME_DESCRIPTIONS, QUIETLY } from "@/lib/data";
-import { seatedFriends, useSocial } from "@/lib/social";
+import { fileToImage, seatedFriends, useSocial } from "@/lib/social";
+import { useRef, useState } from "react";
 import { account } from "@/lib/live";
 import { VOICE } from "@/lib/copy";
 
@@ -86,6 +87,19 @@ function Profile() {
   const s = useSocial();
   const name = s.me?.name ?? ME.name;
   const taken = seatedFriends().length;
+  const live = s.mode === "live";
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoState, setPhotoState] = useState<string | null>(null);
+  const changePhoto = async (file?: File) => {
+    if (!file) return;
+    setPhotoState("Uploading…");
+    try {
+      await account.updateAvatar(await fileToImage(file, 600));
+      setPhotoState("Photo updated.");
+    } catch (e) {
+      setPhotoState((e as Error).message);
+    }
+  };
   return (
     <div className="px-5 pt-9 pb-4">
       <div className="flex flex-col items-center text-center">
@@ -98,6 +112,28 @@ function Profile() {
             />
           </div>
         </div>
+        {live && (
+          <>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="mt-3 text-sm font-semibold text-bronze"
+            >
+              {s.me?.avatar ? "Change photo" : "Add a photo"}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => void changePhoto(e.target.files?.[0])}
+            />
+            {photoState && (
+              <p className="text-xs text-cool mt-1" role="status">
+                {photoState}
+              </p>
+            )}
+          </>
+        )}
         <h1
           className="mt-5 font-display italic text-cream"
           style={{ fontSize: 36, letterSpacing: "-0.01em" }}
@@ -116,16 +152,17 @@ function Profile() {
         </p>
       </div>
 
-      <div className="hairline mx-8 mt-9" />
-
-      <HowTheySeeYou />
-
-      <div className="hairline mx-8 mt-10" />
-
-      <QuietlyHappening />
+      {!live && (
+        <>
+          <div className="hairline mx-8 mt-9" />
+          <HowTheySeeYou />
+          <div className="hairline mx-8 mt-10" />
+          <QuietlyHappening />
+        </>
+      )}
 
       <div className="mt-10 card-editorial overflow-hidden">
-        {ITEMS.map((i, idx) => {
+        {ITEMS.filter((i) => !live || i.to === "/app/privacy").map((i, idx) => {
           const inner = (
             <>
               <div className="flex-1">

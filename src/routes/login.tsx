@@ -142,7 +142,10 @@ function Login() {
             <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
               Check your email.
             </p>
-            <div className="rounded-2xl bg-white/15 px-4 py-4" style={{ fontSize: 15, lineHeight: 1.5 }}>
+            <div
+              className="rounded-2xl bg-white/15 px-4 py-4"
+              style={{ fontSize: 15, lineHeight: 1.5 }}
+            >
               <p>
                 We sent a link to <span className="font-semibold">{email}</span>.
               </p>
@@ -150,7 +153,9 @@ function Login() {
                 Open the email <span className="font-semibold">on this phone</span> and tap{" "}
                 <span className="font-semibold">Sign in</span>. You'll land back here, signed in.
               </p>
-              <p className="mt-2 text-white/80 text-sm">Nothing yet? Check spam, or wait a minute.</p>
+              <p className="mt-2 text-white/80 text-sm">
+                Nothing yet? Check spam, or wait a minute.
+              </p>
             </div>
             <label htmlFor="login-code" className="text-sm font-semibold text-white/90 mt-2">
               Got a 6-digit code instead? Enter it here.

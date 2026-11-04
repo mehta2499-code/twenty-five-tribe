@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { Camera, MessageCircle } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS, MOMENTS, THOUGHTS, getSeatMeta } from "@/lib/data";
@@ -127,7 +128,19 @@ function Orbit({ rolling }: { rolling: boolean }) {
 }
 
 function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment: () => void }) {
-  const items = [
+  const s = useSocial();
+  const liveItems = [
+    {
+      glyph: "📸",
+      label: "Share a post",
+      onClick: undefined,
+      to: "/app/feed" as string | undefined,
+    },
+    { glyph: "⚡", label: "Send a snap", onClick: undefined, to: "/app/snap" },
+    { glyph: "➕", label: "Save a seat", onClick: undefined, to: "/app/people" },
+    { glyph: "🎲", label: "Roll the table", onClick: onRoll, to: undefined },
+  ];
+  const demoItems = [
     {
       glyph: "📸",
       label: "Share a moment",
@@ -138,6 +151,7 @@ function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment
     { glyph: "➕", label: "Save a seat", onClick: undefined, to: "/app/people" },
     { glyph: "🎲", label: "Roll the table", onClick: onRoll, to: undefined },
   ];
+  const items = s.mode === "live" ? liveItems : demoItems;
   return (
     <section className="px-6 mt-12">
       <p className="label-caps text-center mb-5">what would you like to do?</p>
@@ -250,24 +264,29 @@ function RollPanel({ result, onClose }: { result: NonNullable<RollResult>; onClo
         >
           Send them something that has nothing to do with anything.
         </p>
-        <div className="mt-7 grid grid-cols-4 gap-3">
-          {[
-            { id: "song", glyph: "♪", label: "Song" },
-            { id: "photo", glyph: "◐", label: "Photo" },
-            { id: "voice", glyph: "◍", label: "Voice note" },
-            { id: "msg", glyph: "✎", label: "Message" },
-          ].map((a) => (
-            <button
-              key={a.id}
-              className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
-              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
-            >
-              <span style={{ color: "var(--accent-bronze)", fontSize: 20 }}>{a.glyph}</span>
-              <span className="font-display italic text-cream" style={{ fontSize: 12 }}>
-                {a.label}
-              </span>
-            </button>
-          ))}
+        <div className="mt-7 grid grid-cols-2 gap-3">
+          <Link
+            to="/app/snap"
+            search={{ to: f.id }}
+            className="flex flex-col items-center gap-2 py-4 rounded-2xl"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
+          >
+            <Camera size={22} className="text-bronze" />
+            <span className="font-semibold text-cream" style={{ fontSize: 13 }}>
+              Send a snap
+            </span>
+          </Link>
+          <Link
+            to="/app/chat/$id"
+            params={{ id: f.id }}
+            className="flex flex-col items-center gap-2 py-4 rounded-2xl"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
+          >
+            <MessageCircle size={22} className="text-bronze" />
+            <span className="font-semibold text-cream" style={{ fontSize: 13 }}>
+              Message
+            </span>
+          </Link>
         </div>
         <button onClick={onClose} className="mt-6 label-caps text-cool">
           close

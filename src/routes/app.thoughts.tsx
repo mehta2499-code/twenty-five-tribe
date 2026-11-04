@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar } from "@/components/Avatar";
-import { PageBand } from "@/components/SocialUI";
+import { PageBand, demoOnly } from "@/components/SocialUI";
 import { FRIENDS, THOUGHTS } from "@/lib/data";
 import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/thoughts")({
-  component: ThoughtsPage,
+  component: demoOnly(ThoughtsPage, "Thought of You"),
 });
 
 function ThoughtsPage() {

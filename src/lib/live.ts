@@ -643,6 +643,13 @@ export const account = {
     await loadAll();
     subscribe();
   },
+  async updateAvatar(image: string) {
+    if (!myId) throw new Error("Sign in first.");
+    const path = await upload("avatars", image, "jpg");
+    const { error } = await supabase.from("profiles").update({ avatar_path: path }).eq("id", myId);
+    if (error) throw new Error(friendly(error));
+    await loadAll();
+  },
   async signOut() {
     await supabase.auth.signOut();
   },

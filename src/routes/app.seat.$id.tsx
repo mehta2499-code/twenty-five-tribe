@@ -11,10 +11,123 @@ import {
   getSeatMeta,
 } from "@/lib/data";
 import { VOICE } from "@/lib/copy";
+import { clientOnly } from "@/components/SocialUI";
+import { friendById, streakStatus, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app/seat/$id")({
-  component: SeatPage,
+  component: clientOnly(SeatScreen),
 });
+
+function SeatScreen() {
+  const s = useSocial();
+  return s.mode === "live" ? <LiveSeat /> : <SeatPage />;
+}
+
+/** A real person at your table: who they are, your streak, and what you can do together. */
+function LiveSeat() {
+  const { id } = Route.useParams();
+  const s = useSocial();
+  const navigate = useNavigate();
+  const f = friendById(id);
+  if (!f) {
+    return (
+      <div className="px-6 pt-24 text-center">
+        <p className="font-semibold text-cream">That seat is empty.</p>
+        <Link to="/app/people" className="btn-bronze inline-block mt-5 px-6 py-3">
+          Your 25
+        </Link>
+      </div>
+    );
+  }
+  const st = streakStatus(s.streaks[id]);
+  const posts =
+    s.posts.filter((p) => p.by === id).length + s.reels.filter((r) => r.by === id).length;
+  const best = (["tap-rush", "quick-math", "trivia"] as const).map((g) => ({
+    g,
+    them: s.scores[g]?.[id],
+    you: s.scores[g]?.me,
+  }));
+  return (
+    <div className="pb-10">
+      <header className="band px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-8 text-center">
+        <div className="flex">
+          <button
+            onClick={() => navigate({ to: "/app/home" })}
+            aria-label="Back"
+            className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center"
+          >
+            <ArrowLeft size={18} />
+          </button>
+        </div>
+        <div className="flex justify-center -mt-2">
+          <span className="rounded-full" style={{ boxShadow: "0 0 0 4px rgba(255,255,255,0.7)" }}>
+            <Avatar src={f.avatar || undefined} initials={f.initials} color={f.color} size={104} />
+          </span>
+        </div>
+        <h1 className="font-display mt-4" style={{ fontSize: 34 }}>
+          {f.name}
+        </h1>
+        {f.username && <p className="sub mt-1">@{f.username}</p>}
+        <p className="sub mt-1 text-sm">
+          At your table for{" "}
+          {f.joinedDaysAgo <= 0
+            ? "less than a day"
+            : `${f.joinedDaysAgo} day${f.joinedDaysAgo > 1 ? "s" : ""}`}
+          .
+        </p>
+      </header>
+
+      <div className="px-5 -mt-5 relative grid grid-cols-3 gap-3">
+        {[
+          { n: st.count ? `🔥 ${st.count}` : "–", l: st.atRisk ? "snap today!" : "snap streak" },
+          { n: String((s.chats[id] ?? []).length), l: "messages" },
+          { n: String(posts), l: "posts" },
+        ].map((x) => (
+          <div key={x.l} className="card-editorial py-3 text-center">
+            <p className="font-bold text-cream tabular-nums" style={{ fontSize: 20 }}>
+              {x.n}
+            </p>
+            <p
+              className="text-xs"
+              style={{ color: x.l === "snap today!" ? "var(--accent-ember)" : "var(--text-muted)" }}
+            >
+              {x.l}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-5 mt-6 grid grid-cols-2 gap-3">
+        <Link to="/app/chat/$id" params={{ id }} className="btn-bronze py-3.5 text-center">
+          Message
+        </Link>
+        <Link
+          to="/app/snap"
+          search={{ to: id }}
+          className="rounded-full py-3.5 text-center font-semibold card-editorial"
+        >
+          Send a snap
+        </Link>
+      </div>
+
+      <section className="px-5 mt-8">
+        <p className="label-caps mb-2">this week's rivalry</p>
+        <ul className="card-editorial divide-y" style={{ borderColor: "var(--border-cool)" }}>
+          {best.map(({ g, them, you }) => (
+            <li key={g} className="flex items-center justify-between px-4 py-3 text-sm">
+              <span className="font-semibold text-cream">
+                {g === "tap-rush" ? "Tap Rush" : g === "quick-math" ? "Quick Maths" : "Trivia"}
+              </span>
+              <span className="tabular-nums text-cool">
+                You {you ?? "–"} · {f.name.split(" ")[0]} {them ?? "–"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
 
 function SeatPage() {
   const { id } = Route.useParams();

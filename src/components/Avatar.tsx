@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type Props = {
   initials?: string;
   src?: string;
@@ -15,25 +17,28 @@ export function Avatar({
   ring = "none",
   className = "",
 }: Props) {
+  const [failed, setFailed] = useState<string | null>(null);
+  const showImg = !!src && failed !== src;
   const inner = (
     <div
       className="relative rounded-full overflow-hidden flex items-center justify-center font-semibold text-white shrink-0"
       style={{
         width: size,
         height: size,
-        background: src
+        background: showImg
           ? "var(--bg-surface)"
           : `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #000))`,
         fontSize: size * 0.36,
       }}
     >
-      {src ? (
+      {showImg ? (
         <img
           src={src}
           alt={initials}
           loading="lazy"
           draggable={false}
           className="h-full w-full object-cover"
+          onError={() => setFailed(src ?? null)}
         />
       ) : (
         initials

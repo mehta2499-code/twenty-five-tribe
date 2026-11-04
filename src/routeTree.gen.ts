@@ -31,6 +31,7 @@ import { Route as AppFeedRouteImport } from './routes/app.feed'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppCapsulesRouteImport } from './routes/app.capsules'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
+import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
 import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
 
 const WalkthroughRoute = WalkthroughRouteImport.update({
@@ -143,6 +144,11 @@ const AppSeatIdRoute = AppSeatIdRouteImport.update({
   path: '/seat/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPlayIdRoute = AppPlayIdRouteImport.update({
+  id: '/play/$id',
+  path: '/play/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChatIdRoute = AppChatIdRouteImport.update({
   id: '/chat/$id',
   path: '/chat/$id',
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/app/thoughts': typeof AppThoughtsRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesByTo {
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/app/thoughts': typeof AppThoughtsRoute
   '/app': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesById {
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/app/thoughts': typeof AppThoughtsRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRouteTypes {
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/app/thoughts'
     | '/app/'
     | '/app/chat/$id'
+    | '/app/play/$id'
     | '/app/seat/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/app/thoughts'
     | '/app'
     | '/app/chat/$id'
+    | '/app/play/$id'
     | '/app/seat/$id'
   id:
     | '__root__'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/app/thoughts'
     | '/app/'
     | '/app/chat/$id'
+    | '/app/play/$id'
     | '/app/seat/$id'
   fileRoutesById: FileRoutesById
 }
@@ -466,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSeatIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/play/$id': {
+      id: '/app/play/$id'
+      path: '/play/$id'
+      fullPath: '/app/play/$id'
+      preLoaderRoute: typeof AppPlayIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/chat/$id': {
       id: '/app/chat/$id'
       path: '/chat/$id'
@@ -493,6 +512,7 @@ interface AppRouteChildren {
   AppThoughtsRoute: typeof AppThoughtsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppChatIdRoute: typeof AppChatIdRoute
+  AppPlayIdRoute: typeof AppPlayIdRoute
   AppSeatIdRoute: typeof AppSeatIdRoute
 }
 
@@ -513,6 +533,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThoughtsRoute: AppThoughtsRoute,
   AppIndexRoute: AppIndexRoute,
   AppChatIdRoute: AppChatIdRoute,
+  AppPlayIdRoute: AppPlayIdRoute,
   AppSeatIdRoute: AppSeatIdRoute,
 }
 

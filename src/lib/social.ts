@@ -4,7 +4,7 @@
  * so a real backend can later replace `load`/`save` without touching screens.
  */
 import { useEffect, useSyncExternalStore } from "react";
-import { FRIENDS, getSeatMeta, type Friend } from "@/lib/data";
+import { FRIENDS, ME, getSeatMeta, type Friend } from "@/lib/data";
 
 // ---------- Types ----------
 export type MsgStatus = "sent" | "delivered" | "read";
@@ -378,6 +378,13 @@ function set(fn: (s: SocialState) => SocialState) {
   state = fn(state);
   emit();
   save();
+}
+
+/** You, as the screens should show you: your real profile when signed in. */
+export function meView(): { name: string; avatar?: string; initials: string } {
+  return state.mode === "live" && state.me
+    ? { name: state.me.name, avatar: state.me.avatar, initials: state.me.initials }
+    : { name: ME.name, avatar: ME.avatar, initials: ME.initials };
 }
 
 export function clearError() {

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -33,7 +33,9 @@ function driftMeta(days: number) {
 function My25() {
   const [selected, setSelected] = useState<Friend | null>(null);
   const [waitingOpen, setWaitingOpen] = useState(false);
-  useSocial(); // re-render when your 25 changes
+  const social = useSocial(); // re-render when your 25 changes
+  const live = social.mode === "live";
+  const incoming = social.requests.filter((r) => r.direction === "incoming").length;
   const people = seatedFriends();
   const SEATS_FILLED = people.length;
   const seats: (Friend | null)[] = Array.from({ length: SEATS_TOTAL }, (_, i) => people[i] ?? null);
@@ -52,13 +54,23 @@ function My25() {
           <p className="font-display italic text-cool" style={{ fontSize: 13 }}>
             Twenty-five people. No more.
           </p>
-          <button
-            onClick={() => setWaitingOpen(true)}
-            className="rounded-full px-3 py-1.5 label-caps text-warm"
-            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
-          >
-            Waiting · <span style={{ color: "var(--blue-deep)" }}>{WAITING_ROOM.length}</span>
-          </button>
+          {live ? (
+            <Link
+              to="/app/people"
+              className="rounded-full px-3 py-1.5 label-caps text-warm"
+              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
+            >
+              Requests · <span style={{ color: "var(--blue-deep)" }}>{incoming}</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => setWaitingOpen(true)}
+              className="rounded-full px-3 py-1.5 label-caps text-warm"
+              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
+            >
+              Waiting · <span style={{ color: "var(--blue-deep)" }}>{WAITING_ROOM.length}</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -172,15 +184,21 @@ function My25() {
             })()}
 
             <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <button className="rounded-full btn-capsule py-3 font-display italic">
-                Send a vibe
-              </button>
-              <button
-                className="rounded-full py-3 font-display italic text-warm"
+              <Link
+                to="/app/chat/$id"
+                params={{ id: selected.id }}
+                className="rounded-full btn-capsule py-3 text-center"
+              >
+                Message
+              </Link>
+              <Link
+                to={live ? "/app/people" : "/app/snap"}
+                search={live ? undefined : { to: selected.id }}
+                className="rounded-full py-3 text-center text-warm font-semibold"
                 style={{ background: "transparent", border: "1px solid var(--border-cool)" }}
               >
-                Remove from 25
-              </button>
+                {live ? "Manage your 25" : "Send a snap"}
+              </Link>
             </div>
           </div>
         </div>

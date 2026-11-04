@@ -176,6 +176,19 @@ function ChatThread() {
                       </p>
                     </Link>
                   )}
+                  {shareKind === "game" && shareId && (
+                    <Link
+                      to="/app/play/$id"
+                      params={{ id: shareId }}
+                      className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2 font-semibold"
+                      style={{
+                        background: mine ? "rgba(255,255,255,0.18)" : "var(--bg-surface)",
+                        fontSize: 14,
+                      }}
+                    >
+                      🃏 {mine ? "Open the game" : "Join the game"} →
+                    </Link>
+                  )}
                   <div className="flex items-center justify-end gap-1 mt-1">
                     <span
                       className="tabular-nums"

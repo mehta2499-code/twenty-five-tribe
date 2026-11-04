@@ -8,7 +8,10 @@ One-time steps in the Supabase dashboard for project `yhtuvujroxdcsstbpipt`.
 2. Paste the whole of `supabase/migrations/20261104000000_social_core.sql`.
 3. Click **Run**. It should finish with "Success. No rows returned".
 
-The script is safe to run again if you need to.
+Then do the same with `supabase/migrations/20261105000000_games.sql`
+(multiplayer Kachuful and trivia challenges).
+
+Both scripts are safe to run again if you need to.
 
 ## 2. Turn on email codes
 

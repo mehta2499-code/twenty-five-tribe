@@ -1,3 +1,4 @@
+import { demoOnly } from "@/components/SocialUI";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Sparkles, RotateCcw } from "lucide-react";
@@ -5,7 +6,7 @@ import { Avatar } from "@/components/Avatar";
 import { FRIENDS, ROASTS, TOASTS, type Friend } from "@/lib/data";
 
 export const Route = createFileRoute("/app/pulse")({
-  component: PulseScreen,
+  component: demoOnly(PulseScreen, "Pulse"),
 });
 
 type Mode = "roast" | "toast";

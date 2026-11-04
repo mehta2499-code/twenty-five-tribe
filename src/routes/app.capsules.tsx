@@ -1,3 +1,4 @@
+import { demoOnly } from "@/components/SocialUI";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
@@ -5,7 +6,7 @@ import { Avatar } from "@/components/Avatar";
 import { CAPSULES, FRIENDS, ME, type Capsule, type MomentTag } from "@/lib/data";
 
 export const Route = createFileRoute("/app/capsules")({
-  component: CapsulesScreen,
+  component: demoOnly(CapsulesScreen, "Memory Capsules"),
 });
 
 // Uppercase and letter-spacing come from the .label-caps style.

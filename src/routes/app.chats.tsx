@@ -14,6 +14,7 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (!m) return "Say hi. It's been a minute.";
   const who = m.from === "me" ? "You: " : "";
   if (m.snapId) return m.from === "me" ? "You sent a snap" : "New snap · tap to open";
+  if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}invited you to a game`;
   if (m.sharedPostId)
     return `${who}shared a ${m.sharedPostId.startsWith("reel") ? "reel" : "post"}`;
   return who + (m.text ?? "");

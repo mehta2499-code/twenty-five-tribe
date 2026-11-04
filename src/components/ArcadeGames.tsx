@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
-import { ME } from "@/lib/data";
-import { friendById, leaderboard, social, useSocial, type GameId } from "@/lib/social";
+import { friendById, leaderboard, social, useSocial, type GameId, meView } from "@/lib/social";
 
 export const ARCADE = [
   {
@@ -347,8 +346,8 @@ export function Leaderboard() {
                 {i + 1}
               </span>
               <Avatar
-                src={f?.avatar ?? ME.avatar}
-                initials={f?.initials ?? ME.initials}
+                src={f ? f.avatar || undefined : meView().avatar}
+                initials={f?.initials ?? meView().initials}
                 color={f?.color}
                 size={34}
               />

@@ -2,21 +2,20 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Sheet } from "@/components/SocialUI";
-import { ME } from "@/lib/data";
-import { friendById, social, timeAgo, type Comment } from "@/lib/social";
+import { friendById, social, timeAgo, type Comment, meView } from "@/lib/social";
 
 export function personOf(id: string) {
   if (id === "me")
     return {
       name: "You",
-      avatar: ME.avatar,
-      initials: ME.initials,
+      avatar: meView().avatar,
+      initials: meView().initials,
       color: undefined as string | undefined,
     };
   const f = friendById(id);
   return {
     name: f?.name ?? "Someone",
-    avatar: f?.avatar,
+    avatar: f?.avatar || undefined,
     initials: f?.initials ?? "?",
     color: f?.color,
   };
