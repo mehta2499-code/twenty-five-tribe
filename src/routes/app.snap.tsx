@@ -19,6 +19,7 @@ import {
   social,
   streakStatus,
   useSocial,
+  timeAgo,
   type Snap,
 } from "@/lib/social";
 
@@ -131,7 +132,7 @@ function SnapScreen() {
     setBurst((b) => b + 1);
     buzz(30);
     setToast(
-      `Sent to ${names.length > 2 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(" & ")}${saved ? ` · ${saved} streak${saved > 1 ? "s" : ""} saved 🔥` : ""}`,
+      `Sent to ${names.length > 2 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(" & ")}${saved ? `. ${saved} streak${saved > 1 ? "s" : ""} kept alive.` : ""}`,
     );
   };
 
@@ -141,24 +142,18 @@ function SnapScreen() {
   return (
     <div className="pb-6">
       <PageBand
-        eyebrow={target ? "snap" : "snap · disappears after viewing"}
-        title={target ? `Snap ${target.name}.` : "Gone in 5 seconds."}
-      >
-        {target && (
-          <div className="mt-3 inline-flex rounded-full px-3 py-1" style={{ background: "#fff" }}>
-            <StreakBadge friendId={target.id} size={13} />
-          </div>
-        )}
-      </PageBand>
+        title={target ? `Snap ${target.name.split(" ")[0]}` : "Snap"}
+        sub="Photos and notes that disappear after one look."
+        actions={target ? <StreakBadge friendId={target.id} size={14} /> : undefined}
+      />
       <div className="px-5">
         {/* Viewfinder */}
         <div
-          className="relative mt-5 rounded-3xl overflow-hidden mx-auto"
+          className="relative rounded-3xl overflow-hidden mx-auto"
           style={{
             aspectRatio: "3 / 4",
-            maxHeight: "58vh",
-            background: bg ?? "var(--navy)",
-            border: "1px solid var(--border-cool)",
+            maxHeight: "56vh",
+            background: bg ?? "var(--ink)",
           }}
         >
           {!hasShot && !camError && (
@@ -173,11 +168,8 @@ function SnapScreen() {
           )}
           {!hasShot && camError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 gap-3">
-              <Camera size={28} className="text-faint" />
-              <p
-                className="font-display italic text-cool"
-                style={{ fontSize: 14, lineHeight: 1.5 }}
-              >
+              <Camera size={28} className="text-white/70" aria-hidden="true" />
+              <p className="text-white/90" style={{ fontSize: 15, lineHeight: 1.5 }}>
                 {camError}
               </p>
             </div>
@@ -195,7 +187,8 @@ function SnapScreen() {
               value={caption}
               onChange={(e) => setCaption(e.target.value.slice(0, 80))}
               placeholder={image ? "Add a caption" : "Say it big"}
-              className="absolute left-4 right-4 top-1/2 -translate-y-1/2 text-center font-display italic outline-none rounded-2xl px-3 py-2.5"
+              aria-label="Caption"
+              className="absolute left-4 right-4 top-1/2 -translate-y-1/2 text-center font-semibold outline-none rounded-2xl px-3 py-2.5 placeholder:text-white/70"
               style={{
                 fontSize: image ? 19 : 28,
                 color: "#fff",
@@ -206,8 +199,8 @@ function SnapScreen() {
           {hasShot && (
             <button
               onClick={reset}
-              aria-label="Discard"
-              className="absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center"
+              aria-label="Discard and start over"
+              className="absolute top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(0,0,0,0.5)", color: "#fff" }}
             >
               <X size={18} />
@@ -217,7 +210,7 @@ function SnapScreen() {
             <button
               onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
               aria-label="Flip camera"
-              className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
+              className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(0,0,0,0.5)", color: "#fff" }}
             >
               <RefreshCw size={16} />
@@ -230,7 +223,8 @@ function SnapScreen() {
                   key={b}
                   onClick={() => setBg(b)}
                   aria-label="Background colour"
-                  className="w-7 h-7 rounded-full"
+                  aria-pressed={b === bg}
+                  className="w-8 h-8 rounded-full"
                   style={{
                     background: b,
                     outline: b === bg ? "2px solid #fff" : "1px solid rgba(255,255,255,0.25)",
@@ -244,33 +238,31 @@ function SnapScreen() {
 
         {/* Controls */}
         {!hasShot ? (
-          <div className="mt-5 flex items-center justify-between px-4">
+          <div className="mt-5 grid grid-cols-3 items-center">
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex flex-col items-center gap-1 text-cool"
-              aria-label="Upload a photo"
+              className="justify-self-start flex flex-col items-center gap-1 text-cool w-16 py-1 rounded-xl"
             >
-              <ImagePlus size={22} />
-              <span style={{ fontSize: 11 }}>Photo</span>
+              <ImagePlus size={22} aria-hidden="true" />
+              <span style={{ fontSize: 13 }}>Upload</span>
             </button>
             <button
               onClick={capture}
               disabled={!stream}
-              aria-label="Take snap"
-              className="w-[72px] h-[72px] rounded-full active:scale-95 transition disabled:opacity-40 animate-ember-pulse"
+              aria-label="Take photo"
+              className="justify-self-center w-[72px] h-[72px] rounded-full disabled:opacity-40"
               style={{
-                border: "5px solid var(--blue)",
+                border: "5px solid var(--blue-deep)",
                 background: "#fff",
-                boxShadow: "0 0 0 4px var(--sky-100)",
+                boxShadow: "0 0 0 4px var(--fill)",
               }}
             />
             <button
               onClick={() => setBg(BACKDROPS[0])}
-              className="flex flex-col items-center gap-1 text-cool"
-              aria-label="Text snap"
+              className="justify-self-end flex flex-col items-center gap-1 text-cool w-16 py-1 rounded-xl"
             >
-              <Type size={22} />
-              <span style={{ fontSize: 11 }}>Text</span>
+              <Type size={22} aria-hidden="true" />
+              <span style={{ fontSize: 13 }}>Text</span>
             </button>
             <input
               ref={fileRef}
@@ -282,118 +274,109 @@ function SnapScreen() {
           </div>
         ) : (
           <div className="mt-5">
-            <div className="flex items-center justify-center gap-2">
-              <span className="label-caps mr-1">disappears in</span>
-              {TIMERS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setSeconds(t)}
-                  className="px-3 py-1.5 rounded-full tabular-nums"
-                  style={{
-                    fontSize: 13,
-                    background: seconds === t ? "var(--accent-bronze)" : "var(--bg-surface)",
-                    color: seconds === t ? "var(--bg-primary)" : "var(--text-secondary)",
-                  }}
-                >
-                  {t}s
-                </button>
-              ))}
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold text-cool">Visible for</span>
+              <div className="segmented" role="group" aria-label="How long the snap is visible">
+                {TIMERS.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSeconds(t)}
+                    aria-pressed={seconds === t}
+                    className="tabular-nums"
+                  >
+                    {t}s
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               onClick={() => (target ? send([target.id]) : setPicking(true))}
-              className="mt-5 w-full rounded-full py-3.5 font-display italic active:scale-[0.99] transition"
-              style={{
-                background: "var(--accent-bronze)",
-                color: "var(--bg-primary)",
-                fontSize: 15,
-              }}
+              className="btn-primary w-full mt-4"
             >
-              {target ? `Send to ${target.name}` : "Send to…"}
+              {target ? `Send to ${target.name.split(" ")[0]}` : "Choose who gets it"}
             </button>
           </div>
         )}
 
         {/* Inbox */}
         {inbox.length > 0 && (
-          <section className="mt-10">
-            <p className="label-caps mb-3">waiting for you</p>
-            <div className="space-y-2">
+          <section className="mt-8">
+            <h2 className="text-[15px] font-semibold text-cream mb-2">Waiting for you</h2>
+            <ul className="card divide-y" style={{ borderColor: "var(--line)" }}>
               {inbox.map((snap) => {
-                const f = friendById(snap.from)!;
+                const f = friendById(snap.from);
+                if (!f) return null;
                 return (
-                  <button
-                    key={snap.id}
-                    onClick={() => setViewing(snap)}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left active:scale-[0.99] transition"
-                    style={{
-                      background: "var(--bg-surface)",
-                      border: "1px solid var(--border-cool)",
-                    }}
-                  >
-                    <span
-                      className="w-3.5 h-3.5 rounded-[4px]"
-                      style={{
-                        background: snap.image ? "var(--accent-oxblood)" : "var(--accent-ember)",
-                      }}
-                    />
-                    <Avatar src={f.avatar} initials={f.initials} color={f.color} size={36} />
-                    <span className="font-display text-cream flex-1" style={{ fontSize: 15 }}>
-                      {f.name}
-                    </span>
-                    <span className="label-caps" style={{ color: "var(--accent-ember)" }}>
-                      tap to view
-                    </span>
-                  </button>
+                  <li key={snap.id}>
+                    <button
+                      onClick={() => setViewing(snap)}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                      aria-label={`Open snap from ${f.name}`}
+                    >
+                      <Avatar
+                        src={f.avatar || undefined}
+                        initials={f.initials}
+                        color={f.color}
+                        size={40}
+                      />
+                      <span className="flex-1 min-w-0">
+                        <span className="block font-semibold text-cream truncate">{f.name}</span>
+                        <span className="block meta">
+                          {snap.image ? "Photo" : "Note"} · {timeAgo(snap.at)}
+                        </span>
+                      </span>
+                      <span
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--coral-deep)" }}
+                      >
+                        Open
+                      </span>
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </section>
         )}
 
         {/* Streaks at risk */}
         {atRisk.length > 0 && (
-          <section className="mt-10">
-            <p className="label-caps mb-1">streaks ending tonight</p>
-            <p
-              className="font-display italic mb-4"
-              style={{ color: "var(--text-muted)", fontSize: 13 }}
-            >
-              Snap them before midnight or the 🔥 resets.
-            </p>
-            <div className="flex gap-4 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <section className="mt-8">
+            <h2 className="text-[15px] font-semibold text-cream">Streaks ending today</h2>
+            <p className="meta mb-3">Send them a snap before midnight to keep the streak.</p>
+            <ul className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
               {atRisk.map((f) => (
-                <Link
-                  key={f.id}
-                  to="/app/snap"
-                  search={{ to: f.id }}
-                  className="flex flex-col items-center shrink-0"
-                  style={{ width: 60 }}
-                >
-                  <Avatar
-                    src={f.avatar}
-                    initials={f.initials}
-                    color={f.color}
-                    size={50}
-                    ring="drift"
-                  />
-                  <span
-                    className="font-display italic mt-1.5 text-cool truncate w-full text-center"
-                    style={{ fontSize: 11 }}
+                <li key={f.id}>
+                  <Link
+                    to="/app/snap"
+                    search={{ to: f.id }}
+                    className="flex flex-col items-center w-16"
+                    aria-label={`Snap ${f.name}`}
                   >
-                    {f.name}
-                  </span>
-                  <StreakBadge friendId={f.id} size={10} />
-                </Link>
+                    <Avatar
+                      src={f.avatar || undefined}
+                      initials={f.initials}
+                      color={f.color}
+                      size={52}
+                      ring="drift"
+                    />
+                    <span className="mt-1.5 text-[13px] text-cream truncate w-full text-center">
+                      {f.name.split(" ")[0]}
+                    </span>
+                    <StreakBadge friendId={f.id} size={12} />
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         )}
 
         {picking && (
           <FriendPicker
-            title="send to your people"
-            cta="Send snap"
+            title="Send snap to"
+            cta="Send"
             showStreaks
+            note="Each person can open it once."
             onClose={() => setPicking(false)}
             onPick={send}
           />

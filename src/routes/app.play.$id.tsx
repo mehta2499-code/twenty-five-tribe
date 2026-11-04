@@ -133,9 +133,7 @@ function OnlineTrivia({
             : `${opponent.name.split(" ")[0]} won this one.`;
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
-        <p className="label-caps">
-          {pack.emoji} {pack.name} · challenge
-        </p>
+        <p className="label-caps">{pack.name} · challenge</p>
         <h2 className="font-display mt-3" style={{ fontSize: 30 }}>
           {verdict}
         </h2>

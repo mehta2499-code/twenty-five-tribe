@@ -6,6 +6,7 @@ import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
 import { ARCADE, Leaderboard, QuickMath, TapRush } from "@/components/ArcadeGames";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
+import { PackIcon } from "@/components/PackIcon";
 import { TRIVIA_PACKS, TRIVIA_QUESTIONS, type TriviaPack } from "@/lib/data";
 import {
   botSeats,
@@ -40,8 +41,8 @@ function YourGames({ meId }: { meId: string }) {
   return (
     <section className="mt-7">
       <div className="px-5 flex items-center justify-between mb-2">
-        <h2 className="label-caps">your games</h2>
-        <span className="label-caps">{open.length} in play</span>
+        <h2 className="text-[15px] font-semibold text-cream">Your games</h2>
+        <span className="meta">{open.length} in progress</span>
       </div>
       <div className="flex gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {open.map((g) => {
@@ -66,7 +67,7 @@ function YourGames({ meId }: { meId: string }) {
             const t = g.state as TriviaState;
             const pack = TRIVIA_PACKS.find((p) => p.id === t.pack);
             yourTurn = !t.results[meId];
-            title = `${pack?.emoji ?? ""} ${pack?.name ?? "Trivia"}`;
+            title = `${pack?.name ?? "Trivia"} challenge`;
             status = yourTurn
               ? "Your turn"
               : `Waiting for ${others[0]?.name.split(" ")[0] ?? "them"}`;
@@ -76,7 +77,7 @@ function YourGames({ meId }: { meId: string }) {
               key={g.id}
               to="/app/play/$id"
               params={{ id: g.id }}
-              className="shrink-0 w-56 card-editorial p-4 text-left"
+              className="shrink-0 w-56 card p-4 text-left hover:bg-[var(--fill)]"
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-cream text-sm truncate">{title}</span>
@@ -95,7 +96,7 @@ function YourGames({ meId }: { meId: string }) {
                 ))}
               </div>
               <p
-                className="mt-3 label-caps"
+                className="mt-3 text-[13px] font-semibold"
                 style={{ color: yourTurn ? "var(--coral-deep)" : "var(--text-muted)" }}
               >
                 {status}
@@ -133,23 +134,19 @@ function Games() {
 
   return (
     <>
-      <PageBand
-        eyebrow="games · your 25 only"
-        title="Play."
-        sub="Cards, trivia and quick rounds. Top the table by Monday."
-      />
+      <PageBand title="Games" sub="Play with your 25. Scores reset every Monday." />
 
       {live && <YourGames meId={s.me!.id} />}
 
       {/* Kachuful */}
       <section className="px-5 mt-7">
-        <h2 className="label-caps mb-2">cards</h2>
+        <h2 className="text-[15px] font-semibold text-cream mb-2.5">Cards</h2>
         <button
           onClick={() => setLobby(true)}
-          className="w-full rounded-3xl text-left p-6 relative overflow-hidden band"
-          style={{ borderRadius: 28 }}
+          className="w-full text-left p-5 relative overflow-hidden band"
+          style={{ borderRadius: 20 }}
         >
-          <span className="label-caps">most played in india</span>
+          <span className="label-caps">Most played in India</span>
           <div className="mt-3 flex gap-1.5" aria-hidden="true">
             {["♠", "♦", "♣", "♥"].map((x, i) => (
               <span
@@ -164,12 +161,12 @@ function Games() {
               </span>
             ))}
           </div>
-          <h3 className="mt-4 font-display" style={{ fontSize: 30 }}>
+          <h3 className="mt-4 font-display" style={{ fontSize: 28 }}>
             Kachuful
           </h3>
           <p className="sub mt-1" style={{ fontSize: 14, lineHeight: 1.5 }}>
-            Judgement. Call your tricks, then win exactly that many. 3 to 7 players, bots fill empty
-            seats.
+            Also called Judgement. Call your tricks, then win exactly that many. 3 to 7 players;
+            bots fill empty seats.
           </p>
           <span className="mt-4 inline-block btn-cream px-5 py-2.5" style={{ fontSize: 14 }}>
             Deal me in →
@@ -179,7 +176,7 @@ function Games() {
 
       {/* Quick games */}
       <section className="px-5 mt-7">
-        <h2 className="label-caps mb-2">quick games</h2>
+        <h2 className="text-[15px] font-semibold text-cream mb-2.5">Quick games</h2>
         <div className="grid grid-cols-2 gap-3">
           {ARCADE.map((g) => {
             const best = s.scores[g.id]?.me;
@@ -189,10 +186,10 @@ function Games() {
               <button
                 key={g.id}
                 onClick={() => setArcade(g.id)}
-                className="rounded-2xl p-4 text-left card-editorial"
+                className="p-4 text-left card hover:bg-[var(--fill)]"
               >
-                <span className="die-tile" style={{ width: 40, height: 40, fontSize: 20 }}>
-                  {g.glyph}
+                <span className="die-tile" style={{ width: 40, height: 40 }}>
+                  <g.Icon size={20} aria-hidden="true" />
                 </span>
                 <h3 className="mt-3 font-semibold text-cream" style={{ fontSize: 17 }}>
                   {g.name}
@@ -201,10 +198,10 @@ function Games() {
                   {g.blurb}
                 </p>
                 <p
-                  className="label-caps mt-3"
-                  style={{ color: best != null ? "var(--blue-deep)" : "var(--text-muted)" }}
+                  className="mt-3 text-[13px] font-semibold"
+                  style={{ color: best != null ? "var(--blue-deep)" : "var(--ink-3)" }}
                 >
-                  {best != null ? `best ${best} · #${rank} of ${board.length}` : "not played yet"}
+                  {best != null ? `Best ${best} · #${rank} of ${board.length}` : "Not played yet"}
                 </p>
               </button>
             );
@@ -214,39 +211,37 @@ function Games() {
 
       {/* Trivia */}
       <section className="mt-7">
-        <div className="px-5 flex items-center justify-between mb-2">
-          <h2 className="label-caps">india trivia</h2>
-          <span className="label-caps">play solo or challenge a friend</span>
+        <div className="px-5 flex items-baseline justify-between mb-2.5">
+          <h2 className="text-[15px] font-semibold text-cream">India trivia</h2>
+          <span className="meta">Solo or challenge a friend</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-3 overflow-x-auto px-5 pb-2 no-scrollbar">
           {TRIVIA_PACKS.map((p) => {
             const free = p.price === "Free";
             const count = TRIVIA_QUESTIONS[p.id]?.length ?? 0;
             return (
               <button
                 key={p.id}
-                onClick={() => (free ? setPackFor(p) : setToast("Paid packs are coming soon."))}
-                className="shrink-0 w-44 rounded-2xl overflow-hidden text-left card-editorial"
-                style={{ opacity: free ? 1 : 0.7 }}
+                onClick={() => setPackFor(p)}
+                disabled={!free}
+                aria-label={free ? `${p.name}, ${count} questions` : `${p.name}, coming soon`}
+                className="shrink-0 w-44 overflow-hidden text-left card"
+                style={{ opacity: free ? 1 : 0.6 }}
               >
                 <div className="p-4 h-32 flex flex-col justify-between">
                   <div className="flex items-start justify-between">
-                    <span className="text-3xl">{p.emoji}</span>
-                    <span
-                      className="label-caps px-2 py-0.5 rounded-full"
-                      style={{
-                        background: free ? "#DDF3EC" : "var(--bg-surface)",
-                        color: free ? "var(--mint)" : "var(--text-muted)",
-                      }}
-                    >
-                      {free ? "Free" : "Soon"}
-                    </span>
+                    <PackIcon id={p.id} />
+                    {!free && (
+                      <span className="chip" style={{ minHeight: 24, fontSize: 12 }}>
+                        Coming soon
+                      </span>
+                    )}
                   </div>
                   <div>
                     <div className="font-semibold text-cream" style={{ fontSize: 16 }}>
                       {p.name}
                     </div>
-                    <div className="text-faint mt-0.5" style={{ fontSize: 12 }}>
+                    <div className="meta mt-0.5 line-clamp-2" style={{ fontSize: 12.5 }}>
                       {count} questions · {p.tagline}
                     </div>
                   </div>
@@ -259,9 +254,7 @@ function Games() {
 
       <Leaderboard />
 
-      <p className="text-center text-cool px-6 py-10" style={{ fontSize: 13 }}>
-        No strangers. Just your 25, keeping score.
-      </p>
+      <p className="text-center meta px-6 pt-8 pb-2">Only your 25 see your scores.</p>
 
       {lobby && (
         <KachufulLobby
@@ -290,7 +283,7 @@ function Games() {
       )}
 
       {packFor && (
-        <Sheet title={`${packFor.emoji} ${packFor.name}`} onClose={() => setPackFor(null)}>
+        <Sheet title={packFor.name} onClose={() => setPackFor(null)}>
           <p className="text-sm text-cool">{packFor.tagline} 10 seconds a question.</p>
           <div className="mt-5 grid gap-3">
             <button

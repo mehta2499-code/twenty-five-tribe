@@ -80,9 +80,7 @@ export function TriviaGame({
         <button onClick={onClose} aria-label="Close" className="absolute top-5 right-5 text-cool">
           <X size={22} />
         </button>
-        <p className="label-caps">
-          {pack.emoji} {pack.name}
-        </p>
+        <p className="label-caps">{pack.name}</p>
         <h2 className="font-display mt-3" style={{ fontSize: 34, lineHeight: 1.1 }}>
           {result === "win"
             ? "You win."
@@ -146,9 +144,7 @@ export function TriviaGame({
     <div className="fixed inset-0 z-50 bg-background flex flex-col animate-soft-in">
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
         <header className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-2">
-          <span className="label-caps">
-            {pack.emoji} {pack.name}
-          </span>
+          <span className="label-caps">{pack.name}</span>
           <button onClick={onClose} aria-label="Close" className="text-cool">
             <X size={22} />
           </button>

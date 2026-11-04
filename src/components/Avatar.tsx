@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   initials?: string;
@@ -18,6 +18,13 @@ export function Avatar({
   className = "",
 }: Props) {
   const [failed, setFailed] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  // A photo can fail before the page becomes interactive (server-rendered pages),
+  // so also check once on mount.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0 && src) setFailed(src);
+  }, [src]);
   const showImg = !!src && failed !== src;
   const inner = (
     <div
@@ -38,6 +45,7 @@ export function Avatar({
           loading="lazy"
           draggable={false}
           className="h-full w-full object-cover"
+          ref={imgRef}
           onError={() => setFailed(src ?? null)}
         />
       ) : (

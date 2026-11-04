@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, MessageCircle, Search, UserPlus, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { Confetti, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { account } from "@/lib/live";
 import { useSocial, type Person } from "@/lib/social";
 
@@ -31,7 +31,7 @@ function Row({ p, children }: { p: Person; children: React.ReactNode }) {
   );
 }
 
-const pill = "rounded-full px-4 h-10 inline-flex items-center gap-1.5 font-semibold text-sm";
+const pill = "min-h-[40px] text-sm px-3.5";
 
 function People() {
   const s = useSocial();
@@ -83,80 +83,72 @@ function People() {
   if (s.mode !== "live") {
     return (
       <div className="pb-8">
-        <PageBand
-          eyebrow="your 25"
-          title="Fill your seats."
-          sub="Real people, by invitation only."
+        <PageBand title="Your 25" sub="The people who can message, snap and play with you." back />
+        <EmptyState
+          icon={UserPlus}
+          title="You're looking at the demo"
+          body="Sign in to find your friends and save them a seat at your table."
+          action={
+            <Link to="/login" className="btn-primary px-6">
+              Sign in
+            </Link>
+          }
         />
-        <div className="px-6 mt-10 text-center">
-          <p className="text-cream font-semibold" style={{ fontSize: 17 }}>
-            You're in demo mode.
-          </p>
-          <p
-            className="mt-2"
-            style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}
-          >
-            Sign in to find your friends and save them a seat. Everyone you add can message, snap
-            and play with you.
-          </p>
-          <Link to="/login" className="btn-bronze inline-block mt-6 px-6 py-3">
-            Sign in
-          </Link>
-        </div>
       </div>
     );
   }
 
   return (
     <div className="pb-8">
-      <PageBand
-        eyebrow="your 25"
-        title={`${taken} of ${SEATS} seats taken.`}
-        sub={
-          taken >= SEATS
-            ? "Table's full. Someone has to go for someone new to come in."
-            : `${SEATS - taken} open. Choose wisely.`
-        }
-      >
-        <div className="mt-5 flex justify-center gap-1 flex-wrap" aria-hidden="true">
-          {Array.from({ length: SEATS }).map((_, i) => (
-            <span
-              key={i}
-              className="w-2.5 h-2.5 rounded-full"
-              style={{
-                background:
-                  i < s.people.length
-                    ? "#fff"
-                    : i < taken
-                      ? "var(--coral)"
-                      : "rgba(255,255,255,0.3)",
-              }}
-            />
-          ))}
+      <PageBand title="Your 25" sub="The people who can message, snap and play with you." back>
+        <div className="mt-4 card px-4 py-3.5">
+          <div className="flex items-baseline justify-between">
+            <p className="font-semibold text-cream">
+              {taken} of {SEATS} seats taken
+            </p>
+            <p className="meta">{taken >= SEATS ? "Table's full" : `${SEATS - taken} open`}</p>
+          </div>
+          <div
+            className="mt-2.5 grid gap-[3px]"
+            style={{ gridTemplateColumns: `repeat(${SEATS}, 1fr)` }}
+            role="img"
+            aria-label={`${s.people.length} accepted, ${taken - s.people.length} waiting, ${SEATS - taken} open`}
+          >
+            {Array.from({ length: SEATS }).map((_, i) => (
+              <span
+                key={i}
+                className="h-2 rounded-full"
+                style={{
+                  background:
+                    i < s.people.length
+                      ? "var(--blue-deep)"
+                      : i < taken
+                        ? "var(--coral)"
+                        : "var(--fill-2)",
+                }}
+              />
+            ))}
+          </div>
+          {taken >= SEATS && (
+            <p className="mt-2 meta">Remove someone to make room for someone new.</p>
+          )}
         </div>
       </PageBand>
 
       <section className="px-5 mt-6">
-        <label
-          className="flex items-center gap-2 rounded-full px-4 h-12 card-editorial"
-          htmlFor="people-search"
-        >
-          <Search size={18} className="text-faint" />
+        <label className="field" htmlFor="people-search">
+          <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
           <input
             id="people-search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name or @username"
+            placeholder="Find someone by name or @username"
             autoCapitalize="none"
-            className="bg-transparent outline-none flex-1 text-cream"
-            style={{ fontSize: 15 }}
+            autoComplete="off"
           />
         </label>
         {q.trim().length >= 2 && (
-          <ul
-            className="mt-2 card-editorial px-4 divide-y"
-            style={{ borderColor: "var(--border-cool)" }}
-          >
+          <ul className="mt-2 card px-4 divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {searching && <li className="py-4 text-sm text-faint">Looking…</li>}
             {!searching && results.length === 0 && (
               <li className="py-4 text-sm text-faint">
@@ -177,7 +169,7 @@ function People() {
                         `Seat saved for ${p.name}. Waiting for them.`,
                       )
                     }
-                    className={`${pill} btn-bronze disabled:opacity-50`}
+                    className={`${pill} btn-primary`}
                   >
                     <UserPlus size={16} /> Save a seat
                   </button>
@@ -190,7 +182,9 @@ function People() {
 
       {incoming.length > 0 && (
         <section className="px-5 mt-8">
-          <p className="label-caps mb-1">wants a seat at your table · {incoming.length}</p>
+          <h2 className="text-[15px] font-semibold text-cream mb-1">
+            Asking to join · {incoming.length}
+          </h2>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {incoming.map((r) => (
               <Row key={r.id} p={r.person}>
@@ -208,7 +202,7 @@ function People() {
                   onClick={() =>
                     act(r.id, () => account.accept(r.id), `${r.person.name} is in your 25.`, true)
                   }
-                  className={`${pill} btn-bronze`}
+                  className={`${pill} btn-primary`}
                 >
                   <Check size={16} /> Accept
                 </button>
@@ -219,7 +213,9 @@ function People() {
       )}
 
       <section className="px-5 mt-8">
-        <p className="label-caps mb-1">at your table · {s.people.length}</p>
+        <h2 className="text-[15px] font-semibold text-cream mb-1">
+          At your table · {s.people.length}
+        </h2>
         {s.people.length === 0 ? (
           <p
             className="py-6 text-center"
@@ -236,11 +232,7 @@ function People() {
                   <p className="flex-1 text-sm text-cream">
                     Give up {p.name}'s seat? Your chat and streak with them end.
                   </p>
-                  <button
-                    onClick={() => setConfirmRemove(null)}
-                    className={`${pill}`}
-                    style={{ background: "var(--bg-surface)" }}
-                  >
+                  <button onClick={() => setConfirmRemove(null)} className={`${pill} btn-quiet`}>
                     Keep
                   </button>
                   <button
@@ -249,7 +241,7 @@ function People() {
                         () => setConfirmRemove(null),
                       )
                     }
-                    className={`${pill} btn-coral`}
+                    className={`${pill} btn-danger`}
                   >
                     Remove
                   </button>
@@ -281,7 +273,9 @@ function People() {
 
       {outgoing.length > 0 && (
         <section className="px-5 mt-8">
-          <p className="label-caps mb-1">seats you're saving · {outgoing.length}</p>
+          <h2 className="text-[15px] font-semibold text-cream mb-1">
+            Waiting for them to accept · {outgoing.length}
+          </h2>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {outgoing.map((r) => (
               <Row key={r.id} p={r.person}>

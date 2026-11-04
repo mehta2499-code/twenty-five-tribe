@@ -1,6 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Camera, MessageCircle } from "lucide-react";
+import {
+  Camera,
+  ChevronRight,
+  Dices,
+  Heart,
+  ImagePlus,
+  MessageCircle,
+  UserPlus,
+  type LucideIcon,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS, MOMENTS, THOUGHTS, getSeatMeta } from "@/lib/data";
@@ -84,7 +93,7 @@ function Orbit({ rolling }: { rolling: boolean }) {
                     ? "0 0 18px rgba(43,138,196,0.18)"
                     : f.postedToday
                       ? "0 0 0 1px rgba(43,138,196,0.45), 0 0 22px rgba(43,138,196,0.35)"
-                      : "0 8px 24px rgba(0,0,0,0.5)",
+                      : "0 0 0 3px #fff, 0 4px 12px -4px rgba(14,42,69,0.3)",
                   opacity: reserved ? 0.7 : 1,
                   filter: reserved ? "grayscale(0.3)" : "none",
                 }}
@@ -114,69 +123,79 @@ function Orbit({ rolling }: { rolling: boolean }) {
         </div>
       </div>
 
-      <div className="mt-5 text-center">
-        <Link
-          to="/app/my25"
-          className="font-display italic"
-          style={{ color: "var(--text-muted)", fontSize: 12, letterSpacing: "0.04em" }}
-        >
-          {INNER_COUNT} close · {OUTER_DOTS} more · Open the table
+      <div className="mt-4 text-center">
+        <Link to="/app/my25" className="btn-secondary px-4 min-h-[40px] text-sm">
+          See all {seatedFriends().length} seats
         </Link>
       </div>
     </section>
   );
 }
 
+const ICONS: Record<string, LucideIcon> = {
+  post: ImagePlus,
+  snap: Camera,
+  seat: UserPlus,
+  roll: Dices,
+  moment: ImagePlus,
+  thought: Heart,
+};
+
 function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment: () => void }) {
   const s = useSocial();
-  const liveItems = [
-    {
-      glyph: "📸",
-      label: "Share a post",
-      onClick: undefined,
-      to: "/app/feed" as string | undefined,
-    },
-    { glyph: "⚡", label: "Send a snap", onClick: undefined, to: "/app/snap" },
-    { glyph: "➕", label: "Save a seat", onClick: undefined, to: "/app/people" },
-    { glyph: "🎲", label: "Roll the table", onClick: onRoll, to: undefined },
-  ];
-  const demoItems = [
-    {
-      glyph: "📸",
-      label: "Share a moment",
-      onClick: onAddMoment,
-      to: undefined as string | undefined,
-    },
-    { glyph: "❤", label: "Send a thought", onClick: undefined, to: "/app/thoughts" },
-    { glyph: "➕", label: "Save a seat", onClick: undefined, to: "/app/people" },
-    { glyph: "🎲", label: "Roll the table", onClick: onRoll, to: undefined },
-  ];
-  const items = s.mode === "live" ? liveItems : demoItems;
+  const live = s.mode === "live";
+  const items: { icon: string; label: string; hint: string; to?: string; onClick?: () => void }[] =
+    live
+      ? [
+          { icon: "post", label: "Share a post", hint: "Photo for your 25", to: "/app/feed" },
+          { icon: "snap", label: "Send a snap", hint: "Gone after one look", to: "/app/snap" },
+          { icon: "seat", label: "Save a seat", hint: "Add someone", to: "/app/people" },
+          { icon: "roll", label: "Roll the table", hint: "Surprise someone", onClick: onRoll },
+        ]
+      : [
+          {
+            icon: "moment",
+            label: "Share a moment",
+            hint: "A small life update",
+            onClick: onAddMoment,
+          },
+          { icon: "thought", label: "Send a thought", hint: "A quiet ping", to: "/app/thoughts" },
+          { icon: "seat", label: "Save a seat", hint: "Add someone", to: "/app/people" },
+          { icon: "roll", label: "Roll the table", hint: "Surprise someone", onClick: onRoll },
+        ];
   return (
-    <section className="px-6 mt-12">
-      <p className="label-caps text-center mb-5">what would you like to do?</p>
-      <div className="grid grid-cols-2 gap-3">
+    <section className="px-5 mt-8" aria-labelledby="quick-title">
+      <h2 id="quick-title" className="text-[15px] font-semibold text-cream mb-2.5">
+        Quick actions
+      </h2>
+      <div className="grid grid-cols-2 gap-2.5">
         {items.map((it) => {
+          const Icon = ICONS[it.icon];
           const inner = (
             <>
-              <span style={{ fontSize: 20 }}>{it.glyph}</span>
-              <span className="font-display text-cream" style={{ fontSize: 13, lineHeight: 1.2 }}>
-                {it.label}
+              <span
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "var(--fill)", color: "var(--blue-deep)" }}
+              >
+                <Icon size={20} aria-hidden="true" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-cream text-[15px] leading-tight">
+                  {it.label}
+                </span>
+                <span className="block meta mt-0.5" style={{ fontSize: 12.5 }}>
+                  {it.hint}
+                </span>
               </span>
             </>
           );
-          const cls =
-            "flex items-center gap-3 px-4 py-4 rounded-2xl active:scale-[0.99] transition text-left";
-          const style = {
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-cool)",
-          } as const;
+          const cls = "card flex items-center gap-3 p-3 text-left hover:bg-[var(--fill)]";
           return it.to ? (
-            <Link key={it.label} to={it.to} className={cls} style={style}>
+            <Link key={it.label} to={it.to} className={cls}>
               {inner}
             </Link>
           ) : (
-            <button key={it.label} onClick={it.onClick} className={cls} style={style}>
+            <button key={it.label} onClick={it.onClick} className={cls}>
               {inner}
             </button>
           );
@@ -187,55 +206,46 @@ function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment
 }
 
 function StartHere() {
+  const s = useSocial();
   const acceptedCount = seatedFriends().length;
   const hasMoments = MOMENTS.length > 0;
   const hasSentThought = THOUGHTS.some((t) => t.direction === "to");
 
   let nudge: { headline: string; body: string; cta: string; to: string } | null = null;
-
   if (acceptedCount < 5) {
     nudge = {
-      headline: "Start building your table.",
-      body: "Reserve your first seat.",
+      headline: "Fill your first seats",
+      body: "Your table comes alive with a few people at it. Add the ones you'd call at 3 AM.",
       cta: "Save a seat",
       to: "/app/people",
     };
-  } else if (!hasMoments) {
+  } else if (s.mode === "demo" && !hasMoments) {
     nudge = {
-      headline: "Share your first moment.",
+      headline: "Share your first moment",
       body: "A photo, a thought, a small life update.",
       cta: "Add a moment",
       to: "/app/moments",
     };
-  } else if (!hasSentThought) {
+  } else if (s.mode === "demo" && !hasSentThought) {
     nudge = {
-      headline: "Send your first Thought.",
+      headline: "Send your first thought",
       body: "Let someone know you noticed.",
       cta: "Send a thought",
       to: "/app/thoughts",
     };
   }
-
   if (!nudge) return null;
 
   return (
-    <section className="px-6 mt-10">
-      <div className="card-editorial p-6 text-center" style={{ background: "var(--bg-card)" }}>
-        <p className="label-caps mb-3">start here</p>
-        <p className="font-display italic text-cream" style={{ fontSize: 20, lineHeight: 1.3 }}>
+    <section className="px-5 mt-8">
+      <div className="card p-5">
+        <p className="heading" style={{ fontSize: 18 }}>
           {nudge.headline}
         </p>
-        <p
-          className="font-display italic mt-2"
-          style={{ color: "var(--text-muted)", fontSize: 13 }}
-        >
+        <p className="mt-1.5 text-cool" style={{ fontSize: 14, lineHeight: 1.5 }}>
           {nudge.body}
         </p>
-        <Link
-          to={nudge.to}
-          className="inline-block mt-5 rounded-full px-5 py-2.5 font-display italic"
-          style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)", fontSize: 13 }}
-        >
+        <Link to={nudge.to} className="btn-primary mt-4 px-5">
           {nudge.cta}
         </Link>
       </div>
@@ -327,40 +337,50 @@ function TodayAtTheTable() {
 
 function ModeBanner() {
   const s = useSocial();
+  if (s.loading) {
+    return (
+      <div
+        className="mx-5 -mt-6 relative z-10 card flex items-center gap-3 px-4 py-3"
+        aria-busy="true"
+      >
+        <span className="skeleton w-10 h-10" />
+        <span className="flex-1 grid gap-2">
+          <span className="skeleton h-3.5 w-1/2" />
+          <span className="skeleton h-3 w-1/3" />
+        </span>
+      </div>
+    );
+  }
   if (s.mode === "live") {
     const taken = s.people.length;
     const incoming = s.requests.filter((r) => r.direction === "incoming").length;
     return (
       <Link
         to="/app/people"
-        className="mx-5 -mt-5 relative z-10 card-editorial flex items-center gap-3 px-4 py-3"
+        className="mx-5 -mt-6 relative z-10 card flex items-center gap-3 px-4 py-3 hover:bg-[var(--fill)]"
       >
-        <span className="die-tile" style={{ width: 36, height: 36, fontSize: 16 }}>
+        <span className="die-tile tabular-nums" style={{ width: 40, height: 40, fontSize: 16 }}>
           {taken}
         </span>
-        <span className="flex-1 text-cream font-semibold" style={{ fontSize: 14 }}>
-          {taken} of 25 seats filled
-          {incoming > 0 && (
-            <span
-              className="block font-normal"
-              style={{ color: "var(--coral-deep)", fontSize: 13 }}
-            >
-              {incoming} waiting for you to accept
-            </span>
-          )}
+        <span className="flex-1 min-w-0">
+          <span className="block font-semibold text-cream">{taken} of 25 seats filled</span>
+          <span
+            className="block meta"
+            style={{ color: incoming ? "var(--coral-deep)" : undefined }}
+          >
+            {incoming ? `${incoming} waiting for you to accept` : "Manage your 25"}
+          </span>
         </span>
-        <span className="text-bronze font-semibold" style={{ fontSize: 13 }}>
-          Your 25 →
-        </span>
+        <ChevronRight size={18} className="text-faint" aria-hidden="true" />
       </Link>
     );
   }
   return (
-    <div className="mx-5 -mt-5 relative z-10 card-editorial flex items-center gap-3 px-4 py-3">
-      <span className="flex-1 text-cream" style={{ fontSize: 13, lineHeight: 1.4 }}>
-        These are demo friends. Sign in to fill your table with real ones.
+    <div className="mx-5 -mt-6 relative z-10 card flex items-center gap-3 px-4 py-3">
+      <span className="flex-1 text-cool" style={{ fontSize: 14, lineHeight: 1.4 }}>
+        You're viewing demo friends. Sign in to fill your table with real ones.
       </span>
-      <Link to="/login" className="btn-bronze px-4 py-2 shrink-0" style={{ fontSize: 13 }}>
+      <Link to="/login" className="btn-primary shrink-0 min-h-[40px] px-4 text-sm">
         Sign in
       </Link>
     </div>
@@ -383,22 +403,20 @@ function Home() {
 
   return (
     <>
-      <header className="band px-6 pt-[max(2.25rem,calc(env(safe-area-inset-top)+1rem))] pb-8">
+      <header className="band px-5 pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))] pb-12">
         <div className="flex items-center justify-between">
           <span
             className="display text-white"
-            style={{ fontSize: 44, lineHeight: 1, fontWeight: 900, letterSpacing: "-0.05em" }}
+            style={{ fontSize: 40, lineHeight: 1, fontWeight: 900, letterSpacing: "-0.05em" }}
           >
             {VOICE.brand}
-            <span className="flame" style={{ color: "var(--coral)" }}>
-              .
-            </span>
+            <span style={{ color: "var(--coral)" }}>.</span>
           </span>
           <Link
             to="/app/profile"
-            aria-label="You"
+            aria-label="Your profile"
             className="rounded-full"
-            style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.6)" }}
+            style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.7)" }}
           >
             <Avatar
               src={s.me ? s.me.avatar : ME.avatar}
@@ -407,11 +425,10 @@ function Home() {
             />
           </Link>
         </div>
-        <p
-          className="sub mt-4 display"
-          style={{ fontSize: 22, fontStyle: "italic", fontWeight: 500 }}
-        >
-          The only people that matter.
+        <p className="sub mt-3" style={{ fontSize: 16 }}>
+          {s.me
+            ? `Hi ${s.me.name.split(" ")[0]}. Here's your table.`
+            : "The only people that matter."}
         </p>
       </header>
 
@@ -425,12 +442,7 @@ function Home() {
 
       {s.mode === "demo" && <TodayAtTheTable />}
 
-      <p
-        className="text-center font-display italic mt-16 mb-4 px-8"
-        style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.05em" }}
-      >
-        {VOICE.brandLine}
-      </p>
+      <p className="text-center meta mt-10 mb-2 px-8">{VOICE.brandLine}</p>
 
       {roll?.phase === "settled" && <RollPanel result={roll} onClose={() => setRoll(null)} />}
       {adding && (

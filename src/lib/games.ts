@@ -49,7 +49,7 @@ export function botSeats(count: number): Seat[] {
     id: `bot-${i + 1}`,
     name: BOT_NAMES[i % BOT_NAMES.length],
     bot: true,
-    initials: "🤖",
+    initials: BOT_NAMES[i % BOT_NAMES.length].slice(0, 2).toUpperCase(),
     color: "#5B7590",
   }));
 }
@@ -63,16 +63,14 @@ function myId() {
 async function invite(friendIds: string[], gameId: string, text: string) {
   const me = myId();
   if (!friendIds.length) return;
-  await supabase
-    .from("messages")
-    .insert(
-      friendIds.map((r) => ({
-        sender: me,
-        recipient: r,
-        shared_ref: `game:${gameId}`,
-        body: text,
-      })),
-    );
+  await supabase.from("messages").insert(
+    friendIds.map((r) => ({
+      sender: me,
+      recipient: r,
+      shared_ref: `game:${gameId}`,
+      body: text,
+    })),
+  );
 }
 
 export async function startKachuful(friends: Person[], bots: number, length: "short" | "full") {

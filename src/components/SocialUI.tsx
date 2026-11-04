@@ -6,20 +6,161 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { Link } from "@tanstack/react-router";
-import { X } from "lucide-react";
+import { Link, useRouter } from "@tanstack/react-router";
+import { ArrowLeft, Check, Flame, Hourglass, Lock, X, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
   friendById,
+  meView,
   seatedFriends,
   social,
   streakStatus,
   useSocial,
   type Snap,
-  meView,
 } from "@/lib/social";
 
-/** Bottom sheet in the app's walnut-and-bronze style. */
+// ---------- Layout ----------
+
+/**
+ * The top of every tab: where you are (title), one line of context, and actions.
+ * `eyebrow` is kept for older callers and shown as a small label above the title.
+ */
+export function PageBand({
+  eyebrow,
+  title,
+  sub,
+  children,
+  actions,
+  back,
+}: {
+  eyebrow?: string;
+  title: string;
+  sub?: string;
+  align?: "center" | "left";
+  children?: ReactNode;
+  actions?: ReactNode;
+  back?: boolean;
+}) {
+  const router = useRouter();
+  return (
+    <header className="px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-4">
+      {back && (
+        <button
+          onClick={() => router.history.back()}
+          aria-label="Back"
+          className="-ml-2 mb-2 w-10 h-10 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {eyebrow && (
+            <p className="label-caps" style={{ color: "var(--blue-deep)" }}>
+              {eyebrow}
+            </p>
+          )}
+          <h1 className="title mt-0.5">{title}</h1>
+          {sub && (
+            <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.45 }}>
+              {sub}
+            </p>
+          )}
+        </div>
+        {actions && <div className="flex items-center gap-2 shrink-0 pt-1">{actions}</div>}
+      </div>
+      {children}
+    </header>
+  );
+}
+export const PageHeader = PageBand;
+
+/** A labelled group of content. */
+export function Section({
+  title,
+  aside,
+  children,
+  className = "",
+}: {
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`mt-7 ${className}`}>
+      <div className="px-5 mb-2.5 flex items-baseline justify-between gap-3">
+        <h2 className="text-[15px] font-semibold text-cream">{title}</h2>
+        {aside && <span className="meta">{aside}</span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** What to do when there's nothing here yet. */
+export function EmptyState({
+  icon: Icon,
+  title,
+  body,
+  action,
+}: {
+  icon: LucideIcon;
+  title: string;
+  body?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center px-8 py-10">
+      <span
+        className="w-12 h-12 rounded-2xl flex items-center justify-center"
+        style={{ background: "var(--fill)", color: "var(--blue-deep)" }}
+      >
+        <Icon size={22} />
+      </span>
+      <p className="mt-4 font-semibold text-cream" style={{ fontSize: 16 }}>
+        {title}
+      </p>
+      {body && (
+        <p className="mt-1.5 text-cool max-w-[18rem]" style={{ fontSize: 14, lineHeight: 1.5 }}>
+          {body}
+        </p>
+      )}
+      {action && <div className="mt-5">{action}</div>}
+    </div>
+  );
+}
+
+/** Placeholder rows while live data loads. */
+export function SkeletonRows({ count = 4, avatar = true }: { count?: number; avatar?: boolean }) {
+  return (
+    <ul className="px-5" aria-label="Loading" aria-busy="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <li key={i} className="flex items-center gap-3 py-3">
+          {avatar && <span className="skeleton w-12 h-12 shrink-0" style={{ borderRadius: 999 }} />}
+          <span className="flex-1 grid gap-2">
+            <span className="skeleton h-3.5 w-2/5" />
+            <span className="skeleton h-3 w-4/5" />
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** A quiet one-line reminder of who can see something. */
+export function AudienceNote({ children }: { children: ReactNode }) {
+  return (
+    <p className="flex items-center justify-center gap-1.5 meta">
+      <Lock size={13} aria-hidden="true" />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+// ---------- Sheets & pickers ----------
+
+/** Bottom sheet. Closes on the backdrop, the Close button, or Escape. */
 export function Sheet({
   title,
   onClose,
@@ -29,32 +170,48 @@ export function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center"
-      style={{ background: "rgba(14,42,69,0.45)", backdropFilter: "blur(14px)" }}
+      style={{ background: "rgba(14,42,69,0.4)" }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md card-editorial p-6 animate-soft-in"
+        className="w-full max-w-md sheet-in"
         style={{
-          background: "var(--bg-card)",
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-          maxHeight: "85vh",
+          background: "var(--surface)",
+          borderRadius: "24px 24px 0 0",
+          maxHeight: "88vh",
           overflowY: "auto",
+          boxShadow: "var(--shadow-float)",
+          paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
         }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label={title}
       >
-        <div className="flex justify-between items-center mb-4">
-          <p className="label-caps">{title}</p>
-          <button onClick={onClose} className="label-caps text-cool">
-            close
+        <div
+          className="sticky top-0 z-10 flex justify-between items-center px-5 pt-4 pb-3"
+          style={{ background: "var(--surface)" }}
+        >
+          <h2 className="heading" style={{ fontSize: 18 }}>
+            {title.charAt(0).toUpperCase() + title.slice(1)}
+          </h2>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-9 h-9 -mr-1.5 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
+          >
+            <X size={20} />
           </button>
         </div>
-        {children}
+        <div className="px-5">{children}</div>
       </div>
     </div>
   );
@@ -68,6 +225,7 @@ export function FriendPicker({
   onPick,
   single = false,
   showStreaks = false,
+  note,
 }: {
   title: string;
   cta: string;
@@ -75,79 +233,107 @@ export function FriendPicker({
   onPick: (ids: string[]) => void;
   single?: boolean;
   showStreaks?: boolean;
+  note?: string;
 }) {
   const s = useSocial();
   const [picked, setPicked] = useState<string[]>([]);
   const people = seatedFriends();
+  const all = picked.length === people.length && people.length > 0;
   const toggle = (id: string) => {
     if (single) return onPick([id]);
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   };
   return (
     <Sheet title={title} onClose={onClose}>
-      {!single && (
-        <button
-          onClick={() => setPicked(picked.length === people.length ? [] : people.map((p) => p.id))}
-          className="label-caps text-bronze mb-3"
-        >
-          {picked.length === people.length ? "clear all" : `all ${people.length} of your people`}
-        </button>
-      )}
-      <div className="grid grid-cols-4 gap-3">
-        {people.map((f) => {
-          const on = picked.includes(f.id);
-          const st = streakStatus(s.streaks[f.id]);
-          return (
-            <button
-              key={f.id}
-              onClick={() => toggle(f.id)}
-              className="flex flex-col items-center active:scale-95 transition"
-            >
-              <div
-                className="rounded-full"
-                style={{
-                  padding: 2,
-                  background: on ? "var(--accent-bronze)" : "transparent",
-                  boxShadow: on ? "0 0 16px rgba(43,138,196,0.45)" : "none",
-                }}
-              >
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={52} />
-              </div>
-              <span
-                className="font-display italic mt-1.5 text-cool truncate w-full text-center"
-                style={{ fontSize: 11 }}
-              >
-                {f.name}
+      {people.length === 0 ? (
+        <EmptyState
+          icon={Lock}
+          title="No one at your table yet"
+          body="Add people to your 25 first. Only they can receive this."
+          action={
+            <Link to="/app/people" className="btn-primary px-5">
+              Find your people
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          {!single && (
+            <div className="flex items-center justify-between mb-3">
+              <span className="meta">
+                {picked.length ? `${picked.length} selected` : "Choose who gets it"}
               </span>
-              {showStreaks && st.count > 0 && (
-                <span
-                  className="tabular-nums"
-                  style={{
-                    fontSize: 10,
-                    color: st.atRisk ? "var(--accent-ember)" : "var(--text-muted)",
-                  }}
+              <button
+                onClick={() => setPicked(all ? [] : people.map((p) => p.id))}
+                className="text-sm font-semibold text-bronze px-1 py-1"
+              >
+                {all ? "Clear" : "Select all"}
+              </button>
+            </div>
+          )}
+          <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+            {people.map((f) => {
+              const on = picked.includes(f.id);
+              const st = streakStatus(s.streaks[f.id]);
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => toggle(f.id)}
+                  aria-pressed={single ? undefined : on}
+                  className="flex flex-col items-center rounded-xl py-1"
                 >
-                  🔥 {st.count}
-                  {st.atRisk ? " ⏳" : ""}
-                </span>
-              )}
+                  <span
+                    className="relative rounded-full p-[2px]"
+                    style={{ background: on ? "var(--blue-deep)" : "transparent" }}
+                  >
+                    <Avatar
+                      src={f.avatar || undefined}
+                      initials={f.initials}
+                      color={f.color}
+                      size={52}
+                    />
+                    {on && (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{
+                          background: "var(--blue-deep)",
+                          color: "#fff",
+                          boxShadow: "0 0 0 2px #fff",
+                        }}
+                      >
+                        <Check size={12} strokeWidth={3} />
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-1.5 text-[13px] text-cream truncate w-full text-center">
+                    {f.name.split(" ")[0]}
+                  </span>
+                  {showStreaks && st.count > 0 && <StreakBadge friendId={f.id} size={12} />}
+                </button>
+              );
+            })}
+          </div>
+          {note && (
+            <div className="mt-5">
+              <AudienceNote>{note}</AudienceNote>
+            </div>
+          )}
+          {!single && (
+            <button
+              disabled={picked.length === 0}
+              onClick={() => onPick(picked)}
+              className="btn-primary w-full mt-4"
+            >
+              {picked.length ? `${cta} (${picked.length})` : cta}
             </button>
-          );
-        })}
-      </div>
-      {!single && (
-        <button
-          disabled={picked.length === 0}
-          onClick={() => onPick(picked)}
-          className="mt-6 w-full rounded-full py-3.5 font-display italic disabled:opacity-40 active:scale-[0.99] transition"
-          style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)", fontSize: 15 }}
-        >
-          {picked.length ? `${cta} · ${picked.length}` : cta}
-        </button>
+          )}
+        </>
       )}
     </Sheet>
   );
 }
+
+// ---------- Snaps ----------
 
 /** Full-screen snap with a countdown. It's gone once the timer ends or you tap. */
 export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void }) {
@@ -169,18 +355,25 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [left]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && done();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-[70] flex flex-col"
       style={{ background: "#000" }}
       onClick={done}
       role="dialog"
-      aria-label="Snap"
+      aria-label={`Snap from ${sender?.name ?? "you"}`}
     >
       <div className="absolute top-0 inset-x-0 z-10 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <div
           className="h-1 rounded-full overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.2)" }}
+          style={{ background: "rgba(255,255,255,0.25)" }}
         >
           <div
             className="h-full"
@@ -191,20 +384,24 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
             }}
           />
         </div>
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3 mt-3 text-white">
           <Avatar
             src={sender ? sender.avatar || undefined : meView().avatar}
             initials={sender?.initials ?? meView().initials}
             color={sender?.color}
             size={34}
           />
-          <span className="font-semibold text-white" style={{ fontSize: 15 }}>
+          <span className="font-semibold" style={{ fontSize: 15 }}>
             {sender?.name ?? "You"}
           </span>
-          <span className="ml-auto tabular-nums text-white" style={{ fontSize: 13 }}>
-            {left}s
-          </span>
-          <X size={20} className="text-white" />
+          <span className="ml-auto tabular-nums text-sm opacity-90">{left}s</span>
+          <button
+            aria-label="Close"
+            onClick={done}
+            className="w-9 h-9 rounded-full flex items-center justify-center"
+          >
+            <X size={20} />
+          </button>
         </div>
       </div>
       <div
@@ -216,10 +413,10 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
         )}
         {snap.caption && (
           <p
-            className="relative font-display italic text-center px-6 py-3 mx-6"
+            className="relative text-center font-semibold px-5 py-3 mx-6 text-white"
             style={{
               fontSize: snap.image ? 20 : 30,
-              color: "#fff",
+              lineHeight: 1.3,
               textShadow: "0 2px 12px rgba(0,0,0,0.35)",
               background: snap.image ? "rgba(0,0,0,0.45)" : "transparent",
               borderRadius: 14,
@@ -233,41 +430,93 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
   );
 }
 
+/** Snap streak: flame and count; amber with an hourglass when it ends today. */
+export function StreakBadge({ friendId, size = 13 }: { friendId: string; size?: number }) {
+  const s = useSocial();
+  const st = streakStatus(s.streaks[friendId]);
+  if (!st.count) return null;
+  const color = st.atRisk ? "var(--amber)" : "var(--ink-2)";
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 tabular-nums font-semibold whitespace-nowrap"
+      style={{ fontSize: size, color }}
+      title={st.atRisk ? "Snap them today to keep your streak" : `${st.count}-day snap streak`}
+      aria-label={st.atRisk ? `${st.count}-day streak, ends today` : `${st.count}-day streak`}
+    >
+      <Flame
+        size={size + 1}
+        fill={st.atRisk ? "var(--amber)" : "#E8743B"}
+        color={st.atRisk ? "var(--amber)" : "#E8743B"}
+        aria-hidden="true"
+      />
+      {st.count}
+      {st.atRisk && <Hourglass size={size} aria-hidden="true" />}
+    </span>
+  );
+}
+
+// ---------- Feedback ----------
+
 export function Toast({ text, onDone }: { text: string; onDone: () => void }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 2600);
+    const t = setTimeout(onDone, 2800);
     return () => clearTimeout(t);
   }, [onDone]);
   return (
     <div
-      className="fixed left-1/2 -translate-x-1/2 bottom-32 z-[80] px-5 py-3 rounded-full animate-soft-in font-semibold text-white"
-      style={{
-        background: "var(--navy)",
-        border: "1px solid var(--border-cool)",
-        fontSize: 14,
-      }}
+      className="fixed inset-x-0 bottom-28 z-[80] flex justify-center px-5 pointer-events-none"
       role="status"
+      aria-live="polite"
     >
-      {text}
+      <div
+        className="animate-soft-in max-w-sm px-4 py-3 rounded-xl text-white font-medium text-sm"
+        style={{ background: "var(--ink)", boxShadow: "var(--shadow-float)" }}
+      >
+        {text}
+      </div>
     </div>
   );
 }
 
-export function StreakBadge({ friendId, size = 12 }: { friendId: string; size?: number }) {
-  const s = useSocial();
-  const st = streakStatus(s.streaks[friendId]);
-  if (!st.count) return null;
+/** Light tap feedback on phones that support it. */
+export function buzz(ms = 12) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    // Not supported; no-op.
+  }
+}
+
+const CONFETTI_COLOURS = ["#2B8AC4", "#F7A8A0", "#F2B53A", "#1A5276", "#13805F"];
+
+/** A one-shot burst of confetti for wins. Change `fire` to replay. */
+export function Confetti({ fire }: { fire: number }) {
+  if (!fire) return null;
   return (
-    <span
-      className="tabular-nums whitespace-nowrap"
-      style={{ fontSize: size, color: st.atRisk ? "var(--accent-ember)" : "var(--text-secondary)" }}
-      title={st.atRisk ? "Snap them today to keep your streak" : "Snap streak"}
+    <div
+      key={fire}
+      className="fixed inset-0 z-[90] pointer-events-none overflow-hidden"
+      aria-hidden="true"
     >
-      🔥 {st.count}
-      {st.atRisk ? " ⏳" : ""}
-    </span>
+      <div className="absolute left-1/2 top-1/2">
+        {Array.from({ length: 30 }).map((_, i) => {
+          const angle = (i / 30) * Math.PI * 2;
+          const dist = 130 + ((i * 37) % 110);
+          const style = {
+            background: CONFETTI_COLOURS[i % CONFETTI_COLOURS.length],
+            ["--dx" as string]: `${Math.cos(angle) * dist}px`,
+            ["--dy" as string]: `${Math.sin(angle) * dist + 150}px`,
+            ["--rot" as string]: `${((i * 97) % 720) - 360}deg`,
+            animationDelay: `${(i % 5) * 20}ms`,
+          } as CSSProperties;
+          return <span key={i} className="confetti-piece" style={style} />;
+        })}
+      </div>
+    </div>
   );
 }
+
+// ---------- Rendering helpers ----------
 
 /**
  * Social screens show times and streak states that depend on the viewer's clock,
@@ -281,80 +530,6 @@ export function clientOnly<P extends object>(Screen: ComponentType<P>) {
   };
 }
 
-/** Light tap feedback on phones that support it. */
-export function buzz(ms = 12) {
-  try {
-    navigator.vibrate?.(ms);
-  } catch {
-    // Not supported; no-op.
-  }
-}
-
-const CONFETTI_COLOURS = ["#2B8AC4", "#F7A8A0", "#FFC542", "#1A5276", "#17926F", "#ffffff"];
-
-/** A one-shot burst of confetti from the middle of the screen. Change `fire` to replay. */
-export function Confetti({ fire }: { fire: number }) {
-  if (!fire) return null;
-  return (
-    <div
-      key={fire}
-      className="fixed inset-0 z-[90] pointer-events-none overflow-hidden"
-      aria-hidden="true"
-    >
-      <div className="absolute left-1/2 top-1/2">
-        {Array.from({ length: 36 }).map((_, i) => {
-          const angle = (i / 36) * Math.PI * 2;
-          const dist = 140 + ((i * 37) % 120);
-          const style = {
-            background: CONFETTI_COLOURS[i % CONFETTI_COLOURS.length],
-            border: i % 6 === 5 ? "1px solid #C9E2F4" : "none",
-            ["--dx" as string]: `${Math.cos(angle) * dist}px`,
-            ["--dy" as string]: `${Math.sin(angle) * dist + 160}px`,
-            ["--rot" as string]: `${((i * 97) % 720) - 360}deg`,
-            animationDelay: `${(i % 5) * 20}ms`,
-          } as CSSProperties;
-          return <span key={i} className="confetti-piece" style={style} />;
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** The blue band from the homepage, used at the top of each tab. */
-export function PageBand({
-  eyebrow,
-  title,
-  sub,
-  align = "center",
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  sub?: string;
-  align?: "center" | "left";
-  children?: ReactNode;
-}) {
-  return (
-    <header
-      className={`band px-6 pt-[max(2.75rem,calc(env(safe-area-inset-top)+1.5rem))] pb-7 ${align === "center" ? "text-center" : ""}`}
-    >
-      <p className="label-caps">{eyebrow}</p>
-      <h1
-        className="font-display mt-3"
-        style={{ fontSize: 34, lineHeight: 1.05, textWrap: "balance" }}
-      >
-        {title}
-      </h1>
-      {sub && (
-        <p className="sub mt-2" style={{ fontSize: 14, lineHeight: 1.45 }}>
-          {sub}
-        </p>
-      )}
-      {children}
-    </header>
-  );
-}
-
 /**
  * Screens that only have sample content so far. Signed in, they say so plainly
  * instead of showing made-up people.
@@ -366,21 +541,27 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
     return (
       <div className="pb-8">
         <PageBand
-          eyebrow="coming soon"
           title={title}
-          sub="We're building this for real friends. Here's what's live today."
+          sub="Coming soon for your real 25. Here's what you can use today."
+          back
         />
-        <div className="px-6 mt-8 grid gap-3">
-          <Link to="/app/chats" className="card-editorial px-5 py-4 font-semibold text-cream">
-            Chats and snaps →
-          </Link>
-          <Link to="/app/feed" className="card-editorial px-5 py-4 font-semibold text-cream">
-            Feed and reels →
-          </Link>
-          <Link to="/app/games" className="card-editorial px-5 py-4 font-semibold text-cream">
-            Games →
-          </Link>
-        </div>
+        <ul className="px-5 grid gap-2">
+          {[
+            { to: "/app/chats" as const, label: "Chats and snaps" },
+            { to: "/app/feed" as const, label: "Feed and reels" },
+            { to: "/app/games" as const, label: "Games" },
+          ].map((l) => (
+            <li key={l.to}>
+              <Link
+                to={l.to}
+                className="card flex items-center justify-between px-4 min-h-[52px] font-semibold text-cream"
+              >
+                {l.label}
+                <ArrowLeft size={18} className="rotate-180 text-faint" />
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   };

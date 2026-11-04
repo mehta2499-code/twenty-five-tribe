@@ -1,8 +1,17 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Heart, ImagePlus, MessageCircle, Plus, Send } from "lucide-react";
+import { Heart, ImagePlus, LayoutGrid, MessageCircle, Plus, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, Sheet, Toast, clientOnly, PageBand, buzz } from "@/components/SocialUI";
+import {
+  AudienceNote,
+  EmptyState,
+  FriendPicker,
+  PageBand,
+  Sheet,
+  Toast,
+  buzz,
+  clientOnly,
+} from "@/components/SocialUI";
 import { CommentsSheet, FeedTabs, personOf } from "@/components/FeedUI";
 import { fileToImage, friendById, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
@@ -25,7 +34,7 @@ function PostCard({
   const lastTap = useRef(0);
   const likers = post.likes
     .filter((x) => x !== "me")
-    .map((x) => friendById(x)?.name)
+    .map((x) => friendById(x)?.name.split(" ")[0])
     .filter(Boolean) as string[];
 
   const onTap = () => {
@@ -38,72 +47,92 @@ function PostCard({
     lastTap.current = now;
   };
 
+  let likedBy = "";
+  if (post.likes.length) {
+    const first = liked ? "you" : likers[0];
+    const others = post.likes.length - 1;
+    likedBy =
+      others > 0
+        ? `Liked by ${first} and ${others} other${others > 1 ? "s" : ""}`
+        : `Liked by ${first}`;
+  }
+
   return (
-    <article className="pb-2">
-      <div className="flex items-center gap-3 px-5 py-3">
+    <article className="card overflow-hidden mx-4" aria-label={`Post by ${by.name}`}>
+      <header className="flex items-center gap-3 px-4 py-3">
         <Avatar src={by.avatar} initials={by.initials} color={by.color} size={36} />
-        <span className="font-display text-cream" style={{ fontSize: 15 }}>
+        <span className="font-semibold text-cream" style={{ fontSize: 15 }}>
           {by.name}
         </span>
-        <span className="ml-auto" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+        <time className="ml-auto meta" style={{ fontSize: 13 }}>
           {timeAgo(post.at)}
-        </span>
-      </div>
+        </time>
+      </header>
       <div className="relative select-none" onClick={onTap}>
-        <img
-          src={post.image}
-          alt={post.caption}
-          loading="lazy"
-          draggable={false}
-          className="w-full aspect-square object-cover"
-        />
+        {post.image ? (
+          <img
+            src={post.image}
+            alt={post.caption || `Photo from ${by.name}`}
+            loading="lazy"
+            draggable={false}
+            className="w-full aspect-square object-cover"
+            style={{ background: "var(--fill)" }}
+          />
+        ) : (
+          <div className="w-full aspect-square skeleton" style={{ borderRadius: 0 }} />
+        )}
         {burst > 0 && (
           <Heart
             key={burst}
-            size={96}
-            fill="var(--bg-cream)"
+            size={92}
+            fill="#fff"
             className="absolute left-1/2 top-1/2 heart-burst"
-            style={{ color: "var(--bg-cream)" }}
+            style={{ color: "#fff" }}
           />
         )}
       </div>
-      <div className="flex items-center gap-5 px-5 pt-3">
+      <div className="flex items-center gap-1 px-2 pt-1.5">
         <button
           onClick={() => social.toggleLike("post", post.id)}
           aria-label={liked ? "Unlike" : "Like"}
-          className={liked ? "animate-heart-pop" : ""}
+          aria-pressed={liked}
+          className={`w-11 h-11 rounded-full flex items-center justify-center ${liked ? "animate-heart-pop" : ""}`}
         >
           <Heart
             size={24}
-            fill={liked ? "var(--accent-oxblood)" : "none"}
-            style={{ color: liked ? "var(--accent-oxblood)" : "var(--text-primary)" }}
+            fill={liked ? "var(--coral-deep)" : "none"}
+            style={{ color: liked ? "var(--coral-deep)" : "var(--ink)" }}
           />
         </button>
-        <button onClick={onComments} aria-label="Comments">
-          <MessageCircle size={23} className="text-warm" />
+        <button
+          onClick={onComments}
+          aria-label="Comments"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-cream"
+        >
+          <MessageCircle size={23} />
         </button>
-        <button onClick={onShare} aria-label="Share to a friend">
-          <Send size={22} className="text-warm" />
+        <button
+          onClick={onShare}
+          aria-label="Send to someone in your 25"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-cream"
+        >
+          <Send size={22} />
         </button>
       </div>
-      <div className="px-5 pt-2.5 space-y-1">
-        {post.likes.length > 0 && (
-          <p className="text-cream" style={{ fontSize: 13 }}>
-            Liked by <span className="font-semibold">{liked ? "you" : likers[0]}</span>
-            {post.likes.length > 1 && (
-              <>
-                {" "}
-                and <span className="font-semibold">{post.likes.length - 1} of your 25</span>
-              </>
-            )}
+      <div className="px-4 pb-4 grid gap-1">
+        {likedBy && (
+          <p className="text-cream font-semibold" style={{ fontSize: 14 }}>
+            {likedBy}
           </p>
         )}
-        <p className="text-cream" style={{ fontSize: 14, lineHeight: 1.45 }}>
-          <span className="font-semibold mr-1.5">{by.name}</span>
-          {post.caption}
-        </p>
+        {post.caption && (
+          <p className="text-cream" style={{ fontSize: 15, lineHeight: 1.45 }}>
+            <span className="font-semibold mr-1.5">{by.name}</span>
+            {post.caption}
+          </p>
+        )}
         {post.comments.length > 0 && (
-          <button onClick={onComments} style={{ fontSize: 13, color: "var(--text-muted)" }}>
+          <button onClick={onComments} className="text-left meta" style={{ fontSize: 14 }}>
             {post.comments.length === 1
               ? "View 1 comment"
               : `View all ${post.comments.length} comments`}
@@ -120,21 +149,19 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
   const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
   return (
-    <Sheet title="new post" onClose={onClose}>
+    <Sheet title="New post" onClose={onClose}>
       <button
         onClick={() => fileRef.current?.click()}
         className="w-full aspect-square rounded-2xl overflow-hidden flex items-center justify-center"
-        style={{
-          border: image ? "none" : "1px dashed rgba(43,138,196,0.4)",
-          background: "var(--bg-surface)",
-        }}
+        style={{ border: image ? "none" : "1.5px dashed var(--line-2)", background: "var(--fill)" }}
+        aria-label={image ? "Change photo" : "Choose a photo"}
       >
         {image ? (
-          <img src={image} alt="" className="w-full h-full object-cover" />
+          <img src={image} alt="Your photo" className="w-full h-full object-cover" />
         ) : (
           <span className="flex flex-col items-center gap-2 text-cool">
-            <ImagePlus size={28} />
-            <span className="font-display italic" style={{ fontSize: 14 }}>
+            <ImagePlus size={28} aria-hidden="true" />
+            <span className="font-semibold" style={{ fontSize: 15 }}>
               Choose a photo
             </span>
           </span>
@@ -157,24 +184,22 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
         }}
       />
       {error && (
-        <p className="mt-2" style={{ color: "var(--accent-ember)", fontSize: 13 }}>
+        <p className="mt-2 text-sm" style={{ color: "var(--coral-deep)" }} role="alert">
           {error}
         </p>
       )}
+      <label htmlFor="post-caption" className="sr-only">
+        Caption
+      </label>
       <textarea
         id="post-caption"
         value={caption}
         onChange={(e) => setCaption(e.target.value.slice(0, 280))}
-        placeholder="Write a caption…"
+        placeholder="Write a caption"
         rows={2}
-        className="mt-4 w-full rounded-2xl p-4 text-cream outline-none resize-none"
-        style={{
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border-cool)",
-          fontSize: 15,
-        }}
+        className="input mt-4 resize-none"
       />
-      <p className="text-right tabular-nums" style={{ fontSize: 11, color: "var(--text-muted)" }}>
+      <p className="text-right tabular-nums meta mt-1" style={{ fontSize: 12 }}>
         {caption.length}/280
       </p>
       <button
@@ -183,11 +208,13 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
           social.addPost(image!, caption);
           onDone();
         }}
-        className="mt-4 w-full rounded-full py-3.5 font-display italic disabled:opacity-40"
-        style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)", fontSize: 15 }}
+        className="btn-primary w-full mt-3"
       >
         Share with your 25
       </button>
+      <div className="mt-3">
+        <AudienceNote>Only people in your 25 will see this.</AudienceNote>
+      </div>
     </Sheet>
   );
 }
@@ -203,50 +230,61 @@ function Feed() {
   return (
     <>
       <PageBand
-        eyebrow="feed"
-        title="Just your people."
-        sub="No ads. No strangers. It ends when you're caught up."
+        title="Feed"
+        sub="Posts from your 25. Nobody else sees them."
+        actions={
+          <button
+            onClick={() => setCreating(true)}
+            className="btn-primary px-4"
+            aria-label="New post"
+          >
+            <Plus size={18} /> Post
+          </button>
+        }
       >
-        <div className="mt-5 flex justify-center">
+        <div className="mt-4">
           <FeedTabs active="posts" />
         </div>
       </PageBand>
 
-      <div className="space-y-6">
-        {s.posts.map((p) => (
-          <PostCard
-            key={p.id}
-            post={p}
-            onComments={() => setCommentsFor(p.id)}
-            onShare={() => setShareFor(p.id)}
-          />
-        ))}
-      </div>
-
-      <p
-        className="text-center font-display italic mt-12 mb-4 px-8"
-        style={{ color: "var(--text-muted)", fontSize: 12 }}
-      >
-        You're all caught up. That's the whole feed.
-      </p>
-
-      <button
-        onClick={() => setCreating(true)}
-        aria-label="New post"
-        className="fixed z-30 active:scale-95 transition flex items-center gap-2 rounded-full pl-4 pr-5 py-3"
-        style={{
-          right: "max(1.25rem, calc(50% - 13rem))",
-          bottom: "6.5rem",
-          background: "var(--accent-bronze)",
-          color: "var(--bg-primary)",
-          boxShadow: "0 10px 30px rgba(43,138,196,0.45)",
-        }}
-      >
-        <Plus size={18} strokeWidth={2.4} />
-        <span className="font-display italic" style={{ fontSize: 13 }}>
-          Post
-        </span>
-      </button>
+      {s.loading ? (
+        <div className="mx-4 card overflow-hidden" aria-busy="true" aria-label="Loading posts">
+          <div className="flex items-center gap-3 p-4">
+            <span className="skeleton w-9 h-9" style={{ borderRadius: 999 }} />
+            <span className="skeleton h-3.5 w-1/3" />
+          </div>
+          <div className="skeleton w-full aspect-square" style={{ borderRadius: 0 }} />
+          <div className="p-4 grid gap-2">
+            <span className="skeleton h-3.5 w-1/2" />
+            <span className="skeleton h-3 w-4/5" />
+          </div>
+        </div>
+      ) : s.posts.length === 0 ? (
+        <EmptyState
+          icon={LayoutGrid}
+          title="No posts yet"
+          body="When you or your 25 share a photo, it shows up here."
+          action={
+            <button onClick={() => setCreating(true)} className="btn-primary px-5">
+              <Plus size={18} /> Share the first post
+            </button>
+          }
+        />
+      ) : (
+        <>
+          <div className="grid gap-4">
+            {s.posts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                onComments={() => setCommentsFor(p.id)}
+                onShare={() => setShareFor(p.id)}
+              />
+            ))}
+          </div>
+          <p className="text-center meta mt-8 mb-2 px-8">You're all caught up.</p>
+        </>
+      )}
 
       {open && (
         <CommentsSheet
@@ -258,13 +296,18 @@ function Feed() {
       )}
       {shareFor && (
         <FriendPicker
-          title="share with"
+          title="Send to"
           cta="Send"
+          note="They'll get it in your chat."
           onClose={() => setShareFor(null)}
           onPick={(ids) => {
             social.share(shareFor, ids, "post");
             setShareFor(null);
-            setToast(`Shared with ${ids.length}`);
+            setToast(
+              ids.length === 1
+                ? `Sent to ${friendById(ids[0])?.name.split(" ")[0]}`
+                : `Sent to ${ids.length} people`,
+            );
           }}
         />
       )}
@@ -273,7 +316,7 @@ function Feed() {
           onClose={() => setCreating(false)}
           onDone={() => {
             setCreating(false);
-            setToast("Posted. Your 25 can see it.");
+            setToast("Posted. Your 25 can see it now.");
           }}
         />
       )}

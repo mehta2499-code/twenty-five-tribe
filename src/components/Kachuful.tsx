@@ -524,16 +524,52 @@ export function LocalKachuful({
   onClose: () => void;
 }) {
   const [state, setState] = useState(() => newGame(seats, length));
+  const [confirmLeave, setConfirmLeave] = useState(false);
   useBotTurns(state, true, setState);
+  // A solo game isn't saved anywhere, so check before throwing it away mid-game.
+  const leave = () =>
+    state.phase === "over" || (state.round === 0 && state.bids.every((b) => b === null))
+      ? onClose()
+      : setConfirmLeave(true);
   return (
-    <KachufulBoard
-      state={state}
-      mySeat={0}
-      onMove={(m) => setState((s) => applyMove(s, m))}
-      onNext={() => setState((s) => nextRound(s))}
-      onClose={onClose}
-      onPlayAgain={() => setState(newGame(seats, length))}
-    />
+    <>
+      <KachufulBoard
+        state={state}
+        mySeat={0}
+        onMove={(m) => setState((s) => applyMove(s, m))}
+        onNext={() => setState((s) => nextRound(s))}
+        onClose={leave}
+        onPlayAgain={() => setState(newGame(seats, length))}
+      />
+      {confirmLeave && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center px-6"
+          style={{ background: "rgba(14,42,69,0.45)" }}
+        >
+          <div
+            className="card w-full max-w-sm p-5"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Leave the game"
+          >
+            <p className="heading" style={{ fontSize: 18 }}>
+              Leave this game?
+            </p>
+            <p className="meta mt-1.5" style={{ fontSize: 14 }}>
+              Solo games aren't saved. You'll lose your scores for this table.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button onClick={() => setConfirmLeave(false)} className="btn-secondary flex-1">
+                Keep playing
+              </button>
+              <button onClick={onClose} className="btn-danger flex-1">
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

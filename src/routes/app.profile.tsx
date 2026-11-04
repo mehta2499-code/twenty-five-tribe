@@ -6,6 +6,7 @@ import { fileToImage, seatedFriends, useSocial } from "@/lib/social";
 import { useRef, useState } from "react";
 import { account } from "@/lib/live";
 import { VOICE } from "@/lib/copy";
+import { PageBand } from "@/components/SocialUI";
 
 export const Route = createFileRoute("/app/profile")({
   component: Profile,
@@ -16,17 +17,43 @@ function spaced(s: string) {
   return s;
 }
 
-const ITEMS: {
+type Item = {
   label: string;
   note: string;
-  to?: "/app/capsules" | "/app/privacy" | "/app/thoughts" | "/app/moments";
-}[] = [
-  { label: "Thought of You", note: "Quiet pings from your people.", to: "/app/thoughts" },
-  { label: "Moments", note: "The 72-hour ones. Nothing accumulates.", to: "/app/moments" },
-  { label: "Memory Capsules", note: "The friendships you've made permanent.", to: "/app/capsules" },
-  { label: "Privacy", note: "Screenshots, screen recording, blur.", to: "/app/privacy" },
-  { label: "Notifications", note: "Sunday at 9pm. That's it." },
-  { label: "Reshuffle the room", note: "Seats are yours. Rearrange anytime." },
+  to: "/app/capsules" | "/app/privacy" | "/app/thoughts" | "/app/moments" | "/app/people";
+  live: boolean; // available with your real 25 (the rest are demo-only for now)
+};
+const ITEMS: Item[] = [
+  {
+    label: "Your 25",
+    note: "Add people, accept requests, free a seat.",
+    to: "/app/people",
+    live: true,
+  },
+  {
+    label: "Privacy",
+    note: "Screenshots, screen recording, blur.",
+    to: "/app/privacy",
+    live: true,
+  },
+  {
+    label: "Thought of You",
+    note: "Quiet pings from your people.",
+    to: "/app/thoughts",
+    live: false,
+  },
+  {
+    label: "Moments",
+    note: "The 72-hour ones. Nothing accumulates.",
+    to: "/app/moments",
+    live: false,
+  },
+  {
+    label: "Memory Capsules",
+    note: "The friendships you've made permanent.",
+    to: "/app/capsules",
+    live: false,
+  },
 ];
 
 function HowTheySeeYou() {
@@ -90,6 +117,7 @@ function Profile() {
   const live = s.mode === "live";
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoState, setPhotoState] = useState<string | null>(null);
+  const [confirmOut, setConfirmOut] = useState(false);
   const changePhoto = async (file?: File) => {
     if (!file) return;
     setPhotoState("Uploading…");
@@ -101,117 +129,111 @@ function Profile() {
     }
   };
   return (
-    <div className="px-5 pt-9 pb-4">
-      <div className="flex flex-col items-center text-center">
-        <div className="ring-active inline-block">
-          <div className="rounded-full p-[3px]" style={{ background: "var(--bg-primary)" }}>
-            <Avatar
-              src={s.me ? s.me.avatar : ME.avatar}
-              initials={s.me?.initials ?? ME.initials}
-              size={104}
-            />
-          </div>
+    <div className="pb-6">
+      <PageBand title="You" back />
+      <section className="px-5 flex items-center gap-4">
+        <div className="relative shrink-0">
+          <Avatar
+            src={s.me ? s.me.avatar : ME.avatar}
+            initials={s.me?.initials ?? ME.initials}
+            size={84}
+          />
         </div>
-        {live && (
-          <>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="mt-3 text-sm font-semibold text-bronze"
-            >
-              {s.me?.avatar ? "Change photo" : "Add a photo"}
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(e) => void changePhoto(e.target.files?.[0])}
-            />
-            {photoState && (
-              <p className="text-xs text-cool mt-1" role="status">
-                {photoState}
-              </p>
-            )}
-          </>
-        )}
-        <h1
-          className="mt-5 font-display italic text-cream"
-          style={{ fontSize: 36, letterSpacing: "-0.01em" }}
-        >
-          {name}
-        </h1>
-        <p className="label-caps mt-2">
-          {spaced(`seat 0 of ${SEATS_TOTAL} · the head of your table`)}
+        <div className="min-w-0">
+          <p className="heading truncate">{name}</p>
+          {s.me && <p className="meta truncate">@{s.me.username}</p>}
+          <p className="text-cool mt-1" style={{ fontSize: 14 }}>
+            {taken} of {SEATS_TOTAL} seats filled
+          </p>
+          {live && (
+            <>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="mt-2 text-sm font-semibold text-bronze py-1"
+              >
+                {s.me?.avatar ? "Change photo" : "Add a photo"}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => void changePhoto(e.target.files?.[0])}
+              />
+            </>
+          )}
+        </div>
+      </section>
+      {photoState && (
+        <p className="px-5 mt-2 text-sm text-cool" role="status">
+          {photoState}
         </p>
-        <p
-          className="font-display italic mt-1"
-          style={{ color: "var(--text-muted)", fontSize: 12 }}
-        >
-          {s.me ? `@${s.me.username} · ` : ""}
-          {taken} seats taken so far.
-        </p>
-      </div>
+      )}
 
       {!live && (
         <>
-          <div className="hairline mx-8 mt-9" />
+          <div className="hairline mx-8 mt-8" />
           <HowTheySeeYou />
           <div className="hairline mx-8 mt-10" />
           <QuietlyHappening />
         </>
       )}
 
-      <div className="mt-10 card-editorial overflow-hidden">
-        {ITEMS.filter((i) => !live || i.to === "/app/privacy").map((i, idx) => {
-          const inner = (
-            <>
-              <div className="flex-1">
-                <div className="font-display text-cream" style={{ fontSize: 15 }}>
-                  {i.label}
-                </div>
-                <div
-                  className="font-display italic mt-0.5"
-                  style={{ color: "var(--text-muted)", fontSize: 12 }}
-                >
-                  {i.note}
-                </div>
-              </div>
-              <ChevronRight size={16} className="text-cool" />
-            </>
-          );
-          const cls =
-            "w-full text-left px-4 py-4 hover:bg-white/[0.03] transition flex items-center";
-          const style = { borderTop: idx === 0 ? "none" : "1px solid var(--border-cool)" } as const;
-          return i.to ? (
-            <Link key={i.label} to={i.to} className={cls} style={style}>
-              {inner}
-            </Link>
-          ) : (
-            <button key={i.label} className={cls} style={style}>
-              {inner}
-            </button>
-          );
-        })}
-      </div>
-
-      {s.mode === "live" ? (
-        <button
-          onClick={() => void account.signOut()}
-          className="block mx-auto label-caps mt-8 underline-offset-4 hover:underline"
-        >
-          Sign out
-        </button>
-      ) : (
-        <Link to="/login" className="block mx-auto mt-8 btn-bronze px-6 py-3 text-center w-fit">
-          Sign in to use 25 with real friends
-        </Link>
-      )}
-      <p
-        className="text-center font-display italic mt-6"
-        style={{ color: "var(--text-muted)", fontSize: 11 }}
+      <ul
+        className="mx-5 mt-8 card overflow-hidden divide-y"
+        style={{ borderColor: "var(--line)" }}
       >
-        {VOICE.you.footer}
-      </p>
+        {ITEMS.filter((i) => !live || i.live).map((i) => (
+          <li key={i.label}>
+            <Link
+              to={i.to}
+              className="w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-[var(--fill)]"
+            >
+              <span className="flex-1 min-w-0">
+                <span className="block font-semibold text-cream" style={{ fontSize: 15 }}>
+                  {i.label}
+                </span>
+                <span className="block meta mt-0.5">{i.note}</span>
+              </span>
+              <ChevronRight size={18} className="text-faint shrink-0" aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <div className="px-5 mt-8">
+        {live ? (
+          confirmOut ? (
+            <div className="card p-4" role="alertdialog" aria-label="Sign out">
+              <p className="font-semibold text-cream">Sign out of 25 on this device?</p>
+              <p className="meta mt-1">
+                Your chats, posts and 25 stay saved. Sign back in any time with your email.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button onClick={() => setConfirmOut(false)} className="btn-secondary flex-1">
+                  Cancel
+                </button>
+                <button onClick={() => void account.signOut()} className="btn-danger flex-1">
+                  Sign out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmOut(true)}
+              className="btn-secondary w-full"
+              style={{ color: "var(--coral-deep)" }}
+            >
+              Sign out
+            </button>
+          )
+        ) : (
+          <Link to="/login" className="btn-primary w-full">
+            Sign in to use 25 with real friends
+          </Link>
+        )}
+      </div>
+      <p className="text-center meta mt-6">{VOICE.you.footer}</p>
     </div>
   );
 }

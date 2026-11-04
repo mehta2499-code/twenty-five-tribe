@@ -51,7 +51,7 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <div key={pathname} className="mx-auto max-w-md pb-28 relative page-in">
+      <div key={pathname} className="mx-auto max-w-md pb-28 relative page-in app-column">
         <Outlet />
       </div>
       <BottomNav />

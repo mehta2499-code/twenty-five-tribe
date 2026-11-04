@@ -1,10 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Heart, MessageCircle, Music2, Plus, Send } from "lucide-react";
+import { Clapperboard, Film, Heart, MessageCircle, Music2, Plus, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import {
+  AudienceNote,
+  EmptyState,
+  FriendPicker,
+  PageBand,
+  Sheet,
+  Toast,
+  buzz,
+  clientOnly,
+} from "@/components/SocialUI";
 import { CommentsSheet, FeedTabs, personOf } from "@/components/FeedUI";
-import { fileToImage, social, timeAgo, useSocial, type Reel } from "@/lib/social";
+import { fileToImage, friendById, social, timeAgo, useSocial, type Reel } from "@/lib/social";
 
 export const Route = createFileRoute("/app/reels")({
   component: clientOnly(Reels),
@@ -37,7 +46,7 @@ function ReelCard({
   return (
     <section
       className="relative snap-start overflow-hidden"
-      style={{ height: "calc(100dvh - 150px)", background: "#000" }}
+      style={{ height: "calc(100dvh - 250px)", background: "#000" }}
     >
       <div className="absolute inset-0" onClick={onTap}>
         {reel.video ? (
@@ -121,17 +130,19 @@ function NewReelSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
   const fileRef = useRef<HTMLInputElement>(null);
   const [media, setMedia] = useState<{ video?: string; image?: string } | null>(null);
   const [caption, setCaption] = useState("");
+  const s = useSocial();
   return (
-    <Sheet title="new reel" onClose={onClose}>
+    <Sheet title="New reel" onClose={onClose}>
       <button
         onClick={() => fileRef.current?.click()}
         className="w-full rounded-2xl overflow-hidden flex items-center justify-center mx-auto"
         style={{
           aspectRatio: "9 / 16",
           maxHeight: "42vh",
-          border: media ? "none" : "1px dashed rgba(43,138,196,0.4)",
-          background: "var(--bg-surface)",
+          border: media ? "none" : "1.5px dashed var(--line-2)",
+          background: "var(--fill)",
         }}
+        aria-label={media ? "Change video" : "Choose a video or photo"}
       >
         {media?.video ? (
           <video
@@ -145,8 +156,11 @@ function NewReelSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
         ) : media?.image ? (
           <img src={media.image} alt="" className="w-full h-full object-cover" />
         ) : (
-          <span className="font-display italic text-cool px-6 text-center" style={{ fontSize: 14 }}>
-            Choose a video (or a photo)
+          <span className="flex flex-col items-center gap-2 text-cool px-6 text-center">
+            <Film size={28} aria-hidden="true" />
+            <span className="font-semibold" style={{ fontSize: 15 }}>
+              Choose a video or photo
+            </span>
           </span>
         )}
       </button>
@@ -162,32 +176,32 @@ function NewReelSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
           else setMedia({ image: await fileToImage(f) });
         }}
       />
+      <label htmlFor="reel-caption" className="sr-only">
+        Caption
+      </label>
       <input
         id="reel-caption"
         value={caption}
         onChange={(e) => setCaption(e.target.value.slice(0, 150))}
-        placeholder="Caption"
-        className="mt-4 w-full rounded-full px-4 py-3 outline-none text-cream"
-        style={{
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border-cool)",
-          fontSize: 15,
-        }}
+        placeholder="Write a caption"
+        className="input mt-4"
       />
-      <p className="mt-2 font-display italic" style={{ color: "var(--text-muted)", fontSize: 12 }}>
-        Videos play for this session only until there's a server to upload to.
-      </p>
+      {s.mode !== "live" && (
+        <p className="mt-2 meta">In demo mode, videos only play until you reload the page.</p>
+      )}
       <button
         disabled={!media}
         onClick={() => {
           social.addReel({ ...media, caption: caption.trim() });
           onDone();
         }}
-        className="mt-4 w-full rounded-full py-3.5 font-display italic disabled:opacity-40"
-        style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)", fontSize: 15 }}
+        className="btn-primary w-full mt-4"
       >
-        Share reel
+        Share with your 25
       </button>
+      <div className="mt-3">
+        <AudienceNote>Only people in your 25 will see this.</AudienceNote>
+      </div>
     </Sheet>
   );
 }
@@ -202,46 +216,59 @@ function Reels() {
 
   return (
     <>
-      <header className="px-6 pt-6 pb-3 flex items-center justify-between">
-        <span className="w-8" />
-        <FeedTabs active="reels" />
-        <button
-          onClick={() => setCreating(true)}
-          aria-label="New reel"
-          className="w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ background: "var(--accent-bronze)", color: "var(--bg-primary)" }}
-        >
-          <Plus size={18} />
-        </button>
-      </header>
-
-      <div
-        className="overflow-y-auto snap-y snap-mandatory rounded-2xl mx-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ height: "calc(100dvh - 150px)" }}
-      >
-        {s.reels.map((r) => (
-          <ReelCard
-            key={r.id}
-            reel={r}
-            onComments={() => setCommentsFor(r.id)}
-            onShare={() => setShareFor(r.id)}
-          />
-        ))}
-        <section
-          className="snap-start flex flex-col items-center justify-center text-center px-10"
-          style={{ height: "calc(100dvh - 150px)" }}
-        >
-          <p className="font-display italic text-cream" style={{ fontSize: 22 }}>
-            That's every reel from your 25.
-          </p>
-          <p
-            className="font-display italic mt-3"
-            style={{ color: "var(--text-muted)", fontSize: 14 }}
+      <PageBand
+        title="Reels"
+        sub="Short videos from your 25."
+        actions={
+          <button
+            onClick={() => setCreating(true)}
+            className="btn-primary px-4"
+            aria-label="New reel"
           >
-            No algorithm. No strangers. Go outside, maybe.
-          </p>
-        </section>
-      </div>
+            <Plus size={18} /> Reel
+          </button>
+        }
+      >
+        <div className="mt-4">
+          <FeedTabs active="reels" />
+        </div>
+      </PageBand>
+
+      {s.reels.length === 0 ? (
+        <EmptyState
+          icon={Clapperboard}
+          title="No reels yet"
+          body="Share a short video and your 25 will see it here."
+          action={
+            <button onClick={() => setCreating(true)} className="btn-primary px-5">
+              <Plus size={18} /> Share a reel
+            </button>
+          }
+        />
+      ) : (
+        <div
+          className="overflow-y-auto snap-y snap-mandatory rounded-2xl mx-3 no-scrollbar"
+          style={{ height: "calc(100dvh - 250px)" }}
+        >
+          {s.reels.map((r) => (
+            <ReelCard
+              key={r.id}
+              reel={r}
+              onComments={() => setCommentsFor(r.id)}
+              onShare={() => setShareFor(r.id)}
+            />
+          ))}
+          <section
+            className="snap-start flex flex-col items-center justify-center text-center px-10"
+            style={{ height: "calc(100dvh - 250px)" }}
+          >
+            <p className="heading">You've seen every reel.</p>
+            <p className="mt-2 text-cool" style={{ fontSize: 15 }}>
+              No algorithm, no strangers. Just your 25.
+            </p>
+          </section>
+        </div>
+      )}
 
       {open && (
         <CommentsSheet
@@ -253,13 +280,18 @@ function Reels() {
       )}
       {shareFor && (
         <FriendPicker
-          title="share with"
+          title="Send to"
           cta="Send"
+          note="They'll get it in your chat."
           onClose={() => setShareFor(null)}
           onPick={(ids) => {
             social.share(shareFor, ids, "reel");
             setShareFor(null);
-            setToast(`Shared with ${ids.length}`);
+            setToast(
+              ids.length === 1
+                ? `Sent to ${friendById(ids[0])?.name.split(" ")[0]}`
+                : `Sent to ${ids.length} people`,
+            );
           }}
         />
       )}
@@ -268,7 +300,7 @@ function Reels() {
           onClose={() => setCreating(false)}
           onDone={() => {
             setCreating(false);
-            setToast("Reel shared with your 25.");
+            setToast("Posted. Your 25 can see it now.");
           }}
         />
       )}

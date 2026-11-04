@@ -1,10 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Camera, Circle, Gamepad2, LayoutGrid, MessageCircle } from "lucide-react";
+import { Camera, Gamepad2, LayoutGrid, MessageCircle, Users } from "lucide-react";
 import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
 
 const tabs = [
-  { to: "/app/home", label: "Table", Icon: Circle },
+  { to: "/app/home", label: "Table", Icon: Users },
   { to: "/app/feed", label: "Feed", Icon: LayoutGrid },
   { to: "/app/snap", label: "Snap", Icon: Camera },
   { to: "/app/chats", label: "Chats", Icon: MessageCircle },
@@ -19,91 +19,64 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      aria-label="Main"
+      className="fixed bottom-0 inset-x-0 z-40 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
       style={{
-        background: "rgba(255,255,255,0.94)",
-        backdropFilter: "blur(18px) saturate(160%)",
-        WebkitBackdropFilter: "blur(18px) saturate(160%)",
-        borderTop: "1px solid var(--border-cool)",
-        boxShadow: "0 -8px 30px -18px rgba(14,42,69,0.35)",
+        background: "rgba(255,255,255,0.96)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderTop: "1px solid var(--line)",
       }}
     >
-      <div className="mx-auto max-w-md grid grid-cols-5 items-end px-2 pt-1.5">
+      <ul className="mx-auto max-w-md grid grid-cols-5 items-end px-1">
         {tabs.map(({ to, label, Icon }) => {
           const active =
-            pathname.startsWith(to) || (to === "/app/feed" && pathname.startsWith("/app/reels"));
+            pathname.startsWith(to) ||
+            (to === "/app/feed" && pathname.startsWith("/app/reels")) ||
+            (to === "/app/home" &&
+              (pathname.startsWith("/app/people") ||
+                pathname.startsWith("/app/seat") ||
+                pathname.startsWith("/app/my25")));
           const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
+          const color = active ? "var(--blue-deep)" : "var(--ink-3)";
           const isSnap = to === "/app/snap";
-
-          if (isSnap) {
-            return (
-              <Link
-                key={to}
-                to={to}
-                search={{ to: undefined }}
-                aria-label={label}
-                onClick={() => buzz()}
-                className="flex flex-col items-center -mt-6"
-              >
-                <span
-                  className="relative w-[60px] h-[60px] rounded-full flex items-center justify-center"
-                  style={{
-                    background: active ? "var(--navy)" : "var(--blue)",
-                    color: "#fff",
-                    boxShadow: "0 0 0 5px #fff, var(--shadow-pop)",
-                  }}
-                >
-                  <Camera size={26} strokeWidth={2.2} />
-                  {badge > 0 && <Badge n={badge} />}
-                </span>
-                <span
-                  className="mt-1 font-semibold"
-                  style={{
-                    fontSize: 10.5,
-                    color: active ? "var(--blue-deep)" : "var(--text-muted)",
-                  }}
-                >
-                  {label}
-                </span>
-              </Link>
-            );
-          }
-
           return (
-            <Link
-              key={to}
-              to={to}
-              aria-label={label}
-              onClick={() => buzz(8)}
-              className="flex flex-col items-center justify-center py-1"
-            >
-              <span
-                className="relative flex items-center justify-center rounded-full"
-                style={{
-                  width: 52,
-                  height: 32,
-                  background: active ? "var(--sky-100)" : "transparent",
-                  color: active ? "var(--blue-deep)" : "var(--text-muted)",
-                  transition: "background-color 260ms var(--spring), color 200ms",
-                }}
+            <li key={to}>
+              <Link
+                to={to}
+                {...(isSnap ? { search: { to: undefined } } : {})}
+                aria-label={badge ? `${label}, ${badge} new` : label}
+                aria-current={active ? "page" : undefined}
+                onClick={() => buzz(8)}
+                className="flex flex-col items-center justify-end gap-0.5 pt-1.5 pb-1 min-h-[56px]"
               >
-                <Icon size={21} strokeWidth={active ? 2.4 : 1.8} />
-                {badge > 0 && <Badge n={badge} />}
-              </span>
-              <span
-                className="mt-0.5"
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? "var(--blue-deep)" : "var(--text-muted)",
-                }}
-              >
-                {label}
-              </span>
-            </Link>
+                {isSnap ? (
+                  <span
+                    className="relative -mt-5 w-14 h-14 rounded-2xl flex items-center justify-center"
+                    style={{
+                      background: active ? "var(--navy)" : "var(--blue-deep)",
+                      color: "#fff",
+                      boxShadow: "0 0 0 4px #fff, var(--shadow-pop)",
+                    }}
+                  >
+                    <Camera size={24} strokeWidth={2} />
+                    {badge > 0 && <Badge n={badge} />}
+                  </span>
+                ) : (
+                  <span
+                    className="relative flex items-center justify-center w-12 h-8 rounded-lg"
+                    style={{ background: active ? "var(--fill)" : "transparent", color }}
+                  >
+                    <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
+                    {badge > 0 && <Badge n={badge} />}
+                  </span>
+                )}
+                <span style={{ fontSize: 12, fontWeight: active ? 650 : 500, color }}>{label}</span>
+              </Link>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </nav>
   );
 }
@@ -112,16 +85,17 @@ function Badge({ n }: { n: number }) {
   return (
     <span
       key={n}
-      className="pop absolute -top-1 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
+      aria-hidden="true"
+      className="pop absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
       style={{
         background: "var(--coral-deep)",
         color: "#fff",
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 700,
         boxShadow: "0 0 0 2px #fff",
       }}
     >
-      {n}
+      {n > 99 ? "99+" : n}
     </span>
   );
 }

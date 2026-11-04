@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Calculator, Target, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
 import { friendById, leaderboard, social, useSocial, type GameId, meView } from "@/lib/social";
@@ -8,14 +8,14 @@ export const ARCADE = [
   {
     id: "tap-rush" as const,
     name: "Tap Rush",
-    glyph: "◎",
-    blurb: "20 seconds. Tap the ember wherever it lands.",
+    Icon: Target,
+    blurb: "20 seconds. Tap the dot wherever it lands.",
     unit: "taps",
   },
   {
     id: "quick-math" as const,
     name: "Quick Maths",
-    glyph: "±",
+    Icon: Calculator,
     blurb: "30 seconds of mental maths. No calculators, Sharma ji.",
     unit: "correct",
   },
@@ -303,70 +303,76 @@ export function Leaderboard() {
   const s = useSocial();
   const [game, setGame] = useState<GameId>("tap-rush");
   const rows = useMemo(() => leaderboard(s, game), [s, game]);
-  const medal = ["var(--accent-bronze)", "#B8A998", "#8A5A3C"];
+  const onBoard = rows.some((r) => r.id === "me");
   return (
-    <section className="px-5 mt-8">
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="label-caps">this week at your table</h2>
-        <span className="label-caps">resets monday</span>
+    <section className="px-5 mt-8" aria-labelledby="board-title">
+      <div className="flex items-baseline justify-between mb-2.5">
+        <h2 id="board-title" className="text-[15px] font-semibold text-cream">
+          This week's leaderboard
+        </h2>
+        <span className="meta">Resets Monday</span>
       </div>
-      <div className="flex gap-2 mb-4 overflow-x-auto [scrollbar-width:none]">
+      <div
+        className="segmented mb-3 max-w-full overflow-x-auto no-scrollbar"
+        role="group"
+        aria-label="Choose a game"
+      >
         {(Object.keys(GAME_NAMES) as GameId[]).map((g) => (
           <button
             key={g}
             onClick={() => setGame(g)}
-            className="px-3.5 py-1.5 rounded-full font-display italic whitespace-nowrap"
-            style={{
-              fontSize: 13,
-              background: g === game ? "var(--accent-bronze)" : "var(--bg-surface)",
-              color: g === game ? "var(--bg-primary)" : "var(--text-secondary)",
-            }}
+            aria-pressed={g === game}
+            className="whitespace-nowrap"
           >
             {GAME_NAMES[g]}
           </button>
         ))}
       </div>
-      <ol className="card-editorial overflow-hidden">
-        {rows.slice(0, 10).map((r, i) => {
-          const me = r.id === "me";
-          const f = me ? null : friendById(r.id);
-          return (
-            <li
-              key={r.id}
-              className="flex items-center gap-3 px-4 py-3"
-              style={{
-                borderTop: i ? "1px solid var(--border-cool)" : "none",
-                background: me ? "rgba(43,138,196,0.08)" : "transparent",
-              }}
-            >
-              <span
-                className="w-6 text-center font-display tabular-nums"
-                style={{ fontSize: 15, color: medal[i] ?? "var(--text-muted)" }}
+      {rows.length === 0 ? (
+        <div className="card px-4 py-6 text-center">
+          <p className="font-semibold text-cream">No scores yet this week</p>
+          <p className="meta mt-1">Play a round and you'll be first on the board.</p>
+        </div>
+      ) : (
+        <ol className="card overflow-hidden divide-y" style={{ borderColor: "var(--line)" }}>
+          {rows.slice(0, 10).map((r, i) => {
+            const me = r.id === "me";
+            const f = me ? null : friendById(r.id);
+            return (
+              <li
+                key={r.id}
+                className="flex items-center gap-3 px-4 py-2.5"
+                style={{ background: me ? "var(--fill)" : "transparent" }}
               >
-                {i + 1}
-              </span>
-              <Avatar
-                src={f ? f.avatar || undefined : meView().avatar}
-                initials={f?.initials ?? meView().initials}
-                color={f?.color}
-                size={34}
-              />
-              <span className="flex-1 font-display text-cream" style={{ fontSize: 15 }}>
-                {me ? "You" : f?.name}
-              </span>
-              <span className="font-display tabular-nums text-cream" style={{ fontSize: 17 }}>
-                {r.score}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-      {!rows.some((r) => r.id === "me") && (
-        <p
-          className="font-display italic mt-3 text-center"
-          style={{ color: "var(--text-muted)", fontSize: 13 }}
-        >
-          You're not on this one yet. Play a round.
+                <span
+                  className="w-6 text-center font-bold tabular-nums"
+                  style={{ fontSize: 15, color: i === 0 ? "var(--blue-deep)" : "var(--ink-3)" }}
+                >
+                  {i + 1}
+                </span>
+                <Avatar
+                  src={f ? f.avatar || undefined : meView().avatar}
+                  initials={f?.initials ?? meView().initials}
+                  color={f?.color}
+                  size={34}
+                />
+                <span
+                  className="flex-1 min-w-0 truncate font-semibold text-cream"
+                  style={{ fontSize: 15 }}
+                >
+                  {me ? "You" : f?.name}
+                </span>
+                <span className="font-bold tabular-nums text-cream" style={{ fontSize: 16 }}>
+                  {r.score}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      {rows.length > 0 && !onBoard && (
+        <p className="meta mt-2 text-center">
+          You're not on this one yet. Play a round to join in.
         </p>
       )}
     </section>
