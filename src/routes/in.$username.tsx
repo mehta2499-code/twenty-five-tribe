@@ -14,12 +14,12 @@ export const Route = createFileRoute("/in/$username")({
       { title: `Are you in @${params.username}'s 25?` },
       {
         name: "description",
-        content: "Prove it: guess their vibe-check answers to claim a seat at their table.",
+        content: "Find out if you're in their 25. Prove you know them to put them in yours.",
       },
       { property: "og:title", content: `Are you in @${params.username}'s 25?` },
       {
         property: "og:description",
-        content: "Prove it: guess 4 of their 6 answers to claim a seat.",
+        content: "Find out if you're in their 25.",
       },
     ],
   }),
@@ -52,12 +52,13 @@ function InMy25() {
 
   const live = s.mode === "live" && !!s.me;
   const isMe = live && s.me?.username === username.toLowerCase();
-  const alreadyIn = !!card && s.people.some((p) => p.id === card.id);
-  const pending =
-    !!card && s.requests.some((r) => r.person.id === card.id && r.direction === "outgoing");
+  // iHaveThem: they're in my 25. theyHaveMe: I'm in theirs (the question on the card).
+  const mine = card ? s.people.find((p) => p.id === card.id) : undefined;
+  const iHaveThem = !!mine;
   const incoming = card
     ? s.requests.find((r) => r.person.id === card.id && r.direction === "incoming")
     : undefined;
+  const theyHaveMe = !!incoming || !!mine?.mutual;
 
   const prove = () => {
     if (!live) {
@@ -189,10 +190,10 @@ function InMy25() {
                 <p className="text-center heading">
                   This is your card. Share it and see who really knows you.
                 </p>
-              ) : alreadyIn ? (
+              ) : live && theyHaveMe && iHaveThem ? (
                 <div className="text-center">
-                  <span className="sticker">already in</span>
-                  <p className="heading mt-3">You're in {first}'s 25.</p>
+                  <span className="sticker">🤝 mutual</span>
+                  <p className="heading mt-3">You're in each other's 25.</p>
                   <Link
                     to="/app/chat/$id"
                     params={{ id: card.id }}
@@ -201,10 +202,16 @@ function InMy25() {
                     Message {first}
                   </Link>
                 </div>
-              ) : pending || done ? (
+              ) : live && iHaveThem ? (
                 <div className="text-center">
-                  <span className="sticker sun">seat saved</span>
-                  <p className="heading mt-3">Now {first} has to prove they know you.</p>
+                  <span className="sticker sun">👀 not yet</span>
+                  <p className="heading mt-3">
+                    {first} is in your 25. You're not in theirs… yet.
+                  </p>
+                  <p className="meta mt-2">
+                    {done ? `${first} just got pinged. ` : ""}When they seat you back, chats and snaps
+                    unlock.
+                  </p>
                   <Link to="/app/people" className="btn-secondary w-full mt-5">
                     See your 25
                   </Link>
@@ -215,15 +222,29 @@ function InMy25() {
                 </p>
               ) : (
                 <>
+                  {live && (
+                    <div className="text-center mb-5">
+                      <span className={`sticker ${theyHaveMe ? "" : "pink"}`}>
+                        {theyHaveMe ? "✅ YES" : "👀 not yet"}
+                      </span>
+                      <p className="heading mt-3">
+                        {theyHaveMe
+                          ? `You're in ${first}'s 25. Seat them back?`
+                          : `You're not in ${first}'s 25. Make the first move.`}
+                      </p>
+                    </div>
+                  )}
                   <button
                     onClick={prove}
                     className="btn-fun w-full"
                     style={{ minHeight: 56, fontSize: 18 }}
                   >
-                    Prove it
+                    {theyHaveMe ? "Prove it & seat them back" : "Prove it"}
                   </button>
                   <p className="mt-3 text-center meta">
-                    Guess 4 of {first}'s 6 answers to claim a seat. One try every 30 minutes.
+                    {live
+                      ? `Guess 4 of ${first}'s 6 answers to put them in your 25. They get pinged 👀`
+                      : `Sign in to find out if you're in ${first}'s 25.`}
                   </p>
                 </>
               )}
@@ -240,9 +261,9 @@ function InMy25() {
         <KnowThemQuiz
           person={person}
           onClose={() => setQuiz(false)}
+          actionLabel={theyHaveMe ? "Seat them back" : "Put them in my 25"}
           onPassed={async () => {
-            if (incoming) await account.accept(incoming.id);
-            else await account.request(person.id);
+            await account.request(person.id);
             setDone(true);
           }}
         />

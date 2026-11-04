@@ -27,7 +27,7 @@ type Item = {
 const ITEMS: Item[] = [
   {
     label: "Your 25",
-    note: "Add people, accept requests, free a seat.",
+    note: "Seat people, seat back, free a seat.",
     to: "/app/people",
     live: true,
   },

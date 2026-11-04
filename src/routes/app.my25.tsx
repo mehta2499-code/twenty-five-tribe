@@ -60,7 +60,7 @@ function My25() {
               className="rounded-full px-3 py-1.5 label-caps text-warm"
               style={{ background: "var(--bg-surface)", border: "1px solid var(--border-cool)" }}
             >
-              Requests · <span style={{ color: "var(--blue-deep)" }}>{incoming}</span>
+              Seated you · <span style={{ color: "var(--blue-deep)" }}>{incoming}</span>
             </Link>
           ) : (
             <button

@@ -250,7 +250,7 @@ function Landing() {
             {[
               { icon: "◍", tag: "The Seats",      line: "25 seats at your table. Who sits there is everything." },
               { icon: "✓", tag: "Prove it",       line: "Pizza or pasta? Cats or dogs? Guess 4 of their 6 answers or no seat." },
-              { icon: "❍", tag: "Chats",          line: "Message your 25. Nobody else can reach you." },
+              { icon: "❍", tag: "Chats",          line: "Seat anyone you know. DMs only open when it's mutual." },
               { icon: "↯", tag: "Snaps & Streaks", line: "Photos that disappear after one look. Keep the streak alive." },
               { icon: "✦", tag: "Feed & Reels",   line: "Posts and reels from your people only. It ends when you're caught up." },
               { icon: "◆", tag: "Games",          line: "Quick rounds, trivia and Judgement, with a weekly leaderboard." },

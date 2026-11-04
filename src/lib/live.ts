@@ -36,13 +36,10 @@ type ProfileRow = {
   avatar_path: string | null;
   created_at: string;
 };
-type FriendshipRow = {
-  id: string;
-  requester: string;
-  addressee: string;
-  status: "pending" | "accepted";
+type SeatRow = {
+  owner: string;
+  guest: string;
   created_at: string;
-  accepted_at: string | null;
 };
 type MessageRow = {
   id: string;
@@ -121,8 +118,7 @@ function friendly(e: unknown) {
   const msg = (e as { message?: string })?.message ?? String(e);
   if (/seats taken/i.test(msg)) return msg;
   if (/duplicate key.*username/i.test(msg)) return "That username is taken. Try another.";
-  if (/duplicate key.*friendships/i.test(msg))
-    return "You've already asked them, or they've asked you.";
+  if (/duplicate key.*seats/i.test(msg)) return "They're already in your 25.";
   if (/row-level security/i.test(msg)) return "You can only do that with people in your 25.";
   if (/Failed to fetch|NetworkError/i.test(msg))
     return "Can't reach the server. Check your connection and try again.";
@@ -170,14 +166,17 @@ async function loadAll() {
       return;
     }
 
-    const friendships = await run(
+    const seatRows = await run(
       supabase
-        .from("friendships")
+        .from("seats")
         .select("*")
-        .or(`requester.eq.${me},addressee.eq.${me}`)
-        .returns<FriendshipRow[]>(),
+        .or(`owner.eq.${me},guest.eq.${me}`)
+        .returns<SeatRow[]>(),
     );
-    const otherIds = friendships.map((f) => (f.requester === me ? f.addressee : f.requester));
+    // mine: who I put in my 25. seatedMe: who put me in theirs.
+    const mine = new Map(seatRows.filter((r) => r.owner === me).map((r) => [r.guest, r]));
+    const seatedMe = new Map(seatRows.filter((r) => r.guest === me).map((r) => [r.owner, r]));
+    const otherIds = [...new Set([...mine.keys(), ...seatedMe.keys()])];
     const profiles = otherIds.length
       ? await run(supabase.from("profiles").select("*").in("id", otherIds).returns<ProfileRow[]>())
       : [];
@@ -221,21 +220,23 @@ async function loadAll() {
 
     const people: Person[] = [];
     const requests: FriendRequest[] = [];
-    for (const f of friendships) {
-      const other = byId.get(f.requester === me ? f.addressee : f.requester);
-      if (!other) continue;
-      if (f.status === "accepted") people.push(toPerson(other, f.accepted_at));
-      else
-        requests.push({
-          id: f.id,
-          person: toPerson(other),
-          direction: f.requester === me ? "outgoing" : "incoming",
-          knew: knewMe.get(other.id),
-          iPassed: iPassed.has(other.id),
-        });
+    for (const [id, row] of mine) {
+      const other = byId.get(id);
+      if (other) people.push({ ...toPerson(other, row.created_at), mutual: seatedMe.has(id) });
+    }
+    for (const [id, row] of seatedMe) {
+      const other = byId.get(id);
+      if (!other || mine.has(id)) continue;
+      requests.push({
+        id,
+        person: { ...toPerson(other, row.created_at), mutual: false },
+        direction: "incoming",
+        knew: knewMe.get(id),
+        iPassed: iPassed.has(id),
+      });
     }
     people.sort((a, b) => a.name.localeCompare(b.name));
-    const friendIds = new Set(people.map((p) => p.id));
+    const friendIds = new Set(people.filter((p) => p.mutual).map((p) => p.id));
 
     const [messages, inbox, sent, streakRows, postRows, scoreRows] = await Promise.all([
       run(
@@ -441,6 +442,7 @@ async function loadAll() {
       loading: false,
       people,
       requests,
+      seatedByCount: seatedMe.size,
       chats,
       unread,
       snaps,
@@ -539,9 +541,28 @@ function subscribe() {
         }));
       },
     )
-    .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () =>
-      scheduleReload(),
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "seats" }, ({ eventType, new: row }) => {
+      const r = row as Partial<SeatRow>;
+      if (eventType === "INSERT" && r.guest === me && r.owner) {
+        const owner = r.owner;
+        void supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", owner)
+          .maybeSingle<{ display_name: string }>()
+          .then(({ data }) => {
+            const name = data?.display_name.split(" ")[0] ?? "Someone";
+            const back = _get().people.some((p) => p.id === owner);
+            _set((s) => ({
+              ...s,
+              notice: back
+                ? `🤝 ${name} seated you back. Chats and snaps unlocked.`
+                : `👀 ${name} put you in their 25.`,
+            }));
+          });
+      }
+      scheduleReload();
+    })
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quiz_attempts" }, () =>
       scheduleReload(800),
     )
@@ -602,6 +623,8 @@ async function start(session: Session) {
     me: null,
     people: [],
     requests: [],
+    seatedByCount: 0,
+    notice: null,
     chats: {},
     unread: {},
     snaps: [],
@@ -715,40 +738,26 @@ export const account = {
       daysQuiet: 0,
     }));
   },
+  /** Put someone in your 25 (after passing the quiz about them). */
   async request(personId: string) {
     try {
-      await run(
-        supabase.from("friendships").insert({ requester: myId, addressee: personId }).select(),
-      );
+      await run(supabase.from("seats").insert({ owner: myId, guest: personId }).select());
       await loadAll();
     } catch (e) {
       throw new Error(friendly(e));
     }
   },
-  async accept(requestId: string) {
-    try {
-      await run(
-        supabase.from("friendships").update({ status: "accepted" }).eq("id", requestId).select(),
-      );
-      await loadAll();
-    } catch (e) {
-      throw new Error(friendly(e));
-    }
+  /** Seat back someone who put you in their 25. The id is their person id. */
+  async accept(personId: string) {
+    return account.request(personId);
   },
-  /** Decline a request, cancel your own, or free a seat. */
-  async remove(personOrRequestId: string) {
-    const me = myId;
-    const s = _get();
-    const req = s.requests.find((r) => r.id === personOrRequestId);
-    const q = req
-      ? supabase.from("friendships").delete().eq("id", req.id)
-      : supabase
-          .from("friendships")
-          .delete()
-          .or(
-            `and(requester.eq.${me},addressee.eq.${personOrRequestId}),and(requester.eq.${personOrRequestId},addressee.eq.${me})`,
-          );
-    const { error } = await q;
+  /** Take someone out of your 25. They can still keep you in theirs. */
+  async remove(personId: string) {
+    const { error } = await supabase
+      .from("seats")
+      .delete()
+      .eq("owner", myId)
+      .eq("guest", personId);
     if (error) throw new Error(friendly(error));
     await loadAll();
   },

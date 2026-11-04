@@ -12,7 +12,7 @@ import { Avatar } from "@/components/Avatar";
 import {
   friendById,
   meView,
-  seatedFriends,
+  mutualFriends,
   social,
   streakStatus,
   useSocial,
@@ -237,7 +237,7 @@ export function FriendPicker({
 }) {
   const s = useSocial();
   const [picked, setPicked] = useState<string[]>([]);
-  const people = seatedFriends();
+  const people = mutualFriends();
   const all = picked.length === people.length && people.length > 0;
   const toggle = (id: string) => {
     if (single) return onPick([id]);
@@ -248,8 +248,8 @@ export function FriendPicker({
       {people.length === 0 ? (
         <EmptyState
           icon={Lock}
-          title="No one at your table yet"
-          body="Add people to your 25 first. Only they can receive this."
+          title="No mutual seats yet"
+          body="Chats, snaps and games unlock when you're in each other's 25. Seat your people and get them to seat you back."
           action={
             <Link to="/app/people" className="btn-primary px-5">
               Find your people

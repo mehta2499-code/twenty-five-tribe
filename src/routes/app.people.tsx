@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, MessageCircle, Search, UserPlus, X } from "lucide-react";
+import { Check, MessageCircle, Search, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { account } from "@/lib/live";
 import { KnowThemQuiz } from "@/components/KnowThemQuiz";
 import { ShareCard } from "@/components/ShareCard";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
+
+const SUB = "Seat anyone you know. They see your posts. Mutual seats unlock chats, snaps and games.";
 
 export const Route = createFileRoute("/app/people")({
   component: clientOnly(People),
@@ -62,10 +64,15 @@ function People() {
     requestId?: string;
   } | null>(null);
 
-  const taken = s.people.length + s.requests.filter((r) => r.direction === "outgoing").length;
+  const taken = s.people.length;
+  const mutualCount = s.people.filter((p) => p.mutual).length;
   const incoming = s.requests.filter((r) => r.direction === "incoming");
-  const outgoing = s.requests.filter((r) => r.direction === "outgoing");
-  const known = new Set([...s.people.map((p) => p.id), ...s.requests.map((r) => r.person.id)]);
+  const inMine = new Set(s.people.map((p) => p.id));
+  const seatedMe = new Set(incoming.map((r) => r.person.id));
+  const seat = (p: Person) =>
+    s.requests.find((r) => r.person.id === p.id)?.iPassed
+      ? act(p.id, () => account.request(p.id), `🤝 ${p.name} is in your 25. Chats unlocked.`, true)
+      : setQuiz({ person: p, mode: seatedMe.has(p.id) ? "accept" : "request" });
 
   useEffect(() => {
     if (s.mode !== "live" || q.trim().length < 2) {
@@ -102,14 +109,15 @@ function People() {
   if (s.mode !== "live") {
     return (
       <div className="pb-8">
-        <PageBand title="Your 25" sub="The people who can message, snap and play with you." back />
+        <PageBand title="Your 25" sub={SUB} back />
         <div className="px-5 grid gap-4">
           <div className="card p-5">
             <span className="sticker">how it works</span>
             <p className="heading mt-3">No seat without proof.</p>
             <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              To add someone, you guess their vibe-check answers. Get 4 of 6 right and their seat is
-              yours. They have to do the same for you.
+              To seat someone, guess their vibe-check answers. Get 4 of 6 right and they're in
+              your 25: they see your posts. When they seat you back, it's mutual 🤝 and chats,
+              snaps and games unlock.
             </p>
             <button
               onClick={() =>
@@ -148,7 +156,7 @@ function People() {
 
   return (
     <div className="pb-8">
-      <PageBand title="Your 25" sub="The people who can message, snap and play with you." back>
+      <PageBand title="Your 25" sub={SUB} back>
         <div className="mt-4 card px-4 py-3.5">
           <div className="flex items-baseline justify-between">
             <p className="font-semibold text-cream">
@@ -160,7 +168,7 @@ function People() {
             className="mt-2.5 grid gap-[3px]"
             style={{ gridTemplateColumns: `repeat(${SEATS}, 1fr)` }}
             role="img"
-            aria-label={`${s.people.length} accepted, ${taken - s.people.length} waiting, ${SEATS - taken} open`}
+            aria-label={`${mutualCount} mutual, ${taken - mutualCount} one-way, ${SEATS - taken} open`}
           >
             {Array.from({ length: SEATS }).map((_, i) => (
               <span
@@ -168,18 +176,22 @@ function People() {
                 className="h-2 rounded-full"
                 style={{
                   background:
-                    i < s.people.length
-                      ? "var(--blue-deep)"
-                      : i < taken
-                        ? "var(--coral)"
-                        : "var(--fill-2)",
+                    i < mutualCount ? "var(--lime)" : i < taken ? "var(--sun)" : "var(--fill-2)",
                 }}
               />
             ))}
           </div>
-          {taken >= SEATS && (
-            <p className="mt-2 meta">Remove someone to make room for someone new.</p>
-          )}
+          <p className="mt-2 meta flex flex-wrap gap-x-3">
+            <span>🤝 {mutualCount} mutual</span>
+            <span>👀 {taken - mutualCount} one-way</span>
+            {taken >= SEATS && <span>Full. Remove someone to seat someone new.</span>}
+          </p>
+        </div>
+        <div className="mt-3 flex">
+          <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
+            👀 you're in {s.seatedByCount} {s.seatedByCount === 1 ? "person's" : "people's"} 25
+          </span>
+          <span className="meta ml-2 self-center">only you see this</span>
         </div>
       </PageBand>
 
@@ -218,15 +230,15 @@ function People() {
             )}
             {results.map((p) => (
               <Row key={p.id} p={p}>
-                {known.has(p.id) ? (
-                  <span className="text-sm text-faint">Already at your table</span>
+                {inMine.has(p.id) ? (
+                  <span className="text-sm text-faint">In your 25</span>
                 ) : (
                   <button
-                    disabled={taken >= SEATS || !s.me?.vibeDone}
-                    onClick={() => setQuiz({ person: p, mode: "request" })}
+                    disabled={taken >= SEATS || !s.me?.vibeDone || busy === p.id}
+                    onClick={() => seat(p)}
                     className={`${pill} btn-primary`}
                   >
-                    <UserPlus size={16} /> Prove it
+                    <UserPlus size={16} /> {seatedMe.has(p.id) ? "Seat back" : "Prove it"}
                   </button>
                 )}
               </Row>
@@ -237,9 +249,12 @@ function People() {
 
       {incoming.length > 0 && (
         <section className="px-5 mt-8">
-          <h2 className="text-[15px] font-semibold text-cream mb-1">
-            Asking to join · {incoming.length}
+          <h2 className="heading" style={{ fontSize: 18 }}>
+            👀 They put you in their 25 · {incoming.length}
           </h2>
+          <p className="meta mt-0.5">
+            You can see their posts. Seat them back to unlock chats, snaps and games.
+          </p>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {incoming.map((r) => (
               <Row
@@ -248,29 +263,11 @@ function People() {
                 note={r.knew ? `Knew ${r.knew.score}/${r.knew.total} about you` : undefined}
               >
                 <button
-                  aria-label={`Decline ${r.person.name}`}
-                  disabled={busy === r.id}
-                  onClick={() => act(r.id, () => account.remove(r.id))}
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ background: "var(--bg-surface)", color: "var(--text-secondary)" }}
-                >
-                  <X size={18} />
-                </button>
-                <button
-                  disabled={busy === r.id}
-                  onClick={() =>
-                    r.iPassed
-                      ? act(
-                          r.id,
-                          () => account.accept(r.id),
-                          `${r.person.name} is in your 25.`,
-                          true,
-                        )
-                      : setQuiz({ person: r.person, mode: "accept", requestId: r.id })
-                  }
+                  disabled={busy === r.person.id || taken >= SEATS || !s.me?.vibeDone}
+                  onClick={() => seat(r.person)}
                   className={`${pill} btn-primary`}
                 >
-                  <Check size={16} /> {r.iPassed ? "Accept" : "Prove it"}
+                  <Check size={16} /> {r.iPassed ? "Seat back" : "Prove it"}
                 </button>
               </Row>
             ))}
@@ -280,7 +277,7 @@ function People() {
 
       <section className="px-5 mt-8">
         <h2 className="text-[15px] font-semibold text-cream mb-1">
-          At your table · {s.people.length}
+          In your 25 · {s.people.length}
         </h2>
         {s.people.length === 0 ? (
           <p
@@ -296,7 +293,8 @@ function People() {
               confirmRemove === p.id ? (
                 <li key={p.id} className="py-3 flex items-center gap-3">
                   <p className="flex-1 text-sm text-cream">
-                    Give up {p.name}'s seat? Your chat and streak with them end.
+                    Take {p.name.split(" ")[0]} out of your 25? They stop seeing your posts
+                    {p.mutual ? ", and your chats and streak lock" : ""}.
                   </p>
                   <button onClick={() => setConfirmRemove(null)} className={`${pill} btn-quiet`}>
                     Keep
@@ -313,16 +311,18 @@ function People() {
                   </button>
                 </li>
               ) : (
-                <Row key={p.id} p={p}>
-                  <Link
-                    to="/app/chat/$id"
-                    params={{ id: p.id }}
-                    aria-label={`Message ${p.name}`}
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{ background: "var(--bg-surface)", color: "var(--blue-deep)" }}
-                  >
-                    <MessageCircle size={18} />
-                  </Link>
+                <Row key={p.id} p={p} note={p.mutual ? "🤝 mutual" : "⏳ hasn't seated you back"}>
+                  {p.mutual && (
+                    <Link
+                      to="/app/chat/$id"
+                      params={{ id: p.id }}
+                      aria-label={`Message ${p.name}`}
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ background: "var(--bg-surface)", color: "var(--lime)" }}
+                    >
+                      <MessageCircle size={18} />
+                    </Link>
+                  )}
                   <button
                     onClick={() => setConfirmRemove(p.id)}
                     className="text-sm font-semibold px-2"
@@ -337,40 +337,17 @@ function People() {
         )}
       </section>
 
-      {outgoing.length > 0 && (
-        <section className="px-5 mt-8">
-          <h2 className="text-[15px] font-semibold text-cream mb-1">
-            Waiting for them to accept · {outgoing.length}
-          </h2>
-          <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
-            {outgoing.map((r) => (
-              <Row key={r.id} p={r.person}>
-                <button
-                  disabled={busy === r.id}
-                  onClick={() => act(r.id, () => account.remove(r.id), "Seat released.")}
-                  className="text-sm font-semibold px-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Cancel
-                </button>
-              </Row>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {quiz && (
         <KnowThemQuiz
           person={quiz.person}
           demo={quiz.mode === "demo"}
-          actionLabel={quiz.mode === "accept" ? "Accept" : "Save their seat"}
+          actionLabel={quiz.mode === "accept" ? "Seat them back" : "Put them in my 25"}
           onClose={() => setQuiz(null)}
           onPassed={async () => {
-            if (quiz.mode === "request") await account.request(quiz.person.id);
-            if (quiz.mode === "accept" && quiz.requestId) {
-              await account.accept(quiz.requestId);
-              setBurst((b) => b + 1);
-            }
+            if (quiz.mode === "demo") return;
+            await account.request(quiz.person.id);
+            setBurst((b) => b + 1);
+            buzz(30);
           }}
         />
       )}

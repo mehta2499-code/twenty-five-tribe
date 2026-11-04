@@ -103,7 +103,7 @@ export const VOICE = {
     confirmHeader: "reserve this seat",
     sendingTo: (name: string) => `${name} will get this:`,
     waMessage: (fromName: string) =>
-      `${fromName} reserved one of their 25 seats for you. Apparently you're one of the people that matter most. Claim your seat.`,
+      `${fromName} put you in their 25. Apparently you're one of the people that matter most. Seat them back?`,
     cta: "Reserve their seat",
     done: (name: string) => `${name}'s seat is held. You'll know when they sit down.`,
     badgeReserved: "seat reserved · awaiting them",

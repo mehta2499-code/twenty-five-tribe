@@ -15,7 +15,7 @@ import {
 import {
   fileToImage,
   friendById,
-  seatedFriends,
+  mutualFriends,
   social,
   streakStatus,
   useSocial,
@@ -137,7 +137,7 @@ function SnapScreen() {
   };
 
   const inbox = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me"));
-  const atRisk = seatedFriends().filter((f) => streakStatus(s.streaks[f.id]).atRisk);
+  const atRisk = mutualFriends().filter((f) => streakStatus(s.streaks[f.id]).atRisk);
 
   return (
     <div className="pb-6">

@@ -63,10 +63,15 @@ export type GameId = "tap-rush" | "quick-math" | "trivia" | "colour-clash" | "pa
 export type ScoreBoard = Record<GameId, Record<string, number>>; // game -> personId -> best this week
 
 /** Someone in your 25, as the screens see them. */
-export type Person = Friend & { username?: string };
+export type Person = Friend & {
+  username?: string;
+  /** They put you in their 25 too. Chats, snaps, streaks and games need this. */
+  mutual?: boolean;
+};
 export type FriendRequest = {
   id: string;
   person: Person;
+  /** "incoming": they put you in their 25 and you haven't seated them back. */
   direction: "incoming" | "outgoing";
   /** For incoming requests: how they scored on "How well do you know them?" about you. */
   knew?: { score: number; total: number };
@@ -102,6 +107,10 @@ export type SocialState = {
   reels: Reel[];
   scores: ScoreBoard;
   week: string;
+  /** How many people have you in their 25 (only you see this). */
+  seatedByCount: number;
+  /** A friendly heads-up, e.g. "Devansh put you in their 25". */
+  notice: string | null;
 };
 
 // ---------- Helpers ----------
@@ -128,7 +137,14 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const demoFriends = () => FRIENDS.filter((f) => getSeatMeta(f.id).state === "ACCEPTED");
 export const seatedFriends = (): Person[] => (state.mode === "live" ? state.people : demoFriends());
 export const friendById = (id: string): Person | undefined =>
-  state.mode === "live" ? state.people.find((f) => f.id === id) : FRIENDS.find((f) => f.id === id);
+  state.mode === "live"
+    ? (state.people.find((f) => f.id === id) ??
+      state.requests.find((r) => r.person.id === id)?.person)
+    : FRIENDS.find((f) => f.id === id);
+/** Demo friends are all mutual; live ones only when they seated you back. */
+export const isMutual = (p?: Person) => !!p && p.mutual !== false;
+/** People you can chat, snap and play with: you're in each other's 25. */
+export const mutualFriends = (): Person[] => seatedFriends().filter(isMutual);
 
 export function timeAgo(at: number) {
   const s = Math.max(0, Date.now() - at);
@@ -157,6 +173,8 @@ const DEMO_SESSION = {
   requests: [],
   loading: false,
   error: null,
+  seatedByCount: 0,
+  notice: null,
 };
 
 const PHOTOS = [
@@ -342,6 +360,7 @@ function seed(): SocialState {
 
   return {
     ...DEMO_SESSION,
+    seatedByCount: 31,
     chats,
     unread: { "1": 1, "2": 1, "3": 1 },
     typing: {},
@@ -415,6 +434,9 @@ export function meView(): { name: string; avatar?: string; initials: string } {
 
 export function clearError() {
   if (state.error) set((s) => ({ ...s, error: null }));
+}
+export function clearNotice() {
+  if (state.notice) set((s) => ({ ...s, notice: null }));
 }
 
 /** For the live (Supabase) layer: read and replace the store. */

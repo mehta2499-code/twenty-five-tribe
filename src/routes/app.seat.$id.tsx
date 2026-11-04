@@ -12,7 +12,7 @@ import {
 } from "@/lib/data";
 import { VOICE } from "@/lib/copy";
 import { clientOnly } from "@/components/SocialUI";
-import { friendById, streakStatus, useSocial } from "@/lib/social";
+import { friendById, isMutual, streakStatus, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app/seat/$id")({
   component: clientOnly(SeatScreen),
@@ -40,6 +40,8 @@ function LiveSeat() {
     );
   }
   const st = streakStatus(s.streaks[id]);
+  const inMine = s.people.some((p) => p.id === id);
+  const mutual = isMutual(f) && inMine;
   const posts =
     s.posts.filter((p) => p.by === id).length + s.reels.filter((r) => r.by === id).length;
   const best = (["tap-rush", "quick-math", "trivia"] as const).map((g) => ({
@@ -68,8 +70,20 @@ function LiveSeat() {
           {f.name}
         </h1>
         {f.username && <p className="sub mt-1">@{f.username}</p>}
-        <p className="sub mt-1 text-sm">
-          At your table for{" "}
+        <p className="mt-3">
+          <span
+            className={`sticker ${mutual ? "" : inMine ? "sun" : "pink"}`}
+            style={{ transform: "rotate(-3deg)" }}
+          >
+            {mutual
+              ? "🤝 in each other's 25"
+              : inMine
+                ? "👀 in your 25 · not seated you back"
+                : "👀 has you in their 25"}
+          </span>
+        </p>
+        <p className="sub mt-2 text-sm">
+          {inMine ? "In your 25 for " : "You've been in theirs for "}
           {f.joinedDaysAgo <= 0
             ? "less than a day"
             : `${f.joinedDaysAgo} day${f.joinedDaysAgo > 1 ? "s" : ""}`}
@@ -97,7 +111,25 @@ function LiveSeat() {
         ))}
       </div>
 
-      <div className="px-5 mt-6 grid grid-cols-2 gap-3">
+      {!mutual && (
+        <div className="mx-5 mt-6 card p-4">
+          <p className="font-bold text-cream">
+            {inMine ? "Waiting on them 👀" : "Your move 👀"}
+          </p>
+          <p className="meta mt-1">
+            {inMine
+              ? `${f.name.split(" ")[0]} can see your posts. Chats, snaps and games unlock when they seat you back.`
+              : `You can see ${f.name.split(" ")[0]}'s posts. Seat them back to unlock chats, snaps and games.`}
+          </p>
+          {!inMine && (
+            <Link to="/app/people" className="btn-primary mt-3 px-5">
+              Seat them back
+            </Link>
+          )}
+        </div>
+      )}
+
+      <div className={`px-5 mt-6 grid grid-cols-2 gap-3 ${mutual ? "" : "hidden"}`}>
         <Link to="/app/chat/$id" params={{ id }} className="btn-bronze py-3.5 text-center">
           Message
         </Link>

@@ -24,7 +24,7 @@ import {
   type Seat,
 } from "@/lib/kachuful";
 import { botSeats } from "@/lib/games";
-import { seatedFriends, useSocial, type Person } from "@/lib/social";
+import { mutualFriends, useSocial, type Person } from "@/lib/social";
 
 // ---------- Cards ----------
 const RED = "#C8364F";
@@ -967,7 +967,7 @@ export function KachufulLobby({
 }) {
   const s = useSocial();
   const live = s.mode === "live";
-  const people = live ? seatedFriends() : [];
+  const people = live ? mutualFriends() : [];
   const [picked, setPicked] = useState<string[]>([]);
   const [players, setPlayers] = useState(4);
   const [length, setLength] = useState<"short" | "full">("short");

@@ -17,6 +17,7 @@ import {
   clock,
   dayKey,
   friendById,
+  isMutual,
   social,
   useSocial,
   type ChatMessage,
@@ -62,10 +63,26 @@ function ChatThread() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs.length, typing]);
 
-  if (!f) {
+  if (!f || (live && !isMutual(f))) {
+    const theySeatedMe = !!f && s.requests.some((r) => r.person.id === f.id);
     return (
       <div className="px-6 pt-24 text-center">
-        <p className="heading">This person isn't in your 25.</p>
+        <p className="text-5xl">🔒</p>
+        <p className="heading mt-3">
+          {f ? `Chats with ${f.name.split(" ")[0]} are locked` : "This person isn't in your 25."}
+        </p>
+        {f && (
+          <p className="text-cool mt-2 text-[15px] leading-relaxed">
+            {theySeatedMe
+              ? "They put you in their 25. Seat them back and you can chat and snap."
+              : "You seated them, but they haven't seated you back yet. Chats unlock when it's mutual."}
+          </p>
+        )}
+        {f && theySeatedMe && (
+          <Link to="/app/people" className="btn-primary mt-6 px-5">
+            Seat them back
+          </Link>
+        )}
         <Link to="/app/chats" className="btn-secondary mt-6 px-5">
           Back to chats
         </Link>

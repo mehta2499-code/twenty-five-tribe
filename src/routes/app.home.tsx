@@ -207,6 +207,14 @@ function Table({
                   {st.count}
                   {st.atRisk && "⏳"}
                 </span>
+              ) : f.mutual === false ? (
+                <span
+                  className="sticker sky -mt-2.5 !text-[11px] !px-1.5 !py-0 whitespace-nowrap"
+                  style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
+                  title="One-way: they haven't seated you back"
+                >
+                  👀 {f.name.split(" ")[0].slice(0, 7)}
+                </span>
               ) : f.postedToday ? (
                 <span
                   className="sticker pink -mt-2.5 !text-[11px] !px-1.5 !py-0"
@@ -235,6 +243,11 @@ function Table({
         <span className="chip" style={{ minHeight: 28 }}>
           🔥 streak
         </span>
+        {s.mode === "live" && (
+          <span className="chip" style={{ minHeight: 28 }}>
+            👀 one-way
+          </span>
+        )}
         <Link to="/app/my25" className="chip" style={{ minHeight: 28, background: "var(--lime)", color: "var(--on-accent)" }}>
           all {people.length} seats →
         </Link>
@@ -261,8 +274,8 @@ function useNudges(s: SocialState, people: Person[]): Nudge[] {
     const incoming = s.requests.filter((r) => r.direction === "incoming").length;
     if (incoming)
       out.push({
-        emoji: "🙋",
-        text: `${incoming} ${incoming > 1 ? "people want" : "person wants"} a seat. Quiz time.`,
+        emoji: "👀",
+        text: `${incoming} ${incoming > 1 ? "people" : "person"} put you in their 25. Seat them back?`,
         to: "/app/people",
         tone: "var(--lime)",
       });
@@ -696,6 +709,9 @@ function Home() {
             🔥 {streakCount} streak{streakCount === 1 ? "" : "s"}
           </span>
           <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
+            👀 in {s.seatedByCount} people's 25
+          </span>
+          <span className="sticker sky" style={{ transform: "rotate(3deg)" }}>
             ✨ {posted} posted today
           </span>
         </div>

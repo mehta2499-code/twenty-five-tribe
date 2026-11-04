@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Toast } from "@/components/SocialUI";
 import { initLive } from "@/lib/live";
-import { clearError, useSocial } from "@/lib/social";
+import { clearError, clearNotice, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
@@ -57,6 +57,7 @@ function AppLayout() {
       </div>
       <BottomNav />
       {s.error && <Toast text={s.error} onDone={() => clearError()} />}
+      {!s.error && s.notice && <Toast text={s.notice} onDone={() => clearNotice()} />}
     </div>
   );
 }

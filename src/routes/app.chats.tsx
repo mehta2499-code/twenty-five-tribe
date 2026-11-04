@@ -11,7 +11,7 @@ import {
   StreakBadge,
   clientOnly,
 } from "@/components/SocialUI";
-import { seatedFriends, timeAgo, useSocial, type ChatMessage, type Snap } from "@/lib/social";
+import { mutualFriends, timeAgo, useSocial, type ChatMessage, type Snap } from "@/lib/social";
 
 export const Route = createFileRoute("/app/chats")({
   component: clientOnly(Chats),
@@ -32,7 +32,7 @@ function Chats() {
   const s = useSocial();
   const [q, setQ] = useState("");
   const [viewing, setViewing] = useState<Snap | null>(null);
-  const everyone = seatedFriends();
+  const everyone = mutualFriends();
   const term = q.trim().toLowerCase();
 
   const rows = everyone
@@ -49,7 +49,7 @@ function Chats() {
     <div className="pb-6">
       <PageBand
         title="Chats"
-        sub="Only your 25 can message you."
+        sub="Mutual seats only. No randoms in your DMs."
         actions={
           <Link
             to="/app/snap"
@@ -68,7 +68,7 @@ function Chats() {
         <EmptyState
           icon={MessageCircle}
           title="No one at your table yet"
-          body="Save a seat for someone. Once they accept, you can message and snap each other."
+          body="Chats unlock when you're in each other's 25. Seat your people and get them to seat you back."
           action={
             <Link to="/app/people" className="btn-primary px-5">
               <UserPlus size={18} /> Find your people
