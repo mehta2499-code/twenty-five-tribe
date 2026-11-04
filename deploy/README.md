@@ -6,8 +6,10 @@ your VPS on every push to `main`. The database, sign-in and files stay on Supaba
 ## One-time setup (about 15 minutes)
 
 ### 1. Buy the VPS
-Contabo, smallest plan, **Ubuntu 24.04**. Note the server's **IP address** and **root password**
-from Contabo's welcome email.
+Any host with **Ubuntu 24.04 or 26.04** (Contabo, Bluehost, …). Note the server's **IP address**,
+**root password** and **SSH port** from the welcome email or the host's control panel.
+On Bluehost: choose the plain Ubuntu image (no cPanel), and find SSH details under
+**VPS → Server Information**.
 
 ### 2. (Recommended) Point a domain at it
 At your domain registrar, add an **A record** for `@` (and one for `www`) with the server's IP.
@@ -20,6 +22,7 @@ From a terminal on your computer (Mac: Terminal app; Windows: PowerShell):
 ```bash
 ssh root@YOUR_SERVER_IP
 ```
+(If your host uses a different SSH port: `ssh -p PORT root@YOUR_SERVER_IP`.)
 
 Then, on the server:
 
@@ -41,6 +44,7 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 | `VPS_HOST` | the server IP it printed |
 | `VPS_USER` | `deploy` |
 | `VPS_SSH_KEY` | the whole key it printed, including the `BEGIN` and `END` lines |
+| `VPS_PORT` | only if SSH isn't on port 22 |
 
 ### 5. Deploy
 Repo → **Actions → Deploy to VPS → Run workflow**. After this, every push to `main` deploys itself.

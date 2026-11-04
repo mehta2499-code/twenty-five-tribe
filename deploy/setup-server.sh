@@ -2,6 +2,7 @@
 # =====================================================================
 # 25 — one-time setup for a fresh Ubuntu 24.04 VPS (e.g. Contabo).
 #
+# Works on Ubuntu 24.04 and 26.04 (Contabo, Bluehost, most VPS hosts).
 # Run as root:
 #   bash setup-server.sh                 # serve on the server's IP (http)
 #   bash setup-server.sh your-domain.com # also get a free HTTPS certificate
@@ -34,26 +35,48 @@ apt-get update -y
 apt-get upgrade -y
 apt-get install -y curl ca-certificates gnupg ufw nginx rsync
 
-echo "==> Firewall: allow SSH, HTTP and HTTPS"
-ufw allow OpenSSH
-ufw allow 'Nginx Full'
+echo "==> Freeing the web ports (some hosts ship Apache pre-installed)"
+for svc in apache2 httpd lighttpd; do
+  if systemctl list-unit-files | grep -q "^$svc"; then
+    systemctl stop "$svc" || true
+    systemctl disable "$svc" || true
+  fi
+done
+
+echo "==> Firewall: allow SSH (on whatever port it really uses), HTTP and HTTPS"
+SSH_PORTS=$( { sshd -T 2>/dev/null | awk '/^port /{print $2}'; \
+  ss -tlnp 2>/dev/null | awk '/sshd|ssh.socket/ {split($4,a,":"); print a[length(a)]}'; } | sort -u)
+[[ -z "$SSH_PORTS" ]] && SSH_PORTS=22
+for port in $SSH_PORTS; do ufw allow "$port/tcp"; done
+ufw allow 80/tcp
+ufw allow 443/tcp
 ufw --force enable
 
-echo "==> Installing Node.js 22"
-if ! command -v node >/dev/null || [[ "$(node -v)" != v22* ]]; then
-  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-  apt-get install -y nodejs
+echo "==> Installing Node.js (22 or newer)"
+node_major() { node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/'; }
+if [[ "$(node_major || echo 0)" -lt 22 ]]; then
+  if curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs; then
+    :
+  else
+    echo "   NodeSource didn't work on this Ubuntu; using Ubuntu's own Node.js."
+    apt-get install -y nodejs
+  fi
+fi
+if [[ "$(node_major || echo 0)" -lt 20 ]]; then
+  echo "!! Node.js 20+ is required but $(node -v 2>/dev/null || echo none) is installed." >&2
+  exit 1
 fi
 node -v
+NODE_BIN=$(command -v node)
 
 echo "==> Creating the deploy user and app folder"
-id -u "$DEPLOY_USER" >/dev/null 2>&1 || adduser --disabled-password --gecos "" "$DEPLOY_USER"
+id -u "$DEPLOY_USER" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$DEPLOY_USER"
 mkdir -p "$APP_DIR/releases" "$APP_DIR/shared"
 chown -R "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
 
 # The deploy user may restart the app, and nothing else, without a password.
 cat > /etc/sudoers.d/twentyfive <<EOF
-$DEPLOY_USER ALL=(root) NOPASSWD: /usr/bin/systemctl restart $SERVICE, /usr/bin/systemctl status $SERVICE
+$DEPLOY_USER ALL=(root) NOPASSWD: $(command -v systemctl) restart $SERVICE, $(command -v systemctl) status $SERVICE
 EOF
 chmod 440 /etc/sudoers.d/twentyfive
 
@@ -69,7 +92,7 @@ WorkingDirectory=$APP_DIR/current
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=$APP_PORT
-ExecStart=/usr/bin/node $APP_DIR/current/server/index.mjs
+ExecStart=$NODE_BIN $APP_DIR/current/server/index.mjs
 Restart=always
 RestartSec=3
 
@@ -143,6 +166,7 @@ cat <<EOF
 
    VPS_HOST     $IP
    VPS_USER     $DEPLOY_USER
+   VPS_PORT     $(echo $SSH_PORTS | awk '{print $1}')   (only needed if it isn't 22)
    VPS_SSH_KEY  (everything printed between the lines below, including
                  the BEGIN and END lines)
 
