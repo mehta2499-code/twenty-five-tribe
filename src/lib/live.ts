@@ -3,6 +3,7 @@
  * Signed out, the app keeps running on demo data (see social.ts).
  */
 import type { RealtimeChannel, Session } from "@supabase/supabase-js";
+import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import {
   _get,
@@ -106,7 +107,7 @@ const initialsOf = (name: string) =>
     .slice(0, 2)
     .toUpperCase() || "?";
 const ts = (iso: string) => new Date(iso).getTime();
-const newId = () => crypto.randomUUID();
+const newId = () => uuid();
 
 let myId: string | null = null;
 let channels: RealtimeChannel[] = [];

@@ -4,6 +4,7 @@
  * so two players can't overwrite each other.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
 import { newGame, type KState, type Seat } from "@/lib/kachuful";
@@ -82,7 +83,7 @@ export async function startKachuful(friends: Person[], bots: number, length: "sh
     ...botSeats(bots),
   ];
   const state = newGame(seats, length);
-  const id = crypto.randomUUID();
+  const id = uuid();
   const { error } = await supabase.from("games").insert({
     id,
     kind: "kachuful",
@@ -102,7 +103,7 @@ export async function startKachuful(friends: Person[], bots: number, length: "sh
 
 export async function startTriviaChallenge(packId: string, friend: Person) {
   const me = myId();
-  const id = crypto.randomUUID();
+  const id = uuid();
   const state: TriviaState = { pack: packId, results: {} };
   const { error } = await supabase
     .from("games")
