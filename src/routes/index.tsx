@@ -129,12 +129,22 @@ function Landing() {
             A social app for the only people that matter.
           </p>
 
-          <p
-            className="mt-10 uppercase"
-            style={{ color: C.coral, letterSpacing: "0.42em", fontSize: "0.78rem", fontWeight: 500 }}
-          >
-            Seed Deck · 2026
-          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold transition-transform hover:-translate-y-0.5"
+              style={{ background: "#fff", color: C.blueDeep, boxShadow: "0 18px 50px -12px rgba(14,42,69,0.45)" }}
+            >
+              Claim your 25
+            </Link>
+            <Link
+              to="/app/home"
+              className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold text-white"
+              style={{ border: "1.5px solid rgba(255,255,255,0.6)" }}
+            >
+              Try the demo
+            </Link>
+          </div>
         </div>
 
         {/* scroll arrow */}
@@ -234,11 +244,11 @@ function Landing() {
 
           <div className="mt-20 grid gap-6 md:grid-cols-2">
             {[
-              { icon: "◍", tag: "The Seats",      line: "25 visual slots. Your dinner table. Who sits there is everything." },
-              { icon: "❍", tag: "Pulse",          line: "One word. One emoji. One colour. Daily. The anti-Instagram post." },
-              { icon: "↯", tag: "Drift Alert",    line: "\"You and Rahul haven't talked in 21 days. Just saying.\"" },
-              { icon: "✦", tag: "Memory Capsule", line: "Co-authored story of your friendship. Not your camera roll." },
-              { icon: "◆", tag: "Games",          line: "Judgement. Trivia. Truth Jar. Play together, stay together." },
+              { icon: "◍", tag: "The Seats",      line: "25 seats at your table. Who sits there is everything." },
+              { icon: "❍", tag: "Chats",          line: "Message your 25. Nobody else can reach you." },
+              { icon: "↯", tag: "Snaps & Streaks", line: "Photos that disappear after one look. Keep the streak alive." },
+              { icon: "✦", tag: "Feed & Reels",   line: "Posts and reels from your people only. It ends when you're caught up." },
+              { icon: "◆", tag: "Games",          line: "Quick rounds, trivia and Judgement, with a weekly leaderboard." },
             ].map((f, i) => (
               <Reveal key={f.tag} delay={i * 90}>
                 <div className="glass rounded-3xl p-8 h-full flex gap-5">
@@ -299,251 +309,41 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ SECTION 6 — THE MOAT ============ */}
-      <section className="px-6 py-32 md:py-40" style={{ background: C.blueDeep }}>
-        <div className="mx-auto max-w-5xl">
-          <Reveal>
-            <h2 className="h-serif text-white text-center" style={{ fontSize: "clamp(2.25rem, 5vw, 3.75rem)", lineHeight: 1.1 }}>
-              What they can't copy.
-            </h2>
-          </Reveal>
-          <Reveal delay={120}>
-            <p className="mt-6 text-center text-white/80 italic h-serif max-w-2xl mx-auto text-lg">
-              Instagram Close Friends exists. Nobody uses it. Features don't win. Relationships do.
-            </p>
-          </Reveal>
-
-          <div className="mt-16 space-y-4">
-            {[
-              { n: "01", t: "Emotional data lock-in",      s: "Years of Pulses, Capsules, and shared memories. You can't export a friendship." },
-              { n: "02", t: "Social graph gravity",         s: "Once your 25 is here, your circle is here. Networks compound." },
-              { n: "03", t: "India in the DNA",             s: "Built for how Indians actually talk, share, and stay close." },
-              { n: "04", t: "Trust as infrastructure",      s: "No ads. Ever." },
-            ].map((m, i) => (
-              <Reveal key={m.n} delay={i * 80}>
-                <div className="glass rounded-2xl p-6 md:p-7 flex items-start gap-6">
-                  <span
-                    className="h-serif"
-                    style={{ color: C.coral, fontSize: "1.5rem", lineHeight: 1, minWidth: "2.5rem" }}
-                  >
-                    {m.n}
-                  </span>
-                  <div>
-                    <h3 className="h-serif text-white text-xl md:text-2xl">{m.t}</h3>
-                    <p className="mt-2 text-white/75 leading-relaxed">{m.s}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============ SECTION 6.5 — WHY NOW ============ */}
-      <section className="px-6 py-32 md:py-40" style={{ background: C.navy }}>
-        <div className="mx-auto max-w-5xl">
-          <Reveal>
-            <p className="uppercase text-center" style={{ color: C.coral, letterSpacing: "0.32em", fontSize: "0.75rem", fontWeight: 600 }}>
-              Why now
-            </p>
-          </Reveal>
-          <Reveal delay={100}>
-            <h2 className="mt-6 h-serif text-white text-center" style={{ fontSize: "clamp(2rem, 4.6vw, 3.25rem)", lineHeight: 1.15 }}>
-              The shift from attention
-              <br />
-              <span className="italic" style={{ color: C.coral }}>to intimacy is already here.</span>
-            </h2>
-          </Reveal>
-
-          <div className="mt-16 grid gap-6 md:grid-cols-2">
-            {[
-              { big: "63%", small: "of Gen Z planned a social media detox in 2025." },
-              { big: "55%", small: "have taken a break to manage digital fatigue." },
-              { big: "73%", small: "of young adults say social media hurts mental health." },
-              { big: "61%", small: "report sleep disruption from late-night scrolling." },
-            ].map((s, i) => (
-              <Reveal key={s.small} delay={i * 90}>
-                <div className="glass rounded-2xl p-7 h-full flex items-baseline gap-5">
-                  <div className="h-serif text-white" style={{ fontSize: "clamp(2.25rem, 5vw, 3.25rem)", lineHeight: 1 }}>
-                    {s.big}
-                  </div>
-                  <p className="text-white/80 leading-relaxed">{s.small}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={200}>
-            <p className="mt-16 text-center h-serif italic text-white/90 max-w-3xl mx-auto" style={{ fontSize: "clamp(1.1rem, 2.2vw, 1.5rem)", lineHeight: 1.5 }}>
-              The future of social media isn't bigger audiences.
-              <br />
-              It's smaller circles.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ============ SECTION 7 — MARKET OPPORTUNITY ============ */}
-      <section className="px-6 py-32 md:py-40 text-center" style={{ background: C.blue }}>
-        <div className="mx-auto max-w-5xl">
-          <Reveal>
-            <p className="uppercase" style={{ color: C.coral, letterSpacing: "0.32em", fontSize: "0.75rem", fontWeight: 600 }}>
-              Market Opportunity
-            </p>
-          </Reveal>
-          <Reveal delay={100}>
-            <div className="mt-8 h-serif font-black leading-none" style={{ fontSize: "clamp(6rem, 18vw, 14rem)", letterSpacing: "-0.04em" }}>
-              534M
-            </div>
-          </Reveal>
-          <Reveal delay={180}>
-            <p className="mt-4 text-white/85 text-lg md:text-xl">
-              Instagram users in India — the largest Instagram market in the world.
-            </p>
-          </Reveal>
-
-          <div className="mt-20 grid gap-6 md:grid-cols-2 lg:grid-cols-4 text-left">
-            {[
-              { big: "79.1%", small: "of Indian Instagram users are aged 18–34." },
-              { big: "51M",   small: "Instagram users added in India in a single year." },
-              { big: "34%",   small: "of users seek an alternative every month." },
-              { big: "81%",   small: "of Indian Gen Z consume social media daily." },
-            ].map((s, i) => (
-              <Reveal key={s.small} delay={i * 100}>
-                <div className="glass rounded-2xl p-7 h-full">
-                  <div className="h-serif text-white" style={{ fontSize: "clamp(2.25rem, 5vw, 3.25rem)", lineHeight: 1 }}>
-                    {s.big}
-                  </div>
-                  <p className="mt-3 text-white/80 leading-relaxed">{s.small}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={250}>
-            <p className="mt-16 h-serif italic text-white/85 max-w-3xl mx-auto" style={{ fontSize: "clamp(1.05rem, 2vw, 1.35rem)", lineHeight: 1.55 }}>
-              The market isn't small. None of these platforms are designed for meaningful relationships.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ============ SECTION 8 — BUSINESS MODEL ============ */}
-      <section className="px-6 py-32 md:py-40" style={{ background: C.blueDeep }}>
-        <div className="mx-auto max-w-6xl">
-          <Reveal>
-            <h2 className="h-serif text-white text-center" style={{ fontSize: "clamp(2.25rem, 5vw, 3.75rem)", lineHeight: 1.1 }}>
-              We charge for joy.
-              <br />
-              <span className="italic" style={{ color: C.coral }}>Not attention.</span>
-            </h2>
-          </Reveal>
-
-          <div className="mt-20 grid gap-6 md:grid-cols-3">
-            {[
-              { tag: "25 Plus",          price: "₹99",     unit: "/month", line: "Archives, Friendship Score, Pulse history." },
-              { tag: "Capsule Gift",     price: "₹49",     unit: "",       line: "Send the story of your friendship." },
-              { tag: "Experience Packs", price: "₹29–49",  unit: "",       line: "Games, themes, festival specials." },
-            ].map((p, i) => (
-              <Reveal key={p.tag} delay={i * 100}>
-                <div
-                  className="rounded-3xl p-8 h-full flex flex-col"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.22)" }}
-                >
-                  <p className="uppercase mb-6" style={{ color: C.coral, fontSize: "0.7rem", letterSpacing: "0.3em", fontWeight: 600 }}>
-                    {p.tag}
-                  </p>
-                  <div className="h-serif text-white" style={{ fontSize: "3rem", lineHeight: 1 }}>
-                    {p.price}
-                    <span className="text-white/60" style={{ fontSize: "1rem" }}> {p.unit}</span>
-                  </div>
-                  <p className="mt-6 text-white/80 leading-relaxed">{p.line}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={150}>
-            <p className="mt-10 text-center text-white/70 max-w-2xl mx-auto">
-              Year 2 · 100K users · 5% on 25 Plus · <span className="text-white">₹50L ARR</span>. Unit economics work at 10,000 users — not 10 million.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-
-      {/* ============ SECTION 9 — SEEKING / CTA ============ */}
+      {/* ============ CLOSING — CLAIM YOUR 25 ============ */}
       <section className="relative px-6 py-32 md:py-44 overflow-hidden" style={{ background: C.blue }}>
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full opacity-30 blur-3xl"
           style={{ background: `radial-gradient(closest-side, ${C.coral}, transparent 70%)` }}
         />
-        <div className="relative mx-auto max-w-5xl text-center">
+        <div className="relative mx-auto max-w-3xl text-center">
           <Reveal>
-            <p className="uppercase" style={{ color: C.coral, letterSpacing: "0.42em", fontSize: "0.78rem", fontWeight: 500 }}>
-              Seeking
-            </p>
-          </Reveal>
-          <Reveal delay={100}>
-            <h2 className="mt-6 h-serif italic text-white" style={{ fontSize: "clamp(1.75rem, 4.4vw, 3.25rem)", lineHeight: 1.2 }}>
+            <h2 className="h-serif italic text-white" style={{ fontSize: "clamp(1.75rem, 4.4vw, 3.25rem)", lineHeight: 1.2 }}>
               You have 500 followers.
               <br />
               You'd call 25 of them at 3 AM.
             </h2>
           </Reveal>
-          <Reveal delay={180}>
-            <p className="mt-8 h-serif text-white/90 text-xl md:text-2xl">
-              We built the app for the 25 — and we're looking for the right people to build it with.
-            </p>
+          <Reveal delay={150}>
+            <p className="mt-8 h-serif text-white/90 text-xl md:text-2xl">This app is for the 25.</p>
           </Reveal>
-
-          <div className="mt-16 grid gap-4 md:grid-cols-2 lg:grid-cols-3 text-left">
-            {[
-              "Incubation support",
-              "Product mentorship",
-              "Strategic guidance",
-              "Early-stage funding opportunities",
-              "Access to the startup ecosystem",
-              "Partnerships & introductions",
-            ].map((s, i) => (
-              <Reveal key={s} delay={i * 70}>
-                <div className="glass rounded-2xl p-5 h-full flex items-center gap-4">
-                  <span className="h-serif" style={{ color: C.coral, fontSize: "1.25rem" }}>✦</span>
-                  <span className="text-white/90">{s}</span>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={300}>
-            <div className="mt-16 flex flex-col items-center gap-4">
-              <a
-                href="mailto:mehta2499@gmail.com"
-                className="inline-flex items-center justify-center rounded-full px-9 py-4 text-sm font-semibold uppercase transition-transform hover:-translate-y-0.5"
-                style={{
-                  background: C.coral,
-                  color: "#1A2A33",
-                  letterSpacing: "0.22em",
-                  boxShadow: "0 18px 50px -12px rgba(247,168,160,0.6)",
-                }}
+          <Reveal delay={250}>
+            <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center rounded-full px-9 py-4 font-semibold transition-transform hover:-translate-y-0.5"
+                style={{ background: "#fff", color: C.blueDeep, boxShadow: "0 18px 50px -12px rgba(14,42,69,0.45)" }}
               >
-                Let's talk
-              </a>
-              <Link to="/app/home" className="text-white/70 hover:text-white text-sm underline underline-offset-4 decoration-white/30">
-                Preview the app →
+                Claim your 25
+              </Link>
+              <Link to="/app/home" className="text-white/90 hover:text-white text-sm font-semibold underline underline-offset-4 decoration-white/40">
+                Try the demo first →
               </Link>
             </div>
           </Reveal>
-
-          <Reveal delay={400}>
-            <p className="mt-16 text-white/80">
-              Aman Mehta · <a href="tel:+917990552696" className="hover:text-white">+91 79905 52696</a> · <a href="mailto:mehta2499@gmail.com" className="underline decoration-white/30 underline-offset-4 hover:text-white">mehta2499@gmail.com</a>
-            </p>
-            <p className="mt-3 text-white/50 text-xs uppercase" style={{ letterSpacing: "0.28em" }}>
-              © 2026 25
-            </p>
-          </Reveal>
+          <p className="mt-16 text-white/70 text-xs uppercase" style={{ letterSpacing: "0.28em" }}>
+            © 2026 25
+          </p>
         </div>
       </section>
     </main>
