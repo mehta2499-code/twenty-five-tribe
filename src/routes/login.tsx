@@ -93,11 +93,8 @@ function Login() {
           ) : (
             <span />
           )}
-          <Link
-            to="/app/home"
-            className="text-sm font-semibold text-white/90 underline underline-offset-4"
-          >
-            Try the demo
+          <Link to="/" className="text-sm font-semibold text-white/90 underline underline-offset-4">
+            What's 25?
           </Link>
         </div>
 

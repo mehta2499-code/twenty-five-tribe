@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { Toast } from "@/components/SocialUI";
 import { initLive } from "@/lib/live";
@@ -14,8 +15,24 @@ function AppLayout() {
   const { pathname } = useLocation();
   const s = useSocial();
 
-  // Connect to Supabase if you're signed in; otherwise the app runs on demo data.
-  useEffect(() => initLive(), []);
+  // The app is for signed-in people only: no demo friends. Not signed in → sign-in screen.
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    initLive();
+    let alive = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      if (data.session) setSignedIn(true);
+      else navigate({ to: "/login", replace: true });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") navigate({ to: "/login", replace: true });
+    });
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   // Signed in but no name yet: finish setting up first.
   useEffect(() => {
@@ -24,6 +41,7 @@ function AppLayout() {
   }, [s.mode, s.needsProfile, s.me, s.loading, navigate]);
 
   useEffect(() => {
+    if (!signedIn) return;
     try {
       const done = localStorage.getItem("tf.walkthrough.done");
       if (!done) navigate({ to: "/walkthrough" });
@@ -48,7 +66,11 @@ function AppLayout() {
     };
     document.addEventListener("visibilitychange", onHide);
     return () => document.removeEventListener("visibilitychange", onHide);
-  }, [navigate]);
+  }, [navigate, signedIn]);
+
+  // Wait until we know you're signed in and your real 25 has loaded.
+  if (!signedIn || s.mode !== "live")
+    return <div className="min-h-screen bg-background" aria-busy="true" />;
 
   return (
     <div className="min-h-screen bg-background relative">

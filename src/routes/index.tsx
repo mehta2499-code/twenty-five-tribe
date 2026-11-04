@@ -142,11 +142,11 @@ function Landing() {
               Claim your 25
             </Link>
             <Link
-              to="/app/home"
+              to="/login"
               className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold text-white"
               style={{ border: "1.5px solid rgba(255,255,255,0.6)" }}
             >
-              Try the demo
+              I already have an account
             </Link>
           </div>
         </div>
@@ -340,9 +340,6 @@ function Landing() {
                 style={{ background: "var(--lime)", color: "var(--on-dark-fill)", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
               >
                 Claim your 25
-              </Link>
-              <Link to="/app/home" className="text-white/90 hover:text-white text-sm font-semibold underline underline-offset-4 decoration-white/40">
-                Try the demo first →
               </Link>
             </div>
           </Reveal>
