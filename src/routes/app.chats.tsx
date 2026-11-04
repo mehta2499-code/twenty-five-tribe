@@ -12,6 +12,132 @@ import {
   clientOnly,
 } from "@/components/SocialUI";
 import { mutualFriends, timeAgo, useSocial, type ChatMessage, type Snap } from "@/lib/social";
+import { FriendPicker, Sheet, Toast } from "@/components/SocialUI";
+import { useNavigate } from "@tanstack/react-router";
+import { createGroup, member, unreadIn, useGroups } from "@/lib/groups";
+
+const GROUP_EMOJIS = ["💬", "🏖️", "🎉", "🍕", "🎮", "📚", "💪", "🎬", "✈️", "🔥", "🫶", "🏏"];
+
+function GroupsSection() {
+  const st = useGroups();
+  const navigate = useNavigate();
+  const [step, setStep] = useState<"closed" | "name" | "pick">("closed");
+  const [name, setName] = useState("");
+  const [emoji, setEmoji] = useState("💬");
+  const [toast, setToast] = useState<string | null>(null);
+  const groups = [...st.groups].sort((a, b) => {
+    const la = st.msgs[a.id]?.at(-1)?.at ?? 0;
+    const lb = st.msgs[b.id]?.at(-1)?.at ?? 0;
+    return lb - la;
+  });
+  return (
+    <section className="mt-5">
+      <div className="px-5 flex items-center justify-between">
+        <h2 className="text-[15px] font-semibold text-cream">Groups</h2>
+        <button
+          onClick={() => {
+            setName("");
+            setEmoji("💬");
+            setStep("name");
+          }}
+          className="chip"
+          style={{ background: "var(--lime)", color: "var(--on-accent)" }}
+        >
+          ＋ New group
+        </button>
+      </div>
+      {groups.length === 0 ? (
+        <p className="px-5 mt-2 meta">No groups yet. Make one for the trip, the gang, the gossip.</p>
+      ) : (
+        <ul className="mt-1">
+          {groups.map((g) => {
+            const last = st.msgs[g.id]?.at(-1);
+            const n = unreadIn(st, g.id);
+            return (
+              <li key={g.id}>
+                <Link
+                  to="/app/group/$id"
+                  params={{ id: g.id }}
+                  className="flex items-center gap-3 px-5 py-2.5 hover:bg-[var(--fill)]"
+                >
+                  <span
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0"
+                    style={{ background: "var(--fill)", border: "2px solid var(--edge)" }}
+                  >
+                    {g.emoji}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-semibold text-cream truncate">{g.name}</span>
+                    <span className="block meta truncate" style={{ color: n ? "var(--ink)" : undefined, fontWeight: n ? 700 : 400 }}>
+                      {last
+                        ? `${last.from === "me" ? "You" : member(last.from, st).name.split(" ")[0]}: ${last.text ?? ""}`
+                        : `${g.members.length} members`}
+                    </span>
+                  </span>
+                  <span className="text-right shrink-0">
+                    {last && <span className="block meta" style={{ fontSize: 12 }}>{timeAgo(last.at)}</span>}
+                    {n > 0 && (
+                      <span
+                        className="inline-flex min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold items-center justify-center mt-0.5"
+                        style={{ background: "var(--lime)", color: "var(--on-accent)" }}
+                      >
+                        {n}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {step === "name" && (
+        <Sheet title="New group" onClose={() => setStep("closed")}>
+          <div className="flex flex-wrap gap-2">
+            {GROUP_EMOJIS.map((e) => (
+              <button
+                key={e}
+                onClick={() => setEmoji(e)}
+                aria-pressed={emoji === e}
+                className="w-11 h-11 rounded-full text-2xl flex items-center justify-center"
+                style={{ background: emoji === e ? "var(--lime)" : "var(--fill)", border: "2px solid var(--edge)" }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value.slice(0, 40))}
+            placeholder="Goa gang, Flatmates, Chaos club…"
+            className="input mt-4 w-full"
+            autoFocus
+          />
+          <button disabled={!name.trim()} onClick={() => setStep("pick")} className="btn-primary w-full mt-4">
+            Pick who's in
+          </button>
+        </Sheet>
+      )}
+      {step === "pick" && (
+        <FriendPicker
+          title={`${emoji} ${name}`}
+          cta="Create group"
+          onClose={() => setStep("closed")}
+          onPick={async (ids) => {
+            setStep("closed");
+            try {
+              const id = await createGroup(name.trim(), emoji, ids);
+              navigate({ to: "/app/group/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
+      {toast && <Toast text={toast} onDone={() => setToast(null)} />}
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/app/chats")({
   component: clientOnly(Chats),
@@ -23,6 +149,7 @@ function preview(m?: ChatMessage, typing?: boolean) {
   const who = m.from === "me" ? "You: " : "";
   if (m.snapId) return m.from === "me" ? "You sent a snap" : "Sent you a snap";
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
+  if (m.sharedPostId?.startsWith("voice:")) return `${who}🎤 Voice note`;
   if (m.sharedPostId)
     return `${who}shared a ${m.sharedPostId.startsWith("reel") ? "reel" : "post"}`;
   return who + (m.text ?? "");
@@ -118,6 +245,8 @@ function Chats() {
               </ul>
             </Section>
           )}
+
+          <GroupsSection />
 
           <div className="px-5 mt-5">
             <label className="field" htmlFor="chat-search">

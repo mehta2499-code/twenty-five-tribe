@@ -1104,3 +1104,12 @@ registerLive({
 /** For other features (the Drop): upload a photo to your media folder, and sign media links. */
 export const uploadMedia = (source: string | Blob, ext = "jpg") => upload("media", source, ext);
 export const signedMedia = (paths: string[]) => signed("media", paths);
+/** Upload into your media folder, optionally under a subfolder (e.g. "g/<group id>"). */
+export async function uploadMediaAt(sub: string, blob: Blob, ext: string) {
+  const path = `${myId}/${sub ? `${sub}/` : ""}${newId()}.${ext}`;
+  const { error } = await supabase.storage
+    .from("media")
+    .upload(path, blob, { contentType: blob.type || undefined });
+  if (error) throw error;
+  return path;
+}

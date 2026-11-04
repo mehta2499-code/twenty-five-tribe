@@ -11,7 +11,8 @@ import {
   Spade,
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { SnapViewer, StreakBadge, clientOnly } from "@/components/SocialUI";
+import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
+import { Reactable, VoicePlayer, VoiceRecorder, sendVoice } from "@/components/ChatExtras";
 import { sendTyping } from "@/lib/live";
 import {
   clock,
@@ -51,6 +52,7 @@ function ChatThread() {
   const f = friendById(id);
   const [text, setText] = useState("");
   const [viewing, setViewing] = useState<Snap | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const msgs = s.chats[id] ?? [];
   const typing = s.typing[id];
@@ -191,8 +193,9 @@ function ChatThread() {
                     <div
                       className={`flex ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
                     >
+                      <Reactable id={m.id} mine={mine}>
                       <div
-                        className="max-w-[80%] px-3.5 py-2"
+                        className="px-3.5 py-2"
                         style={{
                           background: mine ? "var(--blue-deep)" : "var(--surface)",
                           border: mine ? "1px solid transparent" : "1px solid var(--line)",
@@ -202,7 +205,8 @@ function ChatThread() {
                           borderBottomLeftRadius: mine ? 18 : 6,
                         }}
                       >
-                        {m.text && !shareKind?.startsWith("game") && (
+                        {shareKind === "voice" && <VoicePlayer value={m.sharedPostId!} mine={mine} />}
+                        {m.text && !shareKind?.startsWith("game") && shareKind !== "voice" && (
                           <p
                             style={{
                               fontSize: 15,
@@ -292,6 +296,7 @@ function ChatThread() {
                           )}
                         </div>
                       </div>
+                      </Reactable>
                     </div>
                   </li>
                 );
@@ -323,7 +328,7 @@ function ChatThread() {
             e.preventDefault();
             send();
           }}
-          className="flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
         >
           <label htmlFor="chat-input" className="sr-only">
@@ -342,18 +347,27 @@ function ChatThread() {
             autoComplete="off"
             enterKeyHint="send"
           />
-          <button
-            type="submit"
-            disabled={!text.trim()}
-            aria-label="Send"
-            className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center disabled:opacity-40"
-            style={{ background: "var(--accent)", color: "var(--on-accent)" }}
-          >
-            <Send size={19} />
-          </button>
+          {text.trim() ? (
+            <button
+              type="submit"
+              aria-label="Send"
+              className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
+              style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+            >
+              <Send size={19} />
+            </button>
+          ) : (
+            <VoiceRecorder
+              onSend={(blob, secs) => void sendVoice(id, blob, secs).catch((e) => setNotice((e as Error).message))}
+              onUnavailable={() =>
+                setNotice("Voice notes need the secure (https) version of 25, or mic access. Coming with your domain 🔒")
+              }
+            />
+          )}
         </form>
       </div>
       {viewing && <SnapViewer snap={viewing} onClose={() => setViewing(null)} />}
+      {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
     </div>
   );
 }

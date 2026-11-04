@@ -30,6 +30,7 @@ import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
+import { Route as AppGroupIdRouteImport } from './routes/app.group.$id'
 import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
 import { Route as AppCardIdRouteImport } from './routes/app.card.$id'
 
@@ -138,6 +139,11 @@ const AppPlayIdRoute = AppPlayIdRouteImport.update({
   path: '/play/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGroupIdRoute = AppGroupIdRouteImport.update({
+  id: '/group/$id',
+  path: '/group/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChatIdRoute = AppChatIdRouteImport.update({
   id: '/chat/$id',
   path: '/chat/$id',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppIndexRoute
   '/app/card/$id': typeof AppCardIdRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/group/$id': typeof AppGroupIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/app/card/$id': typeof AppCardIdRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/group/$id': typeof AppGroupIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/app/': typeof AppIndexRoute
   '/app/card/$id': typeof AppCardIdRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/group/$id': typeof AppGroupIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/card/$id'
     | '/app/chat/$id'
+    | '/app/group/$id'
     | '/app/play/$id'
     | '/app/seat/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/card/$id'
     | '/app/chat/$id'
+    | '/app/group/$id'
     | '/app/play/$id'
     | '/app/seat/$id'
   id:
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/card/$id'
     | '/app/chat/$id'
+    | '/app/group/$id'
     | '/app/play/$id'
     | '/app/seat/$id'
   fileRoutesById: FileRoutesById
@@ -459,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPlayIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/group/$id': {
+      id: '/app/group/$id'
+      path: '/group/$id'
+      fullPath: '/app/group/$id'
+      preLoaderRoute: typeof AppGroupIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/chat/$id': {
       id: '/app/chat/$id'
       path: '/chat/$id'
@@ -492,6 +511,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppCardIdRoute: typeof AppCardIdRoute
   AppChatIdRoute: typeof AppChatIdRoute
+  AppGroupIdRoute: typeof AppGroupIdRoute
   AppPlayIdRoute: typeof AppPlayIdRoute
   AppSeatIdRoute: typeof AppSeatIdRoute
 }
@@ -512,6 +532,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppCardIdRoute: AppCardIdRoute,
   AppChatIdRoute: AppChatIdRoute,
+  AppGroupIdRoute: AppGroupIdRoute,
   AppPlayIdRoute: AppPlayIdRoute,
   AppSeatIdRoute: AppSeatIdRoute,
 }
