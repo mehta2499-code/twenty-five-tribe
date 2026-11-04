@@ -11,27 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalkthroughRouteImport } from './routes/walkthrough'
 import { Route as VibeRouteImport } from './routes/vibe'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as InUsernameRouteImport } from './routes/in.$username'
-import { Route as AppThoughtsRouteImport } from './routes/app.thoughts'
 import { Route as AppSnapRouteImport } from './routes/app.snap'
 import { Route as AppReelsRouteImport } from './routes/app.reels'
-import { Route as AppPulseRouteImport } from './routes/app.pulse'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
-import { Route as AppMy25RouteImport } from './routes/app.my25'
-import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
 import { Route as AppGamesRouteImport } from './routes/app.games'
 import { Route as AppFeedRouteImport } from './routes/app.feed'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
-import { Route as AppCapsulesRouteImport } from './routes/app.capsules'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
 import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
@@ -46,19 +39,9 @@ const VibeRoute = VibeRouteImport.update({
   path: '/vibe',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClaimRoute = ClaimRouteImport.update({
-  id: '/claim',
-  path: '/claim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -81,11 +64,6 @@ const InUsernameRoute = InUsernameRouteImport.update({
   path: '/in/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppThoughtsRoute = AppThoughtsRouteImport.update({
-  id: '/thoughts',
-  path: '/thoughts',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppSnapRoute = AppSnapRouteImport.update({
   id: '/snap',
   path: '/snap',
@@ -94,11 +72,6 @@ const AppSnapRoute = AppSnapRouteImport.update({
 const AppReelsRoute = AppReelsRouteImport.update({
   id: '/reels',
   path: '/reels',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPulseRoute = AppPulseRouteImport.update({
-  id: '/pulse',
-  path: '/pulse',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -114,16 +87,6 @@ const AppPrivacyRoute = AppPrivacyRouteImport.update({
 const AppPeopleRoute = AppPeopleRouteImport.update({
   id: '/people',
   path: '/people',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMy25Route = AppMy25RouteImport.update({
-  id: '/my25',
-  path: '/my25',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMomentsRoute = AppMomentsRouteImport.update({
-  id: '/moments',
-  path: '/moments',
   getParentRoute: () => AppRoute,
 } as any)
 const AppHomeRoute = AppHomeRouteImport.update({
@@ -146,11 +109,6 @@ const AppChatsRoute = AppChatsRouteImport.update({
   path: '/chats',
   getParentRoute: () => AppRoute,
 } as any)
-const AppCapsulesRoute = AppCapsulesRouteImport.update({
-  id: '/capsules',
-  path: '/capsules',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppSeatIdRoute = AppSeatIdRouteImport.update({
   id: '/seat/$id',
   path: '/seat/$id',
@@ -170,25 +128,18 @@ const AppChatIdRoute = AppChatIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
-  '/claim': typeof ClaimRoute
   '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
-  '/app/capsules': typeof AppCapsulesRoute
   '/app/chats': typeof AppChatsRoute
   '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
-  '/app/moments': typeof AppMomentsRoute
-  '/app/my25': typeof AppMy25Route
   '/app/people': typeof AppPeopleRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
-  '/app/pulse': typeof AppPulseRoute
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
-  '/app/thoughts': typeof AppThoughtsRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
@@ -197,25 +148,18 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/claim': typeof ClaimRoute
   '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
-  '/app/capsules': typeof AppCapsulesRoute
   '/app/chats': typeof AppChatsRoute
   '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
-  '/app/moments': typeof AppMomentsRoute
-  '/app/my25': typeof AppMy25Route
   '/app/people': typeof AppPeopleRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
-  '/app/pulse': typeof AppPulseRoute
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
-  '/app/thoughts': typeof AppThoughtsRoute
   '/in/$username': typeof InUsernameRoute
   '/app': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
@@ -226,25 +170,18 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
-  '/claim': typeof ClaimRoute
   '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
-  '/app/capsules': typeof AppCapsulesRoute
   '/app/chats': typeof AppChatsRoute
   '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
-  '/app/moments': typeof AppMomentsRoute
-  '/app/my25': typeof AppMy25Route
   '/app/people': typeof AppPeopleRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
-  '/app/pulse': typeof AppPulseRoute
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
-  '/app/thoughts': typeof AppThoughtsRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
@@ -256,25 +193,18 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/app'
-    | '/claim'
     | '/login'
-    | '/onboarding'
     | '/vibe'
     | '/walkthrough'
-    | '/app/capsules'
     | '/app/chats'
     | '/app/feed'
     | '/app/games'
     | '/app/home'
-    | '/app/moments'
-    | '/app/my25'
     | '/app/people'
     | '/app/privacy'
     | '/app/profile'
-    | '/app/pulse'
     | '/app/reels'
     | '/app/snap'
-    | '/app/thoughts'
     | '/in/$username'
     | '/app/'
     | '/app/chat/$id'
@@ -283,25 +213,18 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/claim'
     | '/login'
-    | '/onboarding'
     | '/vibe'
     | '/walkthrough'
-    | '/app/capsules'
     | '/app/chats'
     | '/app/feed'
     | '/app/games'
     | '/app/home'
-    | '/app/moments'
-    | '/app/my25'
     | '/app/people'
     | '/app/privacy'
     | '/app/profile'
-    | '/app/pulse'
     | '/app/reels'
     | '/app/snap'
-    | '/app/thoughts'
     | '/in/$username'
     | '/app'
     | '/app/chat/$id'
@@ -311,25 +234,18 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/app'
-    | '/claim'
     | '/login'
-    | '/onboarding'
     | '/vibe'
     | '/walkthrough'
-    | '/app/capsules'
     | '/app/chats'
     | '/app/feed'
     | '/app/games'
     | '/app/home'
-    | '/app/moments'
-    | '/app/my25'
     | '/app/people'
     | '/app/privacy'
     | '/app/profile'
-    | '/app/pulse'
     | '/app/reels'
     | '/app/snap'
-    | '/app/thoughts'
     | '/in/$username'
     | '/app/'
     | '/app/chat/$id'
@@ -340,9 +256,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
-  ClaimRoute: typeof ClaimRoute
   LoginRoute: typeof LoginRoute
-  OnboardingRoute: typeof OnboardingRoute
   VibeRoute: typeof VibeRoute
   WalkthroughRoute: typeof WalkthroughRoute
   InUsernameRoute: typeof InUsernameRoute
@@ -364,25 +278,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VibeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/claim': {
-      id: '/claim'
-      path: '/claim'
-      fullPath: '/claim'
-      preLoaderRoute: typeof ClaimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -413,13 +313,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/thoughts': {
-      id: '/app/thoughts'
-      path: '/thoughts'
-      fullPath: '/app/thoughts'
-      preLoaderRoute: typeof AppThoughtsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/snap': {
       id: '/app/snap'
       path: '/snap'
@@ -432,13 +325,6 @@ declare module '@tanstack/react-router' {
       path: '/reels'
       fullPath: '/app/reels'
       preLoaderRoute: typeof AppReelsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/pulse': {
-      id: '/app/pulse'
-      path: '/pulse'
-      fullPath: '/app/pulse'
-      preLoaderRoute: typeof AppPulseRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/profile': {
@@ -460,20 +346,6 @@ declare module '@tanstack/react-router' {
       path: '/people'
       fullPath: '/app/people'
       preLoaderRoute: typeof AppPeopleRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/my25': {
-      id: '/app/my25'
-      path: '/my25'
-      fullPath: '/app/my25'
-      preLoaderRoute: typeof AppMy25RouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/moments': {
-      id: '/app/moments'
-      path: '/moments'
-      fullPath: '/app/moments'
-      preLoaderRoute: typeof AppMomentsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/home': {
@@ -504,13 +376,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChatsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/app/capsules': {
-      id: '/app/capsules'
-      path: '/capsules'
-      fullPath: '/app/capsules'
-      preLoaderRoute: typeof AppCapsulesRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/app/seat/$id': {
       id: '/app/seat/$id'
       path: '/seat/$id'
@@ -536,20 +401,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
-  AppCapsulesRoute: typeof AppCapsulesRoute
   AppChatsRoute: typeof AppChatsRoute
   AppFeedRoute: typeof AppFeedRoute
   AppGamesRoute: typeof AppGamesRoute
   AppHomeRoute: typeof AppHomeRoute
-  AppMomentsRoute: typeof AppMomentsRoute
-  AppMy25Route: typeof AppMy25Route
   AppPeopleRoute: typeof AppPeopleRoute
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
-  AppPulseRoute: typeof AppPulseRoute
   AppReelsRoute: typeof AppReelsRoute
   AppSnapRoute: typeof AppSnapRoute
-  AppThoughtsRoute: typeof AppThoughtsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppChatIdRoute: typeof AppChatIdRoute
   AppPlayIdRoute: typeof AppPlayIdRoute
@@ -557,20 +417,15 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppCapsulesRoute: AppCapsulesRoute,
   AppChatsRoute: AppChatsRoute,
   AppFeedRoute: AppFeedRoute,
   AppGamesRoute: AppGamesRoute,
   AppHomeRoute: AppHomeRoute,
-  AppMomentsRoute: AppMomentsRoute,
-  AppMy25Route: AppMy25Route,
   AppPeopleRoute: AppPeopleRoute,
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
-  AppPulseRoute: AppPulseRoute,
   AppReelsRoute: AppReelsRoute,
   AppSnapRoute: AppSnapRoute,
-  AppThoughtsRoute: AppThoughtsRoute,
   AppIndexRoute: AppIndexRoute,
   AppChatIdRoute: AppChatIdRoute,
   AppPlayIdRoute: AppPlayIdRoute,
@@ -582,9 +437,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
-  ClaimRoute: ClaimRoute,
   LoginRoute: LoginRoute,
-  OnboardingRoute: OnboardingRoute,
   VibeRoute: VibeRoute,
   WalkthroughRoute: WalkthroughRoute,
   InUsernameRoute: InUsernameRoute,

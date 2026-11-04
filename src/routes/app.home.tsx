@@ -248,7 +248,7 @@ function Table({
             👀 one-way
           </span>
         )}
-        <Link to="/app/my25" className="chip" style={{ minHeight: 28, background: "var(--lime)", color: "var(--on-accent)" }}>
+        <Link to="/app/people" className="chip" style={{ minHeight: 28, background: "var(--lime)", color: "var(--on-accent)" }}>
           all {people.length} seats →
         </Link>
       </div>

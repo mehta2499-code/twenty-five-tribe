@@ -1,27 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import {
-  FRIENDS,
-  SEAT_REASONS,
-  MUTUAL_DESCRIPTIONS,
-  FRIENDSHIP_TIMELINE,
-  THOUGHTS,
-  CAPSULES,
-  getSeatMeta,
-} from "@/lib/data";
-import { VOICE } from "@/lib/copy";
 import { clientOnly } from "@/components/SocialUI";
 import { friendById, isMutual, streakStatus, useSocial } from "@/lib/social";
+import { GAMES } from "@/components/ArcadeGames";
+import { dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
 
 export const Route = createFileRoute("/app/seat/$id")({
-  component: clientOnly(SeatScreen),
+  component: clientOnly(LiveSeat),
 });
-
-function SeatScreen() {
-  const s = useSocial();
-  return s.mode === "live" ? <LiveSeat /> : <SeatPage />;
-}
 
 /** A real person at your table: who they are, your streak, and what you can do together. */
 function LiveSeat() {
@@ -29,6 +16,7 @@ function LiveSeat() {
   const s = useSocial();
   const navigate = useNavigate();
   const f = friendById(id);
+  const daily = useDaily();
   if (!f) {
     return (
       <div className="px-6 pt-24 text-center">
@@ -40,15 +28,19 @@ function LiveSeat() {
     );
   }
   const st = streakStatus(s.streaks[id]);
-  const inMine = s.people.some((p) => p.id === id);
+  const inMine = s.mode !== "live" || s.people.some((p) => p.id === id);
   const mutual = isMutual(f) && inMine;
   const posts =
     s.posts.filter((p) => p.by === id).length + s.reels.filter((r) => r.by === id).length;
-  const best = (["tap-rush", "quick-math", "trivia"] as const).map((g) => ({
-    g,
-    them: s.scores[g]?.[id],
-    you: s.scores[g]?.me,
-  }));
+  const week = weekStandings(daily, thisWeek());
+  const pts = (who: string) => week.find((r) => r.id === who);
+  const todayRows = dayRanking(daily, today());
+  const avg = (who: string) => todayRows.find((r) => r.id === who)?.avg;
+  const rivalry = [
+    { label: "This week's points", you: pts("me")?.points, them: pts(id)?.points },
+    { label: "Days won 👑", you: pts("me")?.wins, them: pts(id)?.wins },
+    { label: `Today · ${GAMES[gameFor(today())].name}`, you: avg("me"), them: avg(id) },
+  ];
   return (
     <div className="pb-10">
       <header className="band px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-8 text-center">
@@ -145,11 +137,9 @@ function LiveSeat() {
       <section className="px-5 mt-8">
         <p className="label-caps mb-2">this week's rivalry</p>
         <ul className="card-editorial divide-y" style={{ borderColor: "var(--border-cool)" }}>
-          {best.map(({ g, them, you }) => (
-            <li key={g} className="flex items-center justify-between px-4 py-3 text-sm">
-              <span className="font-semibold text-cream">
-                {g === "tap-rush" ? "Tap Rush" : g === "quick-math" ? "Quick Maths" : "Trivia"}
-              </span>
+          {rivalry.map(({ label, them, you }) => (
+            <li key={label} className="flex items-center justify-between px-4 py-3 text-sm">
+              <span className="font-semibold text-cream">{label}</span>
               <span className="tabular-nums text-cool">
                 You {you ?? "–"} · {f.name.split(" ")[0]} {them ?? "–"}
               </span>
@@ -157,275 +147,6 @@ function LiveSeat() {
           ))}
         </ul>
       </section>
-    </div>
-  );
-}
-
-function SeatPage() {
-  const { id } = Route.useParams();
-  const navigate = useNavigate();
-  const f = FRIENDS.find((x) => x.id === id);
-
-  if (!f) {
-    return (
-      <div className="px-8 pt-24 text-center">
-        <p className="font-display italic text-cool" style={{ fontSize: 18 }}>
-          This seat is empty.
-        </p>
-        <Link
-          to="/app/home"
-          className="block mt-6 font-display italic"
-          style={{ color: "var(--accent-bronze)" }}
-        >
-          Back to the table
-        </Link>
-      </div>
-    );
-  }
-
-  const meta = getSeatMeta(f.id);
-  const isReserved = meta.state === "RESERVED";
-  const reason = SEAT_REASONS[f.id] ?? "Because they belong here.";
-  const desc = MUTUAL_DESCRIPTIONS[f.id] ?? MUTUAL_DESCRIPTIONS.default;
-  const timeline = FRIENDSHIP_TIMELINE[f.id] ?? FRIENDSHIP_TIMELINE.default;
-  const thoughts = isReserved ? [] : THOUGHTS.filter((t) => t.friendId === f.id);
-  const capsule = isReserved ? undefined : CAPSULES.find((c) => c.friendId === f.id);
-
-  const Section = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <section className="px-8 mt-14">
-      <p className="label-caps text-center mb-6">{label}</p>
-      {children}
-    </section>
-  );
-
-  return (
-    <div className="pb-16">
-      <header className="px-5 pt-6 pb-2">
-        <button
-          onClick={() => navigate({ to: "/app/home" })}
-          className="text-cool flex items-center gap-2"
-          aria-label="Back"
-        >
-          <ArrowLeft size={18} />
-        </button>
-      </header>
-
-      {/* Portrait */}
-      <section className="px-6 pt-8 text-center">
-        <div
-          className="inline-block"
-          style={{
-            boxShadow: isReserved
-              ? "0 0 0 1px rgba(181,219,94,0.35), 0 0 0 4px #fff, 0 0 0 5px rgba(181,219,94,0.25)"
-              : "0 0 0 1px rgba(181,219,94,0.25), 0 0 40px rgba(181,219,94,0.18)",
-            borderRadius: 9999,
-            opacity: isReserved ? 0.75 : 1,
-            filter: isReserved ? "grayscale(0.25)" : "none",
-          }}
-        >
-          <Avatar src={f.avatar} initials={f.initials} color={f.color} size={148} />
-        </div>
-        <h1
-          className="font-display italic text-cream mt-6"
-          style={{ fontSize: 38, lineHeight: 1.05 }}
-        >
-          {f.name}
-        </h1>
-        <p
-          className="font-display italic mt-2"
-          style={{ color: "var(--accent-bronze)", fontSize: 13, letterSpacing: "0.02em" }}
-        >
-          {meta.role.toLowerCase()}
-        </p>
-        <p
-          className="mt-3 inline-block uppercase tracking-[0.24em]"
-          style={{
-            fontSize: 10,
-            color: isReserved ? "var(--accent-bronze)" : "var(--text-muted)",
-            padding: "4px 10px",
-            borderRadius: 999,
-            background: isReserved ? "rgba(181,219,94,0.10)" : "transparent",
-            border: isReserved ? "1px dashed rgba(181,219,94,0.45)" : "none",
-          }}
-        >
-          {isReserved ? VOICE.reservation.badgeReserved : VOICE.reservation.badgeAccepted}
-        </p>
-        {isReserved && meta.reservedAt && (
-          <p
-            className="font-display italic mt-2"
-            style={{ color: "var(--text-muted)", fontSize: 11 }}
-          >
-            reserved {meta.reservedAt}
-            {meta.phone ? ` · ${meta.phone}` : ""}
-          </p>
-        )}
-      </section>
-
-      {isReserved && (
-        <section className="px-8 mt-10 text-center">
-          <p
-            className="font-display italic text-cream mx-auto max-w-[22rem]"
-            style={{ fontSize: 18, lineHeight: 1.5 }}
-          >
-            Their chair is held. The rest of this page fills in when they take it.
-          </p>
-          <button
-            className="mt-6 rounded-full px-5 py-3 text-xs"
-            style={{
-              background: "rgba(181,219,94,0.12)",
-              border: "1px solid rgba(181,219,94,0.4)",
-              color: "var(--accent-bronze)",
-              letterSpacing: "0.04em",
-            }}
-          >
-            {VOICE.reservation.resend}
-          </button>
-        </section>
-      )}
-
-      {!isReserved && (
-        <>
-          <section className="px-6 mt-10">
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { glyph: "❤", label: "Thought" },
-                { glyph: "📸", label: "Memory" },
-                { glyph: "🎤", label: "Voice" },
-                { glyph: "🎵", label: "Song" },
-              ].map((a) => (
-                <button
-                  key={a.label}
-                  className="flex flex-col items-center gap-2 py-3 rounded-2xl active:scale-95 transition"
-                  style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border-cool)",
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{a.glyph}</span>
-                  <span className="font-display italic text-cool" style={{ fontSize: 11 }}>
-                    {a.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <Section label="why they're here">
-            <p
-              className="font-display italic text-cream text-center mx-auto max-w-[22rem]"
-              style={{ fontSize: 22, lineHeight: 1.45 }}
-            >
-              "{reason}"
-            </p>
-          </Section>
-
-          <Section label="how they see you">
-            <ul className="space-y-3 text-center">
-              {desc.they.map((t, i) => (
-                <li key={i} className="font-display italic text-cream" style={{ fontSize: 17 }}>
-                  "{t}"
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          <Section label="how you see them">
-            <ul className="space-y-3 text-center">
-              {desc.you.map((t, i) => (
-                <li key={i} className="font-display italic text-cream" style={{ fontSize: 17 }}>
-                  "{t}"
-                </li>
-              ))}
-            </ul>
-          </Section>
-
-          {thoughts.length > 0 && (
-            <Section label="thoughts shared">
-              <ul className="space-y-5">
-                {thoughts.map((t) => (
-                  <li key={t.id} className="text-center">
-                    <p
-                      className="font-display italic text-cream"
-                      style={{ fontSize: 16, lineHeight: 1.45 }}
-                    >
-                      {t.direction === "from"
-                        ? `${f.name} thought of you`
-                        : `you thought of ${f.name}`}
-                      {t.note ? (
-                        <>
-                          {" "}
-                          — <span className="text-cool">"{t.note}"</span>
-                        </>
-                      ) : null}
-                    </p>
-                    <p
-                      className="font-display italic mt-1"
-                      style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}
-                    >
-                      {t.when}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-
-          <Section label="timeline">
-            <ol
-              className="relative ml-2 pl-6"
-              style={{ borderLeft: "1px solid var(--border-cool)" }}
-            >
-              {timeline.map((e, i) => (
-                <li key={i} className="mb-6 last:mb-0 relative">
-                  <span
-                    className="absolute -left-[29px] top-2 w-2 h-2 rounded-full"
-                    style={{
-                      background: "var(--accent-bronze)",
-                      boxShadow: "0 0 8px rgba(181,219,94,0.6)",
-                    }}
-                  />
-                  <p className="label-caps">{e.year}</p>
-                  <p
-                    className="font-display italic text-cream mt-1"
-                    style={{ fontSize: 16, lineHeight: 1.45 }}
-                  >
-                    {e.text}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </Section>
-
-          {capsule && (
-            <Section label="memories">
-              <div className="grid grid-cols-3 gap-2">
-                {capsule.photos.slice(0, 6).map((p, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square overflow-hidden"
-                    style={{ borderRadius: 8, border: "1px solid var(--border-cool)" }}
-                  >
-                    <img
-                      src={p}
-                      alt=""
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                      style={{ filter: "saturate(0.9) brightness(0.95)" }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )}
-        </>
-      )}
-
-      <p
-        className="text-center font-display italic mt-16 px-8"
-        style={{ color: "var(--text-muted)", fontSize: 11, letterSpacing: "0.04em" }}
-      >
-        One of twenty-five. Irreplaceable.
-      </p>
     </div>
   );
 }

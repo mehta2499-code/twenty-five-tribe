@@ -32,9 +32,7 @@ export function BottomNav() {
             pathname.startsWith(to) ||
             (to === "/app/feed" && pathname.startsWith("/app/reels")) ||
             (to === "/app/home" &&
-              (pathname.startsWith("/app/people") ||
-                pathname.startsWith("/app/seat") ||
-                pathname.startsWith("/app/my25")));
+              (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat")));
           const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
           const color = active ? "var(--ink)" : "var(--ink-3)";
           const isSnap = to === "/app/snap";

@@ -21,7 +21,7 @@ function spaced(s: string) {
 type Item = {
   label: string;
   note: string;
-  to: "/app/capsules" | "/app/privacy" | "/app/thoughts" | "/app/moments" | "/app/people" | "/vibe";
+  to: "/app/privacy" | "/app/people" | "/vibe";
   live: boolean; // available with your real 25 (the rest are demo-only for now)
 };
 const ITEMS: Item[] = [
@@ -42,24 +42,6 @@ const ITEMS: Item[] = [
     note: "Screenshots, screen recording, blur.",
     to: "/app/privacy",
     live: true,
-  },
-  {
-    label: "Thought of You",
-    note: "Quiet pings from your people.",
-    to: "/app/thoughts",
-    live: false,
-  },
-  {
-    label: "Moments",
-    note: "The 72-hour ones. Nothing accumulates.",
-    to: "/app/moments",
-    live: false,
-  },
-  {
-    label: "Memory Capsules",
-    note: "The friendships you've made permanent.",
-    to: "/app/capsules",
-    live: false,
   },
 ];
 
