@@ -38,14 +38,16 @@ jobs:
         with:
           version: latest
 
+      # The CLI reads SUPABASE_DB_PASSWORD from the environment.
       - name: Link the project
         if: steps.check.outputs.ready == 'true'
-        run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+        run: supabase link --project-ref "$PROJECT_REF"
 
-      - name: Show what will run
-        if: steps.check.outputs.ready == 'true'
-        run: supabase migration list --password "$SUPABASE_DB_PASSWORD"
-
+      # Newer CLI versions call the live project --remote; older ones --linked.
       - name: Apply migrations
         if: steps.check.outputs.ready == 'true'
-        run: supabase db push --include-all --password "$SUPABASE_DB_PASSWORD"
+        run: |
+          if supabase db push --help | grep -q -- "--remote"; then TARGET=--remote; else TARGET=--linked; fi
+          supabase migration list $TARGET
+          supabase db push $TARGET --include-all --yes
+          supabase migration list $TARGET
