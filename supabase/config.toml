@@ -1,0 +1,2 @@
+# Supabase CLI settings. Only the project id is needed for `supabase db push`.
+project_id = "yhtuvujroxdcsstbpipt"
