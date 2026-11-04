@@ -16,6 +16,8 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppThoughtsRouteImport } from './routes/app.thoughts'
+import { Route as AppSnapRouteImport } from './routes/app.snap'
+import { Route as AppReelsRouteImport } from './routes/app.reels'
 import { Route as AppPulseRouteImport } from './routes/app.pulse'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
@@ -23,8 +25,11 @@ import { Route as AppMy25RouteImport } from './routes/app.my25'
 import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
 import { Route as AppGamesRouteImport } from './routes/app.games'
+import { Route as AppFeedRouteImport } from './routes/app.feed'
+import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppCapsulesRouteImport } from './routes/app.capsules'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
+import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
 
 const WalkthroughRoute = WalkthroughRouteImport.update({
   id: '/walkthrough',
@@ -59,6 +64,16 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppThoughtsRoute = AppThoughtsRouteImport.update({
   id: '/thoughts',
   path: '/thoughts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSnapRoute = AppSnapRouteImport.update({
+  id: '/snap',
+  path: '/snap',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReelsRoute = AppReelsRouteImport.update({
+  id: '/reels',
+  path: '/reels',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPulseRoute = AppPulseRouteImport.update({
@@ -96,6 +111,16 @@ const AppGamesRoute = AppGamesRouteImport.update({
   path: '/games',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFeedRoute = AppFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppChatsRoute = AppChatsRouteImport.update({
+  id: '/chats',
+  path: '/chats',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCapsulesRoute = AppCapsulesRouteImport.update({
   id: '/capsules',
   path: '/capsules',
@@ -106,6 +131,11 @@ const AppSeatIdRoute = AppSeatIdRouteImport.update({
   path: '/seat/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppChatIdRoute = AppChatIdRouteImport.update({
+  id: '/chat/$id',
+  path: '/chat/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -114,6 +144,8 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
+  '/app/chats': typeof AppChatsRoute
+  '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
@@ -121,8 +153,11 @@ export interface FileRoutesByFullPath {
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
+  '/app/reels': typeof AppReelsRoute
+  '/app/snap': typeof AppSnapRoute
   '/app/thoughts': typeof AppThoughtsRoute
   '/app/': typeof AppIndexRoute
+  '/app/chat/$id': typeof AppChatIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +166,8 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
+  '/app/chats': typeof AppChatsRoute
+  '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
@@ -138,8 +175,11 @@ export interface FileRoutesByTo {
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
+  '/app/reels': typeof AppReelsRoute
+  '/app/snap': typeof AppSnapRoute
   '/app/thoughts': typeof AppThoughtsRoute
   '/app': typeof AppIndexRoute
+  '/app/chat/$id': typeof AppChatIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesById {
@@ -150,6 +190,8 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
+  '/app/chats': typeof AppChatsRoute
+  '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
@@ -157,8 +199,11 @@ export interface FileRoutesById {
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
+  '/app/reels': typeof AppReelsRoute
+  '/app/snap': typeof AppSnapRoute
   '/app/thoughts': typeof AppThoughtsRoute
   '/app/': typeof AppIndexRoute
+  '/app/chat/$id': typeof AppChatIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRouteTypes {
@@ -170,6 +215,8 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/walkthrough'
     | '/app/capsules'
+    | '/app/chats'
+    | '/app/feed'
     | '/app/games'
     | '/app/home'
     | '/app/moments'
@@ -177,8 +224,11 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
+    | '/app/reels'
+    | '/app/snap'
     | '/app/thoughts'
     | '/app/'
+    | '/app/chat/$id'
     | '/app/seat/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -187,6 +237,8 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/walkthrough'
     | '/app/capsules'
+    | '/app/chats'
+    | '/app/feed'
     | '/app/games'
     | '/app/home'
     | '/app/moments'
@@ -194,8 +246,11 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
+    | '/app/reels'
+    | '/app/snap'
     | '/app/thoughts'
     | '/app'
+    | '/app/chat/$id'
     | '/app/seat/$id'
   id:
     | '__root__'
@@ -205,6 +260,8 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/walkthrough'
     | '/app/capsules'
+    | '/app/chats'
+    | '/app/feed'
     | '/app/games'
     | '/app/home'
     | '/app/moments'
@@ -212,8 +269,11 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
+    | '/app/reels'
+    | '/app/snap'
     | '/app/thoughts'
     | '/app/'
+    | '/app/chat/$id'
     | '/app/seat/$id'
   fileRoutesById: FileRoutesById
 }
@@ -276,6 +336,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppThoughtsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/snap': {
+      id: '/app/snap'
+      path: '/snap'
+      fullPath: '/app/snap'
+      preLoaderRoute: typeof AppSnapRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reels': {
+      id: '/app/reels'
+      path: '/reels'
+      fullPath: '/app/reels'
+      preLoaderRoute: typeof AppReelsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/pulse': {
       id: '/app/pulse'
       path: '/pulse'
@@ -325,6 +399,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGamesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/feed': {
+      id: '/app/feed'
+      path: '/feed'
+      fullPath: '/app/feed'
+      preLoaderRoute: typeof AppFeedRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/chats': {
+      id: '/app/chats'
+      path: '/chats'
+      fullPath: '/app/chats'
+      preLoaderRoute: typeof AppChatsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/capsules': {
       id: '/app/capsules'
       path: '/capsules'
@@ -339,11 +427,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSeatIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/chat/$id': {
+      id: '/app/chat/$id'
+      path: '/chat/$id'
+      fullPath: '/app/chat/$id'
+      preLoaderRoute: typeof AppChatIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppCapsulesRoute: typeof AppCapsulesRoute
+  AppChatsRoute: typeof AppChatsRoute
+  AppFeedRoute: typeof AppFeedRoute
   AppGamesRoute: typeof AppGamesRoute
   AppHomeRoute: typeof AppHomeRoute
   AppMomentsRoute: typeof AppMomentsRoute
@@ -351,13 +448,18 @@ interface AppRouteChildren {
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
   AppPulseRoute: typeof AppPulseRoute
+  AppReelsRoute: typeof AppReelsRoute
+  AppSnapRoute: typeof AppSnapRoute
   AppThoughtsRoute: typeof AppThoughtsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppChatIdRoute: typeof AppChatIdRoute
   AppSeatIdRoute: typeof AppSeatIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppCapsulesRoute: AppCapsulesRoute,
+  AppChatsRoute: AppChatsRoute,
+  AppFeedRoute: AppFeedRoute,
   AppGamesRoute: AppGamesRoute,
   AppHomeRoute: AppHomeRoute,
   AppMomentsRoute: AppMomentsRoute,
@@ -365,8 +467,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
   AppPulseRoute: AppPulseRoute,
+  AppReelsRoute: AppReelsRoute,
+  AppSnapRoute: AppSnapRoute,
   AppThoughtsRoute: AppThoughtsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppChatIdRoute: AppChatIdRoute,
   AppSeatIdRoute: AppSeatIdRoute,
 }
 

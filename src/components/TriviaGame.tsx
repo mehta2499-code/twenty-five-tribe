@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Crown } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FRIENDS, ME, TRIVIA_PACKS, TRIVIA_QUESTIONS, type TriviaPack } from "@/lib/data";
+import { social } from "@/lib/social";
 
 export function TriviaGame({ pack, onClose }: { pack: TriviaPack; onClose: () => void }) {
   const questions = TRIVIA_QUESTIONS[pack.id] ?? [];
@@ -15,6 +16,11 @@ export function TriviaGame({ pack, onClose }: { pack: TriviaPack; onClose: () =>
   const [done, setDone] = useState(false);
 
   const q = questions[idx];
+
+  // Your best trivia score this week goes on the leaderboard.
+  useEffect(() => {
+    if (done) social.recordScore("trivia", meScore);
+  }, [done, meScore]);
 
   useEffect(() => {
     if (revealed || done) return;

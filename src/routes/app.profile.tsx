@@ -10,7 +10,9 @@ export const Route = createFileRoute("/app/profile")({
 
 function spaced(s: string) { return s.toUpperCase().split("").join(" "); }
 
-const ITEMS: { label: string; note: string; to?: "/app/capsules" | "/app/privacy" }[] = [
+const ITEMS: { label: string; note: string; to?: "/app/capsules" | "/app/privacy" | "/app/thoughts" | "/app/moments" }[] = [
+  { label: "Thought of You",  note: "Quiet pings from your people.", to: "/app/thoughts" },
+  { label: "Moments",         note: "The 72-hour ones. Nothing accumulates.", to: "/app/moments" },
   { label: "Memory Capsules", note: "The friendships you've made permanent.", to: "/app/capsules" },
   { label: "Privacy",         note: "Screenshots, screen recording, blur.", to: "/app/privacy" },
   { label: "Notifications",   note: "Sunday at 9pm. That's it." },

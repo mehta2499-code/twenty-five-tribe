@@ -8,12 +8,14 @@ import {
 } from "@/lib/data";
 import { JudgementGame } from "@/components/JudgementGame";
 import { TriviaGame } from "@/components/TriviaGame";
+import { ARCADE, Leaderboard, QuickMath, TapRush } from "@/components/ArcadeGames";
+import { leaderboard, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app/games")({
   component: Games,
 });
 
-function spaced(s: string) { return s.toUpperCase().split("").join(" "); }
+function spaced(s: string) { return Array.from(s.toUpperCase()).join(" "); }
 
 const MOST_LIKELY_Q = "Most likely to drop everything and travel tomorrow";
 
@@ -91,6 +93,8 @@ function Games() {
   const [active, setActive] = useState<Game | null>(null);
   const [judgement, setJudgement] = useState(false);
   const [trivia, setTrivia] = useState<TriviaPack | null>(null);
+  const [arcade, setArcade] = useState<"tap-rush" | "quick-math" | null>(null);
+  const social = useSocial();
 
   return (
     <>
@@ -142,6 +146,33 @@ function Games() {
           })}
         </div>
       </section>
+
+
+      {/* Quick games with scores */}
+      <section className="px-5 mt-7">
+        <h2 className="label-caps text-cool mb-2">{spaced("Quick games")}</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {ARCADE.map((g) => {
+            const best = social.scores[g.id]?.me;
+            const board = leaderboard(social, g.id);
+            const rank = board.findIndex((r) => r.id === "me") + 1;
+            return (
+              <button key={g.id} onClick={() => setArcade(g.id)}
+                      className="rounded-2xl p-4 text-left active:scale-[0.98] transition table-felt"
+                      style={{ border: "1px solid rgba(196,149,96,0.22)" }}>
+                <span className="die-tile" style={{ width: 40, height: 40, fontSize: 20 }}>{g.glyph}</span>
+                <h3 className="mt-3 font-display italic text-warm" style={{ fontSize: 17 }}>{g.name}</h3>
+                <p className="font-display italic text-cool mt-1" style={{ fontSize: 12, lineHeight: 1.4 }}>{g.blurb}</p>
+                <p className="label-caps mt-3" style={{ color: best != null ? "var(--accent-bronze)" : "var(--text-muted)" }}>
+                  {best != null ? `best ${best} · #${rank} of ${board.length}` : "not played yet"}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <Leaderboard />
 
       {/* Judgement — feature */}
       <section className="px-5 mt-8">
@@ -241,13 +272,15 @@ function Games() {
       </section>
 
       <p className="text-center font-display italic text-cool px-6 py-10" style={{ fontSize: 13 }}>
-        No strangers. No ranks. Just your 25.
+        No strangers. Just your 25, keeping score.
       </p>
 
       {active && active.id === "most-likely" && <MostLikelyGame onClose={() => setActive(null)} />}
       {active && active.id !== "most-likely" && <GenericGameScreen game={active} onClose={() => setActive(null)} />}
       {judgement && <JudgementGame onClose={() => setJudgement(false)} />}
       {trivia && <TriviaGame pack={trivia} onClose={() => setTrivia(null)} />}
+      {arcade === "tap-rush" && <TapRush onClose={() => setArcade(null)} />}
+      {arcade === "quick-math" && <QuickMath onClose={() => setArcade(null)} />}
     </>
   );
 }

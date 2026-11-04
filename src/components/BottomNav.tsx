@@ -1,18 +1,22 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Circle, Sparkle, Heart, Archive, User } from "lucide-react";
+import { Circle, Camera, MessageCircle, Gamepad2, LayoutGrid } from "lucide-react";
+import { useSocial } from "@/lib/social";
 
 const tabs = [
-  { to: "/app/home",     label: "Table",          Icon: Circle },
-  { to: "/app/moments",  label: "Moments",        Icon: Sparkle },
-  { to: "/app/thoughts", label: "Thought of You", Icon: Heart },
-  { to: "/app/capsules", label: "Archive",        Icon: Archive },
-  { to: "/app/profile",  label: "You",            Icon: User },
+  { to: "/app/home",  label: "Table", Icon: Circle },
+  { to: "/app/feed",  label: "Feed",  Icon: LayoutGrid },
+  { to: "/app/snap",  label: "Snap",  Icon: Camera },
+  { to: "/app/chats", label: "Chats", Icon: MessageCircle },
+  { to: "/app/games", label: "Games", Icon: Gamepad2 },
 ] as const;
 
 export function BottomNav() {
   const { pathname } = useLocation();
   const [pressed, setPressed] = useState<string | null>(null);
+  const social = useSocial();
+  const unread = Object.values(social.unread).reduce((a, b) => a + b, 0);
+  const newSnaps = social.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me")).length;
 
   useEffect(() => {
     if (!pressed) return;
@@ -32,7 +36,8 @@ export function BottomNav() {
     >
       <div className="mx-auto max-w-md flex items-center justify-around px-4 py-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {tabs.map(({ to, label, Icon }) => {
-          const active = pathname.startsWith(to);
+          const active = pathname.startsWith(to) || (to === "/app/feed" && pathname.startsWith("/app/reels"));
+          const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
           const showLabel = pressed === to;
           return (
             <Link
@@ -51,8 +56,14 @@ export function BottomNav() {
                   filter: active ? "drop-shadow(0 0 8px rgba(196,149,96,0.55))" : "none",
                   transition: "all 240ms cubic-bezier(0.22,0.61,0.36,1)",
                 }}
-                fill={active && label === "Thought of You" ? "var(--accent-bronze)" : "none"}
+                fill="none"
               />
+              {badge > 0 && (
+                <span className="absolute -top-1 right-1 min-w-4 h-4 px-1 rounded-full flex items-center justify-center tabular-nums"
+                      style={{ background: "var(--accent-oxblood)", color: "var(--bg-cream)", fontSize: 9, fontWeight: 600 }}>
+                  {badge}
+                </span>
+              )}
               {showLabel && (
                 <span
                   className="font-display italic absolute -top-7 whitespace-nowrap px-2 py-0.5 rounded-full animate-soft-in"

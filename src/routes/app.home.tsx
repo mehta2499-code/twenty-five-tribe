@@ -243,11 +243,15 @@ function Home() {
 
   return (
     <>
-      <header className="px-6 pt-10 pb-6 text-center">
+      <header className="px-6 pt-10 pb-6 flex items-center justify-between">
+        <span className="w-9" />
         <span className="font-display italic text-cream"
               style={{ fontSize: 22, letterSpacing: "0.02em" }}>
           {VOICE.brand}
         </span>
+        <Link to="/app/profile" aria-label="You">
+          <Avatar src={ME.avatar} initials={ME.initials} size={34} />
+        </Link>
       </header>
 
       <Orbit rolling={rolling} />
