@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { account } from "@/lib/live";
 import { VOICE } from "@/lib/copy";
 import { PageBand } from "@/components/SocialUI";
+import { ShareCard } from "@/components/ShareCard";
 
 export const Route = createFileRoute("/app/profile")({
   component: Profile,
@@ -20,7 +21,7 @@ function spaced(s: string) {
 type Item = {
   label: string;
   note: string;
-  to: "/app/capsules" | "/app/privacy" | "/app/thoughts" | "/app/moments" | "/app/people";
+  to: "/app/capsules" | "/app/privacy" | "/app/thoughts" | "/app/moments" | "/app/people" | "/vibe";
   live: boolean; // available with your real 25 (the rest are demo-only for now)
 };
 const ITEMS: Item[] = [
@@ -28,6 +29,12 @@ const ITEMS: Item[] = [
     label: "Your 25",
     note: "Add people, accept requests, free a seat.",
     to: "/app/people",
+    live: true,
+  },
+  {
+    label: "Vibe check",
+    note: "Change your this-or-that answers and birthday.",
+    to: "/vibe",
     live: true,
   },
   {
@@ -168,6 +175,12 @@ function Profile() {
         <p className="px-5 mt-2 text-sm text-cool" role="status">
           {photoState}
         </p>
+      )}
+
+      {live && s.me?.vibeDone && (
+        <div className="mt-6">
+          <ShareCard />
+        </div>
       )}
 
       {!live && (

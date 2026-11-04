@@ -4,7 +4,9 @@ import { Check, MessageCircle, Search, UserPlus, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { account } from "@/lib/live";
-import { useSocial, type Person } from "@/lib/social";
+import { KnowThemQuiz } from "@/components/KnowThemQuiz";
+import { ShareCard } from "@/components/ShareCard";
+import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
 export const Route = createFileRoute("/app/people")({
   component: clientOnly(People),
@@ -12,7 +14,7 @@ export const Route = createFileRoute("/app/people")({
 
 const SEATS = 25;
 
-function Row({ p, children }: { p: Person; children: React.ReactNode }) {
+function Row({ p, children, note }: { p: Person; children: React.ReactNode; note?: string }) {
   return (
     <li className="flex items-center gap-3 py-3">
       <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={46} />
@@ -23,6 +25,14 @@ function Row({ p, children }: { p: Person; children: React.ReactNode }) {
         {p.username && (
           <p className="truncate" style={{ fontSize: 13, color: "var(--text-muted)" }}>
             @{p.username}
+          </p>
+        )}
+        {note && (
+          <p
+            className="mt-0.5 inline-block text-[12px] font-extrabold px-2 rounded-full"
+            style={{ background: "var(--lime)", border: "1.5px solid var(--ink)" }}
+          >
+            {note}
           </p>
         )}
       </div>
@@ -42,6 +52,11 @@ function People() {
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [burst, setBurst] = useState(0);
+  const [quiz, setQuiz] = useState<{
+    person: Person;
+    mode: "request" | "accept" | "demo";
+    requestId?: string;
+  } | null>(null);
 
   const taken = s.people.length + s.requests.filter((r) => r.direction === "outgoing").length;
   const incoming = s.requests.filter((r) => r.direction === "incoming");
@@ -84,16 +99,45 @@ function People() {
     return (
       <div className="pb-8">
         <PageBand title="Your 25" sub="The people who can message, snap and play with you." back />
-        <EmptyState
-          icon={UserPlus}
-          title="You're looking at the demo"
-          body="Sign in to find your friends and save them a seat at your table."
-          action={
-            <Link to="/login" className="btn-primary px-6">
-              Sign in
-            </Link>
-          }
-        />
+        <div className="px-5 grid gap-4">
+          <div className="card p-5">
+            <span className="sticker">how it works</span>
+            <p className="heading mt-3">No seat without proof.</p>
+            <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
+              To add someone, you guess their vibe-check answers. Get 4 of 6 right and their seat is
+              yours. They have to do the same for you.
+            </p>
+            <button
+              onClick={() =>
+                setQuiz({
+                  person: seatedFriends().find((f) => f.id === "2") ?? seatedFriends()[0],
+                  mode: "demo",
+                })
+              }
+              className="btn-fun w-full mt-4"
+            >
+              Try it: how well do you know Priya?
+            </button>
+          </div>
+          <EmptyState
+            icon={UserPlus}
+            title="Ready for your real 25?"
+            body="Sign in, do your vibe check, and start proving it."
+            action={
+              <Link to="/login" className="btn-primary px-6">
+                Sign in
+              </Link>
+            }
+          />
+        </div>
+        {quiz && (
+          <KnowThemQuiz
+            person={quiz.person}
+            demo
+            onClose={() => setQuiz(null)}
+            onPassed={() => undefined}
+          />
+        )}
       </div>
     );
   }
@@ -135,6 +179,19 @@ function People() {
         </div>
       </PageBand>
 
+      {s.me && !s.me.vibeDone && (
+        <div className="mx-5 card p-4" style={{ background: "var(--sun)" }}>
+          <p className="font-extrabold">Do your vibe check first</p>
+          <p className="text-sm mt-1">
+            Friends need something to guess before they can join your table.
+          </p>
+          <Link to="/vibe" className="btn-primary mt-3 px-4">
+            Start vibe check
+          </Link>
+        </div>
+      )}
+      {s.me?.vibeDone && <ShareCard />}
+
       <section className="px-5 mt-6">
         <label className="field" htmlFor="people-search">
           <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
@@ -161,17 +218,11 @@ function People() {
                   <span className="text-sm text-faint">Already at your table</span>
                 ) : (
                   <button
-                    disabled={busy === p.id || taken >= SEATS}
-                    onClick={() =>
-                      act(
-                        p.id,
-                        () => account.request(p.id),
-                        `Seat saved for ${p.name}. Waiting for them.`,
-                      )
-                    }
+                    disabled={taken >= SEATS || !s.me?.vibeDone}
+                    onClick={() => setQuiz({ person: p, mode: "request" })}
                     className={`${pill} btn-primary`}
                   >
-                    <UserPlus size={16} /> Save a seat
+                    <UserPlus size={16} /> Prove it
                   </button>
                 )}
               </Row>
@@ -187,7 +238,11 @@ function People() {
           </h2>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {incoming.map((r) => (
-              <Row key={r.id} p={r.person}>
+              <Row
+                key={r.id}
+                p={r.person}
+                note={r.knew ? `Knew ${r.knew.score}/${r.knew.total} about you` : undefined}
+              >
                 <button
                   aria-label={`Decline ${r.person.name}`}
                   disabled={busy === r.id}
@@ -200,11 +255,18 @@ function People() {
                 <button
                   disabled={busy === r.id}
                   onClick={() =>
-                    act(r.id, () => account.accept(r.id), `${r.person.name} is in your 25.`, true)
+                    r.iPassed
+                      ? act(
+                          r.id,
+                          () => account.accept(r.id),
+                          `${r.person.name} is in your 25.`,
+                          true,
+                        )
+                      : setQuiz({ person: r.person, mode: "accept", requestId: r.id })
                   }
                   className={`${pill} btn-primary`}
                 >
-                  <Check size={16} /> Accept
+                  <Check size={16} /> {r.iPassed ? "Accept" : "Prove it"}
                 </button>
               </Row>
             ))}
@@ -293,6 +355,21 @@ function People() {
         </section>
       )}
 
+      {quiz && (
+        <KnowThemQuiz
+          person={quiz.person}
+          demo={quiz.mode === "demo"}
+          actionLabel={quiz.mode === "accept" ? "Accept" : "Save their seat"}
+          onClose={() => setQuiz(null)}
+          onPassed={async () => {
+            if (quiz.mode === "request") await account.request(quiz.person.id);
+            if (quiz.mode === "accept" && quiz.requestId) {
+              await account.accept(quiz.requestId);
+              setBurst((b) => b + 1);
+            }
+          }}
+        />
+      )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
       <Confetti fire={burst} />
     </div>

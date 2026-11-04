@@ -197,6 +197,27 @@ async function loadAll() {
       daysQuiet: 0,
     });
 
+    const [{ data: myVibeRow }, { data: attempts }] = await Promise.all([
+      supabase.from("vibe_answers").select("user_id").eq("user_id", me).maybeSingle(),
+      supabase
+        .from("quiz_attempts")
+        .select("guesser,target,score,total,passed")
+        .eq("passed", true)
+        .or(`guesser.eq.${me},target.eq.${me}`),
+    ]);
+    const passedRows = (attempts ?? []) as {
+      guesser: string;
+      target: string;
+      score: number;
+      total: number;
+    }[];
+    const knewMe = new Map(
+      passedRows
+        .filter((a) => a.target === me)
+        .map((a) => [a.guesser, { score: a.score, total: a.total }]),
+    );
+    const iPassed = new Set(passedRows.filter((a) => a.guesser === me).map((a) => a.target));
+
     const people: Person[] = [];
     const requests: FriendRequest[] = [];
     for (const f of friendships) {
@@ -208,6 +229,8 @@ async function loadAll() {
           id: f.id,
           person: toPerson(other),
           direction: f.requester === me ? "outgoing" : "incoming",
+          knew: knewMe.get(other.id),
+          iPassed: iPassed.has(other.id),
         });
     }
     people.sort((a, b) => a.name.localeCompare(b.name));
@@ -400,6 +423,7 @@ async function loadAll() {
       username: profile.username,
       initials: initialsOf(profile.display_name),
       avatar: profile.avatar_path ? avatarUrls[profile.avatar_path] : undefined,
+      vibeDone: !!myVibeRow,
     };
 
     _set((s) => ({
@@ -453,7 +477,7 @@ function toSnap(x: SnapRow, to: string[], openedBy: string[], urls: Record<strin
 }
 
 /** Coalesce bursts of realtime events into one refresh. */
-function scheduleReload(ms = 500) {
+export function scheduleReload(ms = 500) {
   if (reloadTimer) clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => void loadAll(), ms);
 }
@@ -510,6 +534,9 @@ function subscribe() {
     )
     .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () =>
       scheduleReload(),
+    )
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quiz_attempts" }, () =>
+      scheduleReload(800),
     )
     .on("postgres_changes", { event: "*", schema: "public", table: "snap_recipients" }, () =>
       scheduleReload(),

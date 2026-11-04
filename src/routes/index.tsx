@@ -13,14 +13,14 @@ export const Route = createFileRoute("/")({
 
 // ----- Design tokens (page-local) -----
 const C = {
-  blue: "#2B8AC4",
-  blueDeep: "#1E6FA0",
-  navy: "#1A5276",
-  coral: "#F7A8A0",
+  blue: "#5B3DF5",
+  blueDeep: "#4A2BE0",
+  navy: "#16121F",
+  coral: "#C8F560",
 };
 
-const serif = { fontFamily: "'Playfair Display', Georgia, serif" };
-const sans = { fontFamily: "'Inter', system-ui, sans-serif" };
+const serif = { fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" };
+const sans = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
 
 // ----- Reveal on scroll -----
 function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -84,7 +84,7 @@ function Landing() {
           0%, 100% { transform: translateY(0); opacity: 0.7; }
           50%      { transform: translateY(8px); opacity: 1; }
         }
-        .h-serif { font-family: 'Playfair Display', Georgia, serif; }
+        .h-serif { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-style: normal !important; letter-spacing: -0.03em; }
         .glass {
           background: rgba(255,255,255,0.08);
           border: 1px solid rgba(255,255,255,0.16);
@@ -127,6 +127,13 @@ function Landing() {
             style={{ fontSize: "clamp(1.25rem, 2.6vw, 1.875rem)" }}
           >
             A social app for the only people that matter.
+          </p>
+
+          <p
+            className="mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 font-extrabold"
+            style={{ background: C.coral, color: C.navy, border: "2px solid #16121F", boxShadow: "3px 3px 0 #16121F", transform: "rotate(-3deg)" }}
+          >
+            Are you in my 25? 👀
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
@@ -245,6 +252,7 @@ function Landing() {
           <div className="mt-20 grid gap-6 md:grid-cols-2">
             {[
               { icon: "◍", tag: "The Seats",      line: "25 seats at your table. Who sits there is everything." },
+              { icon: "✓", tag: "Prove it",       line: "Pizza or pasta? Cats or dogs? Guess 4 of their 6 answers or no seat." },
               { icon: "❍", tag: "Chats",          line: "Message your 25. Nobody else can reach you." },
               { icon: "↯", tag: "Snaps & Streaks", line: "Photos that disappear after one look. Keep the streak alive." },
               { icon: "✦", tag: "Feed & Reels",   line: "Posts and reels from your people only. It ends when you're caught up." },

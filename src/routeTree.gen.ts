@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalkthroughRouteImport } from './routes/walkthrough'
+import { Route as VibeRouteImport } from './routes/vibe'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as InUsernameRouteImport } from './routes/in.$username'
 import { Route as AppThoughtsRouteImport } from './routes/app.thoughts'
 import { Route as AppSnapRouteImport } from './routes/app.snap'
 import { Route as AppReelsRouteImport } from './routes/app.reels'
@@ -37,6 +39,11 @@ import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
 const WalkthroughRoute = WalkthroughRouteImport.update({
   id: '/walkthrough',
   path: '/walkthrough',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VibeRoute = VibeRouteImport.update({
+  id: '/vibe',
+  path: '/vibe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -68,6 +75,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const InUsernameRoute = InUsernameRouteImport.update({
+  id: '/in/$username',
+  path: '/in/$username',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppThoughtsRoute = AppThoughtsRouteImport.update({
   id: '/thoughts',
@@ -161,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/claim': typeof ClaimRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/chats': typeof AppChatsRoute
@@ -176,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/app/thoughts': typeof AppThoughtsRoute
+  '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
@@ -186,6 +200,7 @@ export interface FileRoutesByTo {
   '/claim': typeof ClaimRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/chats': typeof AppChatsRoute
@@ -201,6 +216,7 @@ export interface FileRoutesByTo {
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/app/thoughts': typeof AppThoughtsRoute
+  '/in/$username': typeof InUsernameRoute
   '/app': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
@@ -213,6 +229,7 @@ export interface FileRoutesById {
   '/claim': typeof ClaimRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
   '/app/chats': typeof AppChatsRoute
@@ -228,6 +245,7 @@ export interface FileRoutesById {
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/app/thoughts': typeof AppThoughtsRoute
+  '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
@@ -241,6 +259,7 @@ export interface FileRouteTypes {
     | '/claim'
     | '/login'
     | '/onboarding'
+    | '/vibe'
     | '/walkthrough'
     | '/app/capsules'
     | '/app/chats'
@@ -256,6 +275,7 @@ export interface FileRouteTypes {
     | '/app/reels'
     | '/app/snap'
     | '/app/thoughts'
+    | '/in/$username'
     | '/app/'
     | '/app/chat/$id'
     | '/app/play/$id'
@@ -266,6 +286,7 @@ export interface FileRouteTypes {
     | '/claim'
     | '/login'
     | '/onboarding'
+    | '/vibe'
     | '/walkthrough'
     | '/app/capsules'
     | '/app/chats'
@@ -281,6 +302,7 @@ export interface FileRouteTypes {
     | '/app/reels'
     | '/app/snap'
     | '/app/thoughts'
+    | '/in/$username'
     | '/app'
     | '/app/chat/$id'
     | '/app/play/$id'
@@ -292,6 +314,7 @@ export interface FileRouteTypes {
     | '/claim'
     | '/login'
     | '/onboarding'
+    | '/vibe'
     | '/walkthrough'
     | '/app/capsules'
     | '/app/chats'
@@ -307,6 +330,7 @@ export interface FileRouteTypes {
     | '/app/reels'
     | '/app/snap'
     | '/app/thoughts'
+    | '/in/$username'
     | '/app/'
     | '/app/chat/$id'
     | '/app/play/$id'
@@ -319,7 +343,9 @@ export interface RootRouteChildren {
   ClaimRoute: typeof ClaimRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  VibeRoute: typeof VibeRoute
   WalkthroughRoute: typeof WalkthroughRoute
+  InUsernameRoute: typeof InUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -329,6 +355,13 @@ declare module '@tanstack/react-router' {
       path: '/walkthrough'
       fullPath: '/walkthrough'
       preLoaderRoute: typeof WalkthroughRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vibe': {
+      id: '/vibe'
+      path: '/vibe'
+      fullPath: '/vibe'
+      preLoaderRoute: typeof VibeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -372,6 +405,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/in/$username': {
+      id: '/in/$username'
+      path: '/in/$username'
+      fullPath: '/in/$username'
+      preLoaderRoute: typeof InUsernameRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/app/thoughts': {
       id: '/app/thoughts'
@@ -545,7 +585,9 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimRoute: ClaimRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  VibeRoute: VibeRoute,
   WalkthroughRoute: WalkthroughRoute,
+  InUsernameRoute: InUsernameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

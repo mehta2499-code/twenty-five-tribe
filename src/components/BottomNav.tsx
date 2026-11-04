@@ -22,10 +22,8 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed bottom-0 inset-x-0 z-40 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
       style={{
-        background: "rgba(255,255,255,0.96)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        borderTop: "1px solid var(--line)",
+        background: "#fff",
+        borderTop: "2px solid var(--ink)",
       }}
     >
       <ul className="mx-auto max-w-md grid grid-cols-5 items-end px-1">
@@ -38,7 +36,7 @@ export function BottomNav() {
                 pathname.startsWith("/app/seat") ||
                 pathname.startsWith("/app/my25")));
           const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
-          const color = active ? "var(--blue-deep)" : "var(--ink-3)";
+          const color = active ? "var(--ink)" : "var(--ink-3)";
           const isSnap = to === "/app/snap";
           return (
             <li key={to}>
@@ -52,26 +50,32 @@ export function BottomNav() {
               >
                 {isSnap ? (
                   <span
-                    className="relative -mt-5 w-14 h-14 rounded-2xl flex items-center justify-center"
+                    className="relative -mt-6 w-[58px] h-[58px] rounded-[18px] flex items-center justify-center"
                     style={{
-                      background: active ? "var(--navy)" : "var(--blue-deep)",
-                      color: "#fff",
-                      boxShadow: "0 0 0 4px #fff, var(--shadow-pop)",
+                      background: active ? "var(--pink)" : "var(--lime)",
+                      color: "var(--ink)",
+                      border: "2px solid var(--ink)",
+                      boxShadow: "3px 3px 0 var(--ink)",
+                      transform: "rotate(-4deg)",
                     }}
                   >
-                    <Camera size={24} strokeWidth={2} />
+                    <Camera size={26} strokeWidth={2.4} />
                     {badge > 0 && <Badge n={badge} />}
                   </span>
                 ) : (
                   <span
-                    className="relative flex items-center justify-center w-12 h-8 rounded-lg"
-                    style={{ background: active ? "var(--fill)" : "transparent", color }}
+                    className="relative flex items-center justify-center w-12 h-8 rounded-xl"
+                    style={{
+                      background: active ? "var(--sun)" : "transparent",
+                      border: active ? "2px solid var(--ink)" : "2px solid transparent",
+                      color,
+                    }}
                   >
-                    <Icon size={22} strokeWidth={active ? 2.2 : 1.8} />
+                    <Icon size={21} strokeWidth={active ? 2.5 : 2} />
                     {badge > 0 && <Badge n={badge} />}
                   </span>
                 )}
-                <span style={{ fontSize: 12, fontWeight: active ? 650 : 500, color }}>{label}</span>
+                <span style={{ fontSize: 12, fontWeight: active ? 800 : 600, color }}>{label}</span>
               </Link>
             </li>
           );
@@ -88,11 +92,11 @@ function Badge({ n }: { n: number }) {
       aria-hidden="true"
       className="pop absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
       style={{
-        background: "var(--coral-deep)",
+        background: "var(--hot)",
         color: "#fff",
         fontSize: 11,
-        fontWeight: 700,
-        boxShadow: "0 0 0 2px #fff",
+        fontWeight: 800,
+        border: "2px solid var(--ink)",
       }}
     >
       {n > 99 ? "99+" : n}

@@ -64,8 +64,24 @@ export type ScoreBoard = Record<GameId, Record<string, number>>; // game -> pers
 
 /** Someone in your 25, as the screens see them. */
 export type Person = Friend & { username?: string };
-export type FriendRequest = { id: string; person: Person; direction: "incoming" | "outgoing" };
-export type Me = { id: string; name: string; username: string; initials: string; avatar?: string };
+export type FriendRequest = {
+  id: string;
+  person: Person;
+  direction: "incoming" | "outgoing";
+  /** For incoming requests: how they scored on "How well do you know them?" about you. */
+  knew?: { score: number; total: number };
+  /** Whether you've already proved you know them. */
+  iPassed?: boolean;
+};
+export type Me = {
+  id: string;
+  name: string;
+  username: string;
+  initials: string;
+  avatar?: string;
+  /** Has answered the vibe check (needed before quizzing or being quizzed). */
+  vibeDone: boolean;
+};
 
 export type SocialState = {
   /** "demo": sample people on this phone. "live": signed in, real people via Supabase. */

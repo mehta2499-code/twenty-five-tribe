@@ -29,7 +29,7 @@ function Claim() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(600px 500px at 15% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(600px 600px at 90% 100%, rgba(247,168,160,0.55), transparent 60%), #2B8AC4",
+            "radial-gradient(600px 500px at 15% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(600px 600px at 90% 100%, rgba(255,95,162,0.55), transparent 60%), #5B3DF5",
         }}
       />
       <div

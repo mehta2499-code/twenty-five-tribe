@@ -32,7 +32,18 @@ function Login() {
   useEffect(() => {
     if (s.mode !== "live" || s.loading) return;
     if (s.needsProfile) setStep("profile");
-    else if (s.me) navigate({ to: "/app/home" });
+    else if (s.me && !s.me.vibeDone) navigate({ to: "/vibe" });
+    else if (s.me) {
+      let invite: string | null = null;
+      try {
+        invite = localStorage.getItem("tf.pendingInvite");
+        localStorage.removeItem("tf.pendingInvite");
+      } catch {
+        // ignore
+      }
+      if (invite) navigate({ to: "/in/$username", params: { username: invite } });
+      else navigate({ to: "/app/home" });
+    }
   }, [s.mode, s.loading, s.needsProfile, s.me, navigate]);
 
   useEffect(() => {
@@ -71,7 +82,7 @@ function Login() {
       className="min-h-screen text-white flex flex-col px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       style={{
         background:
-          "radial-gradient(500px 400px at 10% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(500px 500px at 100% 100%, rgba(247,168,160,0.55), transparent 60%), #2B8AC4",
+          "radial-gradient(500px 400px at 10% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(500px 500px at 100% 100%, rgba(255,95,162,0.55), transparent 60%), #5B3DF5",
       }}
     >
       <div className="mx-auto w-full max-w-sm flex-1 flex flex-col">

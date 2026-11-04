@@ -410,13 +410,13 @@ function Home() {
             style={{ fontSize: 40, lineHeight: 1, fontWeight: 900, letterSpacing: "-0.05em" }}
           >
             {VOICE.brand}
-            <span style={{ color: "var(--coral)" }}>.</span>
+            <span style={{ color: "var(--violet)" }}>.</span>
           </span>
           <Link
             to="/app/profile"
             aria-label="Your profile"
             className="rounded-full"
-            style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.7)" }}
+            style={{ border: "2px solid var(--ink)", boxShadow: "2px 2px 0 var(--ink)" }}
           >
             <Avatar
               src={s.me ? s.me.avatar : ME.avatar}

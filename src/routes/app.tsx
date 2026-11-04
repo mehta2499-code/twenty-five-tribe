@@ -20,7 +20,8 @@ function AppLayout() {
   // Signed in but no name yet: finish setting up first.
   useEffect(() => {
     if (s.mode === "live" && s.needsProfile) navigate({ to: "/login" });
-  }, [s.mode, s.needsProfile, navigate]);
+    else if (s.mode === "live" && s.me && !s.me.vibeDone && !s.loading) navigate({ to: "/vibe" });
+  }, [s.mode, s.needsProfile, s.me, s.loading, navigate]);
 
   useEffect(() => {
     try {
