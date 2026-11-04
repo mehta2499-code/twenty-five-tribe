@@ -219,8 +219,8 @@ export function TriviaGame({
                 }}
                 className="w-full rounded-2xl px-5 py-4 text-left font-semibold transition"
                 style={{
-                  background: correct ? "var(--mint)" : wrong ? "var(--coral-deep)" : "#fff",
-                  color: correct || wrong ? "#fff" : "var(--text-primary)",
+                  background: correct ? "var(--mint)" : wrong ? "var(--hot)" : "var(--fill)",
+                  color: correct ? "#0B1F18" : wrong ? "#fff" : "var(--text-primary)",
                   border: "1px solid var(--border-cool)",
                   boxShadow: "var(--shadow-card)",
                 }}

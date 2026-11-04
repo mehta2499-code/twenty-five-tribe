@@ -164,7 +164,7 @@ function VibeCheck() {
       <span className="sticker">
         vibe check · {step + 1} of {n}
       </span>
-      <h1 className="title mt-4" style={{ fontSize: 38 }}>
+      <h1 className="title mt-4" style={{ fontSize: 44 }}>
         {q.ask}
       </h1>
       <div className="mt-8 grid grid-cols-2 gap-4">
@@ -176,14 +176,17 @@ function VibeCheck() {
               key={c}
               onClick={() => choose(c)}
               aria-pressed={current === c}
-              className="flex flex-col items-center justify-center gap-3 rounded-[24px] py-8 px-3"
-              style={{
-                background: on ? "var(--violet)" : i ? "var(--sky)" : "var(--pink)",
-                color: on ? "#fff" : "var(--ink)",
-                border: "2px solid var(--ink)",
-                boxShadow: on ? "0 0 0 var(--ink)" : "var(--pop-lg)",
-                transform: on ? "translate(4px,4px)" : `rotate(${i ? 2 : -2}deg)`,
-              }}
+              className="choice"
+              data-on={on || undefined}
+              style={
+                on
+                  ? {
+                      background: "linear-gradient(180deg, #E3C385 0%, #CFA95F 100%)",
+                      color: "var(--on-accent)",
+                      borderColor: "transparent",
+                    }
+                  : undefined
+              }
             >
               <span style={{ fontSize: 54, lineHeight: 1 }} aria-hidden="true">
                 {o.emoji}
@@ -224,13 +227,13 @@ function Shell({
             </button>
           ) : (
             <span className="display" style={{ fontSize: 28, fontWeight: 800 }}>
-              25<span style={{ color: "var(--pink)" }}>.</span>
+              25<span style={{ color: "var(--accent)" }}>.</span>
             </span>
           )}
           {progress !== undefined && (
             <div
               className="flex-1 h-3 rounded-full overflow-hidden"
-              style={{ border: "2px solid var(--ink)", background: "#fff" }}
+              style={{ border: "1px solid var(--line-2)", background: "var(--fill)" }}
               role="progressbar"
               aria-valuenow={Math.round(progress * 100)}
               aria-valuemin={0}

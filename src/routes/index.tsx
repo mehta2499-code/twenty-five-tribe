@@ -13,13 +13,13 @@ export const Route = createFileRoute("/")({
 
 // ----- Design tokens (page-local) -----
 const C = {
-  blue: "#5B3DF5",
-  blueDeep: "#4A2BE0",
-  navy: "#16121F",
-  coral: "#C8F560",
+  blue: "#0B0A0F",
+  blueDeep: "#121018",
+  navy: "#17130C",
+  coral: "#D8B672",
 };
 
-const serif = { fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" };
+const serif = { fontFamily: "'Instrument Serif', Georgia, serif" };
 const sans = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
 
 // ----- Reveal on scroll -----
@@ -84,7 +84,7 @@ function Landing() {
           0%, 100% { transform: translateY(0); opacity: 0.7; }
           50%      { transform: translateY(8px); opacity: 1; }
         }
-        .h-serif { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-style: normal !important; letter-spacing: -0.03em; }
+        .h-serif { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400 !important; letter-spacing: -0.01em; }
         .glass {
           background: rgba(255,255,255,0.08);
           border: 1px solid rgba(255,255,255,0.16);
@@ -131,16 +131,16 @@ function Landing() {
 
           <p
             className="mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 font-extrabold"
-            style={{ background: C.coral, color: C.navy, border: "2px solid #16121F", boxShadow: "3px 3px 0 #16121F", transform: "rotate(-3deg)" }}
+            style={{ background: "rgba(216,182,114,0.10)", color: C.coral, border: "1px solid rgba(216,182,114,0.4)" }}
           >
-            Are you in my 25? 👀
+            Are you in my 25?
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
             <Link
               to="/login"
               className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold transition-transform hover:-translate-y-0.5"
-              style={{ background: "#fff", color: C.blueDeep, boxShadow: "0 18px 50px -12px rgba(14,42,69,0.45)" }}
+              style={{ background: "linear-gradient(180deg, #E3C385, #CFA95F)", color: C.navy, boxShadow: "0 18px 50px -18px rgba(216,182,114,0.6)" }}
             >
               Claim your 25
             </Link>
@@ -340,7 +340,7 @@ function Landing() {
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center rounded-full px-9 py-4 font-semibold transition-transform hover:-translate-y-0.5"
-                style={{ background: "#fff", color: C.blueDeep, boxShadow: "0 18px 50px -12px rgba(14,42,69,0.45)" }}
+                style={{ background: "linear-gradient(180deg, #E3C385, #CFA95F)", color: C.navy, boxShadow: "0 18px 50px -18px rgba(216,182,114,0.6)" }}
               >
                 Claim your 25
               </Link>

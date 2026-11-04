@@ -26,7 +26,12 @@ export const Route = createFileRoute("/in/$username")({
 });
 
 const PENDING_INVITE = "tf.pendingInvite";
-const COLOURS = ["#FF5FA2", "#7FD7FF", "#C8F560", "#FFD84D"];
+const COLOURS = [
+  "rgba(216,182,114,0.55)",
+  "rgba(216,182,114,0.25)",
+  "rgba(255,255,255,0.12)",
+  "rgba(216,182,114,0.4)",
+];
 
 function InMy25() {
   const { username } = Route.useParams();
@@ -86,7 +91,7 @@ function InMy25() {
           .join("")
           .slice(0, 2)
           .toUpperCase(),
-        color: "#FF5FA2",
+        color: "#3A3044",
         avatar: "",
         postedToday: false,
         joinedDaysAgo: 0,
@@ -100,7 +105,7 @@ function InMy25() {
       <div className="mx-auto max-w-md">
         <div className="flex items-center justify-between">
           <Link to="/" className="display" style={{ fontSize: 30, fontWeight: 800 }}>
-            25<span style={{ color: "var(--pink)" }}>.</span>
+            25<span style={{ color: "var(--accent)" }}>.</span>
           </Link>
           {!live && (
             <Link to="/login" className="btn-secondary min-h-[40px] px-4 text-sm">
@@ -135,29 +140,20 @@ function InMy25() {
                     width: 26 + i * 6,
                     height: 26 + i * 6,
                     background: c,
-                    border: "2px solid var(--ink)",
+                    border: "1px solid var(--line-2)",
                     left: `${[4, 80, 88, 10][i]}%`,
                     top: `${[-6, 4, 62, 70][i]}%`,
                     animationDelay: `${i * 0.6}s`,
                   }}
                 />
               ))}
-              <div
-                className="relative rounded-[28px] p-6 text-center"
-                style={{
-                  background: "var(--violet)",
-                  color: "#fff",
-                  border: "2px solid var(--ink)",
-                  boxShadow: "6px 6px 0 var(--ink)",
-                  transform: "rotate(-1.5deg)",
-                }}
-              >
+              <div className="relative black-card p-6 text-center">
                 <div className="flex justify-center">
                   <span
                     className="rounded-full"
-                    style={{ border: "2px solid var(--ink)", boxShadow: "3px 3px 0 var(--ink)" }}
+                    style={{ border: "1px solid var(--line-2)", boxShadow: "var(--pop)" }}
                   >
-                    <Avatar initials={person.initials} color="#FF5FA2" size={84} />
+                    <Avatar initials={person.initials} color="#3A3044" size={84} />
                   </span>
                 </div>
                 <p className="mt-3 font-extrabold" style={{ fontSize: 18 }}>
@@ -175,7 +171,11 @@ function InMy25() {
                 >
                   Are you in
                   <br />
-                  my <span style={{ color: "var(--lime)" }}>25</span>?
+                  my{" "}
+                  <span className="serif-italic" style={{ color: "var(--accent)" }}>
+                    25
+                  </span>
+                  ?
                 </h1>
                 <p className="mt-3 opacity-95">
                   {card.seats}/25 seats taken. {25 - card.seats} left.

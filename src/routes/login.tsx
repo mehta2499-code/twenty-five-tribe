@@ -72,17 +72,15 @@ function Login() {
       setResendIn(45);
     });
 
-  const field =
-    "w-full rounded-2xl px-4 py-3.5 outline-none text-[16px] bg-white/95 text-[var(--ink)] placeholder:text-[var(--ink-3)] focus:ring-2 focus:ring-white";
-  const primary =
-    "w-full rounded-full py-3.5 font-bold disabled:opacity-50 bg-white text-[var(--blue-deep)] shadow-[0_14px_30px_-12px_rgba(14,42,69,0.5)]";
+  const field = "input";
+  const primary = "btn-primary w-full";
 
   return (
     <main
       className="min-h-screen text-white flex flex-col px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       style={{
         background:
-          "radial-gradient(500px 400px at 10% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(500px 500px at 100% 100%, rgba(255,95,162,0.55), transparent 60%), #5B3DF5",
+          "radial-gradient(700px 420px at 50% -10%, rgba(216,182,114,0.18), transparent 65%), #0B0A0F",
       }}
     >
       <div className="mx-auto w-full max-w-sm flex-1 flex flex-col">
@@ -106,7 +104,7 @@ function Login() {
           className="display mt-10"
           style={{ fontSize: 88, lineHeight: 0.9, fontWeight: 900, letterSpacing: "-0.05em" }}
         >
-          25<span style={{ color: "var(--coral)" }}>.</span>
+          25<span style={{ color: "var(--accent)" }}>.</span>
         </h1>
 
         {step === "email" && (
@@ -276,7 +274,7 @@ function Login() {
         {error && (
           <p
             role="alert"
-            className="mt-4 rounded-2xl px-4 py-3 bg-white text-[var(--coral-deep)] font-semibold text-sm"
+            className="mt-4 rounded-2xl px-4 py-3 bg-[rgba(214,62,98,0.12)] text-[#F08AA3] border border-[rgba(214,62,98,0.35)] font-semibold text-sm"
           >
             {error}
           </p>

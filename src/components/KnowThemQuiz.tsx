@@ -159,9 +159,13 @@ export function KnowThemQuiz({
                 key={i}
                 className="flex-1 h-2.5 rounded-full"
                 style={{
-                  border: "2px solid var(--ink)",
+                  border: "1px solid var(--line-2)",
                   background:
-                    i < phase.index ? "var(--lime)" : i === phase.index ? "var(--sun)" : "#fff",
+                    i < phase.index
+                      ? "var(--accent)"
+                      : i === phase.index
+                        ? "var(--ink-3)"
+                        : "var(--fill)",
                 }}
               />
             ))}
@@ -186,7 +190,10 @@ export function KnowThemQuiz({
               <span className={`sticker ${phase.passed ? "" : "pink"}`}>
                 {phase.passed ? "certified bestie" : "not quite"}
               </span>
-              <p className="display mt-4" style={{ fontSize: 76, lineHeight: 1, fontWeight: 800 }}>
+              <p
+                className="display mt-4"
+                style={{ fontSize: 92, lineHeight: 1, color: "var(--accent)" }}
+              >
                 {phase.score}/{phase.total}
               </p>
               <h2 className="title mt-3" style={{ fontSize: 28 }}>
@@ -255,22 +262,12 @@ function Question({
   return (
     <div className="animate-soft-in">
       <span className="sticker">what would {name} pick?</span>
-      <h2 className="title mt-4" style={{ fontSize: 34 }}>
+      <h2 className="title mt-4" style={{ fontSize: 40 }}>
         {q.ask}
       </h2>
       <div className="mt-7 grid grid-cols-2 gap-4">
         {(["a", "b"] as const).map((c, i) => (
-          <button
-            key={c}
-            onClick={() => onAnswer(c)}
-            className="flex flex-col items-center justify-center gap-3 rounded-[24px] py-8 px-3"
-            style={{
-              background: i ? "var(--sky)" : "var(--pink)",
-              border: "2px solid var(--ink)",
-              boxShadow: "var(--pop-lg)",
-              transform: `rotate(${i ? 2 : -2}deg)`,
-            }}
-          >
+          <button key={c} onClick={() => onAnswer(c)} className="choice">
             <span style={{ fontSize: 50, lineHeight: 1 }} aria-hidden="true">
               {q[c].emoji}
             </span>

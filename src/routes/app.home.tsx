@@ -39,7 +39,7 @@ function Orbit({ rolling }: { rolling: boolean }) {
           className="absolute inset-0 rounded-full breathe pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle at 50% 50%, rgba(43,138,196,0.10) 0%, rgba(43,138,196,0.04) 38%, transparent 70%)",
+              "radial-gradient(circle at 50% 50%, rgba(216,182,114,0.10) 0%, rgba(216,182,114,0.04) 38%, transparent 70%)",
           }}
         />
 
@@ -59,8 +59,8 @@ function Orbit({ rolling }: { rolling: boolean }) {
                   width: 5,
                   height: 5,
                   borderRadius: 999,
-                  background: "rgba(43,138,196,0.55)",
-                  boxShadow: "0 0 8px rgba(43,138,196,0.45)",
+                  background: "rgba(216,182,114,0.55)",
+                  boxShadow: "0 0 8px rgba(216,182,114,0.45)",
                   transform: "translate(-50%, -50%)",
                   animationDelay: `${(i % 6) * 0.4}s`,
                 }}
@@ -88,12 +88,12 @@ function Orbit({ rolling }: { rolling: boolean }) {
                 className="rounded-full transition-transform active:scale-95"
                 style={{
                   padding: reserved ? 3 : 0,
-                  border: reserved ? "1px dashed rgba(43,138,196,0.55)" : "none",
+                  border: reserved ? "1px dashed rgba(216,182,114,0.55)" : "none",
                   boxShadow: reserved
-                    ? "0 0 18px rgba(43,138,196,0.18)"
+                    ? "0 0 18px rgba(216,182,114,0.18)"
                     : f.postedToday
-                      ? "0 0 0 1px rgba(43,138,196,0.45), 0 0 22px rgba(43,138,196,0.35)"
-                      : "0 0 0 3px #fff, 0 4px 12px -4px rgba(14,42,69,0.3)",
+                      ? "0 0 0 1px rgba(216,182,114,0.45), 0 0 22px rgba(216,182,114,0.35)"
+                      : "0 0 0 3px var(--page), 0 4px 12px -4px rgba(14,42,69,0.3)",
                   opacity: reserved ? 0.7 : 1,
                   filter: reserved ? "grayscale(0.3)" : "none",
                 }}
@@ -416,7 +416,7 @@ function Home() {
             to="/app/profile"
             aria-label="Your profile"
             className="rounded-full"
-            style={{ border: "2px solid var(--ink)", boxShadow: "2px 2px 0 var(--ink)" }}
+            style={{ border: "1px solid var(--line-2)", boxShadow: "var(--pop)" }}
           >
             <Avatar
               src={s.me ? s.me.avatar : ME.avatar}

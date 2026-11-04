@@ -30,7 +30,11 @@ function Row({ p, children, note }: { p: Person; children: React.ReactNode; note
         {note && (
           <p
             className="mt-0.5 inline-block text-[12px] font-extrabold px-2 rounded-full"
-            style={{ background: "var(--lime)", border: "1.5px solid var(--ink)" }}
+            style={{
+              background: "rgba(216,182,114,0.12)",
+              border: "1px solid var(--gold-line)",
+              color: "var(--accent)",
+            }}
           >
             {note}
           </p>
@@ -180,7 +184,7 @@ function People() {
       </PageBand>
 
       {s.me && !s.me.vibeDone && (
-        <div className="mx-5 card p-4" style={{ background: "var(--sun)" }}>
+        <div className="mx-5 card p-4" style={{ borderColor: "var(--gold-line)" }}>
           <p className="font-extrabold">Do your vibe check first</p>
           <p className="text-sm mt-1">
             Friends need something to guess before they can join your table.

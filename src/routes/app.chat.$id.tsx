@@ -31,7 +31,7 @@ function Ticks({ status }: { status?: ChatMessage["status"] }) {
   const common = { size: 15, "aria-hidden": true } as const;
   if (status === "sent") return <Check {...common} style={{ opacity: 0.75 }} />;
   if (status === "delivered") return <CheckCheck {...common} style={{ opacity: 0.75 }} />;
-  return <CheckCheck {...common} style={{ color: "#BFE3FA" }} />;
+  return <CheckCheck {...common} style={{ color: "#1F5FA8" }} />;
 }
 const statusLabel = (s?: ChatMessage["status"]) =>
   s === "sent" ? "Sent" : s === "delivered" ? "Delivered" : "Read";
@@ -179,7 +179,7 @@ function ChatThread() {
                         style={{
                           background: mine ? "var(--blue-deep)" : "var(--surface)",
                           border: mine ? "1px solid transparent" : "1px solid var(--line)",
-                          color: mine ? "#fff" : "var(--ink)",
+                          color: mine ? "var(--on-accent)" : "var(--ink)",
                           borderRadius: 18,
                           borderBottomRightRadius: mine ? 6 : 18,
                           borderBottomLeftRadius: mine ? 18 : 6,
@@ -252,8 +252,8 @@ function ChatThread() {
                               params={{ id: shareId }}
                               className="mt-2 flex items-center justify-center gap-2 rounded-xl min-h-[40px] px-3 font-semibold text-sm"
                               style={{
-                                background: mine ? "rgba(255,255,255,0.18)" : "var(--fill)",
-                                color: mine ? "#fff" : "var(--blue-deep)",
+                                background: mine ? "rgba(23,19,12,0.12)" : "var(--fill)",
+                                color: mine ? "var(--on-accent)" : "var(--accent)",
                               }}
                             >
                               <Spade size={16} aria-hidden="true" />{" "}
@@ -263,7 +263,7 @@ function ChatThread() {
                         )}
                         <div
                           className="flex items-center justify-end gap-1 mt-0.5"
-                          style={{ color: mine ? "rgba(255,255,255,0.85)" : "var(--ink-3)" }}
+                          style={{ color: mine ? "rgba(23,19,12,0.7)" : "var(--ink-3)" }}
                         >
                           <span className="tabular-nums" style={{ fontSize: 11.5 }}>
                             {clock(m.at)}
@@ -330,7 +330,7 @@ function ChatThread() {
             disabled={!text.trim()}
             aria-label="Send"
             className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center disabled:opacity-40"
-            style={{ background: "var(--blue-deep)", color: "#fff" }}
+            style={{ background: "var(--accent)", color: "var(--on-accent)" }}
           >
             <Send size={19} />
           </button>

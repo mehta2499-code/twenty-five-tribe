@@ -47,7 +47,7 @@ function PlayingCard({
         background: "#fff",
         border: "1px solid var(--border-cool)",
         boxShadow: "0 6px 16px -8px rgba(14,42,69,0.45)",
-        color: isRed(s) ? "var(--coral-deep)" : "var(--ink)",
+        color: isRed(s) ? "#C8364F" : "#17130F",
         opacity: dim ? 0.45 : 1,
         fontWeight: 800,
         lineHeight: 1,
@@ -186,7 +186,7 @@ export function KachufulBoard({
             <button
               onClick={onClose}
               aria-label="Leave the table"
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/20"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10"
             >
               <X size={18} />
             </button>
@@ -207,7 +207,7 @@ export function KachufulBoard({
             <button
               onClick={() => setScoresOpen(true)}
               aria-label="Scores"
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/20"
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10"
             >
               <ListOrdered size={18} />
             </button>
@@ -274,7 +274,7 @@ export function KachufulBoard({
                     className="w-12 h-12 rounded-2xl font-bold text-lg tabular-nums disabled:opacity-35"
                     style={{
                       background: ok ? "var(--blue-deep)" : "var(--bg-surface)",
-                      color: ok ? "#fff" : "var(--text-muted)",
+                      color: ok ? "var(--on-accent)" : "var(--text-muted)",
                       boxShadow: ok ? "var(--shadow-pop)" : "none",
                     }}
                   >
@@ -655,7 +655,7 @@ export function KachufulLobby({
             className="flex-1 h-11 rounded-2xl font-bold tabular-nums disabled:opacity-30"
             style={{
               background: total === n ? "var(--blue-deep)" : "var(--bg-surface)",
-              color: total === n ? "#fff" : "var(--text-primary)",
+              color: total === n ? "var(--on-accent)" : "var(--text-primary)",
             }}
           >
             {n}
@@ -676,7 +676,7 @@ export function KachufulLobby({
             className="flex-1 rounded-2xl py-3 text-left px-4"
             style={{
               background: length === l ? "var(--blue-deep)" : "var(--bg-surface)",
-              color: length === l ? "#fff" : "var(--text-primary)",
+              color: length === l ? "var(--on-accent)" : "var(--text-primary)",
             }}
           >
             <span className="block font-bold">{l === "short" ? "Short" : "Full"}</span>

@@ -153,7 +153,7 @@ function Games() {
                 key={x}
                 className="w-10 h-14 rounded-lg bg-white flex items-center justify-center text-2xl font-bold"
                 style={{
-                  color: i % 2 ? "var(--coral-deep)" : "var(--ink)",
+                  color: i % 2 ? "#C8364F" : "#17130F",
                   transform: `rotate(${(i - 1.5) * 6}deg)`,
                 }}
               >

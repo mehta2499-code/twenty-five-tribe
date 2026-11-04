@@ -92,9 +92,14 @@ function Chats() {
                       >
                         <span
                           className="rounded-full p-[2.5px]"
-                          style={{ background: "var(--coral-deep)" }}
+                          style={{
+                            background: "linear-gradient(135deg, var(--accent-2), var(--hot))",
+                          }}
                         >
-                          <span className="block rounded-full p-[2px] bg-white">
+                          <span
+                            className="block rounded-full p-[2px]"
+                            style={{ background: "var(--page)" }}
+                          >
                             <Avatar
                               src={f.avatar || undefined}
                               initials={f.initials}
@@ -177,7 +182,7 @@ function Chats() {
                           className="min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center tabular-nums"
                           style={{
                             background: "var(--blue-deep)",
-                            color: "#fff",
+                            color: "var(--on-accent)",
                             fontSize: 12,
                             fontWeight: 700,
                           }}

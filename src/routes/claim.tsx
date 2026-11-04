@@ -29,7 +29,7 @@ function Claim() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(600px 500px at 15% 0%, rgba(255,255,255,0.35), transparent 60%), radial-gradient(600px 600px at 90% 100%, rgba(255,95,162,0.55), transparent 60%), #5B3DF5",
+            "radial-gradient(700px 420px at 50% -10%, rgba(216,182,114,0.18), transparent 65%), #0B0A0F",
         }}
       />
       <div
@@ -56,7 +56,7 @@ function Claim() {
                 className="rounded-full p-[3px]"
                 style={{
                   background:
-                    "radial-gradient(circle at 50% 50%, rgba(43,138,196,0.55), rgba(43,138,196,0.05) 70%)",
+                    "radial-gradient(circle at 50% 50%, rgba(216,182,114,0.55), rgba(216,182,114,0.05) 70%)",
                 }}
               >
                 <Avatar src={r.fromAvatar} initials={r.fromInitials} size={132} />
@@ -76,7 +76,7 @@ function Claim() {
             <p
               className="mt-5 italic"
               style={{
-                color: "var(--blue-deep)",
+                color: "var(--on-accent)",
                 fontFamily: "'Fraunces', Georgia, serif",
                 fontSize: 18,
               }}
@@ -92,7 +92,11 @@ function Claim() {
               <button
                 onClick={() => setPhase("accepted")}
                 className="rounded-full py-4 text-sm font-medium transition active:scale-[0.98]"
-                style={{ background: "#fff", color: "var(--blue-deep)", fontWeight: 700 }}
+                style={{
+                  background: "linear-gradient(180deg, #E3C385, #CFA95F)",
+                  color: "var(--on-accent)",
+                  fontWeight: 700,
+                }}
               >
                 {VOICE.claim.accept}
               </button>
@@ -122,7 +126,7 @@ function Claim() {
               }}
             >
               You're at{" "}
-              <span className="italic" style={{ color: "var(--blue-deep)" }}>
+              <span className="italic" style={{ color: "var(--accent)" }}>
                 {r.fromName}'s
               </span>{" "}
               table.
@@ -133,7 +137,11 @@ function Claim() {
             <button
               onClick={() => navigate({ to: "/onboarding" })}
               className="mt-12 rounded-full py-4 px-8 text-sm font-medium"
-              style={{ background: "#fff", color: "var(--blue-deep)", fontWeight: 700 }}
+              style={{
+                background: "linear-gradient(180deg, #E3C385, #CFA95F)",
+                color: "var(--on-accent)",
+                fontWeight: 700,
+              }}
             >
               Set up your own table
             </button>

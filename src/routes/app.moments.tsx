@@ -102,7 +102,7 @@ function MomentsScreen() {
           bottom: "6.5rem",
           background: "var(--accent-bronze)",
           color: "var(--bg-primary)",
-          boxShadow: "0 10px 30px rgba(43,138,196,0.45)",
+          boxShadow: "0 10px 30px rgba(216,182,114,0.45)",
         }}
       >
         <Plus size={18} strokeWidth={2.4} />

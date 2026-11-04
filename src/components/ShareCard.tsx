@@ -29,42 +29,39 @@ export function ShareCard({ compact = false }: { compact?: boolean }) {
 
   return (
     <section className={compact ? "" : "px-5 mt-2"} aria-label="Share your card">
-      <div
-        className="relative overflow-hidden rounded-[24px] p-5"
-        style={{
-          background: "var(--violet)",
-          color: "#fff",
-          border: "2px solid var(--ink)",
-          boxShadow: "var(--pop-lg)",
-        }}
-      >
+      <div className="relative overflow-hidden black-card p-5">
         <span className="sticker sun absolute right-4 top-4" style={{ transform: "rotate(6deg)" }}>
           {filled}/25
         </span>
         <div className="flex items-center gap-3">
           <span
             className="rounded-full"
-            style={{ border: "2px solid var(--ink)", boxShadow: "2px 2px 0 var(--ink)" }}
+            style={{ border: "1px solid var(--line-2)", boxShadow: "var(--pop)" }}
           >
-            <Avatar src={me.avatar} initials={me.initials} color="#FF5FA2" size={48} />
+            <Avatar src={me.avatar} initials={me.initials} color="#3A3044" size={48} />
           </span>
           <div className="min-w-0">
             <p className="font-extrabold truncate">{me.name}</p>
-            <p className="text-sm opacity-90 truncate">@{me.username}</p>
+            <p className="text-sm text-faint truncate">@{me.username}</p>
           </div>
         </div>
-        <p
-          className="display mt-4"
-          style={{ fontSize: 40, lineHeight: 0.95, fontWeight: 800, letterSpacing: "-0.04em" }}
-        >
+        <p className="display mt-4" style={{ fontSize: 46, lineHeight: 0.95 }}>
           Are you in
           <br />
-          my <span style={{ color: "var(--lime)" }}>25</span>?
+          my{" "}
+          <span className="serif-italic" style={{ color: "var(--accent)" }}>
+            25
+          </span>
+          ?
         </p>
-        <p className="mt-2 text-sm opacity-90">Prove it: guess 4 of my 6 answers.</p>
+        <p className="mt-2 text-sm text-cool">Prove it: guess 4 of my 6 answers.</p>
         <p
           className="mt-3 inline-block rounded-full px-3 py-1 text-[13px] font-bold"
-          style={{ background: "rgba(255,255,255,0.18)" }}
+          style={{
+            background: "rgba(216,182,114,0.10)",
+            border: "1px solid var(--gold-line)",
+            color: "var(--accent)",
+          }}
         >
           {link}
         </p>

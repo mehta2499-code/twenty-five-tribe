@@ -296,9 +296,9 @@ export function FriendPicker({
                       <span
                         className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full flex items-center justify-center"
                         style={{
-                          background: "var(--blue-deep)",
-                          color: "#fff",
-                          boxShadow: "0 0 0 2px #fff",
+                          background: "var(--accent)",
+                          color: "var(--on-accent)",
+                          boxShadow: "0 0 0 2px var(--surface)",
                         }}
                       >
                         <Check size={12} strokeWidth={3} />
