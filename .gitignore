@@ -30,3 +30,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor build output
+android/app/build
+android/.gradle
+android/build
+ios/App/build
+ios/DerivedData
