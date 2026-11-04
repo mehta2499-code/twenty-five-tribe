@@ -13,7 +13,7 @@ The script is safe to run again if you need to.
 ## 2. Turn on email codes
 
 1. **Authentication → Sign In / Providers → Email**: make sure Email is enabled.
-2. **Authentication → Emails → Templates → Magic Link**: put the code in the email,
+2. (Optional, needs custom SMTP first) **Authentication → Emails → Templates → Magic Link**: put the code in the email,
    for example:
 
    ```html

@@ -12,6 +12,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    // Links from the email work even if they open in a different browser.
+    flowType: "implicit",
     storage: typeof window !== "undefined" ? window.localStorage : undefined,
   },
 });
