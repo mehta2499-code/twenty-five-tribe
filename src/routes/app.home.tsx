@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useState } from "react";
 import {
   Camera,
@@ -405,13 +406,7 @@ function Home() {
     <>
       <header className="band px-5 pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))] pb-12">
         <div className="flex items-center justify-between">
-          <span
-            className="display text-white"
-            style={{ fontSize: 40, lineHeight: 1, fontWeight: 900, letterSpacing: "-0.05em" }}
-          >
-            {VOICE.brand}
-            <span style={{ color: "var(--violet)" }}>.</span>
-          </span>
+          <Logo height={56} title={VOICE.brand} />
           <Link
             to="/app/profile"
             aria-label="Your profile"

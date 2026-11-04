@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { KnowThemQuiz } from "@/components/KnowThemQuiz";
@@ -104,8 +105,8 @@ function InMy25() {
     <main className="min-h-screen px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-hidden">
       <div className="mx-auto max-w-md">
         <div className="flex items-center justify-between">
-          <Link to="/" className="display" style={{ fontSize: 30, fontWeight: 800 }}>
-            25<span style={{ color: "var(--accent)" }}>.</span>
+          <Link to="/" aria-label="25 home">
+            <Logo height={44} />
           </Link>
           {!live && (
             <Link to="/login" className="btn-secondary min-h-[40px] px-4 text-sm">

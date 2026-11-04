@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
@@ -114,12 +115,8 @@ function Landing() {
           className="relative z-10 flex flex-col items-center text-center"
           style={{ transform: `translateY(${scrollY * 0.25}px)`, opacity: Math.max(0, 1 - scrollY / 600) }}
         >
-          <h1
-            className="h-serif font-black leading-none"
-            style={{ fontSize: "clamp(7rem, 28vw, 18rem)", letterSpacing: "-0.05em" }}
-          >
-            25
-            <span style={{ display: "inline-block", animation: "dotPulse 2.4s ease-in-out infinite" }}>.</span>
+          <h1 className="leading-none" style={{ animation: "floatY 7s ease-in-out infinite" }}>
+            <Logo height={260} color={C.coral} title="25" />
           </h1>
 
           <p

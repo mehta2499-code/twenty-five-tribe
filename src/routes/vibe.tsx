@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
@@ -226,9 +227,7 @@ function Shell({
               <ArrowLeft size={18} />
             </button>
           ) : (
-            <span className="display" style={{ fontSize: 28, fontWeight: 800 }}>
-              25<span style={{ color: "var(--accent)" }}>.</span>
-            </span>
+            <Logo height={40} />
           )}
           {progress !== undefined && (
             <div

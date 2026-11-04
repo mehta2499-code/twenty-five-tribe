@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { account, initLive } from "@/lib/live";
@@ -100,11 +101,8 @@ function Login() {
           </Link>
         </div>
 
-        <h1
-          className="display mt-10"
-          style={{ fontSize: 88, lineHeight: 0.9, fontWeight: 900, letterSpacing: "-0.05em" }}
-        >
-          25<span style={{ color: "var(--accent)" }}>.</span>
+        <h1 className="mt-10">
+          <Logo height={120} />
         </h1>
 
         {step === "email" && (
