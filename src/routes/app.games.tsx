@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, PageBand, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import { DailyRunner } from "@/components/ArcadeGames";
-import { DailyHero, TodayTable, WeekStrip, WeekTable } from "@/components/DailyBoard";
+import { DailyHero, TodayTable, WeekTable } from "@/components/DailyBoard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
 import { gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
@@ -41,7 +41,10 @@ function YourGames({ meId }: { meId: string }) {
       clearInterval(t);
     };
   }, []);
-  const open = (games ?? []).filter((g) => g.status === "playing");
+  // Hide games that are over, and trivia you've already played (the result comes in chat).
+  const open = (games ?? []).filter(
+    (g) => g.status === "playing" && !(g.kind === "trivia" && (g.state as TriviaState).results[meId]),
+  );
   if (!open.length) return null;
   return (
     <section className="mt-7">
@@ -155,7 +158,6 @@ function Games() {
       <PageBand title="Games" sub="A new game every day. 3 tries. Average counts. Bragging rights reset Monday." />
 
       <DailyHero onPlay={() => setDaily(true)} />
-      <WeekStrip />
 
       {live && <YourGames meId={s.me!.id} />}
 

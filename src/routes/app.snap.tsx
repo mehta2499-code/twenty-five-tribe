@@ -44,6 +44,8 @@ function SnapScreen() {
   const s = useSocial();
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // The phone's own camera app: works even where the live camera isn't allowed (http).
+  const shootRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [camError, setCamError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ function SnapScreen() {
     let cancelled = false;
     let live: MediaStream | null = null;
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCamError("This browser can't open the camera. Upload a photo or make a text snap.");
+      setCamError("Tap to open your camera");
       return;
     }
     navigator.mediaDevices
@@ -77,7 +79,7 @@ function SnapScreen() {
         if (videoRef.current) videoRef.current.srcObject = ms;
       })
       .catch(() =>
-        setCamError("Camera is off. Allow camera access, or upload a photo or make a text snap."),
+        setCamError("Tap to open your camera"),
       );
     return () => {
       cancelled = true;
@@ -167,12 +169,20 @@ function SnapScreen() {
             />
           )}
           {!hasShot && camError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 gap-3">
-              <Camera size={28} className="text-white/70" aria-hidden="true" />
-              <p className="text-white/90" style={{ fontSize: 15, lineHeight: 1.5 }}>
+            <button
+              onClick={() => shootRef.current?.click()}
+              className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 gap-3"
+            >
+              <span
+                className="w-20 h-20 rounded-full flex items-center justify-center"
+                style={{ background: "var(--lime)", color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+              >
+                <Camera size={34} aria-hidden="true" />
+              </span>
+              <p className="text-white font-bold" style={{ fontSize: 17 }}>
                 {camError}
               </p>
-            </div>
+            </button>
           )}
           {image && (
             <img
@@ -247,8 +257,7 @@ function SnapScreen() {
               <span style={{ fontSize: 13 }}>Upload</span>
             </button>
             <button
-              onClick={capture}
-              disabled={!stream}
+              onClick={() => (stream ? capture() : shootRef.current?.click())}
               aria-label="Take photo"
               className="justify-self-center w-[72px] h-[72px] rounded-full disabled:opacity-40"
               style={{
@@ -268,6 +277,14 @@ function SnapScreen() {
               ref={fileRef}
               type="file"
               accept="image/*"
+              hidden
+              onChange={(e) => onFile(e.target.files?.[0])}
+            />
+            <input
+              ref={shootRef}
+              type="file"
+              accept="image/*"
+              capture="user"
               hidden
               onChange={(e) => onFile(e.target.files?.[0])}
             />
