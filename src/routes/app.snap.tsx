@@ -155,7 +155,7 @@ function SnapScreen() {
           style={{
             aspectRatio: "3 / 4",
             maxHeight: "56vh",
-            background: bg ?? "var(--ink)",
+            background: bg ?? "#07060B",
           }}
         >
           {!hasShot && !camError && (

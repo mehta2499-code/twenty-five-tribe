@@ -469,8 +469,13 @@ export function Toast({ text, onDone }: { text: string; onDone: () => void }) {
       aria-live="polite"
     >
       <div
-        className="animate-soft-in max-w-sm px-4 py-3 rounded-xl text-white font-medium text-sm"
-        style={{ background: "var(--ink)", boxShadow: "var(--shadow-float)" }}
+        className="animate-soft-in max-w-sm px-4 py-3 rounded-2xl font-semibold text-sm"
+        style={{
+          background: "var(--surface)",
+          color: "var(--ink)",
+          border: "2px solid var(--edge)",
+          boxShadow: "3px 3px 0 var(--edge), 0 10px 30px rgba(0,0,0,0.45)",
+        }}
       >
         {text}
       </div>
