@@ -4,7 +4,16 @@ import { KachufulBoard, useBotTurns } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { clientOnly } from "@/components/SocialUI";
 import { TRIVIA_PACKS } from "@/lib/data";
-import { inviteToTrivia, useGame, type TriviaState } from "@/lib/games";
+import {
+  inviteToTrivia,
+  revealWord,
+  useGame,
+  type TriviaState,
+  type WordState,
+} from "@/lib/games";
+import { MAX_GUESSES, WordBoard, gridOf } from "@/components/WordUp";
+import { Confetti } from "@/components/SocialUI";
+import { X } from "lucide-react";
 import { applyMove, nextRound, type KState, type Move } from "@/lib/kachuful";
 import { friendById, useSocial } from "@/lib/social";
 
@@ -34,7 +43,7 @@ function PlayScreen() {
 type Live<S> = ReturnType<typeof useGame<S>>;
 
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
-  const live = useGame<KState | TriviaState>(id);
+  const live = useGame<KState | TriviaState | WordState>(id);
   const { game, error } = live;
   if (error) {
     return (
@@ -47,6 +56,8 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     );
   }
   if (!game) return <p className="pt-24 text-center text-faint">Pulling up a chair…</p>;
+  if (game.kind === "word")
+    return <OnlineWord live={live as Live<WordState>} meId={meId} onClose={onClose} />;
   return game.kind === "kachuful" ? (
     <OnlineKachuful live={live as Live<KState>} meId={meId} onClose={onClose} />
   ) : (
@@ -162,5 +173,81 @@ function OnlineTrivia({
         });
       }}
     />
+  );
+}
+
+function OnlineWord({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<WordState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game, save } = live;
+  if (!game) return null;
+  const st = game.state;
+  const answer = revealWord(st.hidden);
+  const guessing = st.guesser === meId;
+  const other = friendById(guessing ? st.setter : st.guesser);
+  const first = other?.name.split(" ")[0] ?? "Your friend";
+  const solved = st.guesses.includes(answer);
+  const over = solved || st.guesses.length >= MAX_GUESSES;
+
+  const guess = (g: string) => {
+    const next = { ...st, guesses: [...st.guesses, g] };
+    const done = g === answer || next.guesses.length >= MAX_GUESSES;
+    void save(next, done ? "done" : undefined);
+  };
+
+  const headline = over
+    ? guessing
+      ? solved
+        ? `Got it in ${st.guesses.length}/6 😎`
+        : `It was ${answer.toUpperCase()} 💀`
+      : solved
+        ? `${first} cracked it in ${st.guesses.length}/6`
+        : `${first} couldn't get it 😈`
+    : guessing
+      ? `${first} set you a word`
+      : `Watching ${first} guess ${answer.toUpperCase()} 👀`;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="mx-auto w-full max-w-md min-h-full flex flex-col px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <p className="heading">Word Up 🔤</p>
+            <p className="meta">{headline}</p>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="text-cool">
+            <X size={22} />
+          </button>
+        </header>
+        <div className="mt-5">
+          <WordBoard
+            answer={answer}
+            guesses={st.guesses}
+            onGuess={guess}
+            readOnly={!guessing || over}
+          />
+        </div>
+        {!guessing && !over && (
+          <p className="meta text-center mt-4">
+            {st.guesses.length}/6 guesses used. Updates live.
+          </p>
+        )}
+        {over && (
+          <div className="text-center mt-6">
+            <pre className="text-[20px] leading-tight">{gridOf(st.guesses, answer)}</pre>
+            <button onClick={onClose} className="btn-primary mt-5 px-6">
+              Back to games
+            </button>
+          </div>
+        )}
+      </div>
+      <Confetti fire={over && solved && guessing ? 1 : 0} />
+    </div>
   );
 }

@@ -14,9 +14,20 @@ export type TriviaState = {
   results: Record<string, { score: number; total: number; at: number }>;
 };
 
-export type GameRow<S = KState | TriviaState> = {
+/** Word Up challenge: the setter picks a word, the guesser has 6 tries. */
+export type WordState = {
+  /** The word, lightly scrambled so it isn't readable at a glance. */
+  hidden: string;
+  setter: string;
+  guesser: string;
+  guesses: string[];
+};
+export const hideWord = (w: string) => btoa([...w].reverse().join(""));
+export const revealWord = (h: string) => [...atob(h)].reverse().join("");
+
+export type GameRow<S = KState | TriviaState | WordState> = {
   id: string;
-  kind: "kachuful" | "trivia";
+  kind: "kachuful" | "trivia" | "word";
   host: string;
   players: string[];
   status: "playing" | "done";
@@ -109,6 +120,18 @@ export async function startTriviaChallenge(packId: string, friend: Person) {
     .from("games")
     .insert({ id, kind: "trivia", host: me, players: [me, friend.id], state, version: 0 });
   if (error) throw new Error(error.message);
+  return id;
+}
+
+export async function startWordChallenge(friend: Person, word: string) {
+  const me = myId();
+  const id = uuid();
+  const state: WordState = { hidden: hideWord(word), setter: me, guesser: friend.id, guesses: [] };
+  const { error } = await supabase
+    .from("games")
+    .insert({ id, kind: "word", host: me, players: [me, friend.id], state, version: 0 });
+  if (error) throw new Error(error.message);
+  await invite([friend.id], id, "I set you a word 🔤 6 guesses. I'm watching live 👀");
   return id;
 }
 

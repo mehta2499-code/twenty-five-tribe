@@ -2,15 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
-import {
-  ARCADE,
-  ColourClash,
-  Leaderboard,
-  PairUp,
-  QuickMath,
-  TapRush,
-} from "@/components/ArcadeGames";
+import { FriendPicker, PageBand, Sheet, Toast, clientOnly } from "@/components/SocialUI";
+import { DailyRunner } from "@/components/ArcadeGames";
+import { DailyHero, TodayTable, WeekStrip, WeekTable } from "@/components/DailyBoard";
+import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
+import { gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
@@ -21,14 +17,16 @@ import {
   seatFor,
   startKachuful,
   startTriviaChallenge,
+  startWordChallenge,
   type GameRow,
   type TriviaState,
+  type WordState,
 } from "@/lib/games";
 import type { KState, Seat } from "@/lib/kachuful";
-import { friendById, leaderboard, meView, useSocial } from "@/lib/social";
+import { friendById, meView, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app/games")({
-  component: Games,
+  component: clientOnly(Games),
 });
 
 function YourGames({ meId }: { meId: string }) {
@@ -70,6 +68,14 @@ function YourGames({ meId }: { meId: string }) {
               : turn
                 ? `${turn.name.split(" ")[0]}'s turn`
                 : "In play";
+          } else if (g.kind === "word") {
+            const w = g.state as WordState;
+            const guessing = w.guesser === meId;
+            yourTurn = guessing;
+            title = guessing ? "Word Up · your word" : "Word Up · you set it";
+            status = guessing
+              ? `Your turn · ${w.guesses.length}/6`
+              : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6 👀`;
           } else {
             const t = g.state as TriviaState;
             const pack = TRIVIA_PACKS.find((p) => p.id === t.pack);
@@ -120,9 +126,12 @@ function Games() {
   const s = useSocial();
   const navigate = useNavigate();
   const live = s.mode === "live" && !!s.me;
-  const [arcade, setArcade] = useState<
-    "tap-rush" | "quick-math" | "colour-clash" | "pair-up" | null
-  >(null);
+  useDaily();
+  const [daily, setDaily] = useState(false);
+  const [wordDaily, setWordDaily] = useState(false);
+  const [wordSheet, setWordSheet] = useState(false);
+  const [secret, setSecret] = useState("");
+  const [wordFor, setWordFor] = useState<string | null>(null);
   const [lobby, setLobby] = useState(false);
   const [localTable, setLocalTable] = useState<{ seats: Seat[]; length: "short" | "full" } | null>(
     null,
@@ -143,13 +152,25 @@ function Games() {
 
   return (
     <>
-      <PageBand title="Games" sub="Play with your 25. Scores reset every Monday." />
+      <PageBand title="Games" sub="A new game every day. 3 tries. Average counts. Bragging rights reset Monday." />
+
+      <DailyHero onPlay={() => setDaily(true)} />
+      <WeekStrip />
 
       {live && <YourGames meId={s.me!.id} />}
 
+      <TodayTable />
+      <WeekTable />
+
+      <div className="px-5 mt-10">
+        <h2 className="heading" style={{ fontSize: 22 }}>
+          Play anytime 🃏
+        </h2>
+        <p className="meta mt-0.5">No limits. Just you and your 25.</p>
+      </div>
+
       {/* Kachuful */}
-      <section className="px-5 mt-7">
-        <h2 className="text-[15px] font-semibold text-cream mb-2.5">Cards</h2>
+      <section className="px-5 mt-4">
         <button
           onClick={() => setLobby(true)}
           className="w-full text-left p-5 relative overflow-hidden band"
@@ -183,43 +204,58 @@ function Games() {
         </button>
       </section>
 
-      {/* Quick games */}
-      <section className="px-5 mt-7">
-        <h2 className="text-[15px] font-semibold text-cream mb-2.5">Quick games</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {ARCADE.map((g) => {
-            const best = s.scores[g.id]?.me;
-            const board = leaderboard(s, g.id);
-            const rank = board.findIndex((r) => r.id === "me") + 1;
-            return (
-              <button
-                key={g.id}
-                onClick={() => setArcade(g.id)}
-                className="p-4 text-left card hover:bg-[var(--fill)]"
+      {/* Word Up */}
+      <section className="px-5 mt-4">
+        <div className="card p-5">
+          <div className="flex gap-1" aria-hidden="true">
+            {["W", "O", "R", "D"].map((l, i) => (
+              <span
+                key={l}
+                className="w-9 h-9 rounded-lg flex items-center justify-center display"
+                style={{
+                  border: "2px solid var(--edge)",
+                  background: ["var(--lime)", "var(--sun)", "var(--fill-2)", "var(--lime)"][i],
+                  color: i === 2 ? "var(--ink)" : "var(--on-accent)",
+                  transform: `rotate(${[-4, 3, -2, 4][i]}deg)`,
+                }}
               >
-                <span className="die-tile" style={{ width: 40, height: 40 }}>
-                  <g.Icon size={20} aria-hidden="true" />
-                </span>
-                <h3 className="mt-3 font-semibold text-cream" style={{ fontSize: 17 }}>
-                  {g.name}
-                </h3>
-                <p className="text-cool mt-1" style={{ fontSize: 12, lineHeight: 1.4 }}>
-                  {g.blurb}
-                </p>
-                <p
-                  className="mt-3 text-[13px] font-semibold"
-                  style={{ color: best != null ? "var(--blue-deep)" : "var(--ink-3)" }}
-                >
-                  {best != null ? `Best ${best} · #${rank} of ${board.length}` : "Not played yet"}
-                </p>
+                {l}
+              </span>
+            ))}
+          </div>
+          <h3 className="heading mt-3" style={{ fontSize: 24 }}>
+            Word Up
+          </h3>
+          <p className="text-cool mt-1 text-[14px] leading-snug">
+            Guess the 5-letter word in 6. One daily word for everyone, or set a secret word for a
+            friend and watch them struggle live 😈
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-2.5">
+            <button onClick={() => setWordDaily(true)} className="btn-primary">
+              Today's word
+            </button>
+            {live ? (
+              <button
+                onClick={() => {
+                  void loadWords();
+                  setSecret("");
+                  setWordSheet(true);
+                }}
+                className="btn-secondary"
+              >
+                Set a word
               </button>
-            );
-          })}
+            ) : (
+              <Link to="/login" className="btn-secondary">
+                Set a word
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 
       {/* Trivia */}
-      <section className="mt-7">
+      <section className="mt-6">
         <div className="px-5 flex items-baseline justify-between mb-2.5">
           <h2 className="text-[15px] font-semibold text-cream">India trivia</h2>
           <span className="meta">Solo or challenge a friend</span>
@@ -261,9 +297,7 @@ function Games() {
         </div>
       </section>
 
-      <Leaderboard />
-
-      <p className="text-center meta px-6 pt-8 pb-2">Only your 25 see your scores.</p>
+      <p className="text-center meta px-6 pt-8 pb-2">Only your mutual 25 see your scores.</p>
 
       {lobby && (
         <KachufulLobby
@@ -345,10 +379,63 @@ function Games() {
         />
       )}
 
-      {arcade === "tap-rush" && <TapRush onClose={() => setArcade(null)} />}
-      {arcade === "quick-math" && <QuickMath onClose={() => setArcade(null)} />}
-      {arcade === "colour-clash" && <ColourClash onClose={() => setArcade(null)} />}
-      {arcade === "pair-up" && <PairUp onClose={() => setArcade(null)} />}
+      {daily && <DailyRunner game={gameFor(today())} onClose={() => setDaily(false)} />}
+      {wordDaily && <WordDaily onClose={() => setWordDaily(false)} />}
+      {wordSheet && (
+        <Sheet title="Set a secret word" onClose={() => setWordSheet(false)}>
+          <p className="text-sm text-cool">
+            Pick any real 5-letter word. Your friend gets 6 guesses, and you watch live.
+          </p>
+          <input
+            value={secret}
+            onChange={(e) =>
+              setSecret(
+                e.target.value
+                  .toLowerCase()
+                  .replace(/[^a-z]/g, "")
+                  .slice(0, WORD_LEN),
+              )
+            }
+            placeholder="chaos"
+            autoCapitalize="none"
+            autoComplete="off"
+            className="input mt-4 text-center uppercase tracking-[0.4em] text-2xl font-bold"
+          />
+          {secret.length === WORD_LEN && !isWord(secret) && (
+            <p className="meta mt-2 text-center">Not in our word list. Try another.</p>
+          )}
+          <button
+            disabled={secret.length !== WORD_LEN || !isWord(secret)}
+            onClick={() => {
+              setWordFor(secret);
+              setWordSheet(false);
+            }}
+            className="btn-primary w-full mt-4"
+          >
+            Pick who guesses
+          </button>
+        </Sheet>
+      )}
+      {wordFor && (
+        <FriendPicker
+          title="who's guessing?"
+          cta="Send the word"
+          single
+          onClose={() => setWordFor(null)}
+          onPick={async ([fid]) => {
+            const friend = friendById(fid);
+            const word = wordFor;
+            setWordFor(null);
+            if (!friend) return;
+            try {
+              const id = await startWordChallenge(friend, word);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
     </>
   );

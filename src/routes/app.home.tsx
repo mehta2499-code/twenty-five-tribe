@@ -18,15 +18,15 @@ import { Avatar } from "@/components/Avatar";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
 import {
-  leaderboard,
+  friendById,
   seatedFriends,
   streakStatus,
   useSocial,
-  type GameId,
   type Person,
   type SocialState,
 } from "@/lib/social";
-import { GAME_NAMES } from "@/components/ArcadeGames";
+import { GAMES } from "@/components/ArcadeGames";
+import { TRIES, dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { VOICE } from "@/lib/copy";
 
@@ -261,8 +261,24 @@ function Table({
 type Nudge = { emoji: string; text: string; to: string; search?: { to: string }; tone: string };
 
 function useNudges(s: SocialState, people: Person[]): Nudge[] {
+  const d = useDaily();
   return useMemo(() => {
     const out: Nudge[] = [];
+    const day = today();
+    const used = (d.board[day]?.me ?? []).length;
+    if (used < TRIES) {
+      const g = GAMES[gameFor(day)];
+      const leader = dayRanking(d, day)[0];
+      out.push({
+        emoji: g.emoji,
+        text:
+          leader && leader.id !== "me"
+            ? `${friendById(leader.id)?.name.split(" ")[0] ?? "Someone"} leads ${g.name} with ${leader.avg}. ${TRIES - used} tries left.`
+            : `Today's game: ${g.name}. ${TRIES - used} tries waiting.`,
+        to: "/app/games",
+        tone: "var(--lime)",
+      });
+    }
     const snaps = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me")).length;
     if (snaps)
       out.push({
@@ -312,7 +328,7 @@ function useNudges(s: SocialState, people: Person[]): Nudge[] {
         tone: "var(--pink)",
       });
     return out;
-  }, [s.snaps, s.requests, s.streaks, s.unread, people]);
+  }, [s.snaps, s.requests, s.streaks, s.unread, people, d]);
 }
 
 function RightNow({ nudges }: { nudges: Nudge[] }) {
@@ -363,11 +379,11 @@ const DARES: { text: string; cta: string; to: string }[] = [
   { text: "Snap your lunch to someone. No caption. Let them wonder.", cta: "Send a snap", to: "/app/snap" },
   { text: "Text someone the first song that comes to mind. Nothing else.", cta: "Open chats", to: "/app/chats" },
   { text: "Post the 5th photo in your camera roll. No explaining.", cta: "Post it", to: "/app/feed" },
-  { text: "Challenge your table at Tap Rush. Loser buys chai.", cta: "Play", to: "/app/games" },
+  { text: "Top your table in today's game. Loser buys chai.", cta: "Play", to: "/app/games" },
   { text: "Snap the view from where you're sitting right now.", cta: "Send a snap", to: "/app/snap" },
   { text: "Ask someone 'what's the tea?' and nothing else.", cta: "Open chats", to: "/app/chats" },
   { text: "Send an ugly selfie. Streaks were built on less.", cta: "Send a snap", to: "/app/snap" },
-  { text: "Beat your best score in Colour Clash before bed.", cta: "Play", to: "/app/games" },
+  { text: "Finish all 3 tries of today's game before bed.", cta: "Play", to: "/app/games" },
   { text: "Tell someone at your table one thing you never told them.", cta: "Open chats", to: "/app/chats" },
   { text: "Post a photo from exactly one year ago (or close enough).", cta: "Post it", to: "/app/feed" },
 ];
@@ -407,35 +423,35 @@ function Dare() {
 // ---------- Games ----------
 
 function GameRank() {
-  const s = useSocial();
-  const best = useMemo(() => {
-    let top: { game: GameId; rank: number; of: number } | null = null;
-    for (const g of Object.keys(GAME_NAMES) as GameId[]) {
-      const board = leaderboard(s, g);
-      const i = board.findIndex((r) => r.id === "me");
-      if (i >= 0 && (!top || i + 1 < top.rank)) top = { game: g, rank: i + 1, of: board.length };
-    }
-    return top;
-  }, [s]);
+  const d = useDaily();
+  const day = today();
+  const g = GAMES[gameFor(day)];
+  const tries = d.board[day]?.me ?? [];
+  const left = TRIES - tries.length;
+  const todayRank = dayRanking(d, day).find((r) => r.id === "me");
+  const week = weekStandings(d, thisWeek());
+  const weekRank = week.findIndex((r) => r.id === "me") + 1;
 
-  const medal = best ? (best.rank === 1 ? "🥇" : best.rank === 2 ? "🥈" : best.rank === 3 ? "🥉" : "🎮") : "🕹️";
   return (
     <section className="px-5 mt-6">
       <Link to="/app/games" className="card p-4 flex items-center gap-3 hover:bg-[var(--fill)]">
         <span
           className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
-          style={{ background: "var(--sky)", border: "2px solid var(--edge)" }}
+          style={{ background: g.tone, border: "2px solid var(--edge)", transform: "rotate(-4deg)" }}
         >
-          {medal}
+          {g.emoji}
         </span>
         <span className="flex-1 min-w-0">
           <span className="block font-bold text-cream text-[15px]">
-            {best
-              ? `#${best.rank} of ${best.of} in ${GAME_NAMES[best.game]}`
-              : "No scores this week. Yet."}
+            Today: {g.name}
+            {left > 0 ? ` · ${left} ${left === 1 ? "try" : "tries"} left` : " · done ✅"}
           </span>
           <span className="block meta">
-            {best && best.rank === 1 ? "Defend the crown. Boards reset Monday." : "Climb the board. Resets Monday."}
+            {todayRank
+              ? `#${todayRank.rank} today${weekRank ? ` · #${weekRank} this week` : ""}`
+              : weekRank
+                ? `#${weekRank} this week. Don't slip.`
+                : "New game every day. Average of 3 tries."}
           </span>
         </span>
         <Trophy size={18} className="text-bronze shrink-0" aria-hidden="true" />
