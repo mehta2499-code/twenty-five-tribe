@@ -16,18 +16,18 @@ export const Route = createFileRoute("/onboarding")({
 // ---------- Mock contacts (in a real app this comes from the OS contact picker) ----------
 type Contact = { id: string; name: string; phone: string; avatar: string };
 const MOCK_CONTACTS: Contact[] = [
-  { id: "c1",  name: "Rahul Mehta",     phone: "+91 98•••••12", avatar: avatarUrl(12) },
-  { id: "c2",  name: "Priya Nair",      phone: "+91 99•••••08", avatar: avatarUrl(5)  },
-  { id: "c3",  name: "Arjun Kapoor",    phone: "+91 98•••••44", avatar: avatarUrl(13) },
-  { id: "c4",  name: "Neha Sharma",     phone: "+91 90•••••21", avatar: avatarUrl(9)  },
-  { id: "c5",  name: "Simran Bedi",     phone: "+91 70•••••33", avatar: avatarUrl(16) },
-  { id: "c6",  name: "Kabir Anand",     phone: "+91 87•••••91", avatar: avatarUrl(68) },
-  { id: "c7",  name: "Tara Krishnan",   phone: "+91 91•••••55", avatar: avatarUrl(1)  },
-  { id: "c8",  name: "Aditya Bose",     phone: "+91 99•••••02", avatar: avatarUrl(60) },
-  { id: "c9",  name: "Meera Pillai",    phone: "+91 88•••••77", avatar: avatarUrl(44) },
-  { id: "c10", name: "Yash Khurana",    phone: "+91 98•••••39", avatar: avatarUrl(51) },
-  { id: "c11", name: "Riya D'Souza",    phone: "+91 70•••••18", avatar: avatarUrl(20) },
-  { id: "c12", name: "Karan Joshi",     phone: "+91 90•••••64", avatar: avatarUrl(52) },
+  { id: "c1", name: "Rahul Mehta", phone: "+91 98•••••12", avatar: avatarUrl(12) },
+  { id: "c2", name: "Priya Nair", phone: "+91 99•••••08", avatar: avatarUrl(5) },
+  { id: "c3", name: "Arjun Kapoor", phone: "+91 98•••••44", avatar: avatarUrl(13) },
+  { id: "c4", name: "Neha Sharma", phone: "+91 90•••••21", avatar: avatarUrl(9) },
+  { id: "c5", name: "Simran Bedi", phone: "+91 70•••••33", avatar: avatarUrl(16) },
+  { id: "c6", name: "Kabir Anand", phone: "+91 87•••••91", avatar: avatarUrl(68) },
+  { id: "c7", name: "Tara Krishnan", phone: "+91 91•••••55", avatar: avatarUrl(1) },
+  { id: "c8", name: "Aditya Bose", phone: "+91 99•••••02", avatar: avatarUrl(60) },
+  { id: "c9", name: "Meera Pillai", phone: "+91 88•••••77", avatar: avatarUrl(44) },
+  { id: "c10", name: "Yash Khurana", phone: "+91 98•••••39", avatar: avatarUrl(51) },
+  { id: "c11", name: "Riya D'Souza", phone: "+91 70•••••18", avatar: avatarUrl(20) },
+  { id: "c12", name: "Karan Joshi", phone: "+91 90•••••64", avatar: avatarUrl(52) },
 ];
 
 type Reservation = { contact: Contact; role: Role };
@@ -124,15 +124,18 @@ function Onboarding() {
               <Eyebrow>hi.</Eyebrow>
               <h1
                 className="font-normal leading-[1.05] text-white"
-                style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "clamp(2.5rem, 8vw, 3.5rem)" }}
+                style={{
+                  fontFamily: "'Fraunces', Georgia, serif",
+                  fontSize: "clamp(2.5rem, 8vw, 3.5rem)",
+                }}
               >
                 You're here.
                 <br />
                 <span className="italic text-white/90">Let's set the table.</span>
               </h1>
               <p className="mt-8 text-white/70 leading-relaxed">
-                Twenty-five seats. No more, no less. You'll reserve each one
-                for someone real — a person, a role, a reason.
+                Twenty-five seats. No more, no less. You'll reserve each one for someone real — a
+                person, a role, a reason.
               </p>
               <p className="mt-4 text-white/80 text-sm italic">
                 We don't browse your contacts. You pick. We hold the seats.
@@ -169,13 +172,15 @@ function Onboarding() {
               <Eyebrow>a small ask</Eyebrow>
               <Title>Can we see your contacts?</Title>
               <p className="mt-4 text-white/65 leading-relaxed">
-                Only so you can <em>pick</em> from them. We never read your
-                contact list, never store the rest, never suggest anyone.
-                You do the choosing — always.
+                Only so you can <em>pick</em> from them. We never read your contact list, never
+                store the rest, never suggest anyone. You do the choosing — always.
               </p>
               <div
                 className="mt-8 rounded-3xl p-5 flex items-center gap-4"
-                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.08)" }}
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
               >
                 <div
                   className="h-12 w-12 rounded-2xl flex items-center justify-center text-2xl"
@@ -274,10 +279,7 @@ function Onboarding() {
               )}
 
               <Spacer />
-              <BigBtn
-                disabled={reservations.length < 1}
-                onClick={() => setStep(5)}
-              >
+              <BigBtn disabled={reservations.length < 1} onClick={() => setStep(5)}>
                 {reservations.length < 1
                   ? "Reserve at least one seat"
                   : `Done — ${reservations.length} ${reservations.length === 1 ? "seat" : "seats"} held`}
@@ -363,7 +365,10 @@ function Onboarding() {
               <div className="mt-5 flex items-center gap-3 text-white/70 text-xs">
                 <span
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1"
-                  style={{ background: "rgba(43,138,196,0.10)", border: "1px solid rgba(43,138,196,0.35)" }}
+                  style={{
+                    background: "rgba(43,138,196,0.10)",
+                    border: "1px solid rgba(43,138,196,0.35)",
+                  }}
                 >
                   role · {role.toLowerCase()}
                 </span>
@@ -381,9 +386,7 @@ function Onboarding() {
             </StepWrap>
           )}
 
-          {step === 5 && (
-            <FinalStep name={name} reservations={reservations} onFinish={finish} />
-          )}
+          {step === 5 && <FinalStep name={name} reservations={reservations} onFinish={finish} />}
         </div>
       </div>
     </main>
@@ -417,9 +420,7 @@ function FinalStep({
       <p className="mt-6 text-white/70 leading-relaxed">
         {taken === 1 ? "One seat reserved. A start." : `${taken} seats reserved.`}{" "}
         {remaining > 0 && (
-          <span className="text-white/80">
-            {remaining} kept open for whoever wanders in next.
-          </span>
+          <span className="text-white/80">{remaining} kept open for whoever wanders in next.</span>
         )}
       </p>
 
@@ -449,9 +450,7 @@ function FinalStep({
 
       <Spacer />
       <BigBtn onClick={onFinish}>Open the table</BigBtn>
-      <p className="mt-3 text-center text-white/70 text-xs">
-        one of twenty-five. irreplaceable.
-      </p>
+      <p className="mt-3 text-center text-white/70 text-xs">one of twenty-five. irreplaceable.</p>
     </StepWrap>
   );
 }
@@ -460,11 +459,7 @@ function StepWrap({ children }: { children: React.ReactNode }) {
   return <div className="flex-1 flex flex-col animate-[fade_400ms_ease-out]">{children}</div>;
 }
 function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="uppercase tracking-[0.32em] text-[0.7rem] text-[#fff] mb-4">
-      {children}
-    </p>
-  );
+  return <p className="uppercase tracking-[0.32em] text-[0.7rem] text-[#fff] mb-4">{children}</p>;
 }
 function Title({ children }: { children: React.ReactNode }) {
   return (

@@ -94,7 +94,12 @@ const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
 // Days and weeks follow India time, the same as the server's streak rules.
-const IST = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" });
+const IST = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Kolkata",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 export const dayKey = (t = Date.now()) => IST.format(new Date(t));
 export const weekKey = (t = Date.now()) => {
   const [y, m, d] = dayKey(t).split("-").map(Number);
@@ -104,8 +109,8 @@ export const weekKey = (t = Date.now()) => {
 };
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export const seatedFriends = (): Person[] =>
-  state.mode === "live" ? state.people : FRIENDS.filter((f) => getSeatMeta(f.id).state === "ACCEPTED");
+const demoFriends = () => FRIENDS.filter((f) => getSeatMeta(f.id).state === "ACCEPTED");
+export const seatedFriends = (): Person[] => (state.mode === "live" ? state.people : demoFriends());
 export const friendById = (id: string): Person | undefined =>
   state.mode === "live" ? state.people.find((f) => f.id === id) : FRIENDS.find((f) => f.id === id);
 
@@ -153,7 +158,7 @@ function seed(): SocialState {
   const now = Date.now();
   const today = dayKey(now);
   const yesterday = dayKey(now - DAY);
-  const seated = seatedFriends();
+  const seated = demoFriends();
 
   const streakCounts = [212, 87, 45, 3, 0, 120, 14, 9, 33, 2, 61, 7, 0, 18, 5, 0, 26, 1, 0, 11];
   const streaks: Record<string, Streak> = {};
@@ -336,7 +341,7 @@ function seed(): SocialState {
 function seedScores(): ScoreBoard {
   const wk = weekKey();
   const board: ScoreBoard = { "tap-rush": {}, "quick-math": {}, trivia: {} };
-  seatedFriends().forEach((f) => {
+  demoFriends().forEach((f) => {
     // Not everyone plays every week.
     if (hash(f.id + "tap" + wk) % 4 !== 0)
       board["tap-rush"][f.id] = 14 + (hash(f.id + "t" + wk) % 26);
@@ -375,6 +380,10 @@ function set(fn: (s: SocialState) => SocialState) {
   save();
 }
 
+export function clearError() {
+  if (state.error) set((s) => ({ ...s, error: null }));
+}
+
 /** For the live (Supabase) layer: read and replace the store. */
 export const _get = () => state;
 export const _set = set;
@@ -410,7 +419,8 @@ function hydrate() {
   hydrated = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw && state.mode === "demo") state = { ...seed(), ...JSON.parse(raw), ...DEMO_SESSION, typing: {} };
+    if (raw && state.mode === "demo")
+      state = { ...seed(), ...JSON.parse(raw), ...DEMO_SESSION, typing: {} };
   } catch {
     // Saved data is unreadable; start from the seed.
   }
@@ -731,7 +741,8 @@ export function registerLive(impl: Partial<SocialActions>) {
 /** Every screen calls these. Signed in, they go to Supabase; otherwise to the demo. */
 export const social: SocialActions = new Proxy(demo, {
   get(target, key: string) {
-    if (state.mode === "live" && liveImpl && key in liveImpl) return liveImpl[key as keyof SocialActions];
+    if (state.mode === "live" && liveImpl && key in liveImpl)
+      return liveImpl[key as keyof SocialActions];
     return target[key as keyof SocialActions];
   },
 });

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS, MOMENTS, THOUGHTS, getSeatMeta } from "@/lib/data";
+import { seatedFriends, useSocial, type Person } from "@/lib/social";
 import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/home")({
@@ -12,10 +13,11 @@ export const Route = createFileRoute("/app/home")({
 const INNER_COUNT = 6;
 const OUTER_DOTS = 19;
 
-type RollResult = { friend: (typeof FRIENDS)[number]; phase: "spinning" | "settled" } | null;
+type RollResult = { friend: Person; phase: "spinning" | "settled" } | null;
 
 function Orbit({ rolling }: { rolling: boolean }) {
-  const inner = useMemo(() => FRIENDS.slice(0, INNER_COUNT), []);
+  const s = useSocial();
+  const inner = seatedFriends().slice(0, INNER_COUNT);
 
   return (
     <section className="px-5 pt-2">
@@ -102,7 +104,12 @@ function Orbit({ rolling }: { rolling: boolean }) {
             className="candle-glow candle-flicker absolute"
             style={{ width: 130, height: 130 }}
           />
-          <Avatar src={ME.avatar} initials={ME.initials} size={64} ring="gold" />
+          <Avatar
+            src={s.me ? s.me.avatar : ME.avatar}
+            initials={s.me?.initials ?? ME.initials}
+            size={64}
+            ring="gold"
+          />
         </div>
       </div>
 
@@ -128,7 +135,7 @@ function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment
       to: undefined as string | undefined,
     },
     { glyph: "❤", label: "Send a thought", onClick: undefined, to: "/app/thoughts" },
-    { glyph: "➕", label: "Reserve a seat", onClick: undefined, to: "/app/my25" },
+    { glyph: "➕", label: "Save a seat", onClick: undefined, to: "/app/people" },
     { glyph: "🎲", label: "Roll the table", onClick: onRoll, to: undefined },
   ];
   return (
@@ -166,7 +173,7 @@ function QuickActions({ onRoll, onAddMoment }: { onRoll: () => void; onAddMoment
 }
 
 function StartHere() {
-  const acceptedCount = FRIENDS.filter((f) => getSeatMeta(f.id).state === "ACCEPTED").length;
+  const acceptedCount = seatedFriends().length;
   const hasMoments = MOMENTS.length > 0;
   const hasSentThought = THOUGHTS.some((t) => t.direction === "to");
 
@@ -176,8 +183,8 @@ function StartHere() {
     nudge = {
       headline: "Start building your table.",
       body: "Reserve your first seat.",
-      cta: "Reserve a seat",
-      to: "/app/my25",
+      cta: "Save a seat",
+      to: "/app/people",
     };
   } else if (!hasMoments) {
     nudge = {
@@ -299,13 +306,57 @@ function TodayAtTheTable() {
   );
 }
 
+function ModeBanner() {
+  const s = useSocial();
+  if (s.mode === "live") {
+    const taken = s.people.length;
+    const incoming = s.requests.filter((r) => r.direction === "incoming").length;
+    return (
+      <Link
+        to="/app/people"
+        className="mx-5 -mt-5 relative z-10 card-editorial flex items-center gap-3 px-4 py-3"
+      >
+        <span className="die-tile" style={{ width: 36, height: 36, fontSize: 16 }}>
+          {taken}
+        </span>
+        <span className="flex-1 text-cream font-semibold" style={{ fontSize: 14 }}>
+          {taken} of 25 seats filled
+          {incoming > 0 && (
+            <span
+              className="block font-normal"
+              style={{ color: "var(--coral-deep)", fontSize: 13 }}
+            >
+              {incoming} waiting for you to accept
+            </span>
+          )}
+        </span>
+        <span className="text-bronze font-semibold" style={{ fontSize: 13 }}>
+          Your 25 →
+        </span>
+      </Link>
+    );
+  }
+  return (
+    <div className="mx-5 -mt-5 relative z-10 card-editorial flex items-center gap-3 px-4 py-3">
+      <span className="flex-1 text-cream" style={{ fontSize: 13, lineHeight: 1.4 }}>
+        These are demo friends. Sign in to fill your table with real ones.
+      </span>
+      <Link to="/login" className="btn-bronze px-4 py-2 shrink-0" style={{ fontSize: 13 }}>
+        Sign in
+      </Link>
+    </div>
+  );
+}
+
 function Home() {
   const [roll, setRoll] = useState<RollResult>(null);
   const [adding, setAdding] = useState(false);
   const rolling = roll?.phase === "spinning";
 
+  const s = useSocial();
   const onRoll = () => {
-    const candidates = FRIENDS.slice(0, 14);
+    const candidates = seatedFriends().slice(0, 14);
+    if (!candidates.length) return;
     const pick = candidates[Math.floor(Math.random() * candidates.length)];
     setRoll({ friend: pick, phase: "spinning" });
     setTimeout(() => setRoll({ friend: pick, phase: "settled" }), 1400);
@@ -330,7 +381,11 @@ function Home() {
             className="rounded-full"
             style={{ boxShadow: "0 0 0 3px rgba(255,255,255,0.6)" }}
           >
-            <Avatar src={ME.avatar} initials={ME.initials} size={40} />
+            <Avatar
+              src={s.me ? s.me.avatar : ME.avatar}
+              initials={s.me?.initials ?? ME.initials}
+              size={40}
+            />
           </Link>
         </div>
         <p
@@ -341,13 +396,15 @@ function Home() {
         </p>
       </header>
 
+      <ModeBanner />
+
       <Orbit rolling={rolling} />
 
       <QuickActions onRoll={onRoll} onAddMoment={() => setAdding(true)} />
 
       <StartHere />
 
-      <TodayAtTheTable />
+      {s.mode === "demo" && <TodayAtTheTable />}
 
       <p
         className="text-center font-display italic mt-16 mb-4 px-8"

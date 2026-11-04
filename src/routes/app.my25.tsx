@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FRIENDS, SEATS_FILLED, SEATS_TOTAL, WAITING_ROOM, type Friend } from "@/lib/data";
+import { SEATS_TOTAL, WAITING_ROOM, type Friend } from "@/lib/data";
+import { seatedFriends, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app/my25")({
   component: My25,
@@ -32,10 +33,10 @@ function driftMeta(days: number) {
 function My25() {
   const [selected, setSelected] = useState<Friend | null>(null);
   const [waitingOpen, setWaitingOpen] = useState(false);
-  const seats: (Friend | null)[] = Array.from(
-    { length: SEATS_TOTAL },
-    (_, i) => FRIENDS[i] ?? null,
-  );
+  useSocial(); // re-render when your 25 changes
+  const people = seatedFriends();
+  const SEATS_FILLED = people.length;
+  const seats: (Friend | null)[] = Array.from({ length: SEATS_TOTAL }, (_, i) => people[i] ?? null);
 
   return (
     <>

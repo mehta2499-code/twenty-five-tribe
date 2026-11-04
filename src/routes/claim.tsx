@@ -44,7 +44,10 @@ function Claim() {
       <section className="relative z-10 mx-auto max-w-md px-6 py-20 text-center">
         {phase === "intro" ? (
           <>
-            <p className="uppercase tracking-[0.32em] text-[0.7rem]" style={{ color: "var(--coral)" }}>
+            <p
+              className="uppercase tracking-[0.32em] text-[0.7rem]"
+              style={{ color: "var(--coral)" }}
+            >
               {VOICE.claim.eyebrow}
             </p>
 
@@ -52,7 +55,8 @@ function Claim() {
               <div
                 className="rounded-full p-[3px]"
                 style={{
-                  background: "radial-gradient(circle at 50% 50%, rgba(43,138,196,0.55), rgba(43,138,196,0.05) 70%)",
+                  background:
+                    "radial-gradient(circle at 50% 50%, rgba(43,138,196,0.55), rgba(43,138,196,0.05) 70%)",
                 }}
               >
                 <Avatar src={r.fromAvatar} initials={r.fromInitials} size={132} />
@@ -61,21 +65,26 @@ function Claim() {
 
             <h1
               className="mt-8 leading-[1.1] text-white"
-              style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "clamp(2rem, 7vw, 2.6rem)" }}
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: "clamp(2rem, 7vw, 2.6rem)",
+              }}
             >
               {VOICE.claim.headline(r.fromName)}
             </h1>
 
             <p
               className="mt-5 italic"
-              style={{ color: "var(--blue-deep)", fontFamily: "'Fraunces', Georgia, serif", fontSize: 18 }}
+              style={{
+                color: "var(--blue-deep)",
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 18,
+              }}
             >
               role: {r.role.toLowerCase()}
             </p>
 
-            <p className="mt-6 text-white/65 leading-relaxed text-[15px]">
-              {VOICE.claim.sub}
-            </p>
+            <p className="mt-6 text-white/65 leading-relaxed text-[15px]">{VOICE.claim.sub}</p>
 
             <p className="mt-2 text-white/75 text-xs">reserved {r.reservedAt}</p>
 
@@ -99,14 +108,24 @@ function Claim() {
           </>
         ) : (
           <>
-            <p className="uppercase tracking-[0.32em] text-[0.7rem]" style={{ color: "var(--coral)" }}>
+            <p
+              className="uppercase tracking-[0.32em] text-[0.7rem]"
+              style={{ color: "var(--coral)" }}
+            >
               seat accepted
             </p>
             <h1
               className="mt-8 leading-[1.1] text-white"
-              style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: "clamp(2rem, 7vw, 2.6rem)" }}
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: "clamp(2rem, 7vw, 2.6rem)",
+              }}
             >
-              You're at <span className="italic" style={{ color: "var(--blue-deep)" }}>{r.fromName}'s</span> table.
+              You're at{" "}
+              <span className="italic" style={{ color: "var(--blue-deep)" }}>
+                {r.fromName}'s
+              </span>{" "}
+              table.
             </h1>
             <p className="mt-6 text-white/65 leading-relaxed">
               They'll know in a quiet way. No notification storm.

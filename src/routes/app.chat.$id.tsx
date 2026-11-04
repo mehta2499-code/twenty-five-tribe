@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Camera, Check, CheckCheck, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, clientOnly } from "@/components/SocialUI";
+import { sendTyping } from "@/lib/live";
 import { clock, friendById, social, useSocial, type ChatMessage, type Snap } from "@/lib/social";
 
 export const Route = createFileRoute("/app/chat/$id")({
@@ -222,7 +223,10 @@ function ChatThread() {
           <input
             id="chat-input"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (s.mode === "live") sendTyping(id);
+            }}
             placeholder={`Message ${f.name}`}
             className="flex-1 rounded-full px-4 py-3 outline-none text-cream"
             style={{

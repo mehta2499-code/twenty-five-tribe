@@ -1,0 +1,306 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Check, MessageCircle, Search, UserPlus, X } from "lucide-react";
+import { Avatar } from "@/components/Avatar";
+import { Confetti, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import { account } from "@/lib/live";
+import { useSocial, type Person } from "@/lib/social";
+
+export const Route = createFileRoute("/app/people")({
+  component: clientOnly(People),
+});
+
+const SEATS = 25;
+
+function Row({ p, children }: { p: Person; children: React.ReactNode }) {
+  return (
+    <li className="flex items-center gap-3 py-3">
+      <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={46} />
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-cream truncate" style={{ fontSize: 15 }}>
+          {p.name}
+        </p>
+        {p.username && (
+          <p className="truncate" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            @{p.username}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">{children}</div>
+    </li>
+  );
+}
+
+const pill = "rounded-full px-4 h-10 inline-flex items-center gap-1.5 font-semibold text-sm";
+
+function People() {
+  const s = useSocial();
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<Person[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [burst, setBurst] = useState(0);
+
+  const taken = s.people.length + s.requests.filter((r) => r.direction === "outgoing").length;
+  const incoming = s.requests.filter((r) => r.direction === "incoming");
+  const outgoing = s.requests.filter((r) => r.direction === "outgoing");
+  const known = new Set([...s.people.map((p) => p.id), ...s.requests.map((r) => r.person.id)]);
+
+  useEffect(() => {
+    if (s.mode !== "live" || q.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    setSearching(true);
+    const t = setTimeout(() => {
+      account
+        .search(q)
+        .then(setResults)
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q, s.mode]);
+
+  const act = async (key: string, fn: () => Promise<void>, done?: string, celebrate = false) => {
+    setBusy(key);
+    try {
+      await fn();
+      if (done) setToast(done);
+      if (celebrate) {
+        setBurst((b) => b + 1);
+        buzz(30);
+      }
+    } catch (e) {
+      setToast((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (s.mode !== "live") {
+    return (
+      <div className="pb-8">
+        <PageBand
+          eyebrow="your 25"
+          title="Fill your seats."
+          sub="Real people, by invitation only."
+        />
+        <div className="px-6 mt-10 text-center">
+          <p className="text-cream font-semibold" style={{ fontSize: 17 }}>
+            You're in demo mode.
+          </p>
+          <p
+            className="mt-2"
+            style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}
+          >
+            Sign in to find your friends and save them a seat. Everyone you add can message, snap
+            and play with you.
+          </p>
+          <Link to="/login" className="btn-bronze inline-block mt-6 px-6 py-3">
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-8">
+      <PageBand
+        eyebrow="your 25"
+        title={`${taken} of ${SEATS} seats taken.`}
+        sub={
+          taken >= SEATS
+            ? "Table's full. Someone has to go for someone new to come in."
+            : `${SEATS - taken} open. Choose wisely.`
+        }
+      >
+        <div className="mt-5 flex justify-center gap-1 flex-wrap" aria-hidden="true">
+          {Array.from({ length: SEATS }).map((_, i) => (
+            <span
+              key={i}
+              className="w-2.5 h-2.5 rounded-full"
+              style={{
+                background:
+                  i < s.people.length
+                    ? "#fff"
+                    : i < taken
+                      ? "var(--coral)"
+                      : "rgba(255,255,255,0.3)",
+              }}
+            />
+          ))}
+        </div>
+      </PageBand>
+
+      <section className="px-5 mt-6">
+        <label
+          className="flex items-center gap-2 rounded-full px-4 h-12 card-editorial"
+          htmlFor="people-search"
+        >
+          <Search size={18} className="text-faint" />
+          <input
+            id="people-search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by name or @username"
+            autoCapitalize="none"
+            className="bg-transparent outline-none flex-1 text-cream"
+            style={{ fontSize: 15 }}
+          />
+        </label>
+        {q.trim().length >= 2 && (
+          <ul
+            className="mt-2 card-editorial px-4 divide-y"
+            style={{ borderColor: "var(--border-cool)" }}
+          >
+            {searching && <li className="py-4 text-sm text-faint">Looking…</li>}
+            {!searching && results.length === 0 && (
+              <li className="py-4 text-sm text-faint">
+                Nobody by that name yet. Ask them to sign up, then search again.
+              </li>
+            )}
+            {results.map((p) => (
+              <Row key={p.id} p={p}>
+                {known.has(p.id) ? (
+                  <span className="text-sm text-faint">Already at your table</span>
+                ) : (
+                  <button
+                    disabled={busy === p.id || taken >= SEATS}
+                    onClick={() =>
+                      act(
+                        p.id,
+                        () => account.request(p.id),
+                        `Seat saved for ${p.name}. Waiting for them.`,
+                      )
+                    }
+                    className={`${pill} btn-bronze disabled:opacity-50`}
+                  >
+                    <UserPlus size={16} /> Save a seat
+                  </button>
+                )}
+              </Row>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {incoming.length > 0 && (
+        <section className="px-5 mt-8">
+          <p className="label-caps mb-1">wants a seat at your table · {incoming.length}</p>
+          <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
+            {incoming.map((r) => (
+              <Row key={r.id} p={r.person}>
+                <button
+                  aria-label={`Decline ${r.person.name}`}
+                  disabled={busy === r.id}
+                  onClick={() => act(r.id, () => account.remove(r.id))}
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: "var(--bg-surface)", color: "var(--text-secondary)" }}
+                >
+                  <X size={18} />
+                </button>
+                <button
+                  disabled={busy === r.id}
+                  onClick={() =>
+                    act(r.id, () => account.accept(r.id), `${r.person.name} is in your 25.`, true)
+                  }
+                  className={`${pill} btn-bronze`}
+                >
+                  <Check size={16} /> Accept
+                </button>
+              </Row>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="px-5 mt-8">
+        <p className="label-caps mb-1">at your table · {s.people.length}</p>
+        {s.people.length === 0 ? (
+          <p
+            className="py-6 text-center"
+            style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.5 }}
+          >
+            An empty table. Search for your first person above, or share your username:{" "}
+            <span className="font-semibold">@{s.me?.username}</span>
+          </p>
+        ) : (
+          <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
+            {s.people.map((p) =>
+              confirmRemove === p.id ? (
+                <li key={p.id} className="py-3 flex items-center gap-3">
+                  <p className="flex-1 text-sm text-cream">
+                    Give up {p.name}'s seat? Your chat and streak with them end.
+                  </p>
+                  <button
+                    onClick={() => setConfirmRemove(null)}
+                    className={`${pill}`}
+                    style={{ background: "var(--bg-surface)" }}
+                  >
+                    Keep
+                  </button>
+                  <button
+                    onClick={() =>
+                      act(p.id, () => account.remove(p.id), `${p.name}'s seat is open again.`).then(
+                        () => setConfirmRemove(null),
+                      )
+                    }
+                    className={`${pill} btn-coral`}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ) : (
+                <Row key={p.id} p={p}>
+                  <Link
+                    to="/app/chat/$id"
+                    params={{ id: p.id }}
+                    aria-label={`Message ${p.name}`}
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--bg-surface)", color: "var(--blue-deep)" }}
+                  >
+                    <MessageCircle size={18} />
+                  </Link>
+                  <button
+                    onClick={() => setConfirmRemove(p.id)}
+                    className="text-sm font-semibold px-2"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    Remove
+                  </button>
+                </Row>
+              ),
+            )}
+          </ul>
+        )}
+      </section>
+
+      {outgoing.length > 0 && (
+        <section className="px-5 mt-8">
+          <p className="label-caps mb-1">seats you're saving · {outgoing.length}</p>
+          <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
+            {outgoing.map((r) => (
+              <Row key={r.id} p={r.person}>
+                <button
+                  disabled={busy === r.id}
+                  onClick={() => act(r.id, () => account.remove(r.id), "Seat released.")}
+                  className="text-sm font-semibold px-2"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Cancel
+                </button>
+              </Row>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {toast && <Toast text={toast} onDone={() => setToast(null)} />}
+      <Confetti fire={burst} />
+    </div>
+  );
+}

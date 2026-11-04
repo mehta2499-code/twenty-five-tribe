@@ -1,6 +1,9 @@
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { Toast } from "@/components/SocialUI";
+import { initLive } from "@/lib/live";
+import { clearError, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app")({
   component: AppLayout,
@@ -9,6 +12,15 @@ export const Route = createFileRoute("/app")({
 function AppLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const s = useSocial();
+
+  // Connect to Supabase if you're signed in; otherwise the app runs on demo data.
+  useEffect(() => initLive(), []);
+
+  // Signed in but no name yet: finish setting up first.
+  useEffect(() => {
+    if (s.mode === "live" && s.needsProfile) navigate({ to: "/login" });
+  }, [s.mode, s.needsProfile, navigate]);
 
   useEffect(() => {
     try {
@@ -18,7 +30,11 @@ function AppLayout() {
 
     // Privacy: optionally blur on tab hide (best-effort screenshot deterrent)
     const allow = (() => {
-      try { return localStorage.getItem("tf.privacy.allowScreenshots") === "1"; } catch { return true; }
+      try {
+        return localStorage.getItem("tf.privacy.allowScreenshots") === "1";
+      } catch {
+        return true;
+      }
     })();
     if (allow) return;
 
@@ -39,6 +55,7 @@ function AppLayout() {
         <Outlet />
       </div>
       <BottomNav />
+      {s.error && <Toast text={s.error} onDone={() => clearError()} />}
     </div>
   );
 }

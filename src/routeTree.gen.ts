@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalkthroughRouteImport } from './routes/walkthrough'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +22,7 @@ import { Route as AppReelsRouteImport } from './routes/app.reels'
 import { Route as AppPulseRouteImport } from './routes/app.pulse'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
+import { Route as AppPeopleRouteImport } from './routes/app.people'
 import { Route as AppMy25RouteImport } from './routes/app.my25'
 import { Route as AppMomentsRouteImport } from './routes/app.moments'
 import { Route as AppHomeRouteImport } from './routes/app.home'
@@ -39,6 +41,11 @@ const WalkthroughRoute = WalkthroughRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClaimRoute = ClaimRouteImport.update({
@@ -91,6 +98,11 @@ const AppPrivacyRoute = AppPrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPeopleRoute = AppPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMy25Route = AppMy25RouteImport.update({
   id: '/my25',
   path: '/my25',
@@ -141,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/claim': typeof ClaimRoute
+  '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
@@ -150,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
+  '/app/people': typeof AppPeopleRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
@@ -163,6 +177,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/claim': typeof ClaimRoute
+  '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
@@ -172,6 +187,7 @@ export interface FileRoutesByTo {
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
+  '/app/people': typeof AppPeopleRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
@@ -187,6 +203,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/claim': typeof ClaimRoute
+  '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/walkthrough': typeof WalkthroughRoute
   '/app/capsules': typeof AppCapsulesRoute
@@ -196,6 +213,7 @@ export interface FileRoutesById {
   '/app/home': typeof AppHomeRoute
   '/app/moments': typeof AppMomentsRoute
   '/app/my25': typeof AppMy25Route
+  '/app/people': typeof AppPeopleRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/pulse': typeof AppPulseRoute
@@ -212,6 +230,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/claim'
+    | '/login'
     | '/onboarding'
     | '/walkthrough'
     | '/app/capsules'
@@ -221,6 +240,7 @@ export interface FileRouteTypes {
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
+    | '/app/people'
     | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
@@ -234,6 +254,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/claim'
+    | '/login'
     | '/onboarding'
     | '/walkthrough'
     | '/app/capsules'
@@ -243,6 +264,7 @@ export interface FileRouteTypes {
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
+    | '/app/people'
     | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
@@ -257,6 +279,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/claim'
+    | '/login'
     | '/onboarding'
     | '/walkthrough'
     | '/app/capsules'
@@ -266,6 +289,7 @@ export interface FileRouteTypes {
     | '/app/home'
     | '/app/moments'
     | '/app/my25'
+    | '/app/people'
     | '/app/privacy'
     | '/app/profile'
     | '/app/pulse'
@@ -281,6 +305,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   ClaimRoute: typeof ClaimRoute
+  LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   WalkthroughRoute: typeof WalkthroughRoute
 }
@@ -299,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/claim': {
@@ -369,6 +401,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/app/privacy'
       preLoaderRoute: typeof AppPrivacyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/people': {
+      id: '/app/people'
+      path: '/people'
+      fullPath: '/app/people'
+      preLoaderRoute: typeof AppPeopleRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/my25': {
@@ -445,6 +484,7 @@ interface AppRouteChildren {
   AppHomeRoute: typeof AppHomeRoute
   AppMomentsRoute: typeof AppMomentsRoute
   AppMy25Route: typeof AppMy25Route
+  AppPeopleRoute: typeof AppPeopleRoute
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
   AppPulseRoute: typeof AppPulseRoute
@@ -464,6 +504,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppMomentsRoute: AppMomentsRoute,
   AppMy25Route: AppMy25Route,
+  AppPeopleRoute: AppPeopleRoute,
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
   AppPulseRoute: AppPulseRoute,
@@ -481,6 +522,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   ClaimRoute: ClaimRoute,
+  LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   WalkthroughRoute: WalkthroughRoute,
 }

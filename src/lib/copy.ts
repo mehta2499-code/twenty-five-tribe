@@ -11,8 +11,7 @@ export const VOICE = {
   table: {
     header: "your table",
     headline: "These are your people.",
-    subhead: (taken: number, open: number) =>
-      `${taken} seats taken · ${open} kept open`,
+    subhead: (taken: number, open: number) => `${taken} seats taken · ${open} kept open`,
     rollPrompt: "Roll the table",
     rollHint: "A random seat. A small unprompted hello.",
     reserve: "Reserve a seat",
@@ -23,7 +22,13 @@ export const VOICE = {
 
   // 4–5 of these get sprinkled across the orbit; the rest of the seats stay quiet
   // so the labels feel curated, not noisy.
-  curatedRoles: ["Ride or Die", "Always Shows Up", "Family", "Day One", "Knows The Real Me"] as const,
+  curatedRoles: [
+    "Ride or Die",
+    "Always Shows Up",
+    "Family",
+    "Day One",
+    "Knows The Real Me",
+  ] as const,
 
   // Ghost labels on empty chairs the user has reserved for "someone, eventually"
   saveASeatPlaceholders: [
@@ -67,18 +72,15 @@ export const VOICE = {
   },
 
   emptyChair: {
-    question: (name: string) =>
-      `If this chair were empty next Sunday, what would you miss?`,
+    question: (name: string) => `If this chair were empty next Sunday, what would you miss?`,
     take: "Take your time.",
     close: "I sat with this.",
   },
 
   // The cheeky-warm voice — short lines used in passing across the app
   warmAsides: {
-    drift: (name: string) =>
-      `Hasn't been a ${name}-shaped week in a while. Roll the table?`,
-    nudge: (name: string) =>
-      `Send ${name} something dumb. They'll like it more than you think.`,
+    drift: (name: string) => `Hasn't been a ${name}-shaped week in a while. Roll the table?`,
+    nudge: (name: string) => `Send ${name} something dumb. They'll like it more than you think.`,
     rollResult: (name: string) =>
       `${name}. Send them something that has nothing to do with anything.`,
   },
@@ -89,11 +91,7 @@ export const VOICE = {
     { id: "line", label: "A line", hint: "Three openers. Pick. Fill. Send." },
   ] as const,
 
-  rollStarters: [
-    "Random thought:",
-    "You'd hate this:",
-    "If we were here right now:",
-  ] as const,
+  rollStarters: ["Random thought:", "You'd hate this:", "If we were here right now:"] as const,
 
   seatFooter: "One of twenty-five. Irreplaceable.",
 

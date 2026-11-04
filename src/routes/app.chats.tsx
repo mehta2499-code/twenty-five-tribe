@@ -100,6 +100,20 @@ function Chats() {
         </label>
       </div>
 
+      {s.mode === "live" && people.length === 0 && !q && (
+        <div className="px-6 mt-8 text-center">
+          <p className="text-cream font-semibold" style={{ fontSize: 16 }}>
+            No one at your table yet.
+          </p>
+          <p className="mt-1" style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+            Save a seat for someone and you can start talking.
+          </p>
+          <Link to="/app/people" className="btn-bronze inline-block mt-4 px-5 py-2.5">
+            Find your people
+          </Link>
+        </div>
+      )}
+
       <ul className="mt-4">
         {people.map(({ f, last }) => {
           const unread = s.unread[f.id] ?? 0;

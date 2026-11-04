@@ -30,7 +30,9 @@ function Walkthrough() {
 
   const next = () => {
     if (last) {
-      try { localStorage.setItem("tf.walkthrough.done", "1"); } catch {}
+      try {
+        localStorage.setItem("tf.walkthrough.done", "1");
+      } catch {}
       navigate({ to: "/app/home" });
     } else {
       setI(i + 1);
@@ -38,7 +40,9 @@ function Walkthrough() {
   };
 
   const skip = () => {
-    try { localStorage.setItem("tf.walkthrough.done", "1"); } catch {}
+    try {
+      localStorage.setItem("tf.walkthrough.done", "1");
+    } catch {}
     navigate({ to: "/app/home" });
   };
 
@@ -61,17 +65,23 @@ function Walkthrough() {
             />
           ))}
         </div>
-        <button onClick={skip} className="label-caps text-cool">skip</button>
+        <button onClick={skip} className="label-caps text-cool">
+          skip
+        </button>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
         <p className="label-caps mb-6">{card.eyebrow}</p>
-        <h1 className="font-display italic text-cream"
-            style={{ fontSize: 34, lineHeight: 1.15, letterSpacing: "-0.015em", maxWidth: "20rem" }}>
+        <h1
+          className="font-display italic text-cream"
+          style={{ fontSize: 34, lineHeight: 1.15, letterSpacing: "-0.015em", maxWidth: "20rem" }}
+        >
           {card.title}
         </h1>
-        <p className="font-display italic mt-6 mx-auto"
-           style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1.5, maxWidth: "18rem" }}>
+        <p
+          className="font-display italic mt-6 mx-auto"
+          style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1.5, maxWidth: "18rem" }}
+        >
           {card.body}
         </p>
       </div>

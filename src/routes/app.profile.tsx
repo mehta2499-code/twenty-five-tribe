@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { ME, SEATS_FILLED, SEATS_TOTAL, ME_DESCRIPTIONS, QUIETLY } from "@/lib/data";
+import { ME, SEATS_TOTAL, ME_DESCRIPTIONS, QUIETLY } from "@/lib/data";
+import { seatedFriends, useSocial } from "@/lib/social";
+import { account } from "@/lib/live";
 import { VOICE } from "@/lib/copy";
 
 export const Route = createFileRoute("/app/profile")({
@@ -81,19 +83,26 @@ function QuietlyHappening() {
 }
 
 function Profile() {
+  const s = useSocial();
+  const name = s.me?.name ?? ME.name;
+  const taken = seatedFriends().length;
   return (
     <div className="px-5 pt-9 pb-4">
       <div className="flex flex-col items-center text-center">
         <div className="ring-active inline-block">
           <div className="rounded-full p-[3px]" style={{ background: "var(--bg-primary)" }}>
-            <Avatar src={ME.avatar} initials={ME.initials} size={104} />
+            <Avatar
+              src={s.me ? s.me.avatar : ME.avatar}
+              initials={s.me?.initials ?? ME.initials}
+              size={104}
+            />
           </div>
         </div>
         <h1
           className="mt-5 font-display italic text-cream"
           style={{ fontSize: 36, letterSpacing: "-0.01em" }}
         >
-          {ME.name}
+          {name}
         </h1>
         <p className="label-caps mt-2">
           {spaced(`seat 0 of ${SEATS_TOTAL} · the head of your table`)}
@@ -102,7 +111,8 @@ function Profile() {
           className="font-display italic mt-1"
           style={{ color: "var(--text-muted)", fontSize: 12 }}
         >
-          {SEATS_FILLED} seats taken so far.
+          {s.me ? `@${s.me.username} · ` : ""}
+          {taken} seats taken so far.
         </p>
       </div>
 
@@ -147,9 +157,18 @@ function Profile() {
         })}
       </div>
 
-      <Link to="/" className="block text-center label-caps mt-8 underline-offset-4 hover:underline">
-        {spaced("Sign out")}
-      </Link>
+      {s.mode === "live" ? (
+        <button
+          onClick={() => void account.signOut()}
+          className="block mx-auto label-caps mt-8 underline-offset-4 hover:underline"
+        >
+          Sign out
+        </button>
+      ) : (
+        <Link to="/login" className="block mx-auto mt-8 btn-bronze px-6 py-3 text-center w-fit">
+          Sign in to use 25 with real friends
+        </Link>
+      )}
       <p
         className="text-center font-display italic mt-6"
         style={{ color: "var(--text-muted)", fontSize: 11 }}
