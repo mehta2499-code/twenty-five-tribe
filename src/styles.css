@@ -411,3 +411,10 @@ html.privacy-blur body { filter: blur(28px) saturate(0.6); transition: filter 80
 /* Kachuful: a played card slides in from the player's side */
 @keyframes trick-in { from { opacity: 0; translate: var(--from-x, 0) var(--from-y, 40px); scale: 0.8; } to { opacity: 1; translate: 0 0; scale: 1; } }
 .trick-in { animation: trick-in 0.32s var(--spring) both; }
+
+/* Table screen dice */
+@keyframes die-roll { 0% { transform: rotate(0) scale(1); } 25% { transform: rotate(-18deg) scale(1.08); } 50% { transform: rotate(14deg) scale(0.96); } 75% { transform: rotate(-10deg) scale(1.05); } 100% { transform: rotate(0) scale(1); } }
+.die-rolling { animation: die-roll .35s ease-in-out infinite; }
+@keyframes idle-wiggle { 0%, 88%, 100% { transform: rotate(-6deg); } 92% { transform: rotate(8deg); } 96% { transform: rotate(-10deg); } }
+.wiggle-idle { animation: idle-wiggle 3.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .die-rolling, .wiggle-idle { animation: none; } }
