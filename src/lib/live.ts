@@ -710,6 +710,59 @@ export const account = {
   async signOut() {
     await supabase.auth.signOut();
   },
+  /** Block: they leave your 25, you leave theirs, and they can't find or seat you. */
+  async block(personId: string) {
+    const { error } = await supabase.from("blocks").insert({ blocker: myId, blocked: personId });
+    if (error && !/duplicate/i.test(error.message)) throw new Error(friendly(error));
+    await loadAll();
+  },
+  async unblock(personId: string) {
+    const { error } = await supabase
+      .from("blocks")
+      .delete()
+      .eq("blocker", myId)
+      .eq("blocked", personId);
+    if (error) throw new Error(friendly(error));
+  },
+  async blockedPeople(): Promise<{ id: string; name: string; username: string }[]> {
+    const rows = await run(
+      supabase.from("blocks").select("blocked").eq("blocker", myId).returns<{ blocked: string }[]>(),
+    );
+    if (!rows.length) return [];
+    const profiles = await run(
+      supabase
+        .from("profiles")
+        .select("id,display_name,username")
+        .in(
+          "id",
+          rows.map((r) => r.blocked),
+        )
+        .returns<{ id: string; display_name: string; username: string }[]>(),
+    );
+    return profiles.map((p) => ({ id: p.id, name: p.display_name, username: p.username }));
+  },
+  async report(personId: string | null, reason: string, details: string) {
+    const { error } = await supabase
+      .from("reports")
+      .insert({ reporter: myId, reported: personId, reason, details: details.slice(0, 1000) });
+    if (error) throw new Error(friendly(error));
+  },
+  /** Deletes your files, then your account and everything in it. Can't be undone. */
+  async deleteAccount() {
+    const me = myId;
+    if (!me) throw new Error("Sign in first.");
+    for (const bucket of ["media", "snaps", "avatars"] as const) {
+      for (let i = 0; i < 50; i++) {
+        const { data } = await supabase.storage.from(bucket).list(me, { limit: 100 });
+        if (!data?.length) break;
+        await supabase.storage.from(bucket).remove(data.map((f) => `${me}/${f.name}`));
+        if (data.length < 100) break;
+      }
+    }
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) throw new Error(friendly(error));
+    await supabase.auth.signOut();
+  },
   async search(q: string): Promise<Person[]> {
     const term = q.trim().toLowerCase().replace(/^@/, "");
     if (term.length < 2 || !myId) return [];
@@ -1047,3 +1100,7 @@ registerLive({
     );
   },
 });
+
+/** For other features (the Drop): upload a photo to your media folder, and sign media links. */
+export const uploadMedia = (source: string | Blob, ext = "jpg") => upload("media", source, ext);
+export const signedMedia = (paths: string[]) => signed("media", paths);

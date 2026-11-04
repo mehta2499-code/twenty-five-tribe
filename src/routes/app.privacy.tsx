@@ -1,3 +1,4 @@
+import { BlockedList } from "@/components/Safety";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -94,6 +95,7 @@ function Privacy() {
           the app loses focus.
         </p>
       </section>
+      <BlockedList />
     </div>
   );
 }

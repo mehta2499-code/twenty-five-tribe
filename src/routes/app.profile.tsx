@@ -1,3 +1,4 @@
+import { DeleteAccount } from "@/components/Safety";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -227,6 +228,7 @@ function Profile() {
             Sign in to use 25 with real friends
           </Link>
         )}
+        <DeleteAccount />
       </div>
       <p className="text-center meta mt-6">{VOICE.you.footer}</p>
     </div>

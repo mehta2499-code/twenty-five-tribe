@@ -20,14 +20,18 @@ import { Route as AppSnapRouteImport } from './routes/app.snap'
 import { Route as AppReelsRouteImport } from './routes/app.reels'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
+import { Route as AppPollsRouteImport } from './routes/app.polls'
 import { Route as AppPeopleRouteImport } from './routes/app.people'
 import { Route as AppHomeRouteImport } from './routes/app.home'
 import { Route as AppGamesRouteImport } from './routes/app.games'
 import { Route as AppFeedRouteImport } from './routes/app.feed'
+import { Route as AppDropRouteImport } from './routes/app.drop'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
+import { Route as AppActivityRouteImport } from './routes/app.activity'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
 import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
+import { Route as AppCardIdRouteImport } from './routes/app.card.$id'
 
 const WalkthroughRoute = WalkthroughRouteImport.update({
   id: '/walkthrough',
@@ -84,6 +88,11 @@ const AppPrivacyRoute = AppPrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPollsRoute = AppPollsRouteImport.update({
+  id: '/polls',
+  path: '/polls',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPeopleRoute = AppPeopleRouteImport.update({
   id: '/people',
   path: '/people',
@@ -104,9 +113,19 @@ const AppFeedRoute = AppFeedRouteImport.update({
   path: '/feed',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDropRoute = AppDropRouteImport.update({
+  id: '/drop',
+  path: '/drop',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChatsRoute = AppChatsRouteImport.update({
   id: '/chats',
   path: '/chats',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppActivityRoute = AppActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSeatIdRoute = AppSeatIdRouteImport.update({
@@ -124,6 +143,11 @@ const AppChatIdRoute = AppChatIdRouteImport.update({
   path: '/chat/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCardIdRoute = AppCardIdRouteImport.update({
+  id: '/card/$id',
+  path: '/card/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,17 +155,21 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
+  '/app/drop': typeof AppDropRoute
   '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/people': typeof AppPeopleRoute
+  '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
+  '/app/card/$id': typeof AppCardIdRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
@@ -151,17 +179,21 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
+  '/app/drop': typeof AppDropRoute
   '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/people': typeof AppPeopleRoute
+  '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app': typeof AppIndexRoute
+  '/app/card/$id': typeof AppCardIdRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
@@ -173,17 +205,21 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
+  '/app/drop': typeof AppDropRoute
   '/app/feed': typeof AppFeedRoute
   '/app/games': typeof AppGamesRoute
   '/app/home': typeof AppHomeRoute
   '/app/people': typeof AppPeopleRoute
+  '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
+  '/app/card/$id': typeof AppCardIdRoute
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
   '/app/seat/$id': typeof AppSeatIdRoute
@@ -196,17 +232,21 @@ export interface FileRouteTypes {
     | '/login'
     | '/vibe'
     | '/walkthrough'
+    | '/app/activity'
     | '/app/chats'
+    | '/app/drop'
     | '/app/feed'
     | '/app/games'
     | '/app/home'
     | '/app/people'
+    | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
     | '/app/reels'
     | '/app/snap'
     | '/in/$username'
     | '/app/'
+    | '/app/card/$id'
     | '/app/chat/$id'
     | '/app/play/$id'
     | '/app/seat/$id'
@@ -216,17 +256,21 @@ export interface FileRouteTypes {
     | '/login'
     | '/vibe'
     | '/walkthrough'
+    | '/app/activity'
     | '/app/chats'
+    | '/app/drop'
     | '/app/feed'
     | '/app/games'
     | '/app/home'
     | '/app/people'
+    | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
     | '/app/reels'
     | '/app/snap'
     | '/in/$username'
     | '/app'
+    | '/app/card/$id'
     | '/app/chat/$id'
     | '/app/play/$id'
     | '/app/seat/$id'
@@ -237,17 +281,21 @@ export interface FileRouteTypes {
     | '/login'
     | '/vibe'
     | '/walkthrough'
+    | '/app/activity'
     | '/app/chats'
+    | '/app/drop'
     | '/app/feed'
     | '/app/games'
     | '/app/home'
     | '/app/people'
+    | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
     | '/app/reels'
     | '/app/snap'
     | '/in/$username'
     | '/app/'
+    | '/app/card/$id'
     | '/app/chat/$id'
     | '/app/play/$id'
     | '/app/seat/$id'
@@ -341,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPrivacyRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/polls': {
+      id: '/app/polls'
+      path: '/polls'
+      fullPath: '/app/polls'
+      preLoaderRoute: typeof AppPollsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/people': {
       id: '/app/people'
       path: '/people'
@@ -369,11 +424,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFeedRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/drop': {
+      id: '/app/drop'
+      path: '/drop'
+      fullPath: '/app/drop'
+      preLoaderRoute: typeof AppDropRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/chats': {
       id: '/app/chats'
       path: '/chats'
       fullPath: '/app/chats'
       preLoaderRoute: typeof AppChatsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/activity': {
+      id: '/app/activity'
+      path: '/activity'
+      fullPath: '/app/activity'
+      preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/seat/$id': {
@@ -397,36 +466,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChatIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/card/$id': {
+      id: '/app/card/$id'
+      path: '/card/$id'
+      fullPath: '/app/card/$id'
+      preLoaderRoute: typeof AppCardIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppActivityRoute: typeof AppActivityRoute
   AppChatsRoute: typeof AppChatsRoute
+  AppDropRoute: typeof AppDropRoute
   AppFeedRoute: typeof AppFeedRoute
   AppGamesRoute: typeof AppGamesRoute
   AppHomeRoute: typeof AppHomeRoute
   AppPeopleRoute: typeof AppPeopleRoute
+  AppPollsRoute: typeof AppPollsRoute
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
   AppReelsRoute: typeof AppReelsRoute
   AppSnapRoute: typeof AppSnapRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppCardIdRoute: typeof AppCardIdRoute
   AppChatIdRoute: typeof AppChatIdRoute
   AppPlayIdRoute: typeof AppPlayIdRoute
   AppSeatIdRoute: typeof AppSeatIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppActivityRoute: AppActivityRoute,
   AppChatsRoute: AppChatsRoute,
+  AppDropRoute: AppDropRoute,
   AppFeedRoute: AppFeedRoute,
   AppGamesRoute: AppGamesRoute,
   AppHomeRoute: AppHomeRoute,
   AppPeopleRoute: AppPeopleRoute,
+  AppPollsRoute: AppPollsRoute,
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
   AppReelsRoute: AppReelsRoute,
   AppSnapRoute: AppSnapRoute,
   AppIndexRoute: AppIndexRoute,
+  AppCardIdRoute: AppCardIdRoute,
   AppChatIdRoute: AppChatIdRoute,
   AppPlayIdRoute: AppPlayIdRoute,
   AppSeatIdRoute: AppSeatIdRoute,

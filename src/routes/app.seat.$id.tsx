@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, MoreHorizontal } from "lucide-react";
+import { PersonMenu } from "@/components/Safety";
+import { bdayLabel, daysUntil, useBirthdays } from "@/lib/birthdays";
 import { Avatar } from "@/components/Avatar";
 import { clientOnly } from "@/components/SocialUI";
 import { friendById, isMutual, streakStatus, useSocial } from "@/lib/social";
@@ -17,6 +20,8 @@ function LiveSeat() {
   const navigate = useNavigate();
   const f = friendById(id);
   const daily = useDaily();
+  const [menu, setMenu] = useState(false);
+  const bday = useBirthdays().find((b) => b.id === id);
   if (!f) {
     return (
       <div className="px-6 pt-24 text-center">
@@ -44,13 +49,20 @@ function LiveSeat() {
   return (
     <div className="pb-10">
       <header className="band px-6 pt-[max(1.25rem,env(safe-area-inset-top))] pb-8 text-center">
-        <div className="flex">
+        <div className="flex justify-between">
           <button
             onClick={() => navigate({ to: "/app/home" })}
             aria-label="Back"
             className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center"
           >
             <ArrowLeft size={18} />
+          </button>
+          <button
+            onClick={() => setMenu(true)}
+            aria-label={`More options for ${f.name}`}
+            className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center"
+          >
+            <MoreHorizontal size={18} />
           </button>
         </div>
         <div className="flex justify-center -mt-2">
@@ -62,6 +74,12 @@ function LiveSeat() {
           {f.name}
         </h1>
         {f.username && <p className="sub mt-1">@{f.username}</p>}
+        {bday && (
+          <Link to="/app/card/$id" params={{ id }} className="sub mt-1 inline-block underline underline-offset-4">
+            🎂 {bdayLabel(bday)}
+            {daysUntil(bday) === 0 ? " · today! Sign the card" : daysUntil(bday) <= 7 ? ` · in ${daysUntil(bday)}d` : ""}
+          </Link>
+        )}
         <p className="mt-3">
           <span
             className={`sticker ${mutual ? "" : inMine ? "sun" : "pink"}`}
@@ -147,6 +165,7 @@ function LiveSeat() {
           ))}
         </ul>
       </section>
+      {menu && <PersonMenu person={f} onClose={() => setMenu(false)} />}
     </div>
   );
 }

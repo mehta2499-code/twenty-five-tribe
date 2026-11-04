@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Bell,
   Camera,
   ChevronRight,
   Dices,
@@ -29,6 +30,10 @@ import { GAMES } from "@/components/ArcadeGames";
 import { TRIES, dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { VOICE } from "@/lib/copy";
+import { unreadCount, useActivity } from "@/lib/activity";
+import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
+import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
+import { myVotesToday } from "@/lib/polls";
 
 export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
@@ -632,6 +637,148 @@ function ModeBanner() {
   );
 }
 
+// ---------- Drop + Polls ----------
+
+function TodayTiles() {
+  const [at, setAt] = useState<number | null>(null);
+  const [dropped, setDropped] = useState<boolean | null>(null);
+  const [voted, setVoted] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    void dropTime().then(setAt);
+    void loadDrops().then((d) => setDropped(!!d.mine));
+    void myVotesToday().then((v) => setVoted(Object.keys(v).length));
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, []);
+  const phase = at ? phaseOf(at, now) : "before";
+  const live = phase === "now" && dropped === false;
+  return (
+    <section className="px-5 mt-6 grid grid-cols-2 gap-3">
+      <Link
+        to="/app/drop"
+        className={`rounded-[20px] p-4 flex flex-col gap-1 ${live ? "wiggle" : ""}`}
+        style={{
+          background: live ? "var(--lime)" : "var(--surface)",
+          color: live ? "var(--on-accent)" : "var(--ink)",
+          border: "2px solid var(--edge)",
+          boxShadow: "var(--pop)",
+        }}
+      >
+        <span className="text-3xl">📸</span>
+        <span className="font-extrabold text-[15px]">The 25 Drop</span>
+        <span className="text-[12.5px] font-semibold opacity-80">
+          {dropped
+            ? "Dropped ✅ See theirs"
+            : phase === "now"
+              ? "IT'S DROP TIME. Go!"
+              : phase === "after"
+                ? "Missed it. Post late ⏰"
+                : "Surprise time today 👀"}
+        </span>
+      </Link>
+      <Link
+        to="/app/polls"
+        className="rounded-[20px] p-4 flex flex-col gap-1"
+        style={{ background: voted !== null && voted < 5 ? "var(--pink)" : "var(--surface)", color: voted !== null && voted < 5 ? "var(--on-accent)" : "var(--ink)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+      >
+        <span className="text-3xl">🗳️</span>
+        <span className="font-extrabold text-[15px]">Polls</span>
+        <span className="text-[12.5px] font-semibold opacity-80">
+          {voted === null ? "…" : voted < 5 ? `${5 - voted} anonymous picks left` : "Done ✅ See your picks"}
+        </span>
+      </Link>
+    </section>
+  );
+}
+
+// ---------- Birthdays ----------
+
+function Birthdays() {
+  const list = useBirthdays();
+  const s = useSocial();
+  const mine = list.find((b) => b.id === "me");
+  const soon = upcoming(list, 30);
+  const todayOnes = soon.filter((b) => b.inDays === 0);
+  const later = soon.filter((b) => b.inDays > 0).slice(0, 6);
+  const myDay = mine && daysUntil(mine) === 0;
+  if (!myDay && !soon.length) return null;
+  const name = (id: string) => friendById(id)?.name.split(" ")[0] ?? "Someone";
+  return (
+    <section className="px-5 mt-6 grid gap-3">
+      {myDay && (
+        <Link
+          to="/app/card/$id"
+          params={{ id: "me" }}
+          className="rounded-[20px] p-4 flex items-center gap-3"
+          style={{ background: "var(--pink)", color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+        >
+          <span className="text-4xl float">🎉</span>
+          <span className="flex-1">
+            <span className="block display text-[20px]">Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!</span>
+            <span className="block font-bold text-[13px]">Your 25 has been signing your card. Open it →</span>
+          </span>
+        </Link>
+      )}
+      {todayOnes.map((b) => (
+        <Link
+          key={b.id}
+          to="/app/card/$id"
+          params={{ id: b.id }}
+          className="rounded-[20px] p-4 flex items-center gap-3"
+          style={{ background: "var(--sun)", color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+        >
+          <span className="text-4xl wiggle">🎂</span>
+          <span className="flex-1">
+            <span className="block display text-[19px]">It's {name(b.id)}'s birthday!</span>
+            <span className="block font-bold text-[13px]">Sign their card before midnight ✍️</span>
+          </span>
+        </Link>
+      ))}
+      {later.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5">
+          {later.map((b) => (
+            <Link
+              key={b.id}
+              to="/app/card/$id"
+              params={{ id: b.id }}
+              className="chip shrink-0"
+              style={{ minHeight: 34 }}
+            >
+              🎂 {name(b.id)} · {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------- Activity bell ----------
+
+function ActivityBell() {
+  const st = useActivity();
+  const n = unreadCount(st);
+  return (
+    <Link
+      to="/app/activity"
+      aria-label={n ? `Activity, ${n} new` : "Activity"}
+      className="relative w-11 h-11 rounded-full flex items-center justify-center"
+      style={{ background: "var(--fill)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+    >
+      <Bell size={20} aria-hidden="true" className={n ? "wiggle" : ""} />
+      {n > 0 && (
+        <span
+          className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold flex items-center justify-center"
+          style={{ background: "var(--pink)", color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+        >
+          {n > 9 ? "9+" : n}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 // ---------- Screen ----------
 
 function Home() {
@@ -690,6 +837,8 @@ function Home() {
       <header className="band px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-5">
         <div className="flex items-center justify-between">
           <Logo height={44} title={VOICE.brand} />
+          <div className="flex items-center gap-2.5">
+          <ActivityBell />
           <Link
             to="/app/profile"
             aria-label="Your profile"
@@ -702,6 +851,7 @@ function Home() {
               size={40}
             />
           </Link>
+          </div>
         </div>
         <h1 className="title mt-4" style={{ fontSize: 30 }}>
           {first ? (
@@ -735,9 +885,13 @@ function Home() {
 
       <ModeBanner />
 
+      <Birthdays />
+
       <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
 
       <QuickActions onAddMoment={() => setAdding(true)} />
+
+      <TodayTiles />
 
       <RightNow nudges={nudges} />
 
