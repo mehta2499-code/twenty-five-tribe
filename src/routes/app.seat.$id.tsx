@@ -184,8 +184,8 @@ function SeatPage() {
           className="inline-block"
           style={{
             boxShadow: isReserved
-              ? "0 0 0 1px rgba(111,87,240,0.35), 0 0 0 4px #fff, 0 0 0 5px rgba(111,87,240,0.25)"
-              : "0 0 0 1px rgba(111,87,240,0.25), 0 0 40px rgba(111,87,240,0.18)",
+              ? "0 0 0 1px rgba(181,219,94,0.35), 0 0 0 4px #fff, 0 0 0 5px rgba(181,219,94,0.25)"
+              : "0 0 0 1px rgba(181,219,94,0.25), 0 0 40px rgba(181,219,94,0.18)",
             borderRadius: 9999,
             opacity: isReserved ? 0.75 : 1,
             filter: isReserved ? "grayscale(0.25)" : "none",
@@ -212,8 +212,8 @@ function SeatPage() {
             color: isReserved ? "var(--accent-bronze)" : "var(--text-muted)",
             padding: "4px 10px",
             borderRadius: 999,
-            background: isReserved ? "rgba(111,87,240,0.10)" : "transparent",
-            border: isReserved ? "1px dashed rgba(111,87,240,0.45)" : "none",
+            background: isReserved ? "rgba(181,219,94,0.10)" : "transparent",
+            border: isReserved ? "1px dashed rgba(181,219,94,0.45)" : "none",
           }}
         >
           {isReserved ? VOICE.reservation.badgeReserved : VOICE.reservation.badgeAccepted}
@@ -240,8 +240,8 @@ function SeatPage() {
           <button
             className="mt-6 rounded-full px-5 py-3 text-xs"
             style={{
-              background: "rgba(111,87,240,0.12)",
-              border: "1px solid rgba(111,87,240,0.4)",
+              background: "rgba(181,219,94,0.12)",
+              border: "1px solid rgba(181,219,94,0.4)",
               color: "var(--accent-bronze)",
               letterSpacing: "0.04em",
             }}
@@ -349,7 +349,7 @@ function SeatPage() {
                     className="absolute -left-[29px] top-2 w-2 h-2 rounded-full"
                     style={{
                       background: "var(--accent-bronze)",
-                      boxShadow: "0 0 8px rgba(111,87,240,0.6)",
+                      boxShadow: "0 0 8px rgba(181,219,94,0.6)",
                     }}
                   />
                   <p className="label-caps">{e.year}</p>

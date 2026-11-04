@@ -137,7 +137,7 @@ function Landing() {
             <Link
               to="/login"
               className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold transition-transform hover:-translate-y-0.5"
-              style={{ background: "var(--violet)", color: "#fff", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
+              style={{ background: "var(--lime)", color: "var(--on-dark-fill)", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
             >
               Claim your 25
             </Link>
@@ -337,7 +337,7 @@ function Landing() {
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center rounded-full px-9 py-4 font-semibold transition-transform hover:-translate-y-0.5"
-                style={{ background: "var(--violet)", color: "#fff", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
+                style={{ background: "var(--lime)", color: "var(--on-dark-fill)", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
               >
                 Claim your 25
               </Link>

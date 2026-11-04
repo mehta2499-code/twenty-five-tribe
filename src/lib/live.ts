@@ -414,7 +414,13 @@ async function loadAll() {
     people.forEach((p) => (p.postedToday = postedToday.has(p.id)));
 
     // Scores
-    const scores: ScoreBoard = { "tap-rush": {}, "quick-math": {}, trivia: {} };
+    const scores: ScoreBoard = {
+      "tap-rush": {},
+      "quick-math": {},
+      trivia: {},
+      "colour-clash": {},
+      "pair-up": {},
+    };
     for (const r of scoreRows) scores[r.game][who(r.user_id)] = r.best;
 
     const meObj: Me = {

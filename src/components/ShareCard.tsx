@@ -58,7 +58,7 @@ export function ShareCard({ compact = false }: { compact?: boolean }) {
         <p
           className="mt-3 inline-block rounded-full px-3 py-1 text-[13px] font-bold"
           style={{
-            background: "rgba(111,87,240,0.10)",
+            background: "rgba(181,219,94,0.10)",
             border: "1px solid var(--gold-line)",
             color: "var(--accent)",
           }}

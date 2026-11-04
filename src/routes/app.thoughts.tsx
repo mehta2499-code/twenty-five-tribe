@@ -33,7 +33,7 @@ function ThoughtsPage() {
                 <div
                   className="rounded-full"
                   style={{
-                    boxShadow: "0 0 0 1px rgba(111,87,240,0.25), 0 0 28px rgba(111,87,240,0.18)",
+                    boxShadow: "0 0 0 1px rgba(181,219,94,0.25), 0 0 28px rgba(181,219,94,0.18)",
                   }}
                 >
                   <Avatar src={f.avatar} initials={f.initials} color={f.color} size={112} />

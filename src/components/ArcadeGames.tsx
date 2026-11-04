@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Calculator, Target, X } from "lucide-react";
+import { Brain, Calculator, Palette, Target, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
 import { friendById, leaderboard, social, useSocial, type GameId, meView } from "@/lib/social";
@@ -19,11 +19,27 @@ export const ARCADE = [
     blurb: "30 seconds of mental maths. No calculators, Sharma ji.",
     unit: "correct",
   },
+  {
+    id: "colour-clash" as const,
+    name: "Colour Clash",
+    Icon: Palette,
+    blurb: "Does the word match its colour? Your brain will lie to you.",
+    unit: "correct",
+  },
+  {
+    id: "pair-up" as const,
+    name: "Pair Up",
+    Icon: Brain,
+    blurb: "Find all 8 pairs. Time left is bonus points.",
+    unit: "points",
+  },
 ];
 export const GAME_NAMES: Record<GameId, string> = {
   "tap-rush": "Tap Rush",
   "quick-math": "Quick Maths",
   trivia: "India Trivia",
+  "colour-clash": "Colour Clash",
+  "pair-up": "Pair Up",
 };
 
 function GameFrame({
@@ -376,5 +392,182 @@ export function Leaderboard() {
         </p>
       )}
     </section>
+  );
+}
+
+// ---------- Colour Clash ----------
+const CLASH_COLOURS = [
+  { name: "Red", value: "#E5486F" },
+  { name: "Blue", value: "#63B8E6" },
+  { name: "Yellow", value: "#E8BE55" },
+  { name: "Green", value: "#8FD05A" },
+];
+
+function clashRound() {
+  const word = CLASH_COLOURS[Math.floor(Math.random() * CLASH_COLOURS.length)];
+  const match = Math.random() < 0.45;
+  const ink = match ? word : CLASH_COLOURS.filter((c) => c !== word)[Math.floor(Math.random() * 3)];
+  return { word: word.name, ink: ink.value, match };
+}
+
+export function ColourClash({ onClose }: { onClose: () => void }) {
+  const [round, setRound] = useState(0);
+  return <ColourClashRound key={round} onAgain={() => setRound((r) => r + 1)} onClose={onClose} />;
+}
+
+function ColourClashRound({ onClose, onAgain }: { onClose: () => void; onAgain: () => void }) {
+  const [over, setOver] = useState(false);
+  const [score, setScore] = useState(0);
+  const [q, setQ] = useState(clashRound);
+  const [flash, setFlash] = useState<"right" | "wrong" | null>(null);
+  const left = useCountdown(30, !over, () => setOver(true));
+
+  const answer = (saysMatch: boolean) => {
+    const right = saysMatch === q.match;
+    if (right) setScore((n) => n + 1);
+    else buzz(30);
+    setFlash(right ? "right" : "wrong");
+    setTimeout(() => setFlash(null), 220);
+    setQ(clashRound());
+  };
+
+  return (
+    <GameFrame title="colour clash" timeLeft={left} score={score} onClose={onClose}>
+      {over ? (
+        <ResultCard game="colour-clash" score={score} onAgain={onAgain} onClose={onClose} />
+      ) : (
+        <div className="flex-1 flex flex-col justify-center">
+          <p className="text-center meta">Does the word match the colour it's written in?</p>
+          <div
+            className="mt-6 card flex items-center justify-center"
+            style={{
+              minHeight: 180,
+              borderColor:
+                flash === "right" ? "var(--mint)" : flash === "wrong" ? "var(--hot)" : undefined,
+            }}
+          >
+            <span
+              className="display"
+              style={{ fontSize: 64, color: q.ink }}
+              aria-label={`The word ${q.word} written in a colour`}
+            >
+              {q.word}
+            </span>
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            <button
+              onClick={() => answer(false)}
+              className="btn-secondary"
+              style={{ minHeight: 64, fontSize: 18 }}
+            >
+              No match
+            </button>
+            <button
+              onClick={() => answer(true)}
+              className="btn-primary"
+              style={{ minHeight: 64, fontSize: 18 }}
+            >
+              Match
+            </button>
+          </div>
+        </div>
+      )}
+    </GameFrame>
+  );
+}
+
+// ---------- Pair Up ----------
+const PAIR_FACES = ["🍕", "🐶", "🫖", "🎬", "🌶️", "🏖️", "🦉", "🎧"];
+
+function deal() {
+  return [...PAIR_FACES, ...PAIR_FACES]
+    .map((face, i) => ({ id: i, face, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort);
+}
+
+export function PairUp({ onClose }: { onClose: () => void }) {
+  const [round, setRound] = useState(0);
+  return <PairUpRound key={round} onAgain={() => setRound((r) => r + 1)} onClose={onClose} />;
+}
+
+function PairUpRound({ onClose, onAgain }: { onClose: () => void; onAgain: () => void }) {
+  const [cards] = useState(deal);
+  const [open, setOpen] = useState<number[]>([]);
+  const [found, setFound] = useState<string[]>([]);
+  const [started, setStarted] = useState(false);
+  const [over, setOver] = useState(false);
+  const [finalScore, setFinalScore] = useState<number | null>(null);
+  const left = useCountdown(60, started && !over, () => setOver(true));
+  const pairsScore = found.length * 10;
+
+  useEffect(() => {
+    if (found.length === PAIR_FACES.length && !over) {
+      setFinalScore(pairsScore + left);
+      setOver(true);
+    }
+  }, [found.length, over, pairsScore, left]);
+
+  const flip = (i: number) => {
+    if (over || open.includes(i) || found.includes(cards[i].face) || open.length === 2) return;
+    if (!started) setStarted(true);
+    buzz(6);
+    const next = [...open, i];
+    setOpen(next);
+    if (next.length === 2) {
+      const [a, b] = next;
+      if (cards[a].face === cards[b].face) {
+        setTimeout(() => {
+          setFound((f) => [...f, cards[a].face]);
+          setOpen([]);
+        }, 250);
+      } else {
+        setTimeout(() => setOpen([]), 650);
+      }
+    }
+  };
+
+  const score = finalScore ?? pairsScore;
+  return (
+    <GameFrame title="pair up" timeLeft={left} score={score} onClose={onClose}>
+      {over ? (
+        <ResultCard game="pair-up" score={score} onAgain={onAgain} onClose={onClose} />
+      ) : (
+        <div className="flex-1 flex flex-col justify-center">
+          <p className="text-center meta mb-4">
+            {started ? `${found.length} of 8 pairs` : "Tap a card to start the clock."}
+          </p>
+          <div className="grid grid-cols-4 gap-2.5">
+            {cards.map((c, i) => {
+              const shown = open.includes(i) || found.includes(c.face);
+              const done = found.includes(c.face);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => flip(i)}
+                  aria-label={shown ? c.face : "Hidden card"}
+                  className="aspect-square rounded-2xl flex items-center justify-center"
+                  style={{
+                    border: "2px solid var(--edge)",
+                    boxShadow: done ? "none" : "var(--pop)",
+                    background: shown ? (done ? "var(--fill)" : "var(--sun)") : "var(--fill-2)",
+                    opacity: done ? 0.55 : 1,
+                    fontSize: 30,
+                    transition: "background-color 160ms",
+                  }}
+                >
+                  {shown ? (
+                    c.face
+                  ) : (
+                    <span className="text-faint" style={{ fontSize: 18 }}>
+                      ?
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </GameFrame>
   );
 }

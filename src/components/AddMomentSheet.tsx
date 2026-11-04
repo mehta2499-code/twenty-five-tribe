@@ -120,7 +120,7 @@ export function AddMomentSheet({
                       style={{
                         padding: 2,
                         background: on ? "var(--accent-bronze)" : "transparent",
-                        boxShadow: on ? "0 0 16px rgba(111,87,240,0.45)" : "none",
+                        boxShadow: on ? "0 0 16px rgba(181,219,94,0.45)" : "none",
                       }}
                     >
                       <Avatar src={f.avatar} initials={f.initials} color={f.color} size={48} />

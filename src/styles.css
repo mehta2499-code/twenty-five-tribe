@@ -87,15 +87,16 @@
   --line-soft: rgba(255, 255, 255, 0.09);
   --line-2:   var(--edge);
 
-  --accent:    var(--violet);
-  --accent-2:  var(--violet-2);
-  --on-accent: #FFFFFF;
-  --gold-line: rgba(111, 87, 240, 0.45);
+  /* Lime leads; violet is now a rare highlight. */
+  --accent:    var(--lime);
+  --accent-2:  #A3C94C;
+  --on-accent: var(--on-dark-fill);
+  --gold-line: rgba(181, 219, 94, 0.4);
 
   /* Older names used around the app */
-  --blue:       var(--violet);
-  --blue-deep:  var(--violet);
-  --blue-press: var(--violet-2);
+  --blue:       var(--accent);
+  --blue-deep:  var(--accent);
+  --blue-press: var(--accent-2);
   --navy:       var(--fill-2);
   --coral:      var(--pink);
   --coral-deep: var(--hot);
@@ -108,11 +109,11 @@
   --bg-cream:   var(--ink);
   --bg-felt:    var(--fill);
   --accent-oxblood: var(--hot);
-  --accent-bronze:  var(--violet);
+  --accent-bronze:  var(--accent);
   --accent-ember:   var(--amber);
   --accent-sage:    var(--mint);
-  --accent-purple:  var(--violet);
-  --accent-gold:    var(--violet);
+  --accent-purple:  var(--accent);
+  --accent-gold:    var(--accent);
   --accent-cream:   var(--ink);
   --accent-red:     var(--hot);
   --accent-teal:    var(--mint);
@@ -129,18 +130,18 @@
   --card-foreground: var(--ink);
   --popover: var(--surface);
   --popover-foreground: var(--ink);
-  --primary: var(--violet);
-  --primary-foreground: #FFFFFF;
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
   --primary-glow: var(--pink);
   --secondary: var(--fill);
   --secondary-foreground: var(--ink);
   --muted: var(--fill);
   --muted-foreground: var(--ink-2);
-  --accent-foreground: #FFFFFF;
+  --accent-foreground: var(--on-accent);
   --destructive: var(--hot);
   --border: var(--line);
   --input: var(--fill);
-  --ring: var(--violet);
+  --ring: var(--accent);
 
   --drift-active: var(--mint);
   --drift-quiet:  var(--amber);
@@ -206,7 +207,7 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
 .text-warm, .text-cream { color: var(--ink); }
 .text-cool  { color: var(--ink-2); }
 .text-faint { color: var(--ink-3); }
-.text-bronze { color: #A898FF; }
+.text-bronze { color: var(--lime); }
 .text-oxblood { color: var(--hot); }
 .text-glow-25, .text-glow-purple { text-shadow: none; }
 
@@ -227,14 +228,14 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
 .hr-thin, .hairline { border: 0; height: 2px; background: var(--line); border-radius: 2px; }
 
 /* Brand band (Table header, game headers): deep violet, light text */
-.band { background: #2A2152; color: var(--ink); position: relative; border-bottom: 2px solid var(--edge); }
+.band { background: #1F1B2B; color: var(--ink); position: relative; border-bottom: 2px solid var(--edge); }
 .band .label-caps { color: var(--lime); }
 .band h1, .band h2, .band h3 { color: var(--ink); }
 .band .sub { color: var(--ink-2); }
 
 /* Big feature card (share card, invite card) */
 .black-card {
-  background: var(--violet);
+  background: radial-gradient(120% 80% at 100% 0%, rgba(224, 103, 154, 0.28), transparent 60%), #241E30;
   color: #fff;
   border: 2px solid var(--edge);
   border-radius: 24px;
@@ -272,9 +273,9 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
   text-align: center;
 }
 .btn:active:not(:disabled), [class*="btn-"]:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--edge); scale: 1; }
-.btn-primary, .btn-bronze, .btn-gold, .btn-capsule, .fab-gradient { background: var(--violet); color: #fff; }
-.btn-primary:hover, .btn-bronze:hover, .btn-gold:hover, .btn-capsule:hover, .fab-gradient:hover { background: var(--violet-2); }
-.btn-fun { background: var(--lime); color: var(--on-dark-fill); }
+.btn-primary, .btn-bronze, .btn-gold, .btn-capsule, .fab-gradient { background: var(--lime); color: var(--on-dark-fill); }
+.btn-primary:hover, .btn-bronze:hover, .btn-gold:hover, .btn-capsule:hover, .fab-gradient:hover { background: #C2E46F; }
+.btn-fun { background: var(--pink); color: var(--on-dark-fill); }
 .btn-secondary, .btn-cream { background: var(--fill); color: var(--ink); }
 .btn-secondary:hover, .btn-cream:hover { background: var(--fill-2); }
 .btn-quiet { background: var(--fill); color: var(--ink); }
@@ -295,7 +296,7 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
   color-scheme: dark;
 }
 .input::placeholder { color: var(--ink-3); }
-.input:focus, .field:focus-within { box-shadow: 3px 3px 0 var(--violet); }
+.input:focus, .field:focus-within { box-shadow: 3px 3px 0 var(--lime); }
 .field { display: flex; align-items: center; gap: 8px; min-height: 50px; padding-inline: 14px; border-radius: 14px; background: var(--fill); border: 2px solid var(--edge); transition: box-shadow 160ms var(--ease); }
 .field input { background: transparent; border: 0; outline: none; flex: 1; min-width: 0; color: var(--ink); }
 .field input::placeholder { color: var(--ink-3); }
@@ -306,7 +307,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .segmented > [aria-current="page"], .segmented > [aria-pressed="true"] { background: var(--sun); color: var(--on-dark-fill); box-shadow: inset 0 0 0 2px var(--edge); }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px; border-radius: 999px; background: var(--fill); border: 2px solid var(--edge); color: var(--ink); font-size: 13px; font-weight: 700; }
-.chip[aria-pressed="true"] { background: var(--violet); color: #fff; }
+.chip[aria-pressed="true"] { background: var(--lime); color: var(--on-dark-fill); }
 
 /* Two big choices (vibe check and quizzes): pink and sky stickers */
 .choice {
@@ -317,7 +318,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   background: var(--pink); transform: rotate(-2deg);
 }
 .choice:nth-child(even) { background: var(--sky); transform: rotate(2deg); }
-.choice[data-on] { background: var(--violet) !important; color: #fff !important; transform: translate(4px, 4px) !important; box-shadow: none; }
+.choice[data-on] { background: var(--lime) !important; color: var(--on-dark-fill) !important; transform: translate(4px, 4px) !important; box-shadow: none; }
 
 .accent-milestone { box-shadow: inset 4px 0 0 var(--sun), var(--pop); }
 .accent-life      { box-shadow: inset 4px 0 0 var(--lime), var(--pop); }
@@ -333,7 +334,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 /* ---------- Avatars ---------- */
 .ring-active { background: var(--lime); padding: 2px; border-radius: 9999px; }
 .ring-quiet  { background: var(--fill-2); padding: 2px; border-radius: 9999px; }
-.ring-purple { background: var(--violet); padding: 2px; border-radius: 9999px; }
+.ring-purple { background: var(--sky); padding: 2px; border-radius: 9999px; }
 .ring-drift  { background: var(--pink); padding: 3px; border-radius: 9999px; box-shadow: 0 0 0 2px var(--edge); }
 .ring-gold-glow { box-shadow: 0 0 0 3px var(--page), 0 0 0 5px var(--lime); border-radius: 9999px; }
 
@@ -380,7 +381,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 /* ---------- The Table (home) ---------- */
 .table-felt { background: var(--fill); position: relative; border: 2px solid var(--edge); }
 .table-felt::after { content: ""; position: absolute; inset: 8%; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, 0.14); pointer-events: none; }
-.candle-glow { background: radial-gradient(circle, rgba(111, 87, 240, 0.4) 0%, transparent 70%); }
+.candle-glow { background: radial-gradient(circle, rgba(181, 219, 94, 0.25) 0%, transparent 70%); }
 .seat-chip { font-family: var(--font-sans); font-size: 12px; font-weight: 800; color: var(--on-dark-fill); background: var(--lime); border: 2px solid var(--edge); padding: 1px 8px; border-radius: 999px; }
 .empty-chair { width: 28px; height: 28px; border-radius: 50%; border: 2px dashed var(--fill-2); background: var(--surface); }
 .empty-chair-labeled { background: var(--lime); }
@@ -406,3 +407,7 @@ html.privacy-blur body { filter: blur(28px) saturate(0.6); transition: filter 80
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   button:active, a:active { scale: 1; }
 }
+
+/* Kachuful: a played card slides in from the player's side */
+@keyframes trick-in { from { opacity: 0; translate: var(--from-x, 0) var(--from-y, 40px); scale: 0.8; } to { opacity: 1; translate: 0 0; scale: 1; } }
+.trick-in { animation: trick-in 0.32s var(--spring) both; }

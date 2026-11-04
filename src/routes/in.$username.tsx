@@ -28,10 +28,10 @@ export const Route = createFileRoute("/in/$username")({
 
 const PENDING_INVITE = "tf.pendingInvite";
 const COLOURS = [
-  "rgba(111,87,240,0.55)",
-  "rgba(111,87,240,0.25)",
+  "rgba(181,219,94,0.55)",
+  "rgba(181,219,94,0.25)",
   "rgba(255,255,255,0.12)",
-  "rgba(111,87,240,0.4)",
+  "rgba(181,219,94,0.4)",
 ];
 
 function InMy25() {

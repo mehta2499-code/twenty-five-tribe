@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ListOrdered, X } from "lucide-react";
+import { HelpCircle, ListOrdered, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
 import {
@@ -27,65 +27,184 @@ import { botSeats } from "@/lib/games";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
 // ---------- Cards ----------
-function PlayingCard({
+const RED = "#C8364F";
+const BLACK = "#17131D";
+
+/** A proper playing card: corner indices, a big centre pip, rounded white stock. */
+export function PlayingCard({
   card,
   size = "md",
   dim = false,
+  lifted = false,
+  style,
 }: {
   card: Card;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   dim?: boolean;
+  lifted?: boolean;
+  style?: React.CSSProperties;
 }) {
   const s = suitOf(card);
-  const w = size === "sm" ? 44 : 58;
+  const w = size === "sm" ? 46 : size === "lg" ? 70 : 60;
+  const h = Math.round(w * 1.42);
+  const color = isRed(s) ? RED : BLACK;
+  const rank = rankLabel(rankOf(card));
+  const corner = Math.round(w * 0.24);
   return (
     <span
-      className="inline-flex flex-col items-center justify-center rounded-xl select-none"
+      className="relative inline-block select-none shrink-0"
       style={{
         width: w,
-        height: w * 1.4,
-        background: "#fff",
-        border: "1px solid var(--border-cool)",
-        boxShadow: "0 6px 16px -8px rgba(14,42,69,0.45)",
-        color: isRed(s) ? "#C8364F" : "#17130F",
-        opacity: dim ? 0.45 : 1,
-        fontWeight: 800,
-        lineHeight: 1,
+        height: h,
+        borderRadius: Math.round(w * 0.14),
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F4F1EA 100%)",
+        border: "1.5px solid #07060B",
+        boxShadow: lifted ? "0 10px 18px -8px rgba(0,0,0,0.9)" : "2px 2px 0 #07060B",
+        color,
+        opacity: dim ? 0.42 : 1,
+        filter: dim ? "saturate(0.6)" : undefined,
+        ...style,
       }}
-      aria-label={`${rankLabel(rankOf(card))} of ${SUIT_NAME[s]}`}
+      aria-label={`${rank} of ${SUIT_NAME[s]}`}
     >
-      <span style={{ fontSize: size === "sm" ? 15 : 19 }}>{rankLabel(rankOf(card))}</span>
-      <span style={{ fontSize: size === "sm" ? 17 : 22, marginTop: 2 }}>{SUIT_SYMBOL[s]}</span>
+      <span
+        className="absolute flex flex-col items-center leading-none font-extrabold"
+        style={{ top: 4, left: 5, fontSize: corner }}
+      >
+        <span>{rank}</span>
+        <span style={{ fontSize: corner * 0.95, marginTop: 1 }}>{SUIT_SYMBOL[s]}</span>
+      </span>
+      <span
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ fontSize: Math.round(w * 0.52), lineHeight: 1 }}
+        aria-hidden="true"
+      >
+        {SUIT_SYMBOL[s]}
+      </span>
+      <span
+        className="absolute flex flex-col items-center leading-none font-extrabold"
+        style={{ bottom: 4, right: 5, fontSize: corner, transform: "rotate(180deg)" }}
+        aria-hidden="true"
+      >
+        <span>{rank}</span>
+        <span style={{ fontSize: corner * 0.95, marginTop: 1 }}>{SUIT_SYMBOL[s]}</span>
+      </span>
     </span>
   );
 }
 
-function SeatChip({ seat, state, index }: { seat: Seat; state: KState; index: number }) {
+/** The back of a card: striped, with a tiny 25 mark. */
+function CardBack({ w = 22, style }: { w?: number; style?: React.CSSProperties }) {
+  return (
+    <span
+      className="inline-block shrink-0"
+      style={{
+        width: w,
+        height: Math.round(w * 1.42),
+        borderRadius: Math.round(w * 0.16),
+        border: "1.5px solid #07060B",
+        background: "repeating-linear-gradient(45deg, #E0679A 0 4px, #C9558A 4px 8px)",
+        boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.55)",
+        ...style,
+      }}
+      aria-hidden="true"
+    />
+  );
+}
+
+// ---------- Table geometry ----------
+/** Where a seat sits on the rim of the oval table (percent of the table box). */
+function seatPoint(slot: number, others: number) {
+  // Others spread across the top arc, from the left side round to the right side.
+  const start = 165;
+  const end = 375;
+  const a = others === 1 ? 270 : start + ((end - start) * slot) / (others - 1);
+  const rad = (a * Math.PI) / 180;
+  return { x: 50 + 44 * Math.cos(rad), y: 47 + 41 * Math.sin(rad), angle: a };
+}
+
+/** Where a seat's played card lands, part-way from the centre toward them. */
+function trickPoint(angle: number, reach = 0.42) {
+  const rad = (angle * Math.PI) / 180;
+  return { x: 50 + 44 * reach * Math.cos(rad), y: 47 + 41 * reach * Math.sin(rad) };
+}
+
+function Seat({
+  seat,
+  state,
+  index,
+  x,
+  y,
+}: {
+  seat: Seat;
+  state: KState;
+  index: number;
+  x: number;
+  y: number;
+}) {
   const turn = state.turn === index && (state.phase === "bidding" || state.phase === "playing");
   const bid = state.bids[index];
+  const cardsLeft = state.hands[index]?.length ?? 0;
+  const made = bid !== null && state.won[index] === bid;
   return (
-    <div className="flex flex-col items-center shrink-0" style={{ width: 64 }}>
-      <div
-        className={`relative rounded-full ${turn ? "animate-ember-pulse" : ""}`}
-        style={{ boxShadow: turn ? "0 0 0 3px var(--blue)" : "none" }}
-      >
-        <Avatar src={seat.avatar} initials={seat.initials} color={seat.color} size={44} />
+    <div
+      className="absolute flex flex-col items-center"
+      style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)", width: 76 }}
+    >
+      <div className="relative">
+        <span
+          className="block rounded-full"
+          style={{
+            padding: 3,
+            background: turn ? "var(--lime)" : "transparent",
+            boxShadow: turn ? "0 0 0 2px #07060B, 0 0 18px rgba(181,219,94,0.6)" : undefined,
+          }}
+        >
+          <Avatar src={seat.avatar} initials={seat.initials} color={seat.color} size={42} />
+        </span>
         {state.dealer === index && (
           <span
-            className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-            style={{ background: "var(--navy)", color: "#fff" }}
+            className="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold"
+            style={{ background: "var(--sun)", color: "#16121F", border: "1.5px solid #07060B" }}
             title="Dealer"
           >
             D
           </span>
         )}
+        {cardsLeft > 0 && (
+          <span className="absolute -right-3 bottom-0 flex" aria-label={`${cardsLeft} cards`}>
+            {Array.from({ length: Math.min(cardsLeft, 4) }).map((_, i) => (
+              <CardBack
+                key={i}
+                w={13}
+                style={{ marginLeft: i ? -9 : 0, transform: `rotate(${(i - 1.5) * 9}deg)` }}
+              />
+            ))}
+          </span>
+        )}
       </div>
-      <span className="mt-1 text-[11px] font-semibold truncate w-full text-center text-cream">
+      <span
+        className="mt-1 max-w-full truncate text-[12px] font-bold"
+        style={{ color: "#F4F1FA", textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
+      >
         {seat.name.split(" ")[0]}
-        {seat.bot && <span className="text-faint font-normal"> · bot</span>}
+        {seat.bot && <span className="font-medium opacity-70"> · bot</span>}
       </span>
-      <span className="text-[11px] tabular-nums" style={{ color: "var(--text-muted)" }}>
-        {bid === null ? "–" : `${state.won[index]}/${bid}`}
+      <span
+        className="mt-0.5 rounded-full px-2 text-[11px] font-extrabold tabular-nums"
+        style={{
+          background: bid === null ? "rgba(7,6,11,0.55)" : made ? "var(--lime)" : "var(--sun)",
+          color: bid === null ? "#CBC5D8" : "#16121F",
+          border: "1.5px solid #07060B",
+        }}
+      >
+        {bid === null
+          ? state.phase === "bidding"
+            ? turn
+              ? "thinking…"
+              : "–"
+            : "–"
+          : `${state.won[index]}/${bid}`}
       </span>
     </div>
   );
@@ -110,11 +229,21 @@ export function KachufulBoard({
   note?: string;
 }) {
   const [scoresOpen, setScoresOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showLast, setShowLast] = useState(false);
   const lastKey = state.lastTrick
     ? state.lastTrick.cards.map((c) => c.card).join() + state.round
     : "";
+
+  // First time at the table: show how to play.
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(HOWTO_KEY)) setHelpOpen(true);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // Hold the finished trick on the table for a moment so everyone sees who took it.
   useEffect(() => {
@@ -126,6 +255,8 @@ export function KachufulBoard({
 
   const n = state.seats.length;
   const others = Array.from({ length: n - 1 }, (_, i) => (mySeat + 1 + i) % n);
+  const angleOf = (seatIndex: number) =>
+    seatIndex === mySeat ? 90 : seatPoint(others.indexOf(seatIndex), others.length).angle;
   const myTurn = state.turn === mySeat;
   const legal = useMemo(
     () => (state.phase === "playing" && myTurn ? legalCards(state, mySeat) : []),
@@ -139,10 +270,12 @@ export function KachufulBoard({
       ? state.lastTrick.cards
       : [];
   const lastWinner =
-    showLast && !state.trick.length && state.lastTrick ? state.seats[state.lastTrick.winner] : null;
+    showLast && !state.trick.length && state.lastTrick ? state.lastTrick.winner : null;
   const turnName = state.seats[state.turn]?.name.split(" ")[0];
   const forbidden = myTurn && state.phase === "bidding" ? forbiddenBid(state) : null;
   const total = totals(state);
+  const hand = state.hands[mySeat] ?? [];
+  const myTrumps = hand.filter((c) => suitOf(c) === state.trump).length;
 
   const act = (m: Move) => {
     try {
@@ -157,113 +290,196 @@ export function KachufulBoard({
 
   let status = "";
   if (state.phase === "bidding")
-    status = myTurn
-      ? `How many tricks will you win? (${cards} in hand)`
-      : `${turnName} is bidding…`;
+    status = myTurn ? `Your call: how many tricks will you win?` : `${turnName} is calling…`;
   else if (state.phase === "playing") {
-    if (lastWinner)
-      status = `${lastWinner.id === state.seats[mySeat].id ? "You" : lastWinner.name.split(" ")[0]} took the trick`;
+    if (lastWinner !== null)
+      status = `${lastWinner === mySeat ? "You" : state.seats[lastWinner].name.split(" ")[0]} won the trick`;
     else if (myTurn) {
       const need = (myBid ?? 0) - state.won[mySeat];
       status =
         need > 0
-          ? `Your turn · you need ${need} more`
+          ? `Your turn · win ${need} more`
           : need === 0
             ? "Your turn · don't win any more"
-            : "Your turn · you're over your bid";
+            : "Your turn · you're over your call";
     } else status = `${turnName} is playing…`;
   }
 
+  // Fan the hand: a gentle arc, overlapping more as it grows.
+  const overlap = hand.length > 6 ? -26 : hand.length > 4 ? -18 : -8;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--bg-primary)" }}>
+    <div
+      className="fixed inset-0 z-50 flex flex-col"
+      style={{ background: "radial-gradient(120% 70% at 50% 40%, #1B2A24 0%, #121019 70%)" }}
+    >
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
         {/* Header */}
-        <header
-          className="band px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-4"
-          style={{ borderRadius: "0 0 24px 24px" }}
-        >
-          <div className="flex items-center justify-between">
+        <header className="flex items-center justify-between gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
+          <button
+            onClick={onClose}
+            aria-label="Leave the table"
+            className="btn-secondary btn-icon"
+            style={{ minHeight: 42, width: 42, minWidth: 42 }}
+          >
+            <X size={18} />
+          </button>
+          <div className="text-center min-w-0">
+            <p className="text-[12px] font-bold text-faint">
+              Round {state.round + 1} of {state.plan.length} · {cards} card{cards > 1 ? "s" : ""}
+            </p>
+            <p className="font-extrabold" style={{ fontSize: 16 }}>
+              {total[mySeat]} pts
+            </p>
+          </div>
+          <div className="flex gap-2">
             <button
-              onClick={onClose}
-              aria-label="Leave the table"
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10"
+              onClick={() => setHelpOpen(true)}
+              aria-label="How to play"
+              className="btn-secondary btn-icon"
+              style={{ minHeight: 42, width: 42, minWidth: 42 }}
             >
-              <X size={18} />
+              <HelpCircle size={18} />
             </button>
-            <div className="text-center">
-              <p className="label-caps">
-                kachuful · round {state.round + 1} of {state.plan.length}
-              </p>
-              <p className="font-semibold mt-0.5" style={{ fontSize: 15 }}>
-                {cards} card{cards > 1 ? "s" : ""} · Trump{" "}
-                <span
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-white"
-                  style={{ color: isRed(state.trump) ? "var(--coral-deep)" : "var(--ink)" }}
-                >
-                  {SUIT_SYMBOL[state.trump]} {SUIT_NAME[state.trump]}
-                </span>
-              </p>
-            </div>
             <button
               onClick={() => setScoresOpen(true)}
-              aria-label="Scores"
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-white/10"
+              aria-label="Scorecard"
+              className="btn-secondary btn-icon"
+              style={{ minHeight: 42, width: 42, minWidth: 42 }}
             >
               <ListOrdered size={18} />
             </button>
           </div>
         </header>
 
-        {/* Other players */}
-        <div className="flex justify-center gap-1 px-2 pt-4 overflow-x-auto">
-          {others.map((i) => (
-            <SeatChip key={state.seats[i].id} seat={state.seats[i]} state={state} index={i} />
-          ))}
-        </div>
+        {/* Table */}
+        <div className="relative flex-1 min-h-[300px] mx-3 mt-6 mb-2">
+          <div
+            className="absolute"
+            style={{
+              inset: "6% 4% 4% 4%",
+              borderRadius: "50% / 46%",
+              background:
+                "radial-gradient(ellipse at 50% 40%, #2E7A57 0%, #1F5A40 55%, #174632 100%)",
+              border: "10px solid #3A2A22",
+              boxShadow:
+                "0 0 0 2px #07060B, inset 0 0 0 2px rgba(0,0,0,0.35), inset 0 18px 40px rgba(0,0,0,0.35), 0 24px 40px -18px rgba(0,0,0,0.9)",
+            }}
+          >
+            <span
+              className="absolute inset-[10%] rounded-[50%/46%]"
+              style={{ border: "1.5px dashed rgba(255,255,255,0.14)" }}
+              aria-hidden="true"
+            />
+          </div>
 
-        {/* Trick */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
-          <div className="table-felt rounded-[40px] w-full max-w-[340px] min-h-[170px] flex flex-wrap items-center justify-center gap-2 p-5">
-            {tableCards.length === 0 && (
-              <p className="text-sm text-faint text-center">
-                {state.phase === "bidding" ? "Bids first, then play." : "Lead any card."}
-              </p>
-            )}
-            {tableCards.map((t) => (
-              <div key={t.card} className="flex flex-col items-center gap-1 animate-soft-in">
+          {/* Trump plaque */}
+          <div
+            className="absolute flex items-center gap-1.5 rounded-xl px-2.5 py-1.5"
+            style={{
+              left: "30%",
+              top: "21%",
+              transform: "translate(-50%,-50%)",
+              background: "rgba(7,6,11,0.55)",
+              border: "1.5px solid rgba(255,255,255,0.15)",
+            }}
+          >
+            <span className="text-[11px] font-bold" style={{ color: "#CBC5D8" }}>
+              Trump
+            </span>
+            <span
+              className="rounded-md px-1.5 font-extrabold text-[14px]"
+              style={{ background: "#FFFFFF", color: isRed(state.trump) ? RED : BLACK }}
+            >
+              {SUIT_SYMBOL[state.trump]} {SUIT_NAME[state.trump]}
+            </span>
+          </div>
+
+          {/* Played cards land in front of whoever played them */}
+          {tableCards.map((t, k) => {
+            const p = trickPoint(angleOf(t.seat), t.seat === mySeat ? 0.55 : 0.42);
+            const winner = lastWinner === t.seat;
+            return (
+              <div
+                key={t.card}
+                className="absolute trick-in"
+                style={{
+                  left: `${p.x}%`,
+                  top: `${p.y + 8}%`,
+                  transform: `translate(-50%,-50%) rotate(${((k * 37) % 17) - 8}deg)`,
+                  zIndex: 5 + k,
+                  ["--from-x" as string]: `${(p.x - 50) * 2}px`,
+                  ["--from-y" as string]: `${(p.y - 47) * 3}px`,
+                }}
+              >
                 <PlayingCard
                   card={t.card}
                   size="sm"
-                  dim={!!lastWinner && t.seat !== state.lastTrick?.winner}
+                  dim={lastWinner !== null && !winner}
+                  style={
+                    winner ? { boxShadow: "0 0 0 3px var(--lime), 3px 3px 0 #07060B" } : undefined
+                  }
                 />
-                <span className="text-[10px] font-semibold text-cool">
-                  {t.seat === mySeat ? "You" : state.seats[t.seat].name.split(" ")[0]}
-                </span>
               </div>
-            ))}
-          </div>
-          <p
-            className="mt-4 text-center font-semibold text-cream min-h-[22px]"
-            style={{ fontSize: 15 }}
-            role="status"
-          >
+            );
+          })}
+
+          {tableCards.length === 0 && (
+            <p
+              className="absolute text-center text-[13px] font-semibold"
+              style={{
+                left: "50%",
+                top: "56%",
+                transform: "translate(-50%,-50%)",
+                color: "rgba(255,255,255,0.7)",
+                width: "60%",
+              }}
+            >
+              {state.phase === "bidding"
+                ? "Calls first, then play."
+                : myTurn
+                  ? "You lead. Play any card."
+                  : `${turnName} leads.`}
+            </p>
+          )}
+
+          {/* Seats */}
+          {others.map((i, slot) => {
+            const p = seatPoint(slot, others.length);
+            return (
+              <Seat
+                key={state.seats[i].id}
+                seat={state.seats[i]}
+                state={state}
+                index={i}
+                x={p.x}
+                y={p.y}
+              />
+            );
+          })}
+        </div>
+
+        {/* Status */}
+        <div className="px-4 text-center min-h-[44px]" role="status">
+          <p className="font-extrabold" style={{ fontSize: 16 }}>
             {status}
           </p>
-          {note && <p className="mt-1 text-center text-xs text-faint">{note}</p>}
+          {note && <p className="text-xs text-faint mt-0.5">{note}</p>}
           {error && (
-            <p
-              className="mt-2 text-center text-sm font-semibold"
-              style={{ color: "var(--coral-deep)" }}
-            >
+            <p className="mt-1 text-sm font-bold" style={{ color: "var(--hot)" }}>
               {error}
             </p>
           )}
         </div>
 
-        {/* Bidding */}
+        {/* Calling (bids) */}
         {state.phase === "bidding" && myTurn && (
-          <div className="px-4 pb-3">
-            <div className="flex flex-wrap justify-center gap-2">
+          <div className="mx-3 mb-2 card p-3 animate-soft-in">
+            <p className="text-center text-[13px] text-cool">
+              {cards} card{cards > 1 ? "s" : ""} in hand · {myTrumps} trump
+              {myTrumps === 1 ? "" : "s"}
+            </p>
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
               {Array.from({ length: cards + 1 }, (_, b) => {
                 const ok = bidOptions(state).includes(b);
                 return (
@@ -271,11 +487,14 @@ export function KachufulBoard({
                     key={b}
                     disabled={!ok}
                     onClick={() => act({ type: "bid", bid: b })}
-                    className="w-12 h-12 rounded-2xl font-bold text-lg tabular-nums disabled:opacity-35"
+                    aria-label={ok ? `Call ${b}` : `${b} not allowed for the dealer`}
+                    className={ok ? "btn-primary tabular-nums" : "btn-secondary tabular-nums"}
                     style={{
-                      background: ok ? "var(--blue-deep)" : "var(--bg-surface)",
-                      color: ok ? "var(--on-accent)" : "var(--text-muted)",
-                      boxShadow: ok ? "var(--shadow-pop)" : "none",
+                      width: 48,
+                      minWidth: 48,
+                      minHeight: 48,
+                      paddingInline: 0,
+                      fontSize: 18,
                     }}
                   >
                     {b}
@@ -285,41 +504,54 @@ export function KachufulBoard({
             </div>
             {forbidden !== null && (
               <p className="mt-2 text-center text-xs text-cool">
-                You're the dealer, so you can't bid {forbidden}. The bids can't add up to {cards}.
+                You're the dealer: you can't call {forbidden}, or the calls would add up to {cards}.
               </p>
             )}
           </div>
         )}
 
         {/* My hand */}
-        <div
-          className="px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2"
-          style={{ background: "linear-gradient(to top, var(--sky-100), transparent)" }}
-        >
-          <div className="flex items-center justify-between px-1 mb-2">
-            <span className="text-sm font-semibold text-cream">
+        <div className="px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-1">
+          <div className="flex items-center justify-between px-1 mb-1">
+            <span className="text-sm font-bold">
               You{" "}
               {myBid !== null && (
-                <span className="text-faint font-normal">
+                <span className="font-semibold text-faint">
                   · won {state.won[mySeat]} of {myBid}
                 </span>
               )}
             </span>
-            <span className="text-sm tabular-nums text-cool">{total[mySeat]} pts</span>
+            {state.dealer === mySeat && (
+              <span className="sticker sun" style={{ transform: "none" }}>
+                dealer
+              </span>
+            )}
           </div>
-          <div className="flex justify-center flex-wrap gap-1.5">
-            {state.hands[mySeat]?.map((c) => {
+          <div className="flex justify-center items-end pt-4 pb-1" style={{ minHeight: 112 }}>
+            {hand.map((c, i) => {
               const canPlay = legal.includes(c);
+              const mid = (hand.length - 1) / 2;
+              const tilt = hand.length > 1 ? (i - mid) * (hand.length > 6 ? 4 : 6) : 0;
+              const drop = Math.abs(i - mid) * (hand.length > 6 ? 2 : 3);
               return (
                 <button
                   key={c}
                   disabled={!canPlay}
                   onClick={() => act({ type: "play", card: c })}
-                  className="transition-transform"
-                  style={{ transform: canPlay ? "translateY(-8px)" : "none" }}
+                  className="relative transition-transform"
+                  style={{
+                    marginLeft: i ? overlap : 0,
+                    transform: `translateY(${canPlay ? drop - 16 : drop}px) rotate(${tilt}deg)`,
+                    zIndex: i,
+                  }}
                   aria-label={`Play ${rankLabel(rankOf(c))} of ${SUIT_NAME[suitOf(c)]}`}
                 >
-                  <PlayingCard card={c} dim={state.phase === "playing" && myTurn && !canPlay} />
+                  <PlayingCard
+                    card={c}
+                    size="lg"
+                    lifted={canPlay}
+                    dim={state.phase === "playing" && myTurn && !canPlay}
+                  />
                 </button>
               );
             })}
@@ -337,7 +569,159 @@ export function KachufulBoard({
         />
       )}
       {scoresOpen && <ScoreSheet state={state} onClose={() => setScoresOpen(false)} />}
+      {helpOpen && <HowToPlay onClose={() => setHelpOpen(false)} />}
     </div>
+  );
+}
+
+// ---------- How to play ----------
+const HOWTO_KEY = "tf.kachuful.howto";
+
+const STEPS: { title: string; body: string; art: () => React.ReactNode }[] = [
+  {
+    title: "Call it, then nail it",
+    body: "Each round you call how many tricks you'll win. Win exactly that many and you score. One more or one less and you get nothing.",
+    art: () => (
+      <div className="flex items-center gap-3">
+        <span className="sticker" style={{ transform: "none", fontSize: 18 }}>
+          I'll win 2
+        </span>
+        <span className="flex">
+          <PlayingCard card="S14" size="sm" />
+          <PlayingCard card="H13" size="sm" style={{ marginLeft: -18 }} />
+        </span>
+      </div>
+    ),
+  },
+  {
+    title: "Hands grow, then shrink",
+    body: "Round 1 deals 1 card each, round 2 deals 2, and so on up to 5 (Short) or 8 (Full). Then it counts back down to 1.",
+    art: () => (
+      <div className="flex items-end gap-3">
+        {[1, 2, 3, 2, 1].map((k, i) => (
+          <span key={i} className="flex">
+            {Array.from({ length: k }).map((_, j) => (
+              <CardBack key={j} w={20} style={{ marginLeft: j ? -12 : 0 }} />
+            ))}
+          </span>
+        ))}
+      </div>
+    ),
+  },
+  {
+    title: "Trump changes every round",
+    body: "Hukum ♠, then Eent ♦, Chidi ♣ and Paan ♥, then round again. Any trump card beats every card of another suit.",
+    art: () => (
+      <div className="flex gap-2">
+        {["S14", "D14", "C14", "H14"].map((c) => (
+          <PlayingCard key={c} card={c} size="sm" />
+        ))}
+      </div>
+    ),
+  },
+  {
+    title: "The dealer's twist",
+    body: "Calls go round the table and the dealer calls last. The dealer can't pick a number that makes all the calls add up to the cards in hand, so somebody always misses.",
+    art: () => (
+      <div className="text-center">
+        <p className="text-sm text-cool">3 cards each · calls so far: 1, 0, 1</p>
+        <p className="mt-2 font-extrabold" style={{ fontSize: 18 }}>
+          Dealer can call 0, 2 or 3 <span style={{ color: "var(--hot)" }}>but not 1</span>
+        </p>
+      </div>
+    ),
+  },
+  {
+    title: "Playing a trick",
+    body: "Follow the suit that was led if you can. If you can't, play a trump to win it or throw any card. Highest trump wins; with no trump, the highest card of the led suit wins. The winner leads next.",
+    art: () => (
+      <div className="flex items-center gap-2">
+        <PlayingCard card="H10" size="sm" />
+        <PlayingCard card="H14" size="sm" />
+        <PlayingCard
+          card="S2"
+          size="sm"
+          style={{ boxShadow: "0 0 0 3px var(--lime), 2px 2px 0 #07060B" }}
+        />
+        <span className="text-sm font-bold text-cool">← trump wins</span>
+      </div>
+    ),
+  },
+  {
+    title: "Scoring",
+    body: "Exactly right: 10 points plus your call. Off by any amount: 0. Highest total after the last round wins the table.",
+    art: () => (
+      <div className="grid gap-1.5 text-sm font-bold">
+        <span
+          className="rounded-lg px-3 py-1.5"
+          style={{ background: "var(--lime)", color: "#16121F" }}
+        >
+          Called 2, won 2 → +12
+        </span>
+        <span className="rounded-lg px-3 py-1.5" style={{ background: "var(--fill-2)" }}>
+          Called 1, won 2 → 0
+        </span>
+        <span className="rounded-lg px-3 py-1.5" style={{ background: "var(--fill-2)" }}>
+          Called 0, won 0 → +10
+        </span>
+      </div>
+    ),
+  },
+];
+
+export function HowToPlay({ onClose }: { onClose: () => void }) {
+  const [i, setI] = useState(0);
+  const step = STEPS[i];
+  const last = i === STEPS.length - 1;
+  const done = () => {
+    try {
+      localStorage.setItem(HOWTO_KEY, "1");
+    } catch {
+      // ignore
+    }
+    onClose();
+  };
+  return (
+    <Sheet title="How to play Kachuful" onClose={done}>
+      <div className="flex gap-1.5 mb-5" aria-hidden="true">
+        {STEPS.map((_, k) => (
+          <span
+            key={k}
+            className="flex-1 h-1.5 rounded-full"
+            style={{ background: k <= i ? "var(--lime)" : "var(--fill-2)" }}
+          />
+        ))}
+      </div>
+      <div key={i} className="animate-soft-in">
+        <div
+          className="rounded-2xl flex items-center justify-center py-6 px-3"
+          style={{
+            background: "radial-gradient(ellipse at 50% 40%, #2E7A57 0%, #1F5A40 70%)",
+            border: "2px solid #07060B",
+            minHeight: 150,
+          }}
+        >
+          {step.art()}
+        </div>
+        <p className="meta mt-4">
+          Step {i + 1} of {STEPS.length}
+        </p>
+        <h3 className="heading mt-1">{step.title}</h3>
+        <p className="mt-2 text-cool" style={{ fontSize: 15, lineHeight: 1.55 }}>
+          {step.body}
+        </p>
+      </div>
+      <div className="mt-6 flex gap-2">
+        {i > 0 && (
+          <button onClick={() => setI(i - 1)} className="btn-secondary flex-1">
+            Back
+          </button>
+        )}
+        <button onClick={() => (last ? done() : setI(i + 1))} className="btn-primary flex-1">
+          {last ? "Let's play" : "Next"}
+        </button>
+      </div>
+    </Sheet>
   );
 }
 
@@ -587,6 +971,7 @@ export function KachufulLobby({
   const [picked, setPicked] = useState<string[]>([]);
   const [players, setPlayers] = useState(4);
   const [length, setLength] = useState<"short" | "full">("short");
+  const [howTo, setHowTo] = useState(false);
   const friends = people.filter((p) => picked.includes(p.id));
   const total = Math.max(players, friends.length + 1);
   const bots = total - 1 - friends.length;
@@ -688,9 +1073,14 @@ export function KachufulLobby({
       </div>
 
       <button
-        onClick={() => onStart(friends, bots, length)}
-        className="mt-6 w-full rounded-full py-3.5 btn-bronze"
+        onClick={() => setHowTo(true)}
+        className="mt-5 w-full text-sm font-bold text-bronze py-2"
       >
+        New to Kachuful? See how to play
+      </button>
+      {howTo && <HowToPlay onClose={() => setHowTo(false)} />}
+
+      <button onClick={() => onStart(friends, bots, length)} className="mt-3 w-full btn-primary">
         {friends.length
           ? `Deal in ${friends.length} friend${friends.length > 1 ? "s" : ""}`
           : "Deal me in"}

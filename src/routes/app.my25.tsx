@@ -246,7 +246,7 @@ function My25() {
                   </div>
                   <button
                     className="label-caps px-3 py-1.5 rounded-full"
-                    style={{ color: "var(--blue-deep)", border: "1px solid rgba(111,87,240,0.45)" }}
+                    style={{ color: "var(--blue-deep)", border: "1px solid rgba(181,219,94,0.45)" }}
                   >
                     Hold
                   </button>

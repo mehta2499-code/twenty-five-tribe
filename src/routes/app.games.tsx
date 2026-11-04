@@ -3,7 +3,14 @@ import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
-import { ARCADE, Leaderboard, QuickMath, TapRush } from "@/components/ArcadeGames";
+import {
+  ARCADE,
+  ColourClash,
+  Leaderboard,
+  PairUp,
+  QuickMath,
+  TapRush,
+} from "@/components/ArcadeGames";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
@@ -113,7 +120,9 @@ function Games() {
   const s = useSocial();
   const navigate = useNavigate();
   const live = s.mode === "live" && !!s.me;
-  const [arcade, setArcade] = useState<"tap-rush" | "quick-math" | null>(null);
+  const [arcade, setArcade] = useState<
+    "tap-rush" | "quick-math" | "colour-clash" | "pair-up" | null
+  >(null);
   const [lobby, setLobby] = useState(false);
   const [localTable, setLocalTable] = useState<{ seats: Seat[]; length: "short" | "full" } | null>(
     null,
@@ -338,6 +347,8 @@ function Games() {
 
       {arcade === "tap-rush" && <TapRush onClose={() => setArcade(null)} />}
       {arcade === "quick-math" && <QuickMath onClose={() => setArcade(null)} />}
+      {arcade === "colour-clash" && <ColourClash onClose={() => setArcade(null)} />}
+      {arcade === "pair-up" && <PairUp onClose={() => setArcade(null)} />}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
     </>
   );

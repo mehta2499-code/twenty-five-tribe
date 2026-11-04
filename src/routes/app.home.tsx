@@ -40,7 +40,7 @@ function Orbit({ rolling }: { rolling: boolean }) {
           className="absolute inset-0 rounded-full breathe pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle at 50% 50%, rgba(111,87,240,0.10) 0%, rgba(111,87,240,0.04) 38%, transparent 70%)",
+              "radial-gradient(circle at 50% 50%, rgba(181,219,94,0.10) 0%, rgba(181,219,94,0.04) 38%, transparent 70%)",
           }}
         />
 
@@ -60,8 +60,8 @@ function Orbit({ rolling }: { rolling: boolean }) {
                   width: 5,
                   height: 5,
                   borderRadius: 999,
-                  background: "rgba(111,87,240,0.55)",
-                  boxShadow: "0 0 8px rgba(111,87,240,0.45)",
+                  background: "rgba(181,219,94,0.55)",
+                  boxShadow: "0 0 8px rgba(181,219,94,0.45)",
                   transform: "translate(-50%, -50%)",
                   animationDelay: `${(i % 6) * 0.4}s`,
                 }}
@@ -89,11 +89,11 @@ function Orbit({ rolling }: { rolling: boolean }) {
                 className="rounded-full transition-transform active:scale-95"
                 style={{
                   padding: reserved ? 3 : 0,
-                  border: reserved ? "1px dashed rgba(111,87,240,0.55)" : "none",
+                  border: reserved ? "1px dashed rgba(181,219,94,0.55)" : "none",
                   boxShadow: reserved
-                    ? "0 0 18px rgba(111,87,240,0.18)"
+                    ? "0 0 18px rgba(181,219,94,0.18)"
                     : f.postedToday
-                      ? "0 0 0 1px rgba(111,87,240,0.45), 0 0 22px rgba(111,87,240,0.35)"
+                      ? "0 0 0 1px rgba(181,219,94,0.45), 0 0 22px rgba(181,219,94,0.35)"
                       : "0 0 0 3px var(--page), 0 4px 12px -4px rgba(14,42,69,0.3)",
                   opacity: reserved ? 0.7 : 1,
                   filter: reserved ? "grayscale(0.3)" : "none",

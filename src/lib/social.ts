@@ -59,7 +59,7 @@ export type Reel = {
   comments: Comment[];
 };
 
-export type GameId = "tap-rush" | "quick-math" | "trivia";
+export type GameId = "tap-rush" | "quick-math" | "trivia" | "colour-clash" | "pair-up";
 export type ScoreBoard = Record<GameId, Record<string, number>>; // game -> personId -> best this week
 
 /** Someone in your 25, as the screens see them. */
@@ -356,7 +356,13 @@ function seed(): SocialState {
 
 function seedScores(): ScoreBoard {
   const wk = weekKey();
-  const board: ScoreBoard = { "tap-rush": {}, "quick-math": {}, trivia: {} };
+  const board: ScoreBoard = {
+    "tap-rush": {},
+    "quick-math": {},
+    trivia: {},
+    "colour-clash": {},
+    "pair-up": {},
+  };
   demoFriends().forEach((f) => {
     // Not everyone plays every week.
     if (hash(f.id + "tap" + wk) % 4 !== 0)
@@ -364,6 +370,10 @@ function seedScores(): ScoreBoard {
     if (hash(f.id + "math" + wk) % 3 !== 0)
       board["quick-math"][f.id] = 6 + (hash(f.id + "m" + wk) % 18);
     if (hash(f.id + "triv" + wk) % 3 !== 0) board.trivia[f.id] = 1 + (hash(f.id + "q" + wk) % 5);
+    if (hash(f.id + "clash" + wk) % 3 !== 0)
+      board["colour-clash"][f.id] = 8 + (hash(f.id + "c" + wk) % 20);
+    if (hash(f.id + "pair" + wk) % 3 !== 0)
+      board["pair-up"][f.id] = 40 + (hash(f.id + "p" + wk) % 70);
   });
   return board;
 }
@@ -434,7 +444,9 @@ function rollover(s: SocialState): SocialState {
     }
   }
   const wk = weekKey();
-  return { ...s, streaks, ...(s.week !== wk ? { scores: seedScores(), week: wk } : {}) };
+  // Older saved data may predate newer games; fill in their boards.
+  const scores = s.week !== wk ? seedScores() : { ...seedScores(), ...s.scores };
+  return { ...s, streaks, scores, week: wk };
 }
 
 function hydrate() {
