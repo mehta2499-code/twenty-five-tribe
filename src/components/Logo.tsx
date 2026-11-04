@@ -7,7 +7,7 @@ export const LOGO_PATH =
 
 export function Logo({
   height = 48,
-  color = "var(--accent)",
+  color = "var(--lime)",
   title = "25",
   className = "",
 }: {

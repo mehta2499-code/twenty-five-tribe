@@ -22,10 +22,8 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed bottom-0 inset-x-0 z-40 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
       style={{
-        background: "rgba(11,10,15,0.9)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        borderTop: "1px solid var(--line)",
+        background: "var(--surface)",
+        borderTop: "2px solid var(--edge)",
       }}
     >
       <ul className="mx-auto max-w-md grid grid-cols-5 items-end px-1">
@@ -38,7 +36,7 @@ export function BottomNav() {
                 pathname.startsWith("/app/seat") ||
                 pathname.startsWith("/app/my25")));
           const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
-          const color = active ? "var(--accent)" : "var(--ink-3)";
+          const color = active ? "var(--ink)" : "var(--ink-3)";
           const isSnap = to === "/app/snap";
           return (
             <li key={to}>
@@ -52,13 +50,13 @@ export function BottomNav() {
               >
                 {isSnap ? (
                   <span
-                    className="relative -mt-6 w-[58px] h-[58px] rounded-full flex items-center justify-center"
+                    className="relative -mt-6 w-[58px] h-[58px] rounded-[18px] flex items-center justify-center"
                     style={{
-                      background: "linear-gradient(180deg, #E3C385 0%, #CFA95F 100%)",
-                      color: "var(--on-accent)",
-                      boxShadow: active
-                        ? "0 0 0 2px var(--page), 0 0 0 3.5px var(--accent)"
-                        : "var(--shadow-pop)",
+                      background: active ? "var(--pink)" : "var(--lime)",
+                      color: "var(--on-dark-fill)",
+                      border: "2px solid var(--edge)",
+                      boxShadow: "3px 3px 0 var(--edge)",
+                      transform: "rotate(-4deg)",
                     }}
                   >
                     <Camera size={26} strokeWidth={2.4} />
@@ -68,9 +66,9 @@ export function BottomNav() {
                   <span
                     className="relative flex items-center justify-center w-12 h-8 rounded-xl"
                     style={{
-                      background: active ? "var(--fill-2)" : "transparent",
-                      border: "1px solid transparent",
-                      color,
+                      background: active ? "var(--sun)" : "transparent",
+                      border: active ? "2px solid var(--edge)" : "2px solid transparent",
+                      color: active ? "var(--on-dark-fill)" : color,
                     }}
                   >
                     <Icon size={21} strokeWidth={active ? 2.5 : 2} />

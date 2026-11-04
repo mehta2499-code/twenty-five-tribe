@@ -29,7 +29,7 @@ function Claim() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(700px 420px at 50% -10%, rgba(216,182,114,0.18), transparent 65%), #0B0A0F",
+            "radial-gradient(700px 420px at 50% -10%, rgba(111,87,240,0.18), transparent 65%), #0B0A0F",
         }}
       />
       <div
@@ -56,7 +56,7 @@ function Claim() {
                 className="rounded-full p-[3px]"
                 style={{
                   background:
-                    "radial-gradient(circle at 50% 50%, rgba(216,182,114,0.55), rgba(216,182,114,0.05) 70%)",
+                    "radial-gradient(circle at 50% 50%, rgba(111,87,240,0.55), rgba(111,87,240,0.05) 70%)",
                 }}
               >
                 <Avatar src={r.fromAvatar} initials={r.fromInitials} size={132} />
@@ -93,7 +93,7 @@ function Claim() {
                 onClick={() => setPhase("accepted")}
                 className="rounded-full py-4 text-sm font-medium transition active:scale-[0.98]"
                 style={{
-                  background: "linear-gradient(180deg, #E3C385, #CFA95F)",
+                  background: "var(--violet)",
                   color: "var(--on-accent)",
                   fontWeight: 700,
                 }}
@@ -138,7 +138,7 @@ function Claim() {
               onClick={() => navigate({ to: "/onboarding" })}
               className="mt-12 rounded-full py-4 px-8 text-sm font-medium"
               style={{
-                background: "linear-gradient(180deg, #E3C385, #CFA95F)",
+                background: "var(--violet)",
                 color: "var(--on-accent)",
                 fontWeight: 700,
               }}

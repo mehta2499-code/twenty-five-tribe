@@ -179,15 +179,6 @@ function VibeCheck() {
               aria-pressed={current === c}
               className="choice"
               data-on={on || undefined}
-              style={
-                on
-                  ? {
-                      background: "linear-gradient(180deg, #E3C385 0%, #CFA95F 100%)",
-                      color: "var(--on-accent)",
-                      borderColor: "transparent",
-                    }
-                  : undefined
-              }
             >
               <span style={{ fontSize: 54, lineHeight: 1 }} aria-hidden="true">
                 {o.emoji}

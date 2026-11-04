@@ -91,7 +91,7 @@ function Onboarding() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(700px 420px at 50% -10%, rgba(216,182,114,0.18), transparent 65%), #0B0A0F",
+            "radial-gradient(700px 420px at 50% -10%, rgba(111,87,240,0.18), transparent 65%), #0B0A0F",
         }}
       />
       <div
@@ -266,8 +266,8 @@ function Onboarding() {
                         key={r.contact.id}
                         className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-white/85"
                         style={{
-                          background: "rgba(216,182,114,0.08)",
-                          border: "1px dashed rgba(216,182,114,0.4)",
+                          background: "rgba(111,87,240,0.08)",
+                          border: "1px dashed rgba(111,87,240,0.4)",
                         }}
                       >
                         <span className="h-1.5 w-1.5 rounded-full bg-[#fff]" />
@@ -366,8 +366,8 @@ function Onboarding() {
                 <span
                   className="inline-flex items-center gap-2 rounded-full px-3 py-1"
                   style={{
-                    background: "rgba(216,182,114,0.10)",
-                    border: "1px solid rgba(216,182,114,0.35)",
+                    background: "rgba(111,87,240,0.10)",
+                    border: "1px solid rgba(111,87,240,0.35)",
                   }}
                 >
                   role · {role.toLowerCase()}
@@ -430,8 +430,8 @@ function FinalStep({
             key={r.contact.id}
             className="flex items-center gap-3 rounded-2xl px-3 py-3"
             style={{
-              background: "rgba(216,182,114,0.08)",
-              border: "1px dashed rgba(216,182,114,0.35)",
+              background: "rgba(111,87,240,0.08)",
+              border: "1px dashed rgba(111,87,240,0.35)",
             }}
           >
             <img src={r.contact.avatar} alt="" className="h-9 w-9 rounded-full object-cover" />
@@ -489,7 +489,7 @@ function BigBtn({
       disabled={disabled}
       className="w-full rounded-full py-4 text-sm font-medium transition disabled:opacity-40 active:scale-[0.98]"
       style={{
-        background: "linear-gradient(180deg, #E3C385, #CFA95F)",
+        background: "var(--violet)",
         color: "var(--on-accent)",
         fontWeight: 700,
       }}

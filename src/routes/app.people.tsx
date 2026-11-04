@@ -31,7 +31,7 @@ function Row({ p, children, note }: { p: Person; children: React.ReactNode; note
           <p
             className="mt-0.5 inline-block text-[12px] font-extrabold px-2 rounded-full"
             style={{
-              background: "rgba(216,182,114,0.12)",
+              background: "rgba(111,87,240,0.12)",
               border: "1px solid var(--gold-line)",
               color: "var(--accent)",
             }}

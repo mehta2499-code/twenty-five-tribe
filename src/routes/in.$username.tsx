@@ -28,10 +28,10 @@ export const Route = createFileRoute("/in/$username")({
 
 const PENDING_INVITE = "tf.pendingInvite";
 const COLOURS = [
-  "rgba(216,182,114,0.55)",
-  "rgba(216,182,114,0.25)",
+  "rgba(111,87,240,0.55)",
+  "rgba(111,87,240,0.25)",
   "rgba(255,255,255,0.12)",
-  "rgba(216,182,114,0.4)",
+  "rgba(111,87,240,0.4)",
 ];
 
 function InMy25() {
@@ -173,7 +173,7 @@ function InMy25() {
                   Are you in
                   <br />
                   my{" "}
-                  <span className="serif-italic" style={{ color: "var(--accent)" }}>
+                  <span className="serif-italic" style={{ color: "var(--lime)" }}>
                     25
                   </span>
                   ?

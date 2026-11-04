@@ -192,7 +192,7 @@ export function KnowThemQuiz({
               </span>
               <p
                 className="display mt-4"
-                style={{ fontSize: 92, lineHeight: 1, color: "var(--accent)" }}
+                style={{ fontSize: 84, lineHeight: 1, color: "var(--lime)" }}
               >
                 {phase.score}/{phase.total}
               </p>

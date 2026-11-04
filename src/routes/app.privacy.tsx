@@ -68,7 +68,7 @@ function Privacy() {
               width: 44,
               height: 26,
               borderRadius: 999,
-              background: allow ? "var(--accent-bronze)" : "rgba(216,182,114,0.18)",
+              background: allow ? "var(--accent-bronze)" : "rgba(111,87,240,0.18)",
               border: "1px solid var(--border-cool)",
             }}
           >

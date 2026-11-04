@@ -81,7 +81,7 @@ function Login() {
       className="min-h-screen text-white flex flex-col px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       style={{
         background:
-          "radial-gradient(700px 420px at 50% -10%, rgba(216,182,114,0.18), transparent 65%), #0B0A0F",
+          "radial-gradient(700px 420px at 50% -10%, rgba(111,87,240,0.18), transparent 65%), #0B0A0F",
       }}
     >
       <div className="mx-auto w-full max-w-sm flex-1 flex flex-col">
