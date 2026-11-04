@@ -4,7 +4,7 @@
  * so a real backend can later replace `load`/`save` without touching screens.
  */
 import { useEffect, useSyncExternalStore } from "react";
-import { FRIENDS, getSeatMeta } from "@/lib/data";
+import { FRIENDS, getSeatMeta, type Friend } from "@/lib/data";
 
 // ---------- Types ----------
 export type MsgStatus = "sent" | "delivered" | "read";
@@ -62,7 +62,21 @@ export type Reel = {
 export type GameId = "tap-rush" | "quick-math" | "trivia";
 export type ScoreBoard = Record<GameId, Record<string, number>>; // game -> personId -> best this week
 
+/** Someone in your 25, as the screens see them. */
+export type Person = Friend & { username?: string };
+export type FriendRequest = { id: string; person: Person; direction: "incoming" | "outgoing" };
+export type Me = { id: string; name: string; username: string; initials: string; avatar?: string };
+
 export type SocialState = {
+  /** "demo": sample people on this phone. "live": signed in, real people via Supabase. */
+  mode: "demo" | "live";
+  me: Me | null;
+  /** Signed in but hasn't picked a name and username yet. */
+  needsProfile: boolean;
+  people: Person[];
+  requests: FriendRequest[];
+  loading: boolean;
+  error: string | null;
   chats: Record<string, ChatMessage[]>;
   unread: Record<string, number>;
   typing: Record<string, boolean>;
@@ -79,20 +93,21 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
-export const dayKey = (t = Date.now()) => {
-  const d = new Date(t);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-const weekKey = (t = Date.now()) => {
-  const d = new Date(t);
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return dayKey(monday.getTime());
+// Days and weeks follow India time, the same as the server's streak rules.
+const IST = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" });
+export const dayKey = (t = Date.now()) => IST.format(new Date(t));
+export const weekKey = (t = Date.now()) => {
+  const [y, m, d] = dayKey(t).split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+  return date.toISOString().slice(0, 10);
 };
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export const seatedFriends = () => FRIENDS.filter((f) => getSeatMeta(f.id).state === "ACCEPTED");
-export const friendById = (id: string) => FRIENDS.find((f) => f.id === id);
+export const seatedFriends = (): Person[] =>
+  state.mode === "live" ? state.people : FRIENDS.filter((f) => getSeatMeta(f.id).state === "ACCEPTED");
+export const friendById = (id: string): Person | undefined =>
+  state.mode === "live" ? state.people.find((f) => f.id === id) : FRIENDS.find((f) => f.id === id);
 
 export function timeAgo(at: number) {
   const s = Math.max(0, Date.now() - at);
@@ -113,6 +128,16 @@ function hash(s: string) {
 }
 
 // ---------- Seed ----------
+const DEMO_SESSION = {
+  mode: "demo" as const,
+  me: null,
+  needsProfile: false,
+  people: [],
+  requests: [],
+  loading: false,
+  error: null,
+};
+
 const PHOTOS = [
   "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=900",
   "https://images.unsplash.com/photo-1514222134-b57cbb8ce073?w=900",
@@ -295,6 +320,7 @@ function seed(): SocialState {
   const scores = seedScores();
 
   return {
+    ...DEMO_SESSION,
     chats,
     unread: { "1": 1, "2": 1, "3": 1 },
     typing: {},
@@ -331,6 +357,7 @@ function emit() {
   listeners.forEach((l) => l());
 }
 function save() {
+  if (state.mode === "live") return; // live data lives in Supabase, not on the phone
   try {
     const persist: SocialState = {
       ...state,
@@ -346,6 +373,22 @@ function set(fn: (s: SocialState) => SocialState) {
   state = fn(state);
   emit();
   save();
+}
+
+/** For the live (Supabase) layer: read and replace the store. */
+export const _get = () => state;
+export const _set = set;
+/** Back to the demo data saved on this phone (used on sign-out). */
+export function _restoreDemo() {
+  let next = seed();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) next = { ...next, ...JSON.parse(raw), ...DEMO_SESSION, typing: {} };
+  } catch {
+    // Unreadable; use the seed.
+  }
+  state = rollover(next);
+  emit();
 }
 
 /** Expire streaks you missed, and reset the leaderboard each Monday. */
@@ -367,11 +410,11 @@ function hydrate() {
   hydrated = true;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) state = { ...seed(), ...JSON.parse(raw), typing: {} };
+    if (raw && state.mode === "demo") state = { ...seed(), ...JSON.parse(raw), ...DEMO_SESSION, typing: {} };
   } catch {
     // Saved data is unreadable; start from the seed.
   }
-  state = rollover(state);
+  if (state.mode === "demo") state = rollover(state);
   emit();
 }
 
@@ -464,7 +507,7 @@ function markStatus(friendId: string, status: MsgStatus) {
 }
 
 // ---------- Actions ----------
-export const social = {
+const demo = {
   sendMessage(friendId: string, text: string) {
     const t = text.trim();
     if (!t) return;
@@ -678,6 +721,20 @@ export const social = {
     social.sendMessage(friendId, `I just scored ${score} in ${gameName}. Your move 😏`);
   },
 };
+
+export type SocialActions = typeof demo;
+let liveImpl: Partial<SocialActions> | null = null;
+/** The live layer plugs its versions of these actions in here. */
+export function registerLive(impl: Partial<SocialActions>) {
+  liveImpl = impl;
+}
+/** Every screen calls these. Signed in, they go to Supabase; otherwise to the demo. */
+export const social: SocialActions = new Proxy(demo, {
+  get(target, key: string) {
+    if (state.mode === "live" && liveImpl && key in liveImpl) return liveImpl[key as keyof SocialActions];
+    return target[key as keyof SocialActions];
+  },
+});
 
 export function leaderboard(s: SocialState, game: GameId) {
   return Object.entries(s.scores[game] ?? {})
