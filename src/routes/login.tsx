@@ -117,7 +117,7 @@ function Login() {
               Claim your seat.
             </p>
             <p className="text-white/85" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              We'll email you a sign-in link. No passwords.
+              We'll email you a 6-digit code. No passwords.
             </p>
             <label htmlFor="login-email" className="sr-only">
               Email
@@ -133,7 +133,7 @@ function Login() {
               className={field}
             />
             <button type="submit" disabled={busy || !email} className={primary}>
-              {busy ? "Sending…" : "Email me a link"}
+              {busy ? "Sending…" : "Send my code"}
             </button>
           </form>
         )}
@@ -149,23 +149,12 @@ function Login() {
             <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
               Check your email.
             </p>
-            <div
-              className="rounded-2xl bg-white/15 px-4 py-4"
-              style={{ fontSize: 15, lineHeight: 1.5 }}
-            >
-              <p>
-                We sent a link to <span className="font-semibold">{email}</span>.
-              </p>
-              <p className="mt-2 text-white/90">
-                Open the email <span className="font-semibold">on this phone</span> and tap{" "}
-                <span className="font-semibold">Sign in</span>. You'll land back here, signed in.
-              </p>
-              <p className="mt-2 text-white/80 text-sm">
-                Nothing yet? Check spam, or wait a minute.
-              </p>
-            </div>
-            <label htmlFor="login-code" className="text-sm font-semibold text-white/90 mt-2">
-              Got a 6-digit code instead? Enter it here.
+            <p className="text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
+              Enter the 6-digit code we sent to{" "}
+              <span className="font-semibold text-cream">{email}</span>.
+            </p>
+            <label htmlFor="login-code" className="sr-only">
+              6-digit code
             </label>
             <input
               id="login-code"
@@ -173,6 +162,7 @@ function Login() {
               autoComplete="one-time-code"
               maxLength={8}
               placeholder="123456"
+              autoFocus
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               className={`${field} text-center tracking-[0.5em] text-2xl font-bold`}
@@ -180,13 +170,17 @@ function Login() {
             <button type="submit" disabled={busy || code.length < 6} className={primary}>
               {busy ? "Checking…" : "Sign in"}
             </button>
+            <p className="text-center text-sm text-faint">
+              Or tap <span className="font-semibold text-cream">Sign in to 25</span> in the email.
+              Nothing yet? Check spam.
+            </p>
             <button
               type="button"
               disabled={resendIn > 0 || busy}
               onClick={() => void sendCode()}
               className="text-sm font-semibold text-white/90 disabled:text-white/60"
             >
-              {resendIn > 0 ? `Send again in ${resendIn}s` : "Send the email again"}
+              {resendIn > 0 ? `Send a new code in ${resendIn}s` : "Send a new code"}
             </button>
           </form>
         )}
