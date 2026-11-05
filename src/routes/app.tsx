@@ -84,7 +84,7 @@ function AppLayout() {
     const t = setTimeout(() => {
       introShown = true;
       setIntro(false);
-    }, 2600);
+    }, 2300);
     return () => clearTimeout(t);
   }, [intro]);
 
@@ -100,11 +100,8 @@ function AppLayout() {
       >
         <div className="flex flex-col items-center px-8 text-center">
           <AnimatedLogo height={230} />
-          <p className="tagline-in display mt-6" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>
-            Only the people who matter.
-          </p>
-          <p className="tagline-in meta mt-1.5" style={{ animationDelay: "1.75s" }}>
-            25 seats. No more, no less.
+          <p className="tagline-in display mt-6" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>
+            Only your people.
           </p>
           {!s.loading && s.error && (
             <>
