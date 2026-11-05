@@ -69,10 +69,10 @@ export const VIBE_QUESTIONS: VibeQuestion[] = [
     b: { label: "Spicy", emoji: "🌶️" },
   },
   {
-    id: "weekend",
-    ask: "Party or stay in?",
-    a: { label: "Party", emoji: "🪩" },
-    b: { label: "Stay in", emoji: "🛋️" },
+    id: "booze",
+    ask: "Vodka or whiskey?",
+    a: { label: "Vodka", emoji: "🍸" },
+    b: { label: "Whiskey", emoji: "🥃" },
   },
 ];
 
@@ -189,7 +189,7 @@ export const DEMO_ANSWERS: Record<string, { answers: Record<string, Choice>; mon
       trip: "a",
       talk: "b",
       taste: "b",
-      weekend: "b",
+      booze: "b",
     },
     month: 8,
   },
