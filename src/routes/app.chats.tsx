@@ -47,7 +47,9 @@ function GroupsSection() {
         </button>
       </div>
       {groups.length === 0 ? (
-        <p className="px-5 mt-2 meta">No groups yet. Make one for the trip, the gang, the gossip.</p>
+        <p className="px-5 mt-2 meta">
+          No groups yet. Make one for the trip, the gang, the gossip.
+        </p>
       ) : (
         <ul className="mt-1">
           {groups.map((g) => {
@@ -68,14 +70,21 @@ function GroupsSection() {
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block font-semibold text-cream truncate">{g.name}</span>
-                    <span className="block meta truncate" style={{ color: n ? "var(--ink)" : undefined, fontWeight: n ? 700 : 400 }}>
+                    <span
+                      className="block meta truncate"
+                      style={{ color: n ? "var(--ink)" : undefined, fontWeight: n ? 700 : 400 }}
+                    >
                       {last
                         ? `${last.from === "me" ? "You" : member(last.from, st).name.split(" ")[0]}: ${last.text ?? ""}`
                         : `${g.members.length} members`}
                     </span>
                   </span>
                   <span className="text-right shrink-0">
-                    {last && <span className="block meta" style={{ fontSize: 12 }}>{timeAgo(last.at)}</span>}
+                    {last && (
+                      <span className="block meta" style={{ fontSize: 12 }}>
+                        {timeAgo(last.at)}
+                      </span>
+                    )}
                     {n > 0 && (
                       <span
                         className="inline-flex min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold items-center justify-center mt-0.5"
@@ -100,7 +109,10 @@ function GroupsSection() {
                 onClick={() => setEmoji(e)}
                 aria-pressed={emoji === e}
                 className="w-11 h-11 rounded-full text-2xl flex items-center justify-center"
-                style={{ background: emoji === e ? "var(--lime)" : "var(--fill)", border: "2px solid var(--edge)" }}
+                style={{
+                  background: emoji === e ? "var(--lime)" : "var(--fill)",
+                  border: "2px solid var(--edge)",
+                }}
               >
                 {e}
               </button>
@@ -113,7 +125,11 @@ function GroupsSection() {
             className="input mt-4 w-full"
             autoFocus
           />
-          <button disabled={!name.trim()} onClick={() => setStep("pick")} className="btn-primary w-full mt-4">
+          <button
+            disabled={!name.trim()}
+            onClick={() => setStep("pick")}
+            className="btn-primary w-full mt-4"
+          >
             Pick who's in
           </button>
         </Sheet>
@@ -150,6 +166,8 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (m.snapId) return m.from === "me" ? "You sent a snap" : "Sent you a snap";
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
   if (m.sharedPostId?.startsWith("voice:")) return `${who}🎤 Voice note`;
+  if (m.sharedPostId?.startsWith("img:")) return `${who}📷 Photo`;
+  if (m.sharedPostId?.startsWith("vid:")) return `${who}🎥 Video`;
   if (m.sharedPostId)
     return `${who}shared a ${m.sharedPostId.startsWith("reel") ? "reel" : "post"}`;
   return who + (m.text ?? "");

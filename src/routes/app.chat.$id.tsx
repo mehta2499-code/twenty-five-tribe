@@ -9,10 +9,18 @@ import {
   Lock,
   Send,
   Spade,
+  Paperclip,
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
-import { Reactable, VoicePlayer, VoiceRecorder, sendVoice } from "@/components/ChatExtras";
+import {
+  MediaBubble,
+  Reactable,
+  VoicePlayer,
+  VoiceRecorder,
+  sendMedia,
+  sendVoice,
+} from "@/components/ChatExtras";
 import { sendTyping } from "@/lib/live";
 import {
   clock,
@@ -53,6 +61,7 @@ function ChatThread() {
   const [text, setText] = useState("");
   const [viewing, setViewing] = useState<Snap | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const msgs = s.chats[id] ?? [];
   const typing = s.typing[id];
@@ -194,108 +203,112 @@ function ChatThread() {
                       className={`flex ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
                     >
                       <Reactable id={m.id} mine={mine}>
-                      <div
-                        className="px-3.5 py-2"
-                        style={{
-                          background: mine ? "var(--blue-deep)" : "var(--surface)",
-                          border: mine ? "1px solid transparent" : "1px solid var(--line)",
-                          color: mine ? "var(--on-accent)" : "var(--ink)",
-                          borderRadius: 18,
-                          borderBottomRightRadius: mine ? 6 : 18,
-                          borderBottomLeftRadius: mine ? 18 : 6,
-                        }}
-                      >
-                        {shareKind === "voice" && <VoicePlayer value={m.sharedPostId!} mine={mine} />}
-                        {m.text && !shareKind?.startsWith("game") && shareKind !== "voice" && (
-                          <p
-                            style={{
-                              fontSize: 15,
-                              lineHeight: 1.4,
-                              whiteSpace: "pre-wrap",
-                              overflowWrap: "anywhere",
-                            }}
-                          >
-                            {m.text}
-                          </p>
-                        )}
-                        {m.snapId &&
-                          (mine ? (
-                            <p className="flex items-center gap-2 font-semibold text-sm">
-                              <Camera size={16} aria-hidden="true" /> Snap
-                              {snap?.openedBy.includes(id) ? " · opened" : " sent"}
-                            </p>
-                          ) : snap && !snap.openedBy.includes("me") ? (
-                            <button
-                              onClick={() => setViewing(snap)}
-                              className="flex items-center gap-2 font-semibold text-sm"
-                              style={{ color: "var(--coral-deep)" }}
-                            >
-                              <Camera size={16} aria-hidden="true" /> New snap · tap to view
-                            </button>
-                          ) : (
-                            <p className="flex items-center gap-2 text-sm text-faint">
-                              <Camera size={16} aria-hidden="true" /> Snap opened
-                            </p>
-                          ))}
-                        {shared && (
-                          <Link
-                            to="/app/feed"
-                            className="block my-0.5"
-                          >
-                            {shared.image ? (
-                              <img
-                                src={shared.image}
-                                alt=""
-                                className="rounded-xl w-52 max-w-full aspect-square object-cover"
-                              />
-                            ) : (
-                              <span
-                                className="w-52 max-w-full aspect-square rounded-xl flex items-center justify-center"
+                        <div
+                          className="px-3.5 py-2"
+                          style={{
+                            background: mine ? "var(--blue-deep)" : "var(--surface)",
+                            border: mine ? "1px solid transparent" : "1px solid var(--line)",
+                            color: mine ? "var(--on-accent)" : "var(--ink)",
+                            borderRadius: 18,
+                            borderBottomRightRadius: mine ? 6 : 18,
+                            borderBottomLeftRadius: mine ? 18 : 6,
+                          }}
+                        >
+                          {shareKind === "voice" && (
+                            <VoicePlayer value={m.sharedPostId!} mine={mine} />
+                          )}
+                          {(shareKind === "img" || shareKind === "vid") && (
+                            <MediaBubble value={m.sharedPostId!} />
+                          )}
+                          {m.text &&
+                            !shareKind?.startsWith("game") &&
+                            !["voice", "img", "vid"].includes(shareKind ?? "") && (
+                              <p
                                 style={{
-                                  background: mine ? "rgba(255,255,255,0.15)" : "var(--fill)",
+                                  fontSize: 15,
+                                  lineHeight: 1.4,
+                                  whiteSpace: "pre-wrap",
+                                  overflowWrap: "anywhere",
                                 }}
                               >
-                                <ImageIcon size={28} aria-hidden="true" />
-                              </span>
-                            )}
-                            {shared.caption && (
-                              <p className="mt-1.5 text-[13px] line-clamp-2 w-52 max-w-full">
-                                {shared.caption}
+                                {m.text}
                               </p>
                             )}
-                          </Link>
-                        )}
-                        {shareKind === "game" && shareId && (
-                          <>
-                            {m.text && <p style={{ fontSize: 15, lineHeight: 1.4 }}>{m.text}</p>}
-                            <Link
-                              to="/app/play/$id"
-                              params={{ id: shareId }}
-                              className="mt-2 flex items-center justify-center gap-2 rounded-xl min-h-[40px] px-3 font-semibold text-sm"
-                              style={{
-                                background: mine ? "rgba(23,19,12,0.12)" : "var(--fill)",
-                                color: mine ? "var(--on-accent)" : "var(--accent)",
-                              }}
-                            >
-                              <Spade size={16} aria-hidden="true" />{" "}
-                              {mine ? "Open game" : "Join game"}
+                          {m.snapId &&
+                            (mine ? (
+                              <p className="flex items-center gap-2 font-semibold text-sm">
+                                <Camera size={16} aria-hidden="true" /> Snap
+                                {snap?.openedBy.includes(id) ? " · opened" : " sent"}
+                              </p>
+                            ) : snap && !snap.openedBy.includes("me") ? (
+                              <button
+                                onClick={() => setViewing(snap)}
+                                className="flex items-center gap-2 font-semibold text-sm"
+                                style={{ color: "var(--coral-deep)" }}
+                              >
+                                <Camera size={16} aria-hidden="true" /> New snap · tap to view
+                              </button>
+                            ) : (
+                              <p className="flex items-center gap-2 text-sm text-faint">
+                                <Camera size={16} aria-hidden="true" /> Snap opened
+                              </p>
+                            ))}
+                          {shared && (
+                            <Link to="/app/feed" className="block my-0.5">
+                              {shared.image ? (
+                                <img
+                                  src={shared.image}
+                                  alt=""
+                                  className="rounded-xl w-52 max-w-full aspect-square object-cover"
+                                />
+                              ) : (
+                                <span
+                                  className="w-52 max-w-full aspect-square rounded-xl flex items-center justify-center"
+                                  style={{
+                                    background: mine ? "rgba(255,255,255,0.15)" : "var(--fill)",
+                                  }}
+                                >
+                                  <ImageIcon size={28} aria-hidden="true" />
+                                </span>
+                              )}
+                              {shared.caption && (
+                                <p className="mt-1.5 text-[13px] line-clamp-2 w-52 max-w-full">
+                                  {shared.caption}
+                                </p>
+                              )}
                             </Link>
-                          </>
-                        )}
-                        <div
-                          className="flex items-center justify-end gap-1 mt-0.5"
-                          style={{ color: mine ? "rgba(23,19,12,0.7)" : "var(--ink-3)" }}
-                        >
-                          <span className="tabular-nums" style={{ fontSize: 11.5 }}>
-                            {clock(m.at)}
-                          </span>
-                          {mine && (
-                            <span aria-label={statusLabel(m.status)} className="inline-flex">
-                              <Ticks status={m.status} />
-                            </span>
                           )}
+                          {shareKind === "game" && shareId && (
+                            <>
+                              {m.text && <p style={{ fontSize: 15, lineHeight: 1.4 }}>{m.text}</p>}
+                              <Link
+                                to="/app/play/$id"
+                                params={{ id: shareId }}
+                                className="mt-2 flex items-center justify-center gap-2 rounded-xl min-h-[40px] px-3 font-semibold text-sm"
+                                style={{
+                                  background: mine ? "rgba(23,19,12,0.12)" : "var(--fill)",
+                                  color: mine ? "var(--on-accent)" : "var(--accent)",
+                                }}
+                              >
+                                <Spade size={16} aria-hidden="true" />{" "}
+                                {mine ? "Open game" : "Join game"}
+                              </Link>
+                            </>
+                          )}
+                          <div
+                            className="flex items-center justify-end gap-1 mt-0.5"
+                            style={{ color: mine ? "rgba(23,19,12,0.7)" : "var(--ink-3)" }}
+                          >
+                            <span className="tabular-nums" style={{ fontSize: 11.5 }}>
+                              {clock(m.at)}
+                            </span>
+                            {mine && (
+                              <span aria-label={statusLabel(m.status)} className="inline-flex">
+                                <Ticks status={m.status} />
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
                       </Reactable>
                     </div>
                   </li>
@@ -331,6 +344,25 @@ function ChatThread() {
           className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
         >
+          <button
+            type="button"
+            onClick={() => attachRef.current?.click()}
+            aria-label="Send a photo or video"
+            className="w-11 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
+          >
+            <Paperclip size={21} />
+          </button>
+          <input
+            ref={attachRef}
+            type="file"
+            accept="image/*,video/*"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void sendMedia(id, file).catch((err) => setNotice((err as Error).message));
+            }}
+          />
           <label htmlFor="chat-input" className="sr-only">
             Message {f.name}
           </label>
@@ -358,10 +390,10 @@ function ChatThread() {
             </button>
           ) : (
             <VoiceRecorder
-              onSend={(blob, secs) => void sendVoice(id, blob, secs).catch((e) => setNotice((e as Error).message))}
-              onUnavailable={() =>
-                setNotice("Voice notes need the secure (https) version of 25, or mic access. Coming with your domain 🔒")
+              onSend={(blob, secs) =>
+                void sendVoice(id, blob, secs).catch((e) => setNotice((e as Error).message))
               }
+              onUnavailable={(why) => setNotice(why)}
             />
           )}
         </form>

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Mic, Pause, Play, Square, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { _get, _set, useSocial } from "@/lib/social";
+import { _get, _set, fileToImage, useSocial } from "@/lib/social";
 import { signedMedia, uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 import { buzz } from "@/components/SocialUI";
@@ -117,7 +117,11 @@ export function Reactable({
       {open && (
         <div
           className={`absolute -top-12 z-10 flex gap-1 rounded-full px-2 py-1.5 pop ${mine ? "right-0" : "left-0"}`}
-          style={{ background: "var(--surface)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+          style={{
+            background: "var(--surface)",
+            border: "2px solid var(--edge)",
+            boxShadow: "var(--pop)",
+          }}
           role="menu"
         >
           {REACTIONS.map((e) => (
@@ -230,7 +234,11 @@ export function VoicePlayer({ value, mine }: { value: string; mine: boolean }) {
   };
   const pct = v.secs ? Math.min(100, (t / v.secs) * 100) : 0;
   return (
-    <button onClick={toggle} className="flex items-center gap-2.5 py-1 min-w-[170px]" aria-label={playing ? "Pause voice note" : "Play voice note"}>
+    <button
+      onClick={toggle}
+      className="flex items-center gap-2.5 py-1 min-w-[170px]"
+      aria-label={playing ? "Pause voice note" : "Play voice note"}
+    >
       <span
         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
         style={{ background: mine ? "rgba(0,0,0,0.15)" : "var(--lime)", color: "var(--on-accent)" }}
@@ -244,7 +252,14 @@ export function VoicePlayer({ value, mine }: { value: string; mine: boolean }) {
             className="w-[3px] rounded-full"
             style={{
               height: `${30 + ((i * 37) % 70)}%`,
-              background: i / 22 * 100 < pct ? (mine ? "var(--on-accent)" : "var(--lime)") : mine ? "rgba(0,0,0,0.3)" : "var(--ink-3)",
+              background:
+                (i / 22) * 100 < pct
+                  ? mine
+                    ? "var(--on-accent)"
+                    : "var(--lime)"
+                  : mine
+                    ? "rgba(0,0,0,0.3)"
+                    : "var(--ink-3)",
             }}
           />
         ))}
@@ -260,7 +275,7 @@ export function VoiceRecorder({
   onUnavailable,
 }: {
   onSend: (blob: Blob, secs: number) => void;
-  onUnavailable: () => void;
+  onUnavailable: (why: string) => void;
 }) {
   const [rec, setRec] = useState<MediaRecorder | null>(null);
   const [secs, setSecs] = useState(0);
@@ -275,7 +290,12 @@ export function VoiceRecorder({
   }, [rec]);
 
   const start = async () => {
-    if (!canRecord()) return onUnavailable();
+    if (!canRecord())
+      return onUnavailable(
+        typeof window !== "undefined" && !window.isSecureContext
+          ? "Voice notes need the secure (https) link of 25. Open it from https://…"
+          : "This browser can't record audio. Try Safari or Chrome.",
+      );
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mr = new MediaRecorder(stream);
@@ -294,8 +314,13 @@ export function VoiceRecorder({
       mr.start();
       setRec(mr);
       buzz(20);
-    } catch {
-      onUnavailable();
+    } catch (e) {
+      const name = (e as Error).name;
+      onUnavailable(
+        name === "NotAllowedError"
+          ? "Microphone is blocked. Allow it for this site in your browser settings, then try again."
+          : `Couldn't start recording (${(e as Error).message}).`,
+      );
     }
   };
   const stop = (send: boolean) => {
@@ -312,11 +337,19 @@ export function VoiceRecorder({
         className="absolute inset-0 z-10 flex items-center gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2"
         style={{ background: "var(--surface)" }}
       >
-        <button type="button" onClick={() => stop(false)} aria-label="Discard voice note" className="w-11 h-11 rounded-full flex items-center justify-center text-cool">
+        <button
+          type="button"
+          onClick={() => stop(false)}
+          aria-label="Discard voice note"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-cool"
+        >
           <Trash2 size={19} />
         </button>
         <span className="flex-1 flex items-center gap-2 font-bold" style={{ color: "var(--pink)" }}>
-          <span className="w-2.5 h-2.5 rounded-full soft-pulse-dot" style={{ background: "var(--pink)" }} />
+          <span
+            className="w-2.5 h-2.5 rounded-full soft-pulse-dot"
+            style={{ background: "var(--pink)" }}
+          />
           {fmt(secs)} recording…
         </span>
         <button
@@ -354,7 +387,14 @@ export async function sendVoice(friendId: string, blob: Blob, secs: number) {
       ...st.chats,
       [friendId]: [
         ...(st.chats[friendId] ?? []),
-        { id, from: "me", text: "🎤 Voice note", sharedPostId: voiceRef(local, secs), at: Date.now(), status: "sent" },
+        {
+          id,
+          from: "me",
+          text: "🎤 Voice note",
+          sharedPostId: voiceRef(local, secs),
+          at: Date.now(),
+          status: "sent",
+        },
       ],
     },
   }));
@@ -368,5 +408,105 @@ export async function sendVoice(friendId: string, blob: Blob, secs: number) {
     body: "🎤 Voice note",
     shared_ref: voiceRef(path, secs),
   });
+  if (error) throw new Error(error.message);
+}
+
+// ---------- Photos and videos in chat ----------
+
+export const MAX_CHAT_VIDEO_MB = 50;
+/** "img:<path or url>" / "vid:<path or url>" */
+export function parseMedia(ref?: string) {
+  if (!ref) return null;
+  if (ref.startsWith("img:")) return { kind: "img" as const, src: ref.slice(4) };
+  if (ref.startsWith("vid:")) return { kind: "vid" as const, src: ref.slice(4) };
+  return null;
+}
+
+export function MediaBubble({ value }: { value: string }) {
+  const m = parseMedia(value);
+  const [url, setUrl] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!m) return;
+    if (/^(blob:|https?:|data:)/.test(m.src)) setUrl(m.src);
+    else void signedMedia([m.src]).then((x) => setUrl(x[m.src] ?? null));
+  }, [m?.src]);
+  if (!m) return null;
+  if (!url) return <div className="w-52 aspect-[3/4] rounded-xl skeleton" />;
+  return m.kind === "vid" ? (
+    <video
+      src={url}
+      controls
+      playsInline
+      preload="metadata"
+      className="rounded-xl w-56 max-w-full"
+    />
+  ) : (
+    <>
+      <button onClick={() => setOpen(true)} className="block" aria-label="Open photo">
+        <img src={url} alt="" className="rounded-xl w-56 max-w-full object-cover" />
+      </button>
+      {open && (
+        <button
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.92)" }}
+          aria-label="Close photo"
+        >
+          <img src={url} alt="" className="max-w-full max-h-full rounded-xl" />
+        </button>
+      )}
+    </>
+  );
+}
+
+/** Read a picked file: photos are downscaled, videos checked for size. */
+export async function prepareMedia(
+  file: File,
+): Promise<{ blob: Blob; kind: "img" | "vid"; ext: string }> {
+  if (file.type.startsWith("video/")) {
+    if (file.size > MAX_CHAT_VIDEO_MB * 1024 * 1024)
+      throw new Error(`Videos can be up to ${MAX_CHAT_VIDEO_MB} MB.`);
+    return { blob: file, kind: "vid", ext: file.type.includes("quicktime") ? "mov" : "mp4" };
+  }
+  const dataUrl = await fileToImage(file, 1600);
+  const blob = await (await fetch(dataUrl)).blob();
+  return { blob, kind: "img", ext: "jpg" };
+}
+
+/** Send a photo or video in a 1:1 chat. */
+export async function sendMedia(friendId: string, file: File) {
+  const { blob, kind, ext } = await prepareMedia(file);
+  const s = _get();
+  const id = uuid();
+  const label = kind === "vid" ? "🎥 Video" : "📷 Photo";
+  _set((st) => ({
+    ...st,
+    chats: {
+      ...st.chats,
+      [friendId]: [
+        ...(st.chats[friendId] ?? []),
+        {
+          id,
+          from: "me",
+          text: label,
+          sharedPostId: `${kind}:${URL.createObjectURL(blob)}`,
+          at: Date.now(),
+          status: "sent",
+        },
+      ],
+    },
+  }));
+  if (s.mode !== "live" || !s.me) return;
+  const path = await uploadMediaAt("", blob, ext);
+  const { error } = await supabase
+    .from("messages")
+    .insert({
+      id,
+      sender: s.me.id,
+      recipient: friendId,
+      body: label,
+      shared_ref: `${kind}:${path}`,
+    });
   if (error) throw new Error(error.message);
 }

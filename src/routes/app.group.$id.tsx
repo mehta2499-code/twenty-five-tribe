@@ -1,15 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Send, Users } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
-import { Reactable, VoicePlayer, VoiceRecorder } from "@/components/ChatExtras";
+import {
+  MediaBubble,
+  Reactable,
+  VoicePlayer,
+  VoiceRecorder,
+  parseMedia,
+} from "@/components/ChatExtras";
 import { dayKey, mutualFriends } from "@/lib/social";
 import {
   addMembers,
   leaveGroup,
   markSeen,
   member,
+  sendGroupMedia,
   sendGroupVoice,
   sendToGroup,
   useGroups,
@@ -34,6 +41,7 @@ function GroupThread() {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     markSeen(id);
@@ -56,7 +64,8 @@ function GroupThread() {
     setText("");
     void sendToGroup(id, t).catch((e) => setToast((e as Error).message));
   };
-  const tone = (who: string) => NAME_TONES[g.members.indexOf(who) % NAME_TONES.length] ?? "var(--ink-2)";
+  const tone = (who: string) =>
+    NAME_TONES[g.members.indexOf(who) % NAME_TONES.length] ?? "var(--ink-2)";
   const canAdd = mutualFriends().filter((f) => !g.members.includes(f.id));
 
   return (
@@ -73,7 +82,10 @@ function GroupThread() {
           >
             <ArrowLeft size={22} />
           </button>
-          <button onClick={() => setInfo(true)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+          <button
+            onClick={() => setInfo(true)}
+            className="flex items-center gap-3 flex-1 min-w-0 text-left"
+          >
             <span
               className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0"
               style={{ background: "var(--fill)", border: "2px solid var(--edge)" }}
@@ -102,7 +114,8 @@ function GroupThread() {
                 const mine = m.from === "me";
                 const prev = msgs[i - 1];
                 const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
-                const grouped = prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
+                const grouped =
+                  prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
                 const who = member(m.from, st);
                 return (
                   <li key={m.id}>
@@ -111,10 +124,19 @@ function GroupThread() {
                         {new Date(m.at).toLocaleDateString([], { day: "numeric", month: "short" })}
                       </p>
                     )}
-                    <div className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}>
+                    <div
+                      className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
+                    >
                       {!mine && (
                         <span className="w-7 shrink-0">
-                          {!grouped && <Avatar src={who.avatar} initials={who.initials} color={who.color} size={28} />}
+                          {!grouped && (
+                            <Avatar
+                              src={who.avatar}
+                              initials={who.initials}
+                              color={who.color}
+                              size={28}
+                            />
+                          )}
                         </span>
                       )}
                       <Reactable id={m.id} mine={mine}>
@@ -130,18 +152,33 @@ function GroupThread() {
                           }}
                         >
                           {!mine && !grouped && (
-                            <p className="text-[12px] font-extrabold mb-0.5" style={{ color: tone(m.from) }}>
+                            <p
+                              className="text-[12px] font-extrabold mb-0.5"
+                              style={{ color: tone(m.from) }}
+                            >
                               {who.name.split(" ")[0]}
                             </p>
                           )}
                           {m.ref?.startsWith("voice:") ? (
                             <VoicePlayer value={m.ref} mine={mine} />
+                          ) : parseMedia(m.ref) ? (
+                            <MediaBubble value={m.ref!} />
                           ) : (
-                            <p style={{ fontSize: 15, lineHeight: 1.4, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                            <p
+                              style={{
+                                fontSize: 15,
+                                lineHeight: 1.4,
+                                whiteSpace: "pre-wrap",
+                                overflowWrap: "anywhere",
+                              }}
+                            >
                               {m.text}
                             </p>
                           )}
-                          <p className="text-right tabular-nums" style={{ fontSize: 11.5, opacity: 0.7 }}>
+                          <p
+                            className="text-right tabular-nums"
+                            style={{ fontSize: 11.5, opacity: 0.7 }}
+                          >
                             {clock(m.at)}
                           </p>
                         </div>
@@ -163,6 +200,26 @@ function GroupThread() {
           className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
         >
+          <button
+            type="button"
+            onClick={() => attachRef.current?.click()}
+            aria-label="Send a photo or video"
+            className="w-11 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
+          >
+            <Paperclip size={21} />
+          </button>
+          <input
+            ref={attachRef}
+            type="file"
+            accept="image/*,video/*"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file)
+                void sendGroupMedia(id, file).catch((err) => setToast((err as Error).message));
+            }}
+          />
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -184,10 +241,10 @@ function GroupThread() {
             </button>
           ) : (
             <VoiceRecorder
-              onSend={(blob, secs) => void sendGroupVoice(id, blob, secs).catch((e) => setToast((e as Error).message))}
-              onUnavailable={() =>
-                setToast("Voice notes need the secure (https) version of 25, or mic access. Coming with your domain 🔒")
+              onSend={(blob, secs) =>
+                void sendGroupVoice(id, blob, secs).catch((e) => setToast((e as Error).message))
               }
+              onUnavailable={(why) => setToast(why)}
             />
           )}
         </form>
@@ -203,7 +260,11 @@ function GroupThread() {
                 <li key={mId} className="flex items-center gap-3">
                   <Avatar src={m.avatar} initials={m.initials} color={m.color} size={36} />
                   <span className="flex-1 font-semibold text-cream">{m.name}</span>
-                  {g.createdBy === mId && <span className="chip" style={{ minHeight: 24, fontSize: 11 }}>made it</span>}
+                  {g.createdBy === mId && (
+                    <span className="chip" style={{ minHeight: 24, fontSize: 11 }}>
+                      made it
+                    </span>
+                  )}
                 </li>
               );
             })}

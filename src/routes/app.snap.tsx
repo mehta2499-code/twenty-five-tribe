@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, RefreshCw, Type, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -39,6 +39,58 @@ const BACKDROPS = [
 ];
 const TIMERS = [3, 5, 10];
 
+/**
+ * Keep the camera open for a minute after leaving the snap screen, so coming
+ * back (or snapping again) doesn't make the phone ask for permission again.
+ */
+let camCache: {
+  stream: MediaStream;
+  facing: string;
+  stopTimer?: ReturnType<typeof setTimeout>;
+} | null = null;
+function takeCachedStream(facing: string) {
+  if (!camCache) return null;
+  if (camCache.stopTimer) clearTimeout(camCache.stopTimer);
+  const live = camCache.stream.getVideoTracks().some((t) => t.readyState === "live");
+  if (live && camCache.facing === facing) return camCache.stream;
+  camCache.stream.getTracks().forEach((t) => t.stop());
+  camCache = null;
+  return null;
+}
+function parkStream(stream: MediaStream, facing: string) {
+  camCache = {
+    stream,
+    facing,
+    stopTimer: setTimeout(() => {
+      stream.getTracks().forEach((t) => t.stop());
+      camCache = null;
+    }, 60_000),
+  };
+}
+
+/** Draws the caption onto the photo at the height you dragged it to. */
+async function bakeCaption(image: string, text: string, yPct: number): Promise<string> {
+  const img = new Image();
+  img.src = image;
+  await img.decode();
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+  const size = Math.round(c.width * 0.05);
+  const barH = Math.round(size * 2);
+  const y = Math.min(c.height - barH, Math.max(0, (yPct / 100) * c.height - barH / 2));
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillRect(0, y, c.width, barH);
+  ctx.fillStyle = "#fff";
+  ctx.font = `600 ${size}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, c.width / 2, y + barH / 2, c.width * 0.92);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
 function SnapScreen() {
   const { to } = Route.useSearch();
   const s = useSocial();
@@ -57,6 +109,10 @@ function SnapScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Snap | null>(null);
   const [burst, setBurst] = useState(0);
+  const [captionY, setCaptionY] = useState(50);
+  const drag = useRef<{ startY: number; startPct: number; moved: boolean } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const target = to ? friendById(to) : undefined;
   const hasShot = !!image || !!bg;
 
@@ -69,8 +125,11 @@ function SnapScreen() {
       setCamError("Tap to open your camera");
       return;
     }
-    navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: facing }, audio: false })
+    const cached = takeCachedStream(facing);
+    (cached
+      ? Promise.resolve(cached)
+      : navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false })
+    )
       .then((ms) => {
         if (cancelled) return ms.getTracks().forEach((t) => t.stop());
         live = ms;
@@ -78,12 +137,10 @@ function SnapScreen() {
         setCamError(null);
         if (videoRef.current) videoRef.current.srcObject = ms;
       })
-      .catch(() =>
-        setCamError("Tap to open your camera"),
-      );
+      .catch(() => setCamError("Tap to open your camera"));
     return () => {
       cancelled = true;
-      live?.getTracks().forEach((t) => t.stop());
+      if (live) parkStream(live, facing);
       setStream(null);
     };
   }, [facing, hasShot]);
@@ -119,14 +176,22 @@ function SnapScreen() {
     setCaption("");
   };
 
-  const send = (ids: string[]) => {
+  const send = async (ids: string[]) => {
+    const text = caption.trim();
+    const finalImage =
+      image && text ? await bakeCaption(image, text, captionY).catch(() => image) : image;
     social.sendSnap({
       to: ids,
-      image: image ?? undefined,
+      image: finalImage ?? undefined,
       bg: image ? undefined : (bg ?? BACKDROPS[0]),
-      caption: caption.trim() || undefined,
+      // Photo captions are drawn onto the photo where you placed them.
+      caption: image ? undefined : text || undefined,
       seconds,
     });
+    setCaptionY(50);
+    // Snapping from a chat: go back to that chat.
+    if (target && ids.length === 1 && ids[0] === target.id)
+      setTimeout(() => navigate({ to: "/app/chat/$id", params: { id: target.id } }), 900);
     const saved = ids.filter((id) => streakStatus(s.streaks[id]).atRisk).length;
     const names = ids.map((id) => friendById(id)?.name).filter(Boolean);
     setPicking(false);
@@ -151,6 +216,7 @@ function SnapScreen() {
       <div className="px-5">
         {/* Viewfinder */}
         <div
+          ref={frameRef}
           className="relative rounded-3xl overflow-hidden mx-auto"
           style={{
             aspectRatio: "3 / 4",
@@ -175,7 +241,11 @@ function SnapScreen() {
             >
               <span
                 className="w-20 h-20 rounded-full flex items-center justify-center"
-                style={{ background: "var(--lime)", color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+                style={{
+                  background: "var(--lime)",
+                  color: "var(--on-accent)",
+                  border: "2px solid var(--edge)",
+                }}
               >
                 <Camera size={34} aria-hidden="true" />
               </span>
@@ -192,19 +262,42 @@ function SnapScreen() {
             />
           )}
           {hasShot && (
-            <input
-              id="snap-caption"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value.slice(0, 80))}
-              placeholder={image ? "Add a caption" : "Say it big"}
-              aria-label="Caption"
-              className="absolute left-4 right-4 top-1/2 -translate-y-1/2 text-center font-semibold outline-none rounded-2xl px-3 py-2.5 placeholder:text-white/70"
+            <div
+              className="absolute left-0 right-0"
               style={{
-                fontSize: image ? 19 : 28,
-                color: "#fff",
-                background: image ? "rgba(0,0,0,0.45)" : "transparent",
+                top: image ? `${captionY}%` : "50%",
+                transform: "translateY(-50%)",
+                touchAction: "none",
               }}
-            />
+              onPointerDown={(e) => {
+                if (!image) return;
+                drag.current = { startY: e.clientY, startPct: captionY, moved: false };
+              }}
+              onPointerMove={(e) => {
+                const d = drag.current;
+                const h = frameRef.current?.clientHeight ?? 1;
+                if (!d) return;
+                const dy = e.clientY - d.startY;
+                if (Math.abs(dy) > 4) d.moved = true;
+                if (d.moved) setCaptionY(Math.min(90, Math.max(10, d.startPct + (dy / h) * 100)));
+              }}
+              onPointerUp={() => (drag.current = null)}
+              onPointerCancel={() => (drag.current = null)}
+            >
+              <input
+                id="snap-caption"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value.slice(0, 80))}
+                placeholder={image ? "Add a caption · drag to move" : "Say it big"}
+                aria-label="Caption"
+                className="block mx-4 w-[calc(100%-2rem)] text-center font-semibold outline-none rounded-2xl px-3 py-2.5 placeholder:text-white/70"
+                style={{
+                  fontSize: image ? 19 : 28,
+                  color: "#fff",
+                  background: image ? "rgba(0,0,0,0.45)" : "transparent",
+                }}
+              />
+            </div>
           )}
           {hasShot && (
             <button

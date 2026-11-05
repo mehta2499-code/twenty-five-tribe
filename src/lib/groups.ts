@@ -6,8 +6,20 @@ import { uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 
 export type GMsg = { id: string; from: string; text?: string; ref?: string; at: number };
-export type Group = { id: string; name: string; emoji: string; createdBy: string; members: string[] };
-export type Member = { id: string; name: string; initials: string; avatar?: string; color?: string };
+export type Group = {
+  id: string;
+  name: string;
+  emoji: string;
+  createdBy: string;
+  members: string[];
+};
+export type Member = {
+  id: string;
+  name: string;
+  initials: string;
+  avatar?: string;
+  color?: string;
+};
 
 type State = {
   groups: Group[];
@@ -41,12 +53,34 @@ const initials = (n: string) =>
 function demoState(): State {
   const f = mutualFriends().slice(0, 4);
   const now = Date.now();
-  const g: Group = { id: "demo-goa", name: "Goa gang", emoji: "🏖️", createdBy: "me", members: ["me", ...f.map((x) => x.id)] };
-  const lines = ["December plan is ON?", "only if someone else books 😭", "I'll make the itinerary", "famous last words"];
-  const msgs = { [g.id]: f.map((x, i) => ({ id: `dg${i}`, from: x.id, text: lines[i], at: now - (4 - i) * 900_000 })) };
+  const g: Group = {
+    id: "demo-goa",
+    name: "Goa gang",
+    emoji: "🏖️",
+    createdBy: "me",
+    members: ["me", ...f.map((x) => x.id)],
+  };
+  const lines = [
+    "December plan is ON?",
+    "only if someone else books 😭",
+    "I'll make the itinerary",
+    "famous last words",
+  ];
+  const msgs = {
+    [g.id]: f.map((x, i) => ({
+      id: `dg${i}`,
+      from: x.id,
+      text: lines[i],
+      at: now - (4 - i) * 900_000,
+    })),
+  };
   try {
-    const saved = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null") as Pick<State, "groups" | "msgs"> | null;
-    if (saved?.groups?.length) return { groups: saved.groups, msgs: saved.msgs, people: {}, loaded: true };
+    const saved = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null") as Pick<
+      State,
+      "groups" | "msgs"
+    > | null;
+    if (saved?.groups?.length)
+      return { groups: saved.groups, msgs: saved.msgs, people: {}, loaded: true };
   } catch {
     // ignore
   }
@@ -77,14 +111,16 @@ async function load(me: string) {
   for (const r of (mem.data ?? []) as { group_id: string; user_id: string }[])
     (members[r.group_id] ??= []).push(who(r.user_id));
   const msgs: Record<string, GMsg[]> = {};
-  for (const r of ((msg.data ?? []) as {
-    id: string;
-    group_id: string;
-    sender: string;
-    body: string | null;
-    shared_ref: string | null;
-    created_at: string;
-  }[]).reverse())
+  for (const r of (
+    (msg.data ?? []) as {
+      id: string;
+      group_id: string;
+      sender: string;
+      body: string | null;
+      shared_ref: string | null;
+      created_at: string;
+    }[]
+  ).reverse())
     (msgs[r.group_id] ??= []).push({
       id: r.id,
       from: who(r.sender),
@@ -93,7 +129,9 @@ async function load(me: string) {
       at: Date.parse(r.created_at),
     });
   // Names for members who aren't in your 25.
-  const unknown = [...new Set(Object.values(members).flat())].filter((id) => id !== "me" && !friendById(id));
+  const unknown = [...new Set(Object.values(members).flat())].filter(
+    (id) => id !== "me" && !friendById(id),
+  );
   const people: Record<string, Member> = {};
   if (unknown.length) {
     const { data } = await supabase.from("profiles").select("id,display_name").in("id", unknown);
@@ -139,7 +177,11 @@ export function useGroups() {
       };
       channel = supabase
         .channel(`groups:${me}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_messages" }, reload)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "group_messages" },
+          reload,
+        )
         .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, reload)
         .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, reload)
         .subscribe();
@@ -161,7 +203,14 @@ export function member(id: string, st: State): Member {
     return { id, name: "You", initials: me?.initials ?? "YO", avatar: me?.avatar };
   }
   const f = friendById(id);
-  if (f) return { id, name: f.name, initials: f.initials, avatar: f.avatar || undefined, color: f.color };
+  if (f)
+    return {
+      id,
+      name: f.name,
+      initials: f.initials,
+      avatar: f.avatar || undefined,
+      color: f.color,
+    };
   return st.people[id] ?? { id, name: "Someone", initials: "?" };
 }
 
@@ -234,7 +283,13 @@ export async function sendToGroup(groupId: string, text: string) {
 export async function sendGroupVoice(groupId: string, blob: Blob, secs: number) {
   const id = uuid();
   const ref = (src: string) => `voice:${src}|${Math.round(secs)}`;
-  pushLocal(groupId, { id, from: "me", text: "🎤 Voice note", ref: ref(URL.createObjectURL(blob)), at: Date.now() });
+  pushLocal(groupId, {
+    id,
+    from: "me",
+    text: "🎤 Voice note",
+    ref: ref(URL.createObjectURL(blob)),
+    at: Date.now(),
+  });
   if (!mine()) return;
   const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm";
   const path = await uploadMediaAt(`g/${groupId}`, blob, ext);
@@ -252,17 +307,57 @@ export async function addMembers(groupId: string, ids: string[]) {
   if (!mine()) {
     set((s) => ({
       ...s,
-      groups: s.groups.map((g) => (g.id === groupId ? { ...g, members: [...new Set([...g.members, ...ids])] } : g)),
+      groups: s.groups.map((g) =>
+        g.id === groupId ? { ...g, members: [...new Set([...g.members, ...ids])] } : g,
+      ),
     }));
     return;
   }
-  const { error } = await supabase.from("group_members").insert(ids.map((u) => ({ group_id: groupId, user_id: u })));
-  if (error) throw new Error(/25/.test(error.message) ? error.message : "Couldn't add them. Only people in your mutual 25.");
+  const { error } = await supabase
+    .from("group_members")
+    .insert(ids.map((u) => ({ group_id: groupId, user_id: u })));
+  if (error)
+    throw new Error(
+      /25/.test(error.message)
+        ? error.message
+        : "Couldn't add them. Only people in your mutual 25.",
+    );
   await load(_get().me!.id);
 }
 
 export async function leaveGroup(groupId: string) {
   set((s) => ({ ...s, groups: s.groups.filter((g) => g.id !== groupId) }));
   if (!mine()) return;
-  await supabase.from("group_members").delete().eq("group_id", groupId).eq("user_id", _get().me!.id);
+  await supabase
+    .from("group_members")
+    .delete()
+    .eq("group_id", groupId)
+    .eq("user_id", _get().me!.id);
+}
+
+/** Send a photo or video to a group. */
+export async function sendGroupMedia(groupId: string, file: File) {
+  const { prepareMedia } = await import("@/components/ChatExtras");
+  const { blob, kind, ext } = await prepareMedia(file);
+  const id = uuid();
+  const label = kind === "vid" ? "🎥 Video" : "📷 Photo";
+  pushLocal(groupId, {
+    id,
+    from: "me",
+    text: label,
+    ref: `${kind}:${URL.createObjectURL(blob)}`,
+    at: Date.now(),
+  });
+  if (!mine()) return;
+  const path = await uploadMediaAt(`g/${groupId}`, blob, ext);
+  const { error } = await supabase
+    .from("group_messages")
+    .insert({
+      id,
+      group_id: groupId,
+      sender: _get().me!.id,
+      body: label,
+      shared_ref: `${kind}:${path}`,
+    });
+  if (error) throw new Error(error.message);
 }
