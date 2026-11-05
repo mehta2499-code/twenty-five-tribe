@@ -218,6 +218,7 @@ function Login() {
               {busy ? (isSignup ? "Sending your code…" : "Signing in…") : (isSignup ? "Send verification code" : "Sign in")}
             </button>
             {!isSignup && <button type="button" onClick={() => { setStep("forgot"); setError(null); setResetSent(false); }} className="text-sm text-white/80 underline underline-offset-4">Forgot password?</button>}
+            {!isSignup && <button type="button" onClick={() => void sendCode()} className="text-sm text-white/80 underline underline-offset-4" disabled={busy || !email}>Use an email sign-in code instead</button>}
             <p className="text-center text-sm text-white/80">
               {isSignup ? "Already have a seat?" : "New around here?"}{" "}
               <button type="button" onClick={() => { setIsSignup(!isSignup); setPassword(""); setConfirmPassword(""); setError(null); setNotice(null); }} className="font-semibold text-white underline underline-offset-4">
@@ -309,8 +310,9 @@ function Login() {
                 hidden
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
+                  e.target.value = "";
                   if (!f) return;
-                  if (!f.type.startsWith("image/")) { setError("Choose a photo in JPG, PNG, or WebP format."); return; }
+                  if (!/^(image\/(jpeg|png|webp|gif|bmp|avif))$/.test(f.type)) { setError("Choose a JPG, PNG, WebP, GIF, BMP, or AVIF photo."); return; }
                   if (f.size > 5 * 1024 * 1024) { setError("Choose a photo smaller than 5 MB."); return; }
                   try { setError(null); setAvatar(await fileToImage(f, 600)); }
                   catch { setError("That photo couldn’t be opened. Try a different image."); }
@@ -370,7 +372,7 @@ function Login() {
             />
             <button
               type="submit"
-              disabled={busy || !name.trim() || username.length < 3 || !avatar || password.length < 8 || password !== confirmPassword}
+              disabled={busy || s.mode !== "live" || s.loading || !name.trim() || username.length < 3 || !avatar || password.length < 8 || password !== confirmPassword}
               className={primary}
             >
               {busy ? "Saving…" : "Pull up a chair"}
