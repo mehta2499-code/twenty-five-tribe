@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, PageBand, Sheet, Toast, clientOnly } from "@/components/SocialUI";
-import { DailyRunner } from "@/components/ArcadeGames";
+import { DailyRunner, GAMES } from "@/components/ArcadeGames";
 import { DailyHero, TodayTable, WeekTable } from "@/components/DailyBoard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
-import { gameFor, today, useDaily } from "@/lib/daily";
+import { TRIES, gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
@@ -128,6 +128,58 @@ function YourGames({ meId }: { meId: string }) {
   );
 }
 
+function GameTile({
+  tone,
+  light,
+  emoji,
+  sticker,
+  title,
+  line,
+  tilt,
+  onClick,
+}: {
+  tone: string;
+  light?: boolean;
+  emoji: string;
+  sticker: string;
+  title: string;
+  line: string;
+  tilt: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-[22px] p-4 text-left flex flex-col active:scale-95 transition-transform"
+      style={{
+        background: tone,
+        color: light ? "var(--ink)" : "var(--on-accent)",
+        border: "2px solid var(--edge)",
+        boxShadow: "4px 4px 0 var(--edge)",
+        transform: `rotate(${tilt}deg)`,
+        minHeight: 178,
+      }}
+    >
+      <span
+        className="self-start text-[10.5px] font-extrabold px-2 py-0.5 rounded-full"
+        style={{
+          background: light ? "var(--lime)" : "var(--edge)",
+          color: light ? "var(--on-accent)" : "#fff",
+        }}
+      >
+        {sticker}
+      </span>
+      <span className="text-5xl mt-3 float" aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="display mt-auto pt-2" style={{ fontSize: 22, lineHeight: 1.05 }}>
+        {title}
+      </span>
+      <span className="text-[12.5px] font-semibold leading-snug mt-1 opacity-85">{line}</span>
+    </button>
+  );
+}
+
 function Games() {
   const s = useSocial();
   const navigate = useNavigate();
@@ -148,6 +200,12 @@ function Games() {
   const [soloPack, setSoloPack] = useState<TriviaPack | null>(null);
   const [challengePack, setChallengePack] = useState<TriviaPack | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [tab, setTab] = useState<"play" | "scores">("play");
+  const [packs, setPacks] = useState(false);
+  const [wordMenu, setWordMenu] = useState(false);
+  const dailyState = useDaily();
+  const todayGame = GAMES[gameFor(today())];
+  const dailyLeft = TRIES - (dailyState.board[today()]?.me ?? []).length;
 
   const me = meView();
   const mySeat = (): Seat =>
@@ -160,154 +218,148 @@ function Games() {
 
   return (
     <>
-      <PageBand
-        title="Games"
-        sub="A new game every day. 3 tries, best one counts. Bragging rights reset Monday."
-      />
+      <PageBand title="Games" sub="Pick one. Your 25 is waiting." />
 
-      <DailyHero onPlay={() => setDaily(true)} />
-
-      {live && <YourGames meId={s.me!.id} />}
-
-      <TodayTable />
-      <WeekTable />
-
-      <div className="px-5 mt-10">
-        <h2 className="heading" style={{ fontSize: 22 }}>
-          Play anytime 🃏
-        </h2>
-        <p className="meta mt-0.5">No limits. Just you and your 25.</p>
+      <div className="px-5">
+        <div className="segmented w-full" role="tablist" aria-label="Games">
+          <button
+            className="flex-1"
+            role="tab"
+            aria-pressed={tab === "play"}
+            onClick={() => setTab("play")}
+          >
+            🎮 Play
+          </button>
+          <button
+            className="flex-1"
+            role="tab"
+            aria-pressed={tab === "scores"}
+            onClick={() => setTab("scores")}
+          >
+            🏆 Scores
+          </button>
+        </div>
       </div>
 
-      {/* Kachuful */}
-      <section className="px-5 mt-4">
-        <button
-          onClick={() => setLobby(true)}
-          className="w-full text-left p-5 relative overflow-hidden band"
-          style={{ borderRadius: 20 }}
-        >
-          <span className="label-caps">Most played in India</span>
-          <div className="mt-3 flex gap-1.5" aria-hidden="true">
-            {["♠", "♦", "♣", "♥"].map((x, i) => (
-              <span
-                key={x}
-                className="w-10 h-14 rounded-lg bg-white flex items-center justify-center text-2xl font-bold"
-                style={{
-                  color: i % 2 ? "#C8364F" : "#17130F",
-                  transform: `rotate(${(i - 1.5) * 6}deg)`,
-                }}
-              >
-                {x}
-              </span>
-            ))}
-          </div>
-          <h3 className="mt-4 font-display" style={{ fontSize: 28 }}>
-            Kachuful
-          </h3>
-          <p className="sub mt-1" style={{ fontSize: 14, lineHeight: 1.5 }}>
-            Also called Judgement. Call your tricks, then win exactly that many. 3 to 7 players;
-            bots fill empty seats.
-          </p>
-          <span className="mt-4 inline-block btn-cream px-5 py-2.5" style={{ fontSize: 14 }}>
-            Deal me in →
-          </span>
-        </button>
-      </section>
+      {tab === "play" ? (
+        <>
+          {live && <YourGames meId={s.me!.id} />}
 
-      {/* Word Up */}
-      <section className="px-5 mt-4">
-        <div className="card p-5">
-          <div className="flex gap-1" aria-hidden="true">
-            {["W", "O", "R", "D"].map((l, i) => (
-              <span
-                key={l}
-                className="w-9 h-9 rounded-lg flex items-center justify-center display"
-                style={{
-                  border: "2px solid var(--edge)",
-                  background: ["var(--lime)", "var(--sun)", "var(--fill-2)", "var(--lime)"][i],
-                  color: i === 2 ? "var(--ink)" : "var(--on-accent)",
-                  transform: `rotate(${[-4, 3, -2, 4][i]}deg)`,
-                }}
-              >
-                {l}
-              </span>
+          <section className="px-5 mt-6 grid grid-cols-2 gap-3.5" aria-label="All games">
+            <GameTile
+              tone="var(--lime)"
+              emoji={todayGame.emoji}
+              sticker={
+                dailyLeft > 0
+                  ? `NEW TODAY · ${dailyLeft} ${dailyLeft === 1 ? "try" : "tries"}`
+                  : "DONE TODAY ✅"
+              }
+              title={todayGame.name}
+              line="Today's game. Best of 3 counts."
+              tilt={-1.5}
+              onClick={() => setDaily(true)}
+            />
+            <GameTile
+              tone="#1F1B2B"
+              light
+              emoji="🃏"
+              sticker="2–7 PLAYERS"
+              title="Kachuful"
+              line="Call your tricks. Nail them."
+              tilt={1.5}
+              onClick={() => setLobby(true)}
+            />
+            <GameTile
+              tone="var(--sky)"
+              emoji="⚡"
+              sticker="LIVE DUEL"
+              title="Trivia"
+              line="Same questions, same time. Fastest wins."
+              tilt={1.2}
+              onClick={() => setPacks(true)}
+            />
+            <GameTile
+              tone="var(--sun)"
+              emoji="🔤"
+              sticker="DAILY WORD"
+              title="Word Up"
+              line="Guess it in 6, or set one for a friend."
+              tilt={-1.2}
+              onClick={() => setWordMenu(true)}
+            />
+          </section>
+
+          <p className="text-center meta px-6 pt-8 pb-2">Only your mutual 25 see your scores.</p>
+        </>
+      ) : (
+        <>
+          <DailyHero onPlay={() => setDaily(true)} />
+          <TodayTable />
+          <WeekTable />
+        </>
+      )}
+
+      {packs && (
+        <Sheet title="⚡ Trivia: pick a pack" onClose={() => setPacks(false)}>
+          <ul className="grid gap-2.5">
+            {TRIVIA_PACKS.filter((p) => p.price === "Free").map((p) => (
+              <li key={p.id}>
+                <button
+                  onClick={() => {
+                    setPacks(false);
+                    setPackFor(p);
+                  }}
+                  className="card w-full p-3.5 flex items-center gap-3 text-left"
+                >
+                  <PackIcon id={p.id} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-bold text-cream">{p.name}</span>
+                    <span className="block meta truncate">
+                      {bankSize(p.id)} questions · {p.tagline}
+                    </span>
+                  </span>
+                </button>
+              </li>
             ))}
-          </div>
-          <h3 className="heading mt-3" style={{ fontSize: 24 }}>
-            Word Up
-          </h3>
-          <p className="text-cool mt-1 text-[14px] leading-snug">
-            Guess the 5-letter word in 6. One daily word for everyone, or set a secret word for a
-            friend and watch them struggle live 😈
+          </ul>
+        </Sheet>
+      )}
+
+      {wordMenu && (
+        <Sheet title="🔤 Word Up" onClose={() => setWordMenu(false)}>
+          <p className="text-cool text-[14px] leading-snug">
+            Guess the 5-letter word in 6 tries. Green = right spot, yellow = wrong spot.
           </p>
-          <div className="mt-4 grid grid-cols-2 gap-2.5">
-            <button onClick={() => setWordDaily(true)} className="btn-primary">
-              Today's word
+          <div className="mt-4 grid gap-2.5">
+            <button
+              onClick={() => {
+                setWordMenu(false);
+                setWordDaily(true);
+              }}
+              className="btn-primary"
+            >
+              Today's word (same for everyone)
             </button>
             {live ? (
               <button
                 onClick={() => {
+                  setWordMenu(false);
                   void loadWords();
                   setSecret("");
                   setWordSheet(true);
                 }}
                 className="btn-secondary"
               >
-                Set a word
+                Set a secret word for a friend 😈
               </button>
             ) : (
               <Link to="/login" className="btn-secondary">
-                Set a word
+                Set a word for a friend
               </Link>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* Trivia */}
-      <section className="mt-6">
-        <div className="px-5 flex items-baseline justify-between mb-2.5">
-          <h2 className="text-[15px] font-semibold text-cream">India trivia</h2>
-          <span className="meta">Solo or challenge a friend</span>
-        </div>
-        <div className="flex gap-3 overflow-x-auto px-5 pb-2 no-scrollbar">
-          {TRIVIA_PACKS.map((p) => {
-            const free = p.price === "Free";
-            const count = bankSize(p.id);
-            return (
-              <button
-                key={p.id}
-                onClick={() => setPackFor(p)}
-                disabled={!free}
-                aria-label={free ? `${p.name}, ${count} questions` : `${p.name}, coming soon`}
-                className="shrink-0 w-44 overflow-hidden text-left card"
-                style={{ opacity: free ? 1 : 0.6 }}
-              >
-                <div className="p-4 h-32 flex flex-col justify-between">
-                  <div className="flex items-start justify-between">
-                    <PackIcon id={p.id} />
-                    {!free && (
-                      <span className="chip" style={{ minHeight: 24, fontSize: 12 }}>
-                        Coming soon
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-cream" style={{ fontSize: 16 }}>
-                      {p.name}
-                    </div>
-                    <div className="meta mt-0.5 line-clamp-2" style={{ fontSize: 12.5 }}>
-                      {ROUND} of {count} questions · {p.tagline}
-                    </div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <p className="text-center meta px-6 pt-8 pb-2">Only your mutual 25 see your scores.</p>
+        </Sheet>
+      )}
 
       {lobby && (
         <KachufulLobby
