@@ -670,7 +670,7 @@ export const account = {
   async sendCode(email: string) {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/app/home` },
+      options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/login` },
     });
     if (error) throw new Error(friendly(error));
   },
@@ -707,7 +707,7 @@ export const account = {
     avatar_path = await upload("avatars", input.avatar, "jpg");
     const { error } = await supabase
       .from("profiles")
-      .insert({ id: myId, username, display_name: displayName, avatar_path });
+      .upsert({ id: myId, username, display_name: displayName, avatar_path }, { onConflict: "id" });
     if (error) throw new Error(friendly(error));
     await loadAll();
     subscribe();

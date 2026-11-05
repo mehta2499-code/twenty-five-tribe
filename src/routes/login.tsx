@@ -128,7 +128,7 @@ function Login() {
       const normalizedEmail = email.trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter the email address on your account.");
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw new Error(error.message);
       setResetSent(true);
