@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { Heart, ImagePlus, LayoutGrid, MessageCircle, Plus, Send } from "lucide-react";
+import {
+  Heart,
+  ImagePlus,
+  LayoutGrid,
+  MessageCircle,
+  Plus,
+  Send,
+  MoreHorizontal,
+  Trash2,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
   AudienceNote,
@@ -27,14 +36,17 @@ function PostCard({
   post,
   onComments,
   onShare,
+  onDeleted,
 }: {
   post: Post;
   onComments: () => void;
   onShare: () => void;
+  onDeleted: () => void;
 }) {
   const by = personOf(post.by);
   const liked = post.likes.includes("me");
   const [burst, setBurst] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const lastTap = useRef(0);
   const likers = post.likes
     .filter((x) => x !== "me")
@@ -71,7 +83,36 @@ function PostCard({
         <time className="ml-auto meta" style={{ fontSize: 13 }}>
           {timeAgo(post.at)}
         </time>
+        {post.by === "me" && (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            aria-label="Post options"
+            className="w-9 h-9 -mr-2 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
+          >
+            <MoreHorizontal size={20} />
+          </button>
+        )}
       </header>
+      {confirmDelete && (
+        <Sheet title="Delete this post?" onClose={() => setConfirmDelete(false)}>
+          <p className="text-cool text-sm">
+            It disappears for everyone, along with its likes and comments. This can't be undone.
+          </p>
+          <button
+            onClick={() => {
+              setConfirmDelete(false);
+              onDeleted();
+              social.deletePost(post.id);
+            }}
+            className="btn-danger w-full mt-4"
+          >
+            <Trash2 size={18} /> Delete post
+          </button>
+          <button onClick={() => setConfirmDelete(false)} className="btn-quiet w-full mt-2">
+            Keep it
+          </button>
+        </Sheet>
+      )}
       <div className="relative select-none" onClick={onTap}>
         {post.video ? (
           <video
@@ -320,6 +361,7 @@ function Feed() {
                 post={p}
                 onComments={() => setCommentsFor(p.id)}
                 onShare={() => void startShare(p)}
+                onDeleted={() => setToast("Post deleted.")}
               />
             ))}
           </div>

@@ -43,6 +43,8 @@ export type Post = {
   image: string;
   /** Video posts: the video URL (image is then empty or a poster). */
   video?: string;
+  /** Where the photo/video is stored (live posts), so deleting removes the file too. */
+  mediaPath?: string;
   caption: string;
   at: number;
   likes: string[]; // friendIds + "me"
@@ -665,6 +667,11 @@ const demo = {
       ...s,
       snaps: s.snaps.map((x) => (x.id === snapId ? { ...x, openedBy: [...x.openedBy, "me"] } : x)),
     }));
+  },
+
+  /** Delete one of your own posts. */
+  deletePost(postId: string) {
+    set((s) => ({ ...s, posts: s.posts.filter((p) => p.id !== postId) }));
   },
 
   addPost(image: string, caption: string, video?: Blob) {

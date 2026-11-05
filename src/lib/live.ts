@@ -403,7 +403,9 @@ async function loadAll() {
       };
       // Reels are gone: videos are just posts now.
       posts.push(
-        p.media_type === "video" ? { ...base, image: "", video: url } : { ...base, image: url },
+        p.media_type === "video"
+          ? { ...base, image: "", video: url, mediaPath: p.media_path }
+          : { ...base, image: url, mediaPath: p.media_path },
       );
     }
     const postedToday = new Set(
@@ -966,6 +968,22 @@ registerLive({
     void supabase
       .rpc("open_snap", { p_snap: snapId })
       .then(({ error }) => error && fail(friendly(error)));
+  },
+
+  deletePost(postId: string) {
+    const post = _get().posts.find((p) => p.id === postId);
+    if (!post || post.by !== "me") return;
+    patch((s) => ({ ...s, posts: s.posts.filter((p) => p.id !== postId) }));
+    void (async () => {
+      const { error } = await supabase.from("posts").delete().eq("id", postId);
+      if (error) {
+        fail(`Couldn't delete that post. ${friendly(error)}`);
+        patch((s) => ({ ...s, posts: [post, ...s.posts].sort((a, b) => b.at - a.at) }));
+        return;
+      }
+      // Likes and comments go with the post; also remove the photo or video file.
+      if (post.mediaPath) await supabase.storage.from("media").remove([post.mediaPath]);
+    })();
   },
 
   addPost(image: string, caption: string, video?: Blob) {
