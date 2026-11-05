@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, PageBand, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import { DailyRunner, GAMES } from "@/components/ArcadeGames";
-import { DailyHero, TodayTable, WeekTable } from "@/components/DailyBoard";
+import { Scoreboard } from "@/components/Scoreboard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
 import { TRIES, gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
@@ -293,9 +293,7 @@ function Games() {
         </>
       ) : (
         <>
-          <DailyHero onPlay={() => setDaily(true)} />
-          <TodayTable />
-          <WeekTable />
+          <Scoreboard />
         </>
       )}
 
