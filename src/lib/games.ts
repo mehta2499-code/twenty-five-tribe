@@ -11,9 +11,14 @@ import { newGame, type KState, type Scoring, type Seat } from "@/lib/kachuful";
 
 export type TriviaState = {
   pack: string;
+  /** "live": both play at the same time (duel). "async": each plays when they can. */
+  mode?: "live" | "async";
   /** Picks the questions and their order; the same for both players. */
   seed?: number;
-  results: Record<string, { score: number; total: number; at: number }>;
+  results: Record<
+    string,
+    { score: number; total: number; at: number; correct?: number; points?: number }
+  >;
 };
 
 /** Word Up challenge: the setter picks a word, the guesser has 6 tries. */
@@ -124,6 +129,7 @@ export async function startTriviaChallenge(packId: string, friend: Person) {
   const id = uuid();
   const state: TriviaState = {
     pack: packId,
+    mode: "live",
     seed: Math.floor(Math.random() * 2 ** 31),
     results: {},
   };
@@ -144,6 +150,10 @@ export async function startWordChallenge(friend: Person, word: string) {
   if (error) throw new Error(error.message);
   await invite([friend.id], id, "I set you a word 🔤 6 guesses. I'm watching live 👀");
   return id;
+}
+
+export async function inviteToDuel(gameId: string, friendId: string, packName: string) {
+  await invite([friendId], gameId, `⚡ Trivia duel: ${packName}. Join now, we play live!`);
 }
 
 export async function inviteToTrivia(
@@ -231,4 +241,32 @@ export function useGame<S>(id: string) {
   );
 
   return { game, error, save, reload: load };
+}
+
+/**
+ * Save my trivia result on top of whatever is there now. Both players finish
+ * a duel at the same moment, so retry with the latest version if we collide.
+ */
+export async function saveTriviaResult(
+  id: string,
+  meId: string,
+  result: TriviaState["results"][string],
+  extra?: Partial<TriviaState>,
+) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const { data } = await supabase.from("games").select("*").eq("id", id).maybeSingle();
+    if (!data) return false;
+    const g = data as GameRow<TriviaState>;
+    const results = { ...g.state.results, [meId]: result };
+    const everyone = g.players.every((p) => results[p]);
+    const { error } = await supabase.rpc("save_game", {
+      p_id: id,
+      p_version: g.version,
+      p_state: { ...g.state, ...extra, results },
+      p_status: everyone ? "done" : null,
+    });
+    if (!error) return true;
+    await new Promise((r) => setTimeout(r, 200 + Math.random() * 400));
+  }
+  return false;
 }

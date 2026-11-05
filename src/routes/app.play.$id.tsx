@@ -2,10 +2,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { KachufulBoard, useBotTurns } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
+import { TriviaDuel, duelMax } from "@/components/TriviaDuel";
 import { clientOnly } from "@/components/SocialUI";
 import { TRIVIA_PACKS } from "@/lib/data";
 import {
   inviteToTrivia,
+  saveTriviaResult,
   revealWord,
   useGame,
   type TriviaState,
@@ -117,8 +119,10 @@ function OnlineTrivia({
   onClose: () => void;
 }) {
   const { game, save } = live;
+  const s = useSocial();
   if (!game) return null;
   const pack = TRIVIA_PACKS.find((p) => p.id === game.state.pack) ?? TRIVIA_PACKS[0];
+  const isLive = game.state.mode === "live";
   const otherId = game.players.find((p) => p !== meId)!;
   const other = friendById(otherId);
   const mine = game.state.results[meId];
@@ -131,8 +135,57 @@ function OnlineTrivia({
     score: theirs?.score,
   };
 
-  if (mine) {
-    // Already played: show where it stands.
+  const saveResult = (r: { score: number; total: number; correct?: number; points?: number }) =>
+    saveTriviaResult(id, meId, { ...r, at: Date.now() }).then(() => live.reload());
+
+  // Live duel: both play at the same time.
+  if (isLive && !mine && !theirs) {
+    const meP = {
+      id: meId,
+      name: s.me?.name ?? "You",
+      avatar: s.me?.avatar,
+      initials: s.me?.initials ?? "YO",
+    };
+    return (
+      <TriviaDuel
+        gameId={id}
+        pack={pack}
+        seed={game.state.seed ?? 1}
+        me={meP}
+        them={{ id: otherId, ...opponent }}
+        isHost={game.host === meId}
+        onClose={onClose}
+        onPlayLater={() => void save({ ...game.state, mode: "async" })}
+        onFinish={(r) =>
+          void saveResult({
+            score: r.points,
+            total: duelMax(),
+            correct: r.correct,
+            points: r.points,
+          })
+        }
+      />
+    );
+  }
+
+  if (mine || (isLive && theirs)) {
+    // Already played (or the duel is over): show where it stands.
+    if (!mine) {
+      return (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
+          <p className="label-caps">{pack.name} · duel</p>
+          <h2 className="font-display mt-3" style={{ fontSize: 30 }}>
+            You missed this duel
+          </h2>
+          <p className="mt-4 text-cool">
+            {opponent.name.split(" ")[0]} scored {theirs!.score}. Challenge them back 😤
+          </p>
+          <button onClick={onClose} className="mt-10 btn-primary px-8">
+            Back to games
+          </button>
+        </div>
+      );
+    }
     const total = mine.total;
     const verdict =
       theirs === undefined
@@ -149,8 +202,9 @@ function OnlineTrivia({
           {verdict}
         </h2>
         <p className="mt-6 text-2xl font-black tabular-nums text-cream">
-          You {mine.score}/{total} · {opponent.name.split(" ")[0]}{" "}
-          {theirs ? `${theirs.score}/${total}` : "?"}
+          {mine.points !== undefined
+            ? `You ${mine.score} pts · ${opponent.name.split(" ")[0]} ${theirs ? `${theirs.score} pts` : "?"}`
+            : `You ${mine.score}/${total} · ${opponent.name.split(" ")[0]} ${theirs ? `${theirs.score}/${total}` : "?"}`}
         </p>
         <button onClick={onClose} className="mt-10 btn-bronze px-8 py-3.5">
           Back to games
@@ -235,9 +289,7 @@ function OnlineWord({
           />
         </div>
         {!guessing && !over && (
-          <p className="meta text-center mt-4">
-            {st.guesses.length}/6 guesses used. Updates live.
-          </p>
+          <p className="meta text-center mt-4">{st.guesses.length}/6 guesses used. Updates live.</p>
         )}
         {over && (
           <div className="text-center mt-6">

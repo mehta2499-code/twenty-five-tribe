@@ -17,6 +17,7 @@ import {
   listMyGames,
   seatFor,
   startKachuful,
+  inviteToDuel,
   startTriviaChallenge,
   startWordChallenge,
   type GameRow,
@@ -381,6 +382,7 @@ function Games() {
             if (!friend) return;
             try {
               const id = await startTriviaChallenge(pack.id, friend);
+              void inviteToDuel(id, friend.id, pack.name);
               navigate({ to: "/app/play/$id", params: { id } });
             } catch (e) {
               setToast((e as Error).message);
