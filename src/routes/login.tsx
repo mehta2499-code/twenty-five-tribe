@@ -5,19 +5,23 @@ import { ArrowLeft, ImagePlus } from "lucide-react";
 import { account, initLive } from "@/lib/live";
 import { fileToImage, useSocial } from "@/lib/social";
 import { clientOnly } from "@/components/SocialUI";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in · 25" }] }),
   component: clientOnly(Login),
 });
 
-type Step = "email" | "code" | "profile";
+type Step = "email" | "code" | "profile" | "forgot" | "reset";
 
 function Login() {
   const s = useSocial();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -25,14 +29,30 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [isSignup, setIsSignup] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => initLive(), []);
 
-  // Signed in (by code, or by tapping the email link): pick a name, or go in.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      setStep("reset");
+      return;
+    }
+    if (hash.includes("access_token=")) {
+      setIsSignup(true);
+      setNotice("Email verified. Pick your username, password, and photo to finish.");
+      setStep("profile");
+    }
+  }, []);
+
+  // A verified signup may create a session; existing profiles continue straight into the app.
   useEffect(() => {
     if (s.mode !== "live" || s.loading) return;
-    if (s.needsProfile) setStep("profile");
+    if (s.needsProfile) setStep((current) => current === "profile" ? current : "profile");
     else if (s.me && !s.me.vibeDone) navigate({ to: "/vibe" });
     else if (s.me) {
       let invite: string | null = null;
@@ -73,6 +93,59 @@ function Login() {
       setResendIn(45);
     });
 
+  const submitEmail = () =>
+    act(async () => {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+      if (!password) throw new Error("Enter your password.");
+      if (password.length < 8) throw new Error("Use at least 8 characters for your password.");
+      if (isSignup) {
+        if (password !== confirmPassword) throw new Error("Those passwords don’t match yet.");
+        const { error } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/login` },
+        });
+        if (error) throw new Error(/already registered|already exists/i.test(error.message)
+          ? "There’s already an account with that email. Sign in or reset its password."
+          : error.message);
+        setIsSignup(true);
+        setNotice("Check your email to verify this address. Then come back here to finish setting up your seat.");
+        setStep("code");
+        setResendIn(45);
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+      if (error) throw new Error(/invalid login credentials/i.test(error.message)
+        ? "That email and password don’t match. Check them or reset your password."
+        : error.message);
+      await initLive();
+    });
+
+  const sendReset = () =>
+    act(async () => {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter the email address on your account.");
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (error) throw new Error(error.message);
+      setResetSent(true);
+      setNotice("If an account uses that email, a password reset link is on its way. Check your inbox and spam folder.");
+    });
+
+  const saveNewPassword = () =>
+    act(async () => {
+      if (password.length < 8) throw new Error("Use at least 8 characters for your password.");
+      if (password !== confirmPassword) throw new Error("Those passwords don’t match yet.");
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw new Error(error.message);
+      setNotice("Password updated. You’re all set.");
+      setPassword("");
+      setConfirmPassword("");
+      setStep("email");
+    });
+
   const field = "input";
   const primary = "btn-primary w-full";
 
@@ -86,8 +159,8 @@ function Login() {
     >
       <div className="mx-auto w-full max-w-sm flex-1 flex flex-col">
         <div className="flex items-center justify-between h-10">
-          {step === "code" ? (
-            <button onClick={() => setStep("email")} aria-label="Back" className="p-1 -ml-1">
+          {step !== "email" ? (
+            <button onClick={() => { setStep("email"); setError(null); }} aria-label="Back" className="p-1 -ml-1">
               <ArrowLeft size={22} />
             </button>
           ) : (
@@ -107,14 +180,14 @@ function Login() {
             className="mt-8 flex flex-col gap-4 animate-soft-in"
             onSubmit={(e) => {
               e.preventDefault();
-              void sendCode();
+              void submitEmail();
             }}
           >
             <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
               Claim your seat.
             </p>
             <p className="text-white/85" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              We'll email you a 6-digit code. No passwords.
+              {isSignup ? "A little corner of the internet, just for your people." : "Your people are right where you left them."}
             </p>
             <label htmlFor="login-email" className="sr-only">
               Email
@@ -129,9 +202,41 @@ function Login() {
               onChange={(e) => setEmail(e.target.value)}
               className={field}
             />
-            <button type="submit" disabled={busy || !email} className={primary}>
-              {busy ? "Sending…" : "Send my code"}
+            <label htmlFor="account-password" className="sr-only">Password</label>
+            <Input
+              id="account-password"
+              type="password"
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              placeholder={isSignup ? "Create a password (8+ characters)" : "Password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value.slice(0, 128))}
+              className={field}
+              minLength={8}
+              required
+            />
+            {isSignup && (
+              <Input
+                aria-label="Confirm password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value.slice(0, 128))}
+                className={field}
+                minLength={8}
+                required
+              />
+            )}
+            <button type="submit" disabled={busy || !email || !password || (isSignup && password !== confirmPassword)} className={primary}>
+              {busy ? (isSignup ? "Sending your code…" : "Signing in…") : (isSignup ? "Send verification code" : "Sign in")}
             </button>
+            {!isSignup && <button type="button" onClick={() => { setStep("forgot"); setError(null); setResetSent(false); }} className="text-sm text-white/80 underline underline-offset-4">Forgot password?</button>}
+            <p className="text-center text-sm text-white/80">
+              {isSignup ? "Already have a seat?" : "New around here?"}{" "}
+              <button type="button" onClick={() => { setIsSignup(!isSignup); setPassword(""); setConfirmPassword(""); setError(null); setNotice(null); }} className="font-semibold text-white underline underline-offset-4">
+                {isSignup ? "Sign in" : "Create an account"}
+              </button>
+            </p>
           </form>
         )}
 
@@ -140,7 +245,14 @@ function Login() {
             className="mt-8 flex flex-col gap-4 animate-soft-in"
             onSubmit={(e) => {
               e.preventDefault();
-              void act(() => account.verifyCode(email, code));
+              void act(async () => {
+                await account.verifyCode(email, code);
+                if (isSignup) {
+                  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+                  if (error) throw new Error("Your email is verified. Now sign in with the password you created to finish your profile.");
+                  await initLive();
+                }
+              });
             }}
           >
             <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
@@ -165,12 +277,9 @@ function Login() {
               className={`${field} text-center tracking-[0.5em] text-2xl font-bold`}
             />
             <button type="submit" disabled={busy || code.length < 6} className={primary}>
-              {busy ? "Checking…" : "Sign in"}
+              {busy ? "Checking…" : (isSignup ? "Verify email" : "Sign in")}
             </button>
-            <p className="text-center text-sm text-faint">
-              Or tap <span className="font-semibold text-cream">Sign in to 25</span> in the email.
-              Nothing yet? Check spam.
-            </p>
+            <p className="text-center text-sm text-faint">{isSignup ? "New codes can take a minute. Check spam too." : "Nothing yet? Check spam, or request a fresh code."}</p>
             <button
               type="button"
               disabled={resendIn > 0 || busy}
@@ -209,7 +318,7 @@ function Login() {
                 )}
               </button>
               <p className="text-white/85 text-sm">
-                Add a photo so your people recognise you. Optional.
+                Add a photo so your people recognise you. Required to save your seat.
               </p>
               <input
                 ref={fileRef}
@@ -218,7 +327,11 @@ function Login() {
                 hidden
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
-                  if (f) setAvatar(await fileToImage(f, 600));
+                  if (!f) return;
+                  if (!f.type.startsWith("image/")) { setError("Choose a photo in JPG, PNG, or WebP format."); return; }
+                  if (f.size > 5 * 1024 * 1024) { setError("Choose a photo smaller than 5 MB."); return; }
+                  try { setError(null); setAvatar(await fileToImage(f, 600)); }
+                  catch { setError("That photo couldn’t be opened. Try a different image."); }
                 }}
               />
             </div>
@@ -252,13 +365,33 @@ function Login() {
             />
             <button
               type="submit"
-              disabled={busy || !name.trim() || username.length < 3}
+              disabled={busy || !name.trim() || username.length < 3 || !avatar}
               className={primary}
             >
               {busy ? "Saving…" : "Pull up a chair"}
             </button>
           </form>
         )}
+
+        {step === "forgot" && (
+          <form className="mt-8 flex flex-col gap-4 animate-soft-in" onSubmit={(e) => { e.preventDefault(); void sendReset(); }}>
+            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>A fresh key for your seat.</p>
+            <p className="text-white/85" style={{ fontSize: 15, lineHeight: 1.5 }}>Enter your email and we’ll send a secure password reset link.</p>
+            <Input aria-label="Email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={field} required />
+            <button type="submit" disabled={busy || resetSent} className={primary}>{busy ? "Sending…" : resetSent ? "Link sent" : "Send reset link"}</button>
+          </form>
+        )}
+
+        {step === "reset" && (
+          <form className="mt-8 flex flex-col gap-4 animate-soft-in" onSubmit={(e) => { e.preventDefault(); void saveNewPassword(); }}>
+            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>Choose a new password.</p>
+            <Input aria-label="New password" type="password" autoComplete="new-password" placeholder="New password (8+ characters)" value={password} onChange={(e) => setPassword(e.target.value.slice(0, 128))} className={field} minLength={8} required />
+            <Input aria-label="Confirm new password" type="password" autoComplete="new-password" placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value.slice(0, 128))} className={field} minLength={8} required />
+            <button type="submit" disabled={busy || password.length < 8 || password !== confirmPassword} className={primary}>{busy ? "Saving…" : "Save new password"}</button>
+          </form>
+        )}
+
+        {notice && <p role="status" className="mt-4 rounded-2xl px-4 py-3 bg-white/10 text-white border border-white/20 text-sm">{notice}</p>}
 
         {error && (
           <p
