@@ -156,7 +156,7 @@ function Games() {
 
   return (
     <>
-      <PageBand title="Games" sub="A new game every day. 3 tries. Average counts. Bragging rights reset Monday." />
+      <PageBand title="Games" sub="A new game every day. 3 tries, best one counts. Bragging rights reset Monday." />
 
       <DailyHero onPlay={() => setDaily(true)} />
 

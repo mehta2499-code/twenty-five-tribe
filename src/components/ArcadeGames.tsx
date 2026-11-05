@@ -14,7 +14,7 @@ import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
 import { friendById, social } from "@/lib/social";
 import {
   TRIES,
-  average,
+  best,
   dayRanking,
   finishTry,
   startTry,
@@ -705,7 +705,7 @@ function Reflex({ onFinish, onClose }: RoundProps) {
   );
 }
 
-// ---------- Daily runner: tries, average, results ----------
+// ---------- Daily runner: tries, best score, results ----------
 
 export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => void }) {
   const d = useDaily();
@@ -812,7 +812,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
             {tries.length > 0 && (
               <div className="mt-5 card px-5 py-3">
                 <p className="font-bold text-cream">
-                  Your average: {average(tries)} {mine ? `· #${mine.rank} of ${ranking.length}` : ""}
+                  Your best: {best(tries)} {mine ? `· #${mine.rank} of ${ranking.length}` : ""}
                 </p>
                 <p className="meta mt-0.5">Tries: {tries.map((t) => (t < 0 ? "quit" : t)).join(" · ")}</p>
               </div>
@@ -825,7 +825,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                   </button>
                   <p className="meta">
                     {tries.length > 0
-                      ? "Your score is the average of your tries. A worse try pulls it down. Stop while you're ahead? 👀"
+                      ? "Only your best try counts. Go again and beat it 💪"
                       : "A try counts the moment you start. Quitting = 0."}
                   </p>
                 </>
@@ -854,7 +854,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                   <Dots />
                 </div>
                 <div className="mt-5 card px-5 py-3">
-                  <p className="font-bold text-cream text-lg">Today's average: {average(tries)}</p>
+                  <p className="font-bold text-cream text-lg">Today's best: {best(tries)}</p>
                   <p className="meta mt-0.5">
                     {mine
                       ? mine.rank === 1
@@ -895,7 +895,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
           onPick={([id]) => {
             social.sendMessage(
               id,
-              `Today's game is ${g.name} ${g.emoji}. My average: ${average(tries) || last}. Beat that 😏`,
+              `Today's game is ${g.name} ${g.emoji}. My best: ${best(tries) || last}. Beat that 😏`,
             );
             setChallenging(false);
             setToast(`Sent to ${friendById(id)?.name.split(" ")[0]}`);

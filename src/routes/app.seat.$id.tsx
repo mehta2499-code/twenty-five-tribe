@@ -40,7 +40,7 @@ function LiveSeat() {
   const week = weekStandings(daily, thisWeek());
   const pts = (who: string) => week.find((r) => r.id === who);
   const todayRows = dayRanking(daily, today());
-  const avg = (who: string) => todayRows.find((r) => r.id === who)?.avg;
+  const avg = (who: string) => todayRows.find((r) => r.id === who)?.best;
   const rivalry = [
     { label: "This week's points", you: pts("me")?.points, them: pts(id)?.points },
     { label: "Days won 👑", you: pts("me")?.wins, them: pts(id)?.wins },

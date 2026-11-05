@@ -20,6 +20,7 @@ import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
 import {
   friendById,
+  mutualFriends,
   seatedFriends,
   streakStatus,
   useSocial,
@@ -54,13 +55,28 @@ function tableOrder(s: SocialState): Person[] {
 const dayIndex = () => Math.floor((Date.now() + 5.5 * 3600_000) / 86_400_000);
 
 const MOODS = [
-  "Main character energy today.",
-  "Your table misses you a normal amount.",
-  "Low battery, high gossip.",
-  "Somebody here owes you chai.",
-  "Plot twist: you text first.",
-  "Vibes: immaculate. Replies: pending.",
-  "No thoughts, just your 25.",
+  "Your 25 is online. Your excuses aren't.",
+  "Someone here has gossip. It might be you.",
+  "Hydrate. Then text someone back.",
+  "Respectfully, check on your 25.",
+  "Seen-zoning is not a personality.",
+  "Ek chai, 25 log, zero chill ☕",
+  "Certified yapping hours are open.",
+  "Your streaks called. They miss you.",
+  "Kya scene hai aaj? 👀",
+  "Delulu is the solulu. Your 25 is real.",
+  "Main character, supporting cast of 25.",
+  "Touch grass. Then post the grass.",
+  "The group chat is plotting. Probably.",
+  "Low battery, high gossip 🔋",
+];
+/** Lines that name one of your people. */
+const NAMED_MOODS = [
+  (n: string) => `${n} hasn't heard from you today. Suspicious 🤨`,
+  (n: string) => `${n} would 100% pick you in a poll. Return the favour.`,
+  (n: string) => `Plot twist: you text ${n} first.`,
+  (n: string) => `${n} owes you chai. Collect.`,
+  (n: string) => `Rumour has it ${n} is bored. Fix that.`,
 ];
 
 // ---------- The table ----------
@@ -253,7 +269,11 @@ function Table({
             👀 one-way
           </span>
         )}
-        <Link to="/app/people" className="chip" style={{ minHeight: 28, background: "var(--lime)", color: "var(--on-accent)" }}>
+        <Link
+          to="/app/people"
+          className="chip"
+          style={{ minHeight: 28, background: "var(--lime)", color: "var(--on-accent)" }}
+        >
           all {people.length} seats →
         </Link>
       </div>
@@ -261,136 +281,43 @@ function Table({
   );
 }
 
-// ---------- Right now ----------
-
-type Nudge = { emoji: string; text: string; to: string; search?: { to: string }; tone: string };
-
-function useNudges(s: SocialState, people: Person[]): Nudge[] {
-  const d = useDaily();
-  return useMemo(() => {
-    const out: Nudge[] = [];
-    const day = today();
-    const used = (d.board[day]?.me ?? []).length;
-    if (used < TRIES) {
-      const g = GAMES[gameFor(day)];
-      const leader = dayRanking(d, day)[0];
-      out.push({
-        emoji: g.emoji,
-        text:
-          leader && leader.id !== "me"
-            ? `${friendById(leader.id)?.name.split(" ")[0] ?? "Someone"} leads ${g.name} with ${leader.avg}. ${TRIES - used} tries left.`
-            : `Today's game: ${g.name}. ${TRIES - used} tries waiting.`,
-        to: "/app/games",
-        tone: "var(--lime)",
-      });
-    }
-    const snaps = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me")).length;
-    if (snaps)
-      out.push({
-        emoji: "📸",
-        text: `${snaps} snap${snaps > 1 ? "s" : ""} waiting. Open before they vanish.`,
-        to: "/app/snap",
-        tone: "var(--pink)",
-      });
-    const incoming = s.requests.filter((r) => r.direction === "incoming").length;
-    if (incoming)
-      out.push({
-        emoji: "👀",
-        text: `${incoming} ${incoming > 1 ? "people" : "person"} put you in their 25. Seat them back?`,
-        to: "/app/people",
-        tone: "var(--lime)",
-      });
-    for (const f of people) {
-      const st = streakStatus(s.streaks[f.id]);
-      if (st.count && st.atRisk) {
-        out.push({
-          emoji: "⏳",
-          text: `Your ${st.count}-day streak with ${f.name.split(" ")[0]} ends tonight.`,
-          to: "/app/snap",
-          search: { to: f.id },
-          tone: "var(--sun)",
-        });
-        if (out.length > 4) break;
-      }
-    }
-    const unread = Object.values(s.unread).reduce((a, b) => a + b, 0);
-    if (unread)
-      out.push({
-        emoji: "💬",
-        text: `${unread} unread message${unread > 1 ? "s" : ""}. Someone's waiting.`,
-        to: "/app/chats",
-        tone: "var(--sky)",
-      });
-    const posted = people.filter((f) => f.postedToday);
-    if (posted.length)
-      out.push({
-        emoji: "🖼️",
-        text:
-          posted.length === 1
-            ? `${posted[0].name.split(" ")[0]} posted today. Go hype it.`
-            : `${posted[0].name.split(" ")[0]} and ${posted.length - 1} more posted today.`,
-        to: "/app/feed",
-        tone: "var(--pink)",
-      });
-    return out;
-  }, [s.snaps, s.requests, s.streaks, s.unread, people, d]);
-}
-
-function RightNow({ nudges }: { nudges: Nudge[] }) {
-  return (
-    <section className="mt-8" aria-labelledby="now-title">
-      <div className="px-5 flex items-baseline justify-between">
-        <h2 id="now-title" className="heading" style={{ fontSize: 19 }}>
-          Right now
-        </h2>
-        {nudges.length > 0 && <span className="meta">{nudges.length} things</span>}
-      </div>
-      {nudges.length ? (
-        <div className="mt-3 flex gap-3 overflow-x-auto px-5 pb-3 pt-1 snap-x no-scrollbar">
-          {nudges.map((nu, i) => (
-            <Link
-              key={i}
-              to={nu.to}
-              search={nu.search}
-              className="snap-start shrink-0 w-[150px] rounded-[18px] p-3.5 flex flex-col gap-2 active:scale-95 transition-transform"
-              style={{
-                background: nu.tone,
-                color: "var(--on-accent)",
-                border: "2px solid var(--edge)",
-                boxShadow: "3px 3px 0 var(--edge)",
-                transform: `rotate(${i % 2 ? 1.5 : -1.5}deg)`,
-              }}
-            >
-              <span className="text-[28px] leading-none">{nu.emoji}</span>
-              <span className="font-bold text-[14px] leading-snug">{nu.text}</span>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="mx-5 mt-3 card p-4 flex items-center gap-3">
-          <span className="text-3xl">😴</span>
-          <p className="text-cool text-[14px] leading-snug">
-            All caught up. Suspiciously quiet. Be the chaos: roll the table.
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
 // ---------- Today's dare ----------
 
 const DARES: { text: string; cta: string; to: string }[] = [
-  { text: "Snap your lunch to someone. No caption. Let them wonder.", cta: "Send a snap", to: "/app/snap" },
-  { text: "Text someone the first song that comes to mind. Nothing else.", cta: "Open chats", to: "/app/chats" },
-  { text: "Post the 5th photo in your camera roll. No explaining.", cta: "Post it", to: "/app/feed" },
+  {
+    text: "Snap your lunch to someone. No caption. Let them wonder.",
+    cta: "Send a snap",
+    to: "/app/snap",
+  },
+  {
+    text: "Text someone the first song that comes to mind. Nothing else.",
+    cta: "Open chats",
+    to: "/app/chats",
+  },
+  {
+    text: "Post the 5th photo in your camera roll. No explaining.",
+    cta: "Post it",
+    to: "/app/feed",
+  },
   { text: "Top your table in today's game. Loser buys chai.", cta: "Play", to: "/app/games" },
-  { text: "Snap the view from where you're sitting right now.", cta: "Send a snap", to: "/app/snap" },
+  {
+    text: "Snap the view from where you're sitting right now.",
+    cta: "Send a snap",
+    to: "/app/snap",
+  },
   { text: "Ask someone 'what's the tea?' and nothing else.", cta: "Open chats", to: "/app/chats" },
   { text: "Send an ugly selfie. Streaks were built on less.", cta: "Send a snap", to: "/app/snap" },
   { text: "Finish all 3 tries of today's game before bed.", cta: "Play", to: "/app/games" },
-  { text: "Tell someone at your table one thing you never told them.", cta: "Open chats", to: "/app/chats" },
-  { text: "Post a photo from exactly one year ago (or close enough).", cta: "Post it", to: "/app/feed" },
+  {
+    text: "Tell someone at your table one thing you never told them.",
+    cta: "Open chats",
+    to: "/app/chats",
+  },
+  {
+    text: "Post a photo from exactly one year ago (or close enough).",
+    cta: "Post it",
+    to: "/app/feed",
+  },
 ];
 
 function Dare() {
@@ -399,11 +326,18 @@ function Dare() {
   return (
     <section className="px-5 mt-6">
       <div className="black-card p-5 relative overflow-hidden">
-        <span className="sticker pink absolute -top-0.5 right-4" style={{ transform: "rotate(6deg)" }}>
+        <span
+          className="sticker pink absolute -top-0.5 right-4"
+          style={{ transform: "rotate(6deg)" }}
+        >
           today's dare
         </span>
         <p className="text-[34px] leading-none">🎲</p>
-        <p key={skip} className="heading mt-2 animate-soft-in" style={{ fontSize: 20, color: "#fff" }}>
+        <p
+          key={skip}
+          className="heading mt-2 animate-soft-in"
+          style={{ fontSize: 20, color: "#fff" }}
+        >
           {d.text}
         </p>
         <div className="mt-4 flex items-center gap-2">
@@ -442,7 +376,11 @@ function GameRank() {
       <Link to="/app/games" className="card p-4 flex items-center gap-3 hover:bg-[var(--fill)]">
         <span
           className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
-          style={{ background: g.tone, border: "2px solid var(--edge)", transform: "rotate(-4deg)" }}
+          style={{
+            background: g.tone,
+            border: "2px solid var(--edge)",
+            transform: "rotate(-4deg)",
+          }}
         >
           {g.emoji}
         </span>
@@ -456,67 +394,11 @@ function GameRank() {
               ? `#${todayRank.rank} today${weekRank ? ` · #${weekRank} this week` : ""}`
               : weekRank
                 ? `#${weekRank} this week. Don't slip.`
-                : "New game every day. Average of 3 tries."}
+                : "New game every day. Best of 3 tries."}
           </span>
         </span>
         <Trophy size={18} className="text-bronze shrink-0" aria-hidden="true" />
       </Link>
-    </section>
-  );
-}
-
-// ---------- Quick actions ----------
-
-function QuickActions({ onAddMoment }: { onAddMoment: () => void }) {
-  const s = useSocial();
-  const items: {
-    icon: LucideIcon;
-    label: string;
-    tone: string;
-    to?: string;
-    onClick?: () => void;
-  }[] = [
-    s.mode === "live"
-      ? { icon: ImagePlus, label: "Post", tone: "var(--pink)", to: "/app/feed" }
-      : { icon: ImagePlus, label: "Moment", tone: "var(--pink)", onClick: onAddMoment },
-    { icon: Camera, label: "Snap", tone: "var(--lime)", to: "/app/snap" },
-    { icon: Gamepad2, label: "Play", tone: "var(--sky)", to: "/app/games" },
-    { icon: UserPlus, label: "Add", tone: "var(--sun)", to: "/app/people" },
-  ];
-  return (
-    <section className="px-5 mt-8" aria-label="Quick actions">
-      <div className="grid grid-cols-4 gap-3">
-        {items.map((it, i) => {
-          const Icon = it.icon;
-          const inner = (
-            <>
-              <span
-                className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform active:scale-90"
-                style={{
-                  background: it.tone,
-                  color: "var(--on-accent)",
-                  border: "2px solid var(--edge)",
-                  boxShadow: "3px 3px 0 var(--edge)",
-                  transform: `rotate(${[-4, 3, -2, 4][i]}deg)`,
-                }}
-              >
-                <Icon size={24} strokeWidth={2.2} aria-hidden="true" />
-              </span>
-              <span className="text-[13px] font-bold text-cream">{it.label}</span>
-            </>
-          );
-          const cls = "flex flex-col items-center gap-1.5";
-          return it.to ? (
-            <Link key={it.label} to={it.to} className={cls}>
-              {inner}
-            </Link>
-          ) : (
-            <button key={it.label} onClick={it.onClick} className={cls}>
-              {inner}
-            </button>
-          );
-        })}
-      </div>
     </section>
   );
 }
@@ -550,7 +432,10 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
           🎲 the table chose
         </span>
         <div className="mt-4 flex justify-center">
-          <span className="rounded-full" style={{ border: "2px solid var(--edge)", boxShadow: "0 0 0 4px var(--lime)" }}>
+          <span
+            className="rounded-full"
+            style={{ border: "2px solid var(--edge)", boxShadow: "0 0 0 4px var(--lime)" }}
+          >
             <Avatar src={friend.avatar} initials={friend.initials} color={friend.color} size={92} />
           </span>
         </div>
@@ -562,7 +447,10 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
             🔥 {st.count}-day streak{st.atRisk ? ", ends tonight" : ""}
           </p>
         )}
-        <p className="text-cool mt-3 mx-auto max-w-[18rem]" style={{ fontSize: 15, lineHeight: 1.5 }}>
+        <p
+          className="text-cool mt-3 mx-auto max-w-[18rem]"
+          style={{ fontSize: 15, lineHeight: 1.5 }}
+        >
           {line}
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
@@ -680,12 +568,21 @@ function TodayTiles() {
       <Link
         to="/app/polls"
         className="rounded-[20px] p-4 flex flex-col gap-1"
-        style={{ background: voted !== null && voted < 5 ? "var(--pink)" : "var(--surface)", color: voted !== null && voted < 5 ? "var(--on-accent)" : "var(--ink)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+        style={{
+          background: voted !== null && voted < 5 ? "var(--pink)" : "var(--surface)",
+          color: voted !== null && voted < 5 ? "var(--on-accent)" : "var(--ink)",
+          border: "2px solid var(--edge)",
+          boxShadow: "var(--pop)",
+        }}
       >
         <span className="text-3xl">🗳️</span>
         <span className="font-extrabold text-[15px]">Polls</span>
         <span className="text-[12.5px] font-semibold opacity-80">
-          {voted === null ? "…" : voted < 5 ? `${5 - voted} anonymous picks left` : "Done ✅ See your picks"}
+          {voted === null
+            ? "…"
+            : voted < 5
+              ? `${5 - voted} anonymous picks left`
+              : "Done ✅ See your picks"}
         </span>
       </Link>
     </section>
@@ -711,12 +608,21 @@ function Birthdays() {
           to="/app/card/$id"
           params={{ id: "me" }}
           className="rounded-[20px] p-4 flex items-center gap-3"
-          style={{ background: "var(--pink)", color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+          style={{
+            background: "var(--pink)",
+            color: "var(--on-accent)",
+            border: "2px solid var(--edge)",
+            boxShadow: "var(--pop)",
+          }}
         >
           <span className="text-4xl float">🎉</span>
           <span className="flex-1">
-            <span className="block display text-[20px]">Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!</span>
-            <span className="block font-bold text-[13px]">Your 25 has been signing your card. Open it →</span>
+            <span className="block display text-[20px]">
+              Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!
+            </span>
+            <span className="block font-bold text-[13px]">
+              Your 25 has been signing your card. Open it →
+            </span>
           </span>
         </Link>
       )}
@@ -726,7 +632,12 @@ function Birthdays() {
           to="/app/card/$id"
           params={{ id: b.id }}
           className="rounded-[20px] p-4 flex items-center gap-3"
-          style={{ background: "var(--sun)", color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+          style={{
+            background: "var(--sun)",
+            color: "var(--on-accent)",
+            border: "2px solid var(--edge)",
+            boxShadow: "var(--pop)",
+          }}
         >
           <span className="text-4xl wiggle">🎂</span>
           <span className="flex-1">
@@ -764,13 +675,21 @@ function ActivityBell() {
       to="/app/activity"
       aria-label={n ? `Activity, ${n} new` : "Activity"}
       className="relative w-11 h-11 rounded-full flex items-center justify-center"
-      style={{ background: "var(--fill)", border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+      style={{
+        background: "var(--fill)",
+        border: "2px solid var(--edge)",
+        boxShadow: "var(--pop)",
+      }}
     >
       <Bell size={20} aria-hidden="true" className={n ? "wiggle" : ""} />
       {n > 0 && (
         <span
           className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold flex items-center justify-center"
-          style={{ background: "var(--pink)", color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+          style={{
+            background: "var(--pink)",
+            color: "var(--on-accent)",
+            border: "2px solid var(--edge)",
+          }}
         >
           {n > 9 ? "9+" : n}
         </span>
@@ -784,7 +703,6 @@ function ActivityBell() {
 function Home() {
   const s = useSocial();
   const people = tableOrder(s);
-  const nudges = useNudges(s, people);
   const [adding, setAdding] = useState(false);
   const [spot, setSpot] = useState<number | null>(null);
   const [picked, setPicked] = useState<Person | null>(null);
@@ -830,7 +748,14 @@ function Home() {
   const filled = people.length;
   const streakCount = people.filter((f) => (s.streaks[f.id]?.count ?? 0) > 0).length;
   const posted = people.filter((f) => f.postedToday).length;
-  const mood = MOODS[dayIndex() % MOODS.length];
+  const [mood] = useState(() => {
+    const friends = mutualFriends();
+    if (friends.length && Math.random() < 0.4) {
+      const f = friends[Math.floor(Math.random() * friends.length)];
+      return NAMED_MOODS[Math.floor(Math.random() * NAMED_MOODS.length)](f.name.split(" ")[0]);
+    }
+    return MOODS[Math.floor(Math.random() * MOODS.length)];
+  });
 
   return (
     <>
@@ -838,19 +763,19 @@ function Home() {
         <div className="flex items-center justify-between">
           <Logo height={44} title={VOICE.brand} />
           <div className="flex items-center gap-2.5">
-          <ActivityBell />
-          <Link
-            to="/app/profile"
-            aria-label="Your profile"
-            className="rounded-full"
-            style={{ border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
-          >
-            <Avatar
-              src={s.me ? s.me.avatar : ME.avatar}
-              initials={s.me?.initials ?? ME.initials}
-              size={40}
-            />
-          </Link>
+            <ActivityBell />
+            <Link
+              to="/app/profile"
+              aria-label="Your profile"
+              className="rounded-full"
+              style={{ border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+            >
+              <Avatar
+                src={s.me ? s.me.avatar : ME.avatar}
+                initials={s.me?.initials ?? ME.initials}
+                size={40}
+              />
+            </Link>
           </div>
         </div>
         <h1 className="title mt-4" style={{ fontSize: 30 }}>
@@ -871,14 +796,8 @@ function Home() {
           <Link to="/app/people" className="sticker" style={{ transform: "rotate(-3deg)" }}>
             🪑 {filled}/25 seats
           </Link>
-          <span className="sticker sun" style={{ transform: "rotate(2deg)" }}>
-            🔥 {streakCount} streak{streakCount === 1 ? "" : "s"}
-          </span>
           <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
             👀 in {s.seatedByCount} people's 25
-          </span>
-          <span className="sticker sky" style={{ transform: "rotate(3deg)" }}>
-            ✨ {posted} posted today
           </span>
         </div>
       </header>
@@ -889,11 +808,7 @@ function Home() {
 
       <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
 
-      <QuickActions onAddMoment={() => setAdding(true)} />
-
       <TodayTiles />
-
-      <RightNow nudges={nudges} />
 
       <Dare />
 

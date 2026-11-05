@@ -1,6 +1,6 @@
 /**
  * The daily game: one quick game a day (India time), the same for everyone.
- * 3 tries; your score for the day is the average of your tries. Each day you
+ * 3 tries; your score for the day is your best try. Each day you
  * get points for where you placed at your table, and points add up over the week.
  * Also holds Word Up daily results.
  */
@@ -55,9 +55,8 @@ export function untilMidnight() {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-/** -1 means a try that was started and not finished: it counts as 0. */
-export const average = (tries: number[]) =>
-  tries.length ? Math.round(tries.reduce((a, t) => a + Math.max(0, t), 0) / tries.length) : 0;
+/** Your score for the day: your best try. -1 (started, not finished) counts as 0. */
+export const best = (tries: number[]) => (tries.length ? Math.max(0, ...tries) : 0);
 
 export type WordResult = { guesses: number; grid: string };
 type DailyState = {
@@ -125,8 +124,7 @@ function loadDemo() {
       board?: Record<string, number[]>;
       words?: Record<string, WordResult>;
     };
-    for (const [day, tries] of Object.entries(mine.board ?? {}))
-      (board[day] ??= {}).me = tries;
+    for (const [day, tries] of Object.entries(mine.board ?? {})) (board[day] ??= {}).me = tries;
     for (const [day, w] of Object.entries(mine.words ?? {})) (words[day] ??= {}).me = w;
   } catch {
     // Unreadable; start fresh.
@@ -260,17 +258,17 @@ export async function saveWord(day: string, result: WordResult) {
 }
 
 // ---------- Standings ----------
-export type DayRow = { id: string; avg: number; tries: number[]; rank: number; points: number };
+export type DayRow = { id: string; best: number; tries: number[]; rank: number; points: number };
 
-/** Who played that day, best average first, with the points each place earns. */
+/** Who played that day, highest best-try first, with the points each place earns. */
 export function dayRanking(d: DailyState, day: string): DayRow[] {
   const rows = Object.entries(d.board[day] ?? {})
     .filter(([, t]) => t.length > 0 && t.some((x) => x >= 0))
-    .map(([id, tries]) => ({ id, tries, avg: average(tries) }))
-    .sort((a, b) => b.avg - a.avg);
+    .map(([id, tries]) => ({ id, tries, best: best(tries) }))
+    .sort((a, b) => b.best - a.best);
   let rank = 0;
   return rows.map((r, i) => {
-    if (i === 0 || r.avg !== rows[i - 1].avg) rank = i + 1;
+    if (i === 0 || r.best !== rows[i - 1].best) rank = i + 1;
     return { ...r, rank, points: POINTS[rank - 1] ?? PLAYED_POINTS };
   });
 }

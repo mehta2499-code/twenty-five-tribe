@@ -6,7 +6,7 @@ import {
   DAY_NAMES,
   POINTS,
   TRIES,
-  average,
+  best,
   dayRanking,
   gameFor,
   lastWeek,
@@ -32,7 +32,12 @@ function Who({ id, size = 34 }: { id: string; size?: number }) {
   const v = me ? meView() : f;
   return (
     <>
-      <Avatar src={v?.avatar || undefined} initials={v?.initials ?? "?"} color={f?.color} size={size} />
+      <Avatar
+        src={v?.avatar || undefined}
+        initials={v?.initials ?? "?"}
+        color={f?.color}
+        size={size}
+      />
       <span className="flex-1 min-w-0 truncate font-semibold text-cream" style={{ fontSize: 15 }}>
         {me ? "You" : (f?.name ?? "Someone")}
       </span>
@@ -58,10 +63,18 @@ export function DailyHero({ onPlay }: { onPlay: () => void }) {
       <button
         onClick={onPlay}
         className="w-full text-left rounded-[24px] p-5 relative overflow-hidden active:scale-[0.99] transition-transform"
-        style={{ background: g.tone, color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 var(--edge)" }}
+        style={{
+          background: g.tone,
+          color: "var(--on-accent)",
+          border: "2px solid var(--edge)",
+          boxShadow: "5px 5px 0 var(--edge)",
+        }}
       >
         <div className="flex items-start justify-between">
-          <span className="sticker" style={{ background: "var(--edge)", color: "#fff", transform: "rotate(-3deg)" }}>
+          <span
+            className="sticker"
+            style={{ background: "var(--edge)", color: "#fff", transform: "rotate(-3deg)" }}
+          >
             {DAY_NAMES[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]}'s game
           </span>
           <span className="text-[13px] font-bold opacity-80">new game in {untilMidnight()}</span>
@@ -84,14 +97,17 @@ export function DailyHero({ onPlay }: { onPlay: () => void }) {
                 <span
                   key={i}
                   className="w-3.5 h-3.5 rounded-full"
-                  style={{ border: "2px solid var(--edge)", background: i < tries.length ? "var(--edge)" : "rgba(255,255,255,0.5)" }}
+                  style={{
+                    border: "2px solid var(--edge)",
+                    background: i < tries.length ? "var(--edge)" : "rgba(255,255,255,0.5)",
+                  }}
                 />
               ))}
             </div>
             <p className="mt-1.5 text-[13px] font-bold">
               {tries.length === 0
-                ? `${TRIES} tries. Average counts.`
-                : `Avg ${average(tries)}${mine ? ` · #${mine.rank} of ${ranking.length}` : ""}`}
+                ? `${TRIES} tries. Best one counts.`
+                : `Best ${best(tries)}${mine ? ` · #${mine.rank} of ${ranking.length}` : ""}`}
             </p>
           </div>
           <span
@@ -103,7 +119,8 @@ export function DailyHero({ onPlay }: { onPlay: () => void }) {
         </div>
         {leader && leader.id !== "me" && (
           <p className="mt-3 text-[13px] font-bold opacity-90">
-            👑 {friendById(leader.id)?.name.split(" ")[0] ?? "Someone"} leads with {leader.avg}. Not on your watch.
+            👑 {friendById(leader.id)?.name.split(" ")[0] ?? "Someone"} leads with {leader.best}.
+            Not on your watch.
           </p>
         )}
       </button>
@@ -139,7 +156,15 @@ export function WeekStrip() {
               <p className="text-2xl mt-0.5">{g.emoji}</p>
               <p className="text-[10.5px] font-bold leading-tight mt-0.5 truncate">{g.name}</p>
               <p className="text-[11px] font-extrabold mt-1">
-                {mine ? (mine.rank === 1 ? "👑 1st" : `#${mine.rank}`) : past ? "–" : isToday ? "today" : ""}
+                {mine
+                  ? mine.rank === 1
+                    ? "👑 1st"
+                    : `#${mine.rank}`
+                  : past
+                    ? "–"
+                    : isToday
+                      ? "today"
+                      : ""}
               </p>
             </div>
           );
@@ -163,7 +188,7 @@ export function TodayTable() {
         <h2 className="heading" style={{ fontSize: 19 }}>
           Today at the table
         </h2>
-        <span className="meta">avg of tries</span>
+        <span className="meta">best try</span>
       </div>
       {rows.length === 0 ? (
         <div className="card px-4 py-5 text-center">
@@ -178,13 +203,21 @@ export function TodayTable() {
               className="flex items-center gap-3 px-4 py-2.5"
               style={{ background: r.id === "me" ? "var(--fill)" : "transparent" }}
             >
-              <span className="w-7 text-center font-extrabold tabular-nums" style={{ fontSize: r.rank <= 3 ? 20 : 15 }}>
+              <span
+                className="w-7 text-center font-extrabold tabular-nums"
+                style={{ fontSize: r.rank <= 3 ? 20 : 15 }}
+              >
                 {MEDALS[r.rank - 1] ?? r.rank}
               </span>
               <Who id={r.id} />
-              <span className="meta tabular-nums">{r.tries.length}/{TRIES}</span>
-              <span className="font-extrabold tabular-nums text-cream w-10 text-right" style={{ fontSize: 17 }}>
-                {r.avg}
+              <span className="meta tabular-nums">
+                {r.tries.length}/{TRIES}
+              </span>
+              <span
+                className="font-extrabold tabular-nums text-cream w-10 text-right"
+                style={{ fontSize: 17 }}
+              >
+                {r.best}
               </span>
             </li>
           ))}
@@ -209,11 +242,15 @@ export function WeekTable() {
         <span className="meta">resets Monday</span>
       </div>
       {champ && (
-        <div className="card p-3.5 mb-3 flex items-center gap-3" style={{ background: "var(--sun)", color: "var(--on-accent)" }}>
+        <div
+          className="card p-3.5 mb-3 flex items-center gap-3"
+          style={{ background: "var(--sun)", color: "var(--on-accent)" }}
+        >
           <span className="text-3xl">👑</span>
           <p className="flex-1 font-bold text-[14px] leading-snug">
             Last week's champ:{" "}
-            {champ.id === "me" ? "YOU. Act humble." : (friendById(champ.id)?.name ?? "Someone")} · {champ.points} pts
+            {champ.id === "me" ? "YOU. Act humble." : (friendById(champ.id)?.name ?? "Someone")} ·{" "}
+            {champ.points} pts
           </p>
         </div>
       )}
@@ -238,7 +275,10 @@ export function WeekTable() {
               className="flex items-center gap-3 px-4 py-2.5"
               style={{ background: r.id === "me" ? "var(--fill)" : "transparent" }}
             >
-              <span className="w-7 text-center font-extrabold tabular-nums" style={{ fontSize: i < 3 ? 20 : 15 }}>
+              <span
+                className="w-7 text-center font-extrabold tabular-nums"
+                style={{ fontSize: i < 3 ? 20 : 15 }}
+              >
                 {MEDALS[i] ?? i + 1}
               </span>
               <Who id={r.id} />
@@ -246,7 +286,10 @@ export function WeekTable() {
                 {r.wins > 0 ? `${r.wins}× 👑 · ` : ""}
                 {r.days}d
               </span>
-              <span className="font-extrabold tabular-nums text-cream w-12 text-right" style={{ fontSize: 17 }}>
+              <span
+                className="font-extrabold tabular-nums text-cream w-12 text-right"
+                style={{ fontSize: 17 }}
+              >
                 {r.points}
               </span>
             </li>
@@ -254,7 +297,9 @@ export function WeekTable() {
         </ol>
       )}
       <p className="meta mt-2 text-center">
-        Daily points: {POINTS.map((p, i) => `${["1st", "2nd", "3rd", "4th", "5th"][i]} ${p}`).join(" · ")} · played 2
+        Daily points:{" "}
+        {POINTS.map((p, i) => `${["1st", "2nd", "3rd", "4th", "5th"][i]} ${p}`).join(" · ")} ·
+        played 2
       </p>
     </section>
   );

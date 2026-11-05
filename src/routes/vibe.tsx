@@ -30,8 +30,9 @@ function VibeCheck() {
     if (s.mode === "live" && s.me) {
       void myVibe(s.me.id).then((v) => {
         if (v) {
-          setAnswers(v.answers);
-          setBirthday(v.birthday);
+          // Don't overwrite anything picked while this was loading.
+          setAnswers((now) => ({ ...v.answers, ...now }));
+          setBirthday((now) => now || v.birthday);
         }
       });
     }
