@@ -1,14 +1,15 @@
 /**
  * Kachuful (Judgement) — the rules engine. Pure functions, no UI.
  *
- * - 3 to 7 players, one 52-card deck.
+ * - 2 to 7 players, one 52-card deck.
  * - Cards per round climb 1, 2, 3 … up to the peak, then come back down to 1.
- * - Trump rotates every round: Spades (Hukum), Diamonds (Eent), Clubs (Chidi), Hearts (Paan).
+ * - Trump rotates every round: Spades, Diamonds, Clubs, Hearts.
  * - Bidding starts left of the dealer. The dealer bids last and may not make the
  *   total of all bids equal the cards in hand, so someone always misses.
  * - Follow suit if you can. Otherwise trump or throw anything. Highest trump wins,
  *   else the highest card of the suit that was led. The trick winner leads next.
- * - Win exactly what you bid: 10 + bid points. Miss by any amount: 0.
+ * - Win exactly what you bid: 10 + bid points (classic) or 10 × bid (×10; a zero
+ *   bid made is 10). Miss by any amount: 0.
  */
 
 export type Suit = "S" | "D" | "C" | "H";
@@ -39,11 +40,30 @@ export type KState = {
   turn: number;
   phase: "bidding" | "playing" | "roundEnd" | "over";
   scores: number[][]; // points per round per seat
+  /** "classic": 10 + bid. "x10": 10 × bid (zero bid = 10). Older games: classic. */
+  scoring?: Scoring;
   lastTrick?: { cards: TrickCard[]; winner: number };
 };
 
+export type Scoring = "classic" | "x10";
 export const TRUMP_ORDER: Suit[] = ["S", "D", "C", "H"];
-export const SUIT_NAME: Record<Suit, string> = { S: "Hukum", D: "Eent", C: "Chidi", H: "Paan" };
+export const SUIT_NAME: Record<Suit, string> = {
+  S: "Spades",
+  D: "Diamonds",
+  C: "Clubs",
+  H: "Hearts",
+};
+
+/** Points for one seat at the end of a round. */
+export function roundPoints(bid: number | null, won: number, scoring: Scoring = "classic") {
+  if (bid === null || bid !== won) return 0;
+  if (scoring === "x10") return bid === 0 ? 10 : bid * 10;
+  return 10 + bid;
+}
+export const scoringRule = (scoring: Scoring = "classic") =>
+  scoring === "x10"
+    ? "Win exactly what you call for 10 × your call (a zero call scores 10). Miss by any amount and you get 0."
+    : "Win exactly what you call for 10 + your call. Miss by any amount and you get 0.";
 export const SUIT_SYMBOL: Record<Suit, string> = { S: "♠", D: "♦", C: "♣", H: "♥" };
 export const isRed = (s: Suit) => s === "D" || s === "H";
 
@@ -104,8 +124,9 @@ export function newGame(
   seats: Seat[],
   length: "short" | "full" = "short",
   rand?: () => number,
+  scoring: Scoring = "classic",
 ): KState {
-  if (seats.length < 3 || seats.length > 7) throw new Error("Kachuful needs 3 to 7 players.");
+  if (seats.length < 2 || seats.length > 7) throw new Error("Kachuful needs 2 to 7 players.");
   const base: KState = {
     seats,
     plan: roundPlan(seats.length, length),
@@ -119,6 +140,7 @@ export function newGame(
     turn: 1,
     phase: "bidding",
     scores: [],
+    scoring,
   };
   return dealRound(base, rand);
 }
@@ -200,7 +222,7 @@ export function playCard(s: KState, seat: number, card: Card): KState {
   if (!roundOver)
     return { ...s, hands, trick: [], won, turn: winner, lastTrick: { cards: trick, winner } };
 
-  const points = s.bids.map((b, i) => (b === won[i] ? 10 + (b ?? 0) : 0));
+  const points = s.bids.map((b, i) => roundPoints(b, won[i], s.scoring));
   return {
     ...s,
     hands,

@@ -23,7 +23,7 @@ import {
   type TriviaState,
   type WordState,
 } from "@/lib/games";
-import type { KState, Seat } from "@/lib/kachuful";
+import type { KState, Scoring, Seat } from "@/lib/kachuful";
 import { friendById, meView, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app/games")({
@@ -44,7 +44,8 @@ function YourGames({ meId }: { meId: string }) {
   }, []);
   // Hide games that are over, and trivia you've already played (the result comes in chat).
   const open = (games ?? []).filter(
-    (g) => g.status === "playing" && !(g.kind === "trivia" && (g.state as TriviaState).results[meId]),
+    (g) =>
+      g.status === "playing" && !(g.kind === "trivia" && (g.state as TriviaState).results[meId]),
   );
   if (!open.length) return null;
   return (
@@ -137,9 +138,11 @@ function Games() {
   const [secret, setSecret] = useState("");
   const [wordFor, setWordFor] = useState<string | null>(null);
   const [lobby, setLobby] = useState(false);
-  const [localTable, setLocalTable] = useState<{ seats: Seat[]; length: "short" | "full" } | null>(
-    null,
-  );
+  const [localTable, setLocalTable] = useState<{
+    seats: Seat[];
+    length: "short" | "full";
+    scoring: Scoring;
+  } | null>(null);
   const [packFor, setPackFor] = useState<TriviaPack | null>(null);
   const [soloPack, setSoloPack] = useState<TriviaPack | null>(null);
   const [challengePack, setChallengePack] = useState<TriviaPack | null>(null);
@@ -156,7 +159,10 @@ function Games() {
 
   return (
     <>
-      <PageBand title="Games" sub="A new game every day. 3 tries, best one counts. Bragging rights reset Monday." />
+      <PageBand
+        title="Games"
+        sub="A new game every day. 3 tries, best one counts. Bragging rights reset Monday."
+      />
 
       <DailyHero onPlay={() => setDaily(true)} />
 
@@ -305,17 +311,17 @@ function Games() {
       {lobby && (
         <KachufulLobby
           onClose={() => setLobby(false)}
-          onStart={async (friends, bots, length) => {
+          onStart={async (friends, bots, length, scoring) => {
             setLobby(false);
             if (live && friends.length) {
               try {
-                const id = await startKachuful(friends, bots, length);
+                const id = await startKachuful(friends, bots, length, scoring);
                 navigate({ to: "/app/play/$id", params: { id } });
               } catch (e) {
                 setToast((e as Error).message);
               }
             } else {
-              setLocalTable({ seats: [mySeat(), ...botSeats(bots)], length });
+              setLocalTable({ seats: [mySeat(), ...botSeats(bots)], length, scoring });
             }
           }}
         />
@@ -324,6 +330,7 @@ function Games() {
         <LocalKachuful
           seats={localTable.seats}
           length={localTable.length}
+          scoring={localTable.scoring}
           onClose={() => setLocalTable(null)}
         />
       )}

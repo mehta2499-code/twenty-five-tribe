@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
-import { newGame, type KState, type Seat } from "@/lib/kachuful";
+import { newGame, type KState, type Scoring, type Seat } from "@/lib/kachuful";
 
 export type TriviaState = {
   pack: string;
@@ -87,7 +87,12 @@ async function invite(friendIds: string[], gameId: string, text: string) {
   );
 }
 
-export async function startKachuful(friends: Person[], bots: number, length: "short" | "full") {
+export async function startKachuful(
+  friends: Person[],
+  bots: number,
+  length: "short" | "full",
+  scoring: Scoring = "classic",
+) {
   const s = _get();
   const me = s.me!;
   const seats = [
@@ -95,7 +100,7 @@ export async function startKachuful(friends: Person[], bots: number, length: "sh
     ...friends.map(seatFor),
     ...botSeats(bots),
   ];
-  const state = newGame(seats, length);
+  const state = newGame(seats, length, undefined, scoring);
   const id = uuid();
   const { error } = await supabase.from("games").insert({
     id,
@@ -117,7 +122,11 @@ export async function startKachuful(friends: Person[], bots: number, length: "sh
 export async function startTriviaChallenge(packId: string, friend: Person) {
   const me = myId();
   const id = uuid();
-  const state: TriviaState = { pack: packId, seed: Math.floor(Math.random() * 2 ** 31), results: {} };
+  const state: TriviaState = {
+    pack: packId,
+    seed: Math.floor(Math.random() * 2 ** 31),
+    results: {},
+  };
   const { error } = await supabase
     .from("games")
     .insert({ id, kind: "trivia", host: me, players: [me, friend.id], state, version: 0 });

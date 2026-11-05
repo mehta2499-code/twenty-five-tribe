@@ -22,6 +22,8 @@ import {
   type KState,
   type Move,
   type Seat,
+  scoringRule,
+  type Scoring,
 } from "@/lib/kachuful";
 import { botSeats } from "@/lib/games";
 import { mutualFriends, useSocial, type Person } from "@/lib/social";
@@ -610,7 +612,7 @@ const STEPS: { title: string; body: string; art: () => React.ReactNode }[] = [
   },
   {
     title: "Trump changes every round",
-    body: "Hukum ♠, then Eent ♦, Chidi ♣ and Paan ♥, then round again. Any trump card beats every card of another suit.",
+    body: "Spades ♠, then Diamonds ♦, Clubs ♣ and Hearts ♥, then round again. Any trump card beats every card of another suit.",
     art: () => (
       <div className="flex gap-2">
         {["S14", "D14", "C14", "H14"].map((c) => (
@@ -868,9 +870,7 @@ function ScoreSheet({ state, onClose }: { state: KState; onClose: () => void }) 
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-xs text-cool">
-        Win exactly what you bid for 10 + your bid. Miss by any amount and you get 0.
-      </p>
+      <p className="mt-4 text-xs text-cool">{scoringRule(state.scoring)}</p>
     </Sheet>
   );
 }
@@ -901,13 +901,15 @@ export function useBotTurns(state: KState | null, drive: boolean, apply: (s: KSt
 export function LocalKachuful({
   seats,
   length,
+  scoring = "classic",
   onClose,
 }: {
   seats: Seat[];
   length: "short" | "full";
+  scoring?: Scoring;
   onClose: () => void;
 }) {
-  const [state, setState] = useState(() => newGame(seats, length));
+  const [state, setState] = useState(() => newGame(seats, length, undefined, scoring));
   const [confirmLeave, setConfirmLeave] = useState(false);
   useBotTurns(state, true, setState);
   // A solo game isn't saved anywhere, so check before throwing it away mid-game.
@@ -923,7 +925,7 @@ export function LocalKachuful({
         onMove={(m) => setState((s) => applyMove(s, m))}
         onNext={() => setState((s) => nextRound(s))}
         onClose={leave}
-        onPlayAgain={() => setState(newGame(seats, length))}
+        onPlayAgain={() => setState(newGame(seats, length, undefined, scoring))}
       />
       {confirmLeave && (
         <div
@@ -963,7 +965,7 @@ export function KachufulLobby({
   onStart,
 }: {
   onClose: () => void;
-  onStart: (friends: Person[], bots: number, length: "short" | "full") => void;
+  onStart: (friends: Person[], bots: number, length: "short" | "full", scoring: Scoring) => void;
 }) {
   const s = useSocial();
   const live = s.mode === "live";
@@ -971,6 +973,7 @@ export function KachufulLobby({
   const [picked, setPicked] = useState<string[]>([]);
   const [players, setPlayers] = useState(4);
   const [length, setLength] = useState<"short" | "full">("short");
+  const [scoring, setScoring] = useState<Scoring>("classic");
   const [howTo, setHowTo] = useState(false);
   const friends = people.filter((p) => picked.includes(p.id));
   const total = Math.max(players, friends.length + 1);
@@ -1032,7 +1035,7 @@ export function KachufulLobby({
 
       <p className="label-caps mt-5 mb-2">players at the table</p>
       <div className="flex gap-2">
-        {[3, 4, 5, 6, 7].map((n) => (
+        {[2, 3, 4, 5, 6, 7].map((n) => (
           <button
             key={n}
             disabled={n < friends.length + 1}
@@ -1072,6 +1075,26 @@ export function KachufulLobby({
         ))}
       </div>
 
+      <p className="label-caps mt-5 mb-2">scoring</p>
+      <div className="flex gap-2">
+        {(["classic", "x10"] as const).map((sc) => (
+          <button
+            key={sc}
+            onClick={() => setScoring(sc)}
+            className="flex-1 rounded-2xl py-3 text-left px-4"
+            style={{
+              background: scoring === sc ? "var(--blue-deep)" : "var(--bg-surface)",
+              color: scoring === sc ? "var(--on-accent)" : "var(--text-primary)",
+            }}
+          >
+            <span className="block font-bold">{sc === "classic" ? "Classic" : "×10"}</span>
+            <span className="block text-xs opacity-80">
+              {sc === "classic" ? "Make it: 10 + call" : "Make it: 10 × call"}
+            </span>
+          </button>
+        ))}
+      </div>
+
       <button
         onClick={() => setHowTo(true)}
         className="mt-5 w-full text-sm font-bold text-bronze py-2"
@@ -1080,7 +1103,10 @@ export function KachufulLobby({
       </button>
       {howTo && <HowToPlay onClose={() => setHowTo(false)} />}
 
-      <button onClick={() => onStart(friends, bots, length)} className="mt-3 w-full btn-primary">
+      <button
+        onClick={() => onStart(friends, bots, length, scoring)}
+        className="mt-3 w-full btn-primary"
+      >
         {friends.length
           ? `Deal in ${friends.length} friend${friends.length > 1 ? "s" : ""}`
           : "Deal me in"}
