@@ -701,16 +701,28 @@ export const account = {
       throw new Error("Those passwords don’t match yet.");
     if (!input.avatar) throw new Error("Add a profile photo before saving your seat.");
 
-    const { error: passwordError } = await supabase.auth.updateUser({ password: input.password });
-    if (passwordError) throw new Error(friendly(passwordError));
-    let avatar_path: string | null = null;
-    avatar_path = await upload("avatars", input.avatar, "jpg");
+    // Make sure the sign-in from the email code is still here before saving anything.
+    let { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) ({ data: sess } = await supabase.auth.refreshSession());
+    if (!sess.session || sess.session.user.id !== myId)
+      throw new Error(
+        "Your sign-in timed out on this device. Go back, enter your email again, and use the new code.",
+      );
+
+    // Profile first, so a password hiccup can't block the account.
+    const avatar_path = await upload("avatars", input.avatar, "jpg");
     const { error } = await supabase
       .from("profiles")
       .upsert({ id: myId, username, display_name: displayName, avatar_path }, { onConflict: "id" });
     if (error) throw new Error(friendly(error));
+
+    const { error: passwordError } = await supabase.auth.updateUser({ password: input.password });
     await loadAll();
     subscribe();
+    if (passwordError)
+      fail(
+        "You're in! Your password didn't save, so sign in with an email code next time, or use Forgot password.",
+      );
   },
   async updateAvatar(image: string) {
     if (!myId) throw new Error("Sign in first.");
