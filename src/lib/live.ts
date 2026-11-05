@@ -117,7 +117,8 @@ function fail(message: string) {
 function friendly(e: unknown) {
   const msg = (e as { message?: string })?.message ?? String(e);
   if (/seats taken/i.test(msg)) return msg;
-  if (/duplicate key.*username/i.test(msg)) return "That username is taken. Try another.";
+  if (/duplicate key.*username|profiles_username_key|username.*unique/i.test(msg)) return "That username is taken. Try another.";
+  if (/invalid.*password|password.*(weak|short|length)/i.test(msg)) return "Use a stronger password with at least 8 characters.";
   if (/duplicate key.*seats/i.test(msg)) return "They're already in your 25.";
   if (/row-level security/i.test(msg)) return "You can only do that with people in your 25.";
   if (/Failed to fetch|NetworkError/i.test(msg))
@@ -686,16 +687,27 @@ export const account = {
           : friendly(error),
       );
   },
-  async createProfile(input: { name: string; username: string; avatar?: string }) {
+  async createProfile(input: { name: string; username: string; avatar?: string; password: string; confirmPassword: string }) {
     if (!myId) throw new Error("Sign in first.");
     const username = input.username.trim().toLowerCase();
     if (!/^[a-z0-9_.]{3,20}$/.test(username))
       throw new Error("Usernames are 3–20 letters, numbers, dots or underscores.");
+    const displayName = input.name.trim();
+    if (displayName.length < 1 || displayName.length > 40)
+      throw new Error("Your name should be between 1 and 40 characters.");
+    if (input.password.length < 8 || input.password.length > 128)
+      throw new Error("Use a password between 8 and 128 characters.");
+    if (input.password !== input.confirmPassword)
+      throw new Error("Those passwords don’t match yet.");
+    if (!input.avatar) throw new Error("Add a profile photo before saving your seat.");
+
+    const { error: passwordError } = await supabase.auth.updateUser({ password: input.password });
+    if (passwordError) throw new Error(friendly(passwordError));
     let avatar_path: string | null = null;
-    if (input.avatar) avatar_path = await upload("avatars", input.avatar, "jpg");
+    avatar_path = await upload("avatars", input.avatar, "jpg");
     const { error } = await supabase
       .from("profiles")
-      .insert({ id: myId, username, display_name: input.name.trim(), avatar_path });
+      .insert({ id: myId, username, display_name: displayName, avatar_path });
     if (error) throw new Error(friendly(error));
     await loadAll();
     subscribe();

@@ -9,7 +9,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in · 25" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in or join · 25" },
+      { name: "description", content: "Sign in to Twenty Five or claim a seat for your closest people." },
+      { property: "og:title", content: "Your seat at 25" },
+      { property: "og:description", content: "A private little corner for the people who matter most." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: clientOnly(Login),
 });
 
@@ -42,7 +51,7 @@ function Login() {
       setStep("reset");
       return;
     }
-    if (hash.includes("access_token=")) {
+    if (hash.includes("access_token=") && hash.includes("type=signup")) {
       setIsSignup(true);
       setNotice("Email verified. Pick your username, password, and photo to finish.");
       setStep("profile");
@@ -51,8 +60,8 @@ function Login() {
 
   // A verified signup may create a session; existing profiles continue straight into the app.
   useEffect(() => {
-    if (s.mode !== "live" || s.loading) return;
-    if (s.needsProfile) setStep((current) => current === "profile" ? current : "profile");
+    if (s.mode !== "live" || s.loading || step === "reset") return;
+    if (s.needsProfile) setStep("profile");
     else if (s.me && !s.me.vibeDone) navigate({ to: "/vibe" });
     else if (s.me) {
       let invite: string | null = null;
@@ -65,7 +74,7 @@ function Login() {
       if (invite) navigate({ to: "/in/$username", params: { username: invite } });
       else navigate({ to: "/app/home" });
     }
-  }, [s.mode, s.loading, s.needsProfile, s.me, navigate]);
+  }, [s.mode, s.loading, s.needsProfile, s.me, navigate, step]);
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -87,8 +96,10 @@ function Login() {
 
   const sendCode = () =>
     act(async () => {
-      if (!/^\S+@\S+\.\S+$/.test(email.trim())) throw new Error("Enter a valid email address.");
-      await account.sendCode(email);
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
+      await account.sendCode(normalizedEmail);
+      setNotice("We sent a one-time code. Once verified, you’ll choose a username, password, and photo.");
       setStep("code");
       setResendIn(45);
     });
@@ -97,24 +108,14 @@ function Login() {
     act(async () => {
       const normalizedEmail = email.trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
-      if (!password) throw new Error("Enter your password.");
-      if (password.length < 8) throw new Error("Use at least 8 characters for your password.");
       if (isSignup) {
-        if (password !== confirmPassword) throw new Error("Those passwords don’t match yet.");
-        const { error } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/login` },
-        });
-        if (error) throw new Error(/already registered|already exists/i.test(error.message)
-          ? "There’s already an account with that email. Sign in or reset its password."
-          : error.message);
-        setIsSignup(true);
-        setNotice("Check your email to verify this address. Then come back here to finish setting up your seat.");
+        await account.sendCode(normalizedEmail);
+        setNotice("We sent a one-time code. Once verified, you’ll choose a username, password, and photo.");
         setStep("code");
         setResendIn(45);
         return;
       }
+      if (!password) throw new Error("Enter your password.");
       const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (error) throw new Error(/invalid login credentials/i.test(error.message)
         ? "That email and password don’t match. Check them or reset your password."
@@ -203,31 +204,17 @@ function Login() {
               className={field}
             />
             <label htmlFor="account-password" className="sr-only">Password</label>
-            <Input
+            {!isSignup && <Input
               id="account-password"
               type="password"
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              placeholder={isSignup ? "Create a password (8+ characters)" : "Password"}
+              autoComplete="current-password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value.slice(0, 128))}
               className={field}
-              minLength={8}
               required
-            />
-            {isSignup && (
-              <Input
-                aria-label="Confirm password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value.slice(0, 128))}
-                className={field}
-                minLength={8}
-                required
-              />
-            )}
-            <button type="submit" disabled={busy || !email || !password || (isSignup && password !== confirmPassword)} className={primary}>
+            />}
+            <button type="submit" disabled={busy || !email || (!isSignup && !password)} className={primary}>
               {busy ? (isSignup ? "Sending your code…" : "Signing in…") : (isSignup ? "Send verification code" : "Sign in")}
             </button>
             {!isSignup && <button type="button" onClick={() => { setStep("forgot"); setError(null); setResetSent(false); }} className="text-sm text-white/80 underline underline-offset-4">Forgot password?</button>}
@@ -247,11 +234,8 @@ function Login() {
               e.preventDefault();
               void act(async () => {
                 await account.verifyCode(email, code);
-                if (isSignup) {
-                  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-                  if (error) throw new Error("Your email is verified. Now sign in with the password you created to finish your profile.");
-                  await initLive();
-                }
+                setNotice("Email verified. Now choose your username, password, and photo.");
+                setStep("profile");
               });
             }}
           >
@@ -277,7 +261,7 @@ function Login() {
               className={`${field} text-center tracking-[0.5em] text-2xl font-bold`}
             />
             <button type="submit" disabled={busy || code.length < 6} className={primary}>
-              {busy ? "Checking…" : (isSignup ? "Verify email" : "Sign in")}
+              {busy ? "Checking…" : "Verify email"}
             </button>
             <p className="text-center text-sm text-faint">{isSignup ? "New codes can take a minute. Check spam too." : "Nothing yet? Check spam, or request a fresh code."}</p>
             <button
@@ -296,9 +280,7 @@ function Login() {
             className="mt-8 flex flex-col gap-4 animate-soft-in"
             onSubmit={(e) => {
               e.preventDefault();
-              void act(() =>
-                account.createProfile({ name, username, avatar: avatar ?? undefined }),
-              );
+              void act(() => account.createProfile({ name, username, avatar: avatar ?? undefined, password, confirmPassword }));
             }}
           >
             <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
@@ -363,9 +345,32 @@ function Login() {
               autoCapitalize="none"
               className={field}
             />
+            <label htmlFor="new-password" className="text-sm font-semibold">Create a password</label>
+            <Input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value.slice(0, 128))}
+              className={field}
+              minLength={8}
+              required
+            />
+            <Input
+              aria-label="Confirm password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value.slice(0, 128))}
+              className={field}
+              minLength={8}
+              required
+            />
             <button
               type="submit"
-              disabled={busy || !name.trim() || username.length < 3 || !avatar}
+              disabled={busy || !name.trim() || username.length < 3 || !avatar || password.length < 8 || password !== confirmPassword}
               className={primary}
             >
               {busy ? "Saving…" : "Pull up a chair"}
