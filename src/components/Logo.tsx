@@ -35,3 +35,35 @@ export function Logo({
     </svg>
   );
 }
+
+/** The 2 (with its base running into the 5's top bar), then the 5's body. */
+const LOGO_PARTS = LOGO_PATH.split(" M 55 80").map((p, i) => (i === 0 ? p : `M 55 80${p}`));
+
+/** The 25 mark drawing itself, stroke by stroke. Used on the opening screen. */
+export function AnimatedLogo({
+  height = 180,
+  color = "var(--lime)",
+}: {
+  height?: number;
+  color?: string;
+}) {
+  return (
+    <svg
+      className="logo-draw"
+      height={height}
+      width={(height * 104) / 146}
+      viewBox="-2 0 104 146"
+      fill="none"
+      stroke={color}
+      strokeWidth={6.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      role="img"
+      aria-label="25"
+    >
+      {LOGO_PARTS.map((d, i) => (
+        <path key={i} d={d} pathLength={1} style={{ animationDelay: `${i * 0.75}s` }} />
+      ))}
+    </svg>
+  );
+}

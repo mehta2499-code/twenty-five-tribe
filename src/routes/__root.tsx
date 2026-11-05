@@ -107,6 +107,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    scripts: [
+      {
+        // Runs before the page is drawn: on the landing page, if this is the
+        // Home Screen app or you're already signed in, go straight into the
+        // app so the landing page never flashes.
+        children: `(function(){try{if(location.pathname!=="/")return;var s=window.matchMedia&&matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;var t=localStorage.getItem("sb-yhtuvujroxdcsstbpipt-auth-token");if(s||t){document.documentElement.style.visibility="hidden";location.replace("/app/home");}}catch(e){}})();`,
+      },
+    ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
