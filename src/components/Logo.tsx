@@ -39,7 +39,10 @@ export function Logo({
 /** The 2 (with its base running into the 5's top bar), then the 5's body. */
 const LOGO_PARTS = LOGO_PATH.split(" M 55 80").map((p, i) => (i === 0 ? p : `M 55 80${p}`));
 
-/** The 25 mark drawing itself, stroke by stroke. Used on the opening screen. */
+/**
+ * The 25 mark drawing itself, stroke by stroke. Used on the opening screen.
+ * Its frame is centred on the drawn shape so it sits dead centre on screen.
+ */
 export function AnimatedLogo({
   height = 180,
   color = "var(--lime)",
@@ -52,7 +55,7 @@ export function AnimatedLogo({
       className="logo-draw"
       height={height}
       width={(height * 104) / 146}
-      viewBox="-2 0 104 146"
+      viewBox="4.5 0 104 146"
       fill="none"
       stroke={color}
       strokeWidth={6.5}

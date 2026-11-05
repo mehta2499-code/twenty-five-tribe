@@ -84,7 +84,7 @@ function AppLayout() {
     const t = setTimeout(() => {
       introShown = true;
       setIntro(false);
-    }, 1900);
+    }, 2600);
     return () => clearTimeout(t);
   }, [intro]);
 
@@ -93,15 +93,22 @@ function AppLayout() {
   if (intro || !signedIn || s.mode !== "live" || s.loading || (!s.me && !s.needsProfile))
     return (
       <div
-        className="min-h-screen bg-background flex items-center justify-center"
+        className="bg-background flex items-center justify-center"
+        style={{ minHeight: "100dvh" }}
         aria-busy="true"
         aria-label="Loading your 25"
       >
-        <div className="flex flex-col items-center gap-5 px-8 text-center">
-          <AnimatedLogo height={180} />
+        <div className="flex flex-col items-center px-8 text-center">
+          <AnimatedLogo height={230} />
+          <p className="tagline-in display mt-6" style={{ fontSize: 22, letterSpacing: "-0.01em" }}>
+            Only the people who matter.
+          </p>
+          <p className="tagline-in meta mt-1.5" style={{ animationDelay: "1.75s" }}>
+            25 seats. No more, no less.
+          </p>
           {!s.loading && s.error && (
             <>
-              <p className="text-cool text-sm">{s.error}</p>
+              <p className="text-cool text-sm mt-6">{s.error}</p>
               <button onClick={() => window.location.reload()} className="btn-primary px-5">
                 Try again
               </button>
