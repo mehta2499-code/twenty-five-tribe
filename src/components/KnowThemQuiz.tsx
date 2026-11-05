@@ -53,9 +53,12 @@ export function KnowThemQuiz({
     (async () => {
       try {
         if (demo) {
-          const ids = [...VIBE_QUESTIONS.map((q) => q.id), "bday_month"]
-            .sort(() => Math.random() - 0.5)
-            .slice(0, QUIZ_SIZE);
+          const ids = [
+            ...VIBE_QUESTIONS.map((q) => q.id)
+              .sort(() => Math.random() - 0.5)
+              .slice(0, QUIZ_SIZE - 1),
+            "bday_month",
+          ];
           setPhase({
             kind: "asking",
             attempt: "demo",

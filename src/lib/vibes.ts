@@ -39,6 +39,12 @@ export const VIBE_QUESTIONS: VibeQuestion[] = [
     b: { label: "Movie night", emoji: "🍿" },
   },
   {
+    id: "colour",
+    ask: "Black or white?",
+    a: { label: "Black", emoji: "🖤" },
+    b: { label: "White", emoji: "🤍" },
+  },
+  {
     id: "time",
     ask: "Night owl or early bird?",
     a: { label: "Night owl", emoji: "🦉" },
@@ -89,7 +95,7 @@ export const questionById = (id: string) => VIBE_QUESTIONS.find((q) => q.id === 
 
 /** How many right answers you need, out of how many. */
 export const PASS_MARK = 4;
-/** Questions in a "prove it" quiz, picked from the 9 this-or-thats + birthday. */
+/** Questions in a "prove it" quiz: the birthday every time + 6 random this-or-thats. */
 export const QUIZ_SIZE = 7;
 export const QUIZ_LENGTH = 6;
 

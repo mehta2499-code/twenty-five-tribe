@@ -97,8 +97,8 @@ function VibeCheck() {
           Your people better <span className="mark">know you</span>.
         </h1>
         <p className="mt-3 text-cool" style={{ fontSize: 16, lineHeight: 1.5 }}>
-          To get a seat at your table, friends get 7 of these at random and need 4 right. No guessing,
-          no seat.
+          To get a seat at your table, friends get your birthday plus 6 of these at random, and need
+          4 of 7 right. No guessing, no seat.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           {VIBE_QUESTIONS.map((q) => {
