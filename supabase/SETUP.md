@@ -36,7 +36,21 @@ Both scripts are safe to run again if you need to.
    <p>Or tap to sign in: <a href="{{ .ConfirmationURL }}">Sign in to 25</a></p>
    ```
 
-3. **Authentication → URL Configuration**:
+3. **Authentication → Emails → Templates → Confirm signup**: brand-new accounts get *this*
+   email, not the Magic Link one, so it needs the code too:
+
+   ```html
+   <h2>Welcome to 25 👋</h2>
+   <p>Your code to claim your seat:</p>
+   <p style="font-size:32px;font-weight:800;letter-spacing:6px">{{ .Token }}</p>
+   <p>Type it in the app. It works for the next hour.</p>
+   <p style="color:#888">Or tap here on this phone: <a href="{{ .ConfirmationURL }}">Claim my seat</a></p>
+   ```
+
+4. **Authentication → Emails → Templates → Reset Password**: keep the link
+   (`{{ .ConfirmationURL }}`); it opens the app's reset-password page.
+
+5. **Authentication → URL Configuration**:
    - Site URL: `https://twenty-five-tribe.lovable.app`
    - Redirect URLs: add `https://twenty-five-tribe.lovable.app/**` (and your own domain later).
 
