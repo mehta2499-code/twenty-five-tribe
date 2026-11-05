@@ -333,7 +333,7 @@ function Landing() {
               {
                 icon: "✓",
                 tag: "Prove it",
-                line: "Pizza or pasta? Cats or dogs? Guess 4 of their 6 answers or no seat.",
+                line: "Pizza or pasta? Cats or dogs? Get 4 of 7 right about them or no seat.",
               },
               {
                 icon: "❍",

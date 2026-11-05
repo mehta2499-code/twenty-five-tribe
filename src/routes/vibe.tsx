@@ -97,7 +97,7 @@ function VibeCheck() {
           Your people better <span className="mark">know you</span>.
         </h1>
         <p className="mt-3 text-cool" style={{ fontSize: 16, lineHeight: 1.5 }}>
-          To get a seat at your table, friends have to guess at least 4 of 6 of these. No guessing,
+          To get a seat at your table, friends get 7 of these at random and need 4 right. No guessing,
           no seat.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">

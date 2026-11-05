@@ -243,7 +243,7 @@ function InMy25() {
                   </button>
                   <p className="mt-3 text-center meta">
                     {live
-                      ? `Guess 4 of ${first}'s 6 answers to put them in your 25. They get pinged 👀`
+                      ? `Get 4 of 7 right about ${first} to put them in your 25. They get pinged 👀`
                       : `Sign in to find out if you're in ${first}'s 25.`}
                   </p>
                 </>

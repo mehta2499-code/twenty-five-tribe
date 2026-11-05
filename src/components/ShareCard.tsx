@@ -54,7 +54,7 @@ export function ShareCard({ compact = false }: { compact?: boolean }) {
           </span>
           ?
         </p>
-        <p className="mt-2 text-sm text-cool">Prove it: guess 4 of my 6 answers.</p>
+        <p className="mt-2 text-sm text-cool">Prove it: get 4 of 7 right about me.</p>
         <p
           className="mt-3 inline-block rounded-full px-3 py-1 text-[13px] font-bold"
           style={{

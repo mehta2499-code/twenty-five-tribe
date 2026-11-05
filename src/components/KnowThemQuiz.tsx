@@ -7,6 +7,7 @@ import {
   DEMO_ANSWERS,
   MONTHS,
   PASS_MARK,
+  QUIZ_SIZE,
   VIBE_QUESTIONS,
   questionById,
   startQuiz,
@@ -52,14 +53,13 @@ export function KnowThemQuiz({
     (async () => {
       try {
         if (demo) {
-          const ids = [...VIBE_QUESTIONS]
+          const ids = [...VIBE_QUESTIONS.map((q) => q.id), "bday_month"]
             .sort(() => Math.random() - 0.5)
-            .slice(0, 5)
-            .map((q) => q.id);
+            .slice(0, QUIZ_SIZE);
           setPhase({
             kind: "asking",
             attempt: "demo",
-            questions: [...ids, "bday_month"],
+            questions: ids,
             index: 0,
             guesses: {},
           });

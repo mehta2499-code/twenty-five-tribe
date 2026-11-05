@@ -115,7 +115,7 @@ function People() {
             <span className="sticker">how it works</span>
             <p className="heading mt-3">No seat without proof.</p>
             <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              To seat someone, guess their vibe-check answers. Get 4 of 6 right and they're in
+              To seat someone, guess their vibe-check answers. Get 4 of 7 right and they're in
               your 25: they see your posts. When they seat you back, it's mutual 🤝 and chats,
               snaps and games unlock.
             </p>
