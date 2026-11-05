@@ -13,6 +13,7 @@ import {
   clientOnly,
 } from "@/components/SocialUI";
 import { CommentsSheet, personOf } from "@/components/FeedUI";
+import { firstFrame } from "@/components/ChatExtras";
 import { fileToImage, friendById, social, timeAgo, useSocial, type Post } from "@/lib/social";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -74,7 +75,7 @@ function PostCard({
       <div className="relative select-none" onClick={onTap}>
         {post.video ? (
           <video
-            src={post.video}
+            src={firstFrame(post.video)}
             controls
             playsInline
             loop

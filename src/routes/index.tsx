@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
 
@@ -6,7 +7,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "25 — A social app for the only people that matter." },
-      { name: "description", content: "25 seats. Choose wisely. The social app built around Dunbar's number — for the only people that matter." },
+      {
+        name: "description",
+        content:
+          "25 seats. Choose wisely. The social app built around Dunbar's number — for the only people that matter.",
+      },
     ],
   }),
   component: Landing,
@@ -24,7 +29,15 @@ const serif = { fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" };
 const sans = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
 
 // ----- Reveal on scroll -----
-function Reveal({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
   useEffect(() => {
@@ -57,7 +70,25 @@ function Reveal({ children, className = "", delay = 0 }: { children: React.React
   );
 }
 
+/** Opened from the Home Screen, or already signed in: go straight into the app. */
+function useOpenApp() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true;
+    if (standalone) {
+      navigate({ to: "/app/home", replace: true });
+      return;
+    }
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate({ to: "/app/home", replace: true });
+    });
+  }, [navigate]);
+}
+
 function Landing() {
+  useOpenApp();
   // Hero parallax
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
@@ -103,17 +134,26 @@ function Landing() {
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 -left-40 h-[480px] w-[480px] rounded-full opacity-30 blur-3xl"
-          style={{ background: "radial-gradient(closest-side, rgba(255,255,255,0.6), transparent 70%)", animation: "floatY 9s ease-in-out infinite" }}
+          style={{
+            background: "radial-gradient(closest-side, rgba(255,255,255,0.6), transparent 70%)",
+            animation: "floatY 9s ease-in-out infinite",
+          }}
         />
         <div
           aria-hidden
           className="pointer-events-none absolute -bottom-32 -right-32 h-[420px] w-[420px] rounded-full opacity-25 blur-3xl"
-          style={{ background: `radial-gradient(closest-side, ${C.coral}, transparent 70%)`, animation: "floatY 11s ease-in-out infinite" }}
+          style={{
+            background: `radial-gradient(closest-side, ${C.coral}, transparent 70%)`,
+            animation: "floatY 11s ease-in-out infinite",
+          }}
         />
 
         <div
           className="relative z-10 flex flex-col items-center text-center"
-          style={{ transform: `translateY(${scrollY * 0.25}px)`, opacity: Math.max(0, 1 - scrollY / 600) }}
+          style={{
+            transform: `translateY(${scrollY * 0.25}px)`,
+            opacity: Math.max(0, 1 - scrollY / 600),
+          }}
         >
           <h1 className="leading-none" style={{ animation: "floatY 7s ease-in-out infinite" }}>
             <Logo height={260} color={C.coral} title="25" />
@@ -128,7 +168,13 @@ function Landing() {
 
           <p
             className="mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 font-extrabold"
-            style={{ background: C.coral, color: C.navy, border: "2px solid #07060B", boxShadow: "3px 3px 0 #07060B", transform: "rotate(-3deg)" }}
+            style={{
+              background: C.coral,
+              color: C.navy,
+              border: "2px solid #07060B",
+              boxShadow: "3px 3px 0 #07060B",
+              transform: "rotate(-3deg)",
+            }}
           >
             Are you in my 25?
           </p>
@@ -137,7 +183,12 @@ function Landing() {
             <Link
               to="/login"
               className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold transition-transform hover:-translate-y-0.5"
-              style={{ background: "var(--lime)", color: "var(--on-dark-fill)", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
+              style={{
+                background: "var(--lime)",
+                color: "var(--on-dark-fill)",
+                border: "2px solid #07060B",
+                boxShadow: "4px 4px 0 #07060B",
+              }}
             >
               Claim your 25
             </Link>
@@ -152,9 +203,19 @@ function Landing() {
         </div>
 
         {/* scroll arrow */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2" style={{ animation: "arrowBob 2s ease-in-out infinite" }}>
+        <div
+          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+          style={{ animation: "arrowBob 2s ease-in-out infinite" }}
+        >
           <svg width="22" height="34" viewBox="0 0 22 34" fill="none">
-            <path d="M11 2v28M2 22l9 9 9-9" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+            <path
+              d="M11 2v28M2 22l9 9 9-9"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.85"
+            />
           </svg>
         </div>
       </section>
@@ -175,14 +236,19 @@ function Landing() {
           <div className="mt-20 grid gap-6 md:grid-cols-3">
             {[
               { tag: "Instagram", line: "You follow 500 people. You know 12." },
-              { tag: "WhatsApp",  line: "47 groups. 43 muted." },
-              { tag: "BeReal",    line: "73M users. Dead in 2 years." },
+              { tag: "WhatsApp", line: "47 groups. 43 muted." },
+              { tag: "BeReal", line: "73M users. Dead in 2 years." },
             ].map((s, i) => (
               <Reveal key={s.tag} delay={i * 120}>
                 <div className="glass rounded-2xl p-7 h-full">
                   <p
                     className="uppercase mb-4"
-                    style={{ color: C.coral, fontSize: "0.7rem", letterSpacing: "0.28em", fontWeight: 600 }}
+                    style={{
+                      color: C.coral,
+                      fontSize: "0.7rem",
+                      letterSpacing: "0.28em",
+                      fontWeight: 600,
+                    }}
                   >
                     {s.tag}
                   </p>
@@ -212,14 +278,22 @@ function Landing() {
             </div>
           </Reveal>
           <Reveal delay={120}>
-            <p className="mt-10 h-serif italic text-white/95" style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)" }}>
+            <p
+              className="mt-10 h-serif italic text-white/95"
+              style={{ fontSize: "clamp(1.25rem, 2.4vw, 1.75rem)" }}
+            >
               The number of close relationships the human brain can sustain.
             </p>
           </Reveal>
           <Reveal delay={200}>
             <p
               className="mt-6 uppercase"
-              style={{ color: C.coral, letterSpacing: "0.32em", fontSize: "0.72rem", fontWeight: 500 }}
+              style={{
+                color: C.coral,
+                letterSpacing: "0.32em",
+                fontSize: "0.72rem",
+                fontWeight: 500,
+              }}
             >
               Robin Dunbar · Oxford University · 1992
             </p>
@@ -236,7 +310,10 @@ function Landing() {
       <section className="px-6 py-32 md:py-40" style={{ background: C.blue }}>
         <div className="mx-auto max-w-6xl">
           <Reveal>
-            <h2 className="h-serif text-white text-center" style={{ fontSize: "clamp(2.25rem, 5vw, 3.75rem)", lineHeight: 1.1 }}>
+            <h2
+              className="h-serif text-white text-center"
+              style={{ fontSize: "clamp(2.25rem, 5vw, 3.75rem)", lineHeight: 1.1 }}
+            >
               One rule. Everything else follows.
             </h2>
           </Reveal>
@@ -248,25 +325,58 @@ function Landing() {
 
           <div className="mt-20 grid gap-6 md:grid-cols-2">
             {[
-              { icon: "◍", tag: "The Seats",      line: "25 seats at your table. Who sits there is everything." },
-              { icon: "✓", tag: "Prove it",       line: "Pizza or pasta? Cats or dogs? Guess 4 of their 6 answers or no seat." },
-              { icon: "❍", tag: "Chats",          line: "Seat anyone you know. DMs only open when it's mutual." },
-              { icon: "↯", tag: "Snaps & Streaks", line: "Photos that disappear after one look. Keep the streak alive." },
-              { icon: "✦", tag: "Feed & Reels",   line: "Posts and reels from your people only. It ends when you're caught up." },
-              { icon: "◆", tag: "Games",          line: "Quick rounds, trivia and Judgement, with a weekly leaderboard." },
+              {
+                icon: "◍",
+                tag: "The Seats",
+                line: "25 seats at your table. Who sits there is everything.",
+              },
+              {
+                icon: "✓",
+                tag: "Prove it",
+                line: "Pizza or pasta? Cats or dogs? Guess 4 of their 6 answers or no seat.",
+              },
+              {
+                icon: "❍",
+                tag: "Chats",
+                line: "Seat anyone you know. DMs only open when it's mutual.",
+              },
+              {
+                icon: "↯",
+                tag: "Snaps & Streaks",
+                line: "Photos that disappear after one look. Keep the streak alive.",
+              },
+              {
+                icon: "✦",
+                tag: "Feed & Reels",
+                line: "Posts and reels from your people only. It ends when you're caught up.",
+              },
+              {
+                icon: "◆",
+                tag: "Games",
+                line: "Quick rounds, trivia and Judgement, with a weekly leaderboard.",
+              },
             ].map((f, i) => (
               <Reveal key={f.tag} delay={i * 90}>
                 <div className="glass rounded-3xl p-8 h-full flex gap-5">
                   <div
                     className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl"
-                    style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", color: C.coral }}
+                    style={{
+                      background: "rgba(255,255,255,0.12)",
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      color: C.coral,
+                    }}
                   >
                     {f.icon}
                   </div>
                   <div>
                     <p
                       className="uppercase mb-3"
-                      style={{ color: C.coral, fontSize: "0.7rem", letterSpacing: "0.28em", fontWeight: 600 }}
+                      style={{
+                        color: C.coral,
+                        fontSize: "0.7rem",
+                        letterSpacing: "0.28em",
+                        fontWeight: 600,
+                      }}
                     >
                       {f.tag}
                     </p>
@@ -283,25 +393,50 @@ function Landing() {
       <section className="px-6 py-32 md:py-40" style={{ background: C.navy }}>
         <div className="mx-auto max-w-6xl">
           <Reveal>
-            <h2 className="h-serif text-white text-center max-w-4xl mx-auto" style={{ fontSize: "clamp(2rem, 4.4vw, 3.25rem)", lineHeight: 1.15 }}>
+            <h2
+              className="h-serif text-white text-center max-w-4xl mx-auto"
+              style={{ fontSize: "clamp(2rem, 4.4vw, 3.25rem)", lineHeight: 1.15 }}
+            >
               AI that doesn't optimize for time spent.
               <br />
-              <span className="italic" style={{ color: C.coral }}>It optimizes for friendships kept.</span>
+              <span className="italic" style={{ color: C.coral }}>
+                It optimizes for friendships kept.
+              </span>
             </h2>
           </Reveal>
 
           <div className="mt-20 grid gap-6 md:grid-cols-2">
             {[
-              { icon: "◐", title: "Drift Prediction",   line: "Catches fading friendships before you lose them." },
-              { icon: "◑", title: "Vibe Match",         line: "Connects you with the friend who needs you right now." },
-              { icon: "◓", title: "Capsule Narrator",   line: "Writes the story of your friendship — in your style." },
-              { icon: "◒", title: "Friendship Wrapped", line: "Spotify Wrapped, but for the people you love." },
+              {
+                icon: "◐",
+                title: "Drift Prediction",
+                line: "Catches fading friendships before you lose them.",
+              },
+              {
+                icon: "◑",
+                title: "Vibe Match",
+                line: "Connects you with the friend who needs you right now.",
+              },
+              {
+                icon: "◓",
+                title: "Capsule Narrator",
+                line: "Writes the story of your friendship — in your style.",
+              },
+              {
+                icon: "◒",
+                title: "Friendship Wrapped",
+                line: "Spotify Wrapped, but for the people you love.",
+              },
             ].map((a, i) => (
               <Reveal key={a.title} delay={i * 90}>
                 <div className="glass rounded-3xl p-8 h-full">
                   <div
                     className="mb-5 flex h-11 w-11 items-center justify-center rounded-full text-lg"
-                    style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", color: C.coral }}
+                    style={{
+                      background: "rgba(255,255,255,0.12)",
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      color: C.coral,
+                    }}
                   >
                     {a.icon}
                   </div>
@@ -315,7 +450,10 @@ function Landing() {
       </section>
 
       {/* ============ CLOSING — CLAIM YOUR 25 ============ */}
-      <section className="relative px-6 py-32 md:py-44 overflow-hidden" style={{ background: C.blue }}>
+      <section
+        className="relative px-6 py-32 md:py-44 overflow-hidden"
+        style={{ background: C.blue }}
+      >
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-[420px] w-[420px] rounded-full opacity-30 blur-3xl"
@@ -323,21 +461,31 @@ function Landing() {
         />
         <div className="relative mx-auto max-w-3xl text-center">
           <Reveal>
-            <h2 className="h-serif italic text-white" style={{ fontSize: "clamp(1.75rem, 4.4vw, 3.25rem)", lineHeight: 1.2 }}>
+            <h2
+              className="h-serif italic text-white"
+              style={{ fontSize: "clamp(1.75rem, 4.4vw, 3.25rem)", lineHeight: 1.2 }}
+            >
               You have 500 followers.
               <br />
               You'd call 25 of them at 3 AM.
             </h2>
           </Reveal>
           <Reveal delay={150}>
-            <p className="mt-8 h-serif text-white/90 text-xl md:text-2xl">This app is for the 25.</p>
+            <p className="mt-8 h-serif text-white/90 text-xl md:text-2xl">
+              This app is for the 25.
+            </p>
           </Reveal>
           <Reveal delay={250}>
             <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 to="/login"
                 className="inline-flex items-center justify-center rounded-full px-9 py-4 font-semibold transition-transform hover:-translate-y-0.5"
-                style={{ background: "var(--lime)", color: "var(--on-dark-fill)", border: "2px solid #07060B", boxShadow: "4px 4px 0 #07060B" }}
+                style={{
+                  background: "var(--lime)",
+                  color: "var(--on-dark-fill)",
+                  border: "2px solid #07060B",
+                  boxShadow: "4px 4px 0 #07060B",
+                }}
               >
                 Claim your 25
               </Link>

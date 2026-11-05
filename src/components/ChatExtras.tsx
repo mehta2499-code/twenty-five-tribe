@@ -413,6 +413,9 @@ export async function sendVoice(friendId: string, blob: Blob, secs: number) {
 
 // ---------- Photos and videos in chat ----------
 
+/** iPhones show a black box until a video plays; asking for 0.1s in shows the first frame. */
+export const firstFrame = (url: string) => (url.includes("#") ? url : `${url}#t=0.1`);
+
 export const MAX_CHAT_VIDEO_MB = 50;
 /** "img:<path or url>" / "vid:<path or url>" */
 export function parseMedia(ref?: string) {
@@ -435,11 +438,12 @@ export function MediaBubble({ value }: { value: string }) {
   if (!url) return <div className="w-52 aspect-[3/4] rounded-xl skeleton" />;
   return m.kind === "vid" ? (
     <video
-      src={url}
+      src={firstFrame(url)}
       controls
       playsInline
       preload="metadata"
-      className="rounded-xl w-56 max-w-full"
+      className="rounded-xl w-56 max-w-full aspect-[3/4] object-cover"
+      style={{ background: "#000" }}
     />
   ) : (
     <>
@@ -499,14 +503,12 @@ export async function sendMedia(friendId: string, file: File) {
   }));
   if (s.mode !== "live" || !s.me) return;
   const path = await uploadMediaAt("", blob, ext);
-  const { error } = await supabase
-    .from("messages")
-    .insert({
-      id,
-      sender: s.me.id,
-      recipient: friendId,
-      body: label,
-      shared_ref: `${kind}:${path}`,
-    });
+  const { error } = await supabase.from("messages").insert({
+    id,
+    sender: s.me.id,
+    recipient: friendId,
+    body: label,
+    shared_ref: `${kind}:${path}`,
+  });
   if (error) throw new Error(error.message);
 }

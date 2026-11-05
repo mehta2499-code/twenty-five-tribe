@@ -217,7 +217,9 @@ export function TriviaDuel({
     send({ t: "ans", from: me.id, i, choice, correct, points });
   };
 
-  const Header = () => (
+  // A plain element, not a component, so it updates in place instead of remounting
+  // (remounting every tick made the profile photos flash).
+  const header = (
     <div className="flex items-center justify-between px-5 mt-2">
       <Side p={me} points={myPoints} answered={!!mine[i]} active={phase === "question"} />
       <span className="text-xs text-faint tabular-nums">
@@ -289,7 +291,7 @@ export function TriviaDuel({
   if (phase === "countdown") {
     return shell(
       <>
-        <Header />
+        {header}
         <div className="flex-1 flex items-center justify-center">
           <span key={count} className="display pop" style={{ fontSize: 120 }}>
             {count || "Go!"}
@@ -347,7 +349,7 @@ export function TriviaDuel({
   const revealed = phase === "reveal";
   return shell(
     <>
-      <Header />
+      {header}
       <div
         className="mx-5 mt-5 h-2 rounded-full overflow-hidden"
         style={{ background: "var(--fill-2)" }}

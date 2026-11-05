@@ -813,25 +813,6 @@ function Home() {
 
       <TodayTiles />
 
-      <Dare />
-
-      <GameRank />
-
-      {s.mode === "demo" && <TodayAtTheTable />}
-
-      <Link
-        to="/app/people"
-        className="mx-5 mt-6 card p-4 flex items-center gap-3 hover:bg-[var(--fill)]"
-        style={{ display: filled < 25 ? "flex" : "none" }}
-      >
-        <span className="text-2xl">🪑</span>
-        <span className="flex-1 min-w-0">
-          <span className="block font-bold text-cream">{25 - filled} seats still open</span>
-          <span className="block meta">Only people you'd call at 3 AM.</span>
-        </span>
-        <ChevronRight size={18} className="text-faint" aria-hidden="true" />
-      </Link>
-
       <p className="text-center meta mt-10 mb-2 px-8">{VOICE.brandLine}</p>
 
       <Confetti fire={confetti} />

@@ -110,6 +110,11 @@ function SnapScreen() {
   const [viewing, setViewing] = useState<Snap | null>(null);
   const [burst, setBurst] = useState(0);
   const [captionY, setCaptionY] = useState(50);
+  // iPhone home-screen apps forget camera permission every launch, so there we
+  // use the phone's own camera (no permission prompt) unless asked for live.
+  const [liveCam, setLiveCam] = useState(
+    () => typeof navigator === "undefined" || !/iphone|ipad|ipod/i.test(navigator.userAgent),
+  );
   const drag = useRef<{ startY: number; startPct: number; moved: boolean } | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -119,6 +124,10 @@ function SnapScreen() {
   // Live camera while nothing is captured yet.
   useEffect(() => {
     if (hasShot) return;
+    if (!liveCam) {
+      setCamError("Tap to take a snap");
+      return;
+    }
     let cancelled = false;
     let live: MediaStream | null = null;
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -143,7 +152,7 @@ function SnapScreen() {
       if (live) parkStream(live, facing);
       setStream(null);
     };
-  }, [facing, hasShot]);
+  }, [facing, hasShot, liveCam]);
 
   const capture = () => {
     const v = videoRef.current;
@@ -252,6 +261,18 @@ function SnapScreen() {
               <p className="text-white font-bold" style={{ fontSize: 17 }}>
                 {camError}
               </p>
+            </button>
+          )}
+          {!hasShot && !liveCam && (
+            <button
+              onClick={() => {
+                setCamError(null);
+                setLiveCam(true);
+              }}
+              className="absolute bottom-3 inset-x-0 mx-auto w-max text-[13px] font-semibold underline underline-offset-4"
+              style={{ color: "rgba(255,255,255,0.8)" }}
+            >
+              Use live camera instead
             </button>
           )}
           {image && (
