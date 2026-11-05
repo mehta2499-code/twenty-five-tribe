@@ -8,6 +8,13 @@
       "when": 1793874969193,
       "tag": "0000_profiles_and_private_avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793875372206,
+      "tag": "0001_require_avatar_on_signup",
+      "breakpoints": true
     }
   ]
 }
