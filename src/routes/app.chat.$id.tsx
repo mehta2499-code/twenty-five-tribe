@@ -181,7 +181,7 @@ function ChatThread() {
                   shareKind === "post"
                     ? s.posts.find((p) => p.id === shareId)
                     : shareKind === "reel"
-                      ? s.reels.find((r) => r.id === shareId)
+                      ? s.posts.find((p) => p.id === shareId)
                       : undefined;
                 return (
                   <li key={m.id}>
@@ -239,7 +239,7 @@ function ChatThread() {
                           ))}
                         {shared && (
                           <Link
-                            to={shareKind === "reel" ? "/app/reels" : "/app/feed"}
+                            to="/app/feed"
                             className="block my-0.5"
                           >
                             {shared.image ? (

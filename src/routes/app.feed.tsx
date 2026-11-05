@@ -12,8 +12,11 @@ import {
   buzz,
   clientOnly,
 } from "@/components/SocialUI";
-import { CommentsSheet, FeedTabs, personOf } from "@/components/FeedUI";
+import { CommentsSheet, personOf } from "@/components/FeedUI";
 import { fileToImage, friendById, social, timeAgo, useSocial, type Post } from "@/lib/social";
+import { supabase } from "@/integrations/supabase/client";
+
+const MAX_VIDEO_MB = 50;
 
 export const Route = createFileRoute("/app/feed")({
   component: clientOnly(Feed),
@@ -69,7 +72,17 @@ function PostCard({
         </time>
       </header>
       <div className="relative select-none" onClick={onTap}>
-        {post.image ? (
+        {post.video ? (
+          <video
+            src={post.video}
+            controls
+            playsInline
+            loop
+            preload="metadata"
+            className="w-full aspect-square object-cover"
+            style={{ background: "#000" }}
+          />
+        ) : post.image ? (
           <img
             src={post.image}
             alt={post.caption || `Photo from ${by.name}`}
@@ -146,6 +159,7 @@ function PostCard({
 function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
+  const [video, setVideo] = useState<{ file: File; url: string } | null>(null);
   const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
   return (
@@ -154,15 +168,24 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
         onClick={() => fileRef.current?.click()}
         className="w-full aspect-square rounded-2xl overflow-hidden flex items-center justify-center"
         style={{ border: image ? "none" : "1.5px dashed var(--line-2)", background: "var(--fill)" }}
-        aria-label={image ? "Change photo" : "Choose a photo"}
+        aria-label={image || video ? "Change photo or video" : "Choose a photo or video"}
       >
-        {image ? (
+        {video ? (
+          <video
+            src={video.url}
+            muted
+            autoPlay
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        ) : image ? (
           <img src={image} alt="Your photo" className="w-full h-full object-cover" />
         ) : (
           <span className="flex flex-col items-center gap-2 text-cool">
             <ImagePlus size={28} aria-hidden="true" />
             <span className="font-semibold" style={{ fontSize: 15 }}>
-              Choose a photo
+              Choose a photo or video
             </span>
           </span>
         )}
@@ -170,13 +193,23 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         hidden
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
           try {
-            setImage(await fileToImage(f));
+            if (f.type.startsWith("video/")) {
+              if (f.size > MAX_VIDEO_MB * 1024 * 1024)
+                throw new Error(
+                  `Videos can be up to ${MAX_VIDEO_MB} MB. Trim it a bit and try again.`,
+                );
+              setImage(null);
+              setVideo({ file: f, url: URL.createObjectURL(f) });
+            } else {
+              setVideo(null);
+              setImage(await fileToImage(f));
+            }
             setError(null);
           } catch (err) {
             setError((err as Error).message);
@@ -203,9 +236,9 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
         {caption.length}/280
       </p>
       <button
-        disabled={!image}
+        disabled={!image && !video}
         onClick={() => {
-          social.addPost(image!, caption);
+          social.addPost(image ?? "", caption, video?.file);
           onDone();
         }}
         className="btn-primary w-full mt-3"
@@ -223,6 +256,17 @@ function Feed() {
   const s = useSocial();
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
   const [shareFor, setShareFor] = useState<string | null>(null);
+  const [shareTo, setShareTo] = useState<string[] | undefined>(undefined);
+  const startShare = async (post: Post) => {
+    setShareTo(undefined);
+    if (s.mode === "live" && s.me) {
+      // Only people who can also see this author's posts.
+      const author = post.by === "me" ? s.me.id : post.by;
+      const { data } = await supabase.rpc("share_targets", { p_author: author });
+      setShareTo(((data ?? []) as string[]).filter(Boolean));
+    }
+    setShareFor(post.id);
+  };
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const open = s.posts.find((p) => p.id === commentsFor);
@@ -241,11 +285,7 @@ function Feed() {
             <Plus size={18} /> Post
           </button>
         }
-      >
-        <div className="mt-4">
-          <FeedTabs active="posts" />
-        </div>
-      </PageBand>
+      ></PageBand>
 
       {s.loading ? (
         <div className="mx-4 card overflow-hidden" aria-busy="true" aria-label="Loading posts">
@@ -263,7 +303,7 @@ function Feed() {
         <EmptyState
           icon={LayoutGrid}
           title="No posts yet"
-          body="When you or your 25 share a photo, it shows up here."
+          body="When you or your 25 share a photo or video, it shows up here."
           action={
             <button onClick={() => setCreating(true)} className="btn-primary px-5">
               <Plus size={18} /> Share the first post
@@ -278,7 +318,7 @@ function Feed() {
                 key={p.id}
                 post={p}
                 onComments={() => setCommentsFor(p.id)}
-                onShare={() => setShareFor(p.id)}
+                onShare={() => void startShare(p)}
               />
             ))}
           </div>
@@ -298,7 +338,8 @@ function Feed() {
         <FriendPicker
           title="Send to"
           cta="Send"
-          note="They'll get it in your chat."
+          note="Only people who can see this post are listed."
+          only={shareTo}
           onClose={() => setShareFor(null)}
           onPick={(ids) => {
             social.share(shareFor, ids, "post");

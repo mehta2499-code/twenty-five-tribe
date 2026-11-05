@@ -30,7 +30,6 @@ export function BottomNav() {
         {tabs.map(({ to, label, Icon }) => {
           const active =
             pathname.startsWith(to) ||
-            (to === "/app/feed" && pathname.startsWith("/app/reels")) ||
             (to === "/app/home" &&
               (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat")));
           const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;

@@ -117,8 +117,10 @@ function fail(message: string) {
 function friendly(e: unknown) {
   const msg = (e as { message?: string })?.message ?? String(e);
   if (/seats taken/i.test(msg)) return msg;
-  if (/duplicate key.*username|profiles_username_key|username.*unique/i.test(msg)) return "That username is taken. Try another.";
-  if (/invalid.*password|password.*(weak|short|length)/i.test(msg)) return "Use a stronger password with at least 8 characters.";
+  if (/duplicate key.*username|profiles_username_key|username.*unique/i.test(msg))
+    return "That username is taken. Try another.";
+  if (/invalid.*password|password.*(weak|short|length)/i.test(msg))
+    return "Use a stronger password with at least 8 characters.";
   if (/duplicate key.*seats/i.test(msg)) return "They're already in your 25.";
   if (/row-level security/i.test(msg)) return "You can only do that with people in your 25.";
   if (/Failed to fetch|NetworkError/i.test(msg))
@@ -168,11 +170,7 @@ async function loadAll() {
     }
 
     const seatRows = await run(
-      supabase
-        .from("seats")
-        .select("*")
-        .or(`owner.eq.${me},guest.eq.${me}`)
-        .returns<SeatRow[]>(),
+      supabase.from("seats").select("*").or(`owner.eq.${me},guest.eq.${me}`).returns<SeatRow[]>(),
     );
     // mine: who I put in my 25. seatedMe: who put me in theirs.
     const mine = new Map(seatRows.filter((r) => r.owner === me).map((r) => [r.guest, r]));
@@ -237,7 +235,6 @@ async function loadAll() {
       });
     }
     people.sort((a, b) => a.name.localeCompare(b.name));
-    const friendIds = new Set(people.filter((p) => p.mutual).map((p) => p.id));
 
     const [messages, inbox, sent, streakRows, postRows, scoreRows] = await Promise.all([
       run(
@@ -392,8 +389,9 @@ async function loadAll() {
         .map((c) => ({ id: c.id, by: who(c.author), text: c.body, at: ts(c.created_at) }));
     const posts: Post[] = [];
     const reels: Reel[] = [];
+    // The database only returns posts you're allowed to see (yours, and from
+    // anyone who put you in their 25), so show them all.
     for (const p of postRows) {
-      if (p.author !== me && !friendIds.has(p.author)) continue;
       const url = mediaUrls[p.media_path] ?? "";
       const base = {
         id: p.id,
@@ -403,13 +401,10 @@ async function loadAll() {
         likes: likesFor(p.id),
         comments: commentsFor(p.id),
       };
-      if (p.kind === "post") posts.push({ ...base, image: url });
-      else
-        reels.push({
-          ...base,
-          ...(p.media_type === "video" ? { video: url } : { image: url }),
-          sound: `original audio · ${p.author === me ? "You" : (byId.get(p.author)?.display_name ?? "")}`,
-        });
+      // Reels are gone: videos are just posts now.
+      posts.push(
+        p.media_type === "video" ? { ...base, image: "", video: url } : { ...base, image: url },
+      );
     }
     const postedToday = new Set(
       postRows.filter((p) => dayKey(ts(p.created_at)) === today).map((p) => p.author),
@@ -542,28 +537,32 @@ function subscribe() {
         }));
       },
     )
-    .on("postgres_changes", { event: "*", schema: "public", table: "seats" }, ({ eventType, new: row }) => {
-      const r = row as Partial<SeatRow>;
-      if (eventType === "INSERT" && r.guest === me && r.owner) {
-        const owner = r.owner;
-        void supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", owner)
-          .maybeSingle<{ display_name: string }>()
-          .then(({ data }) => {
-            const name = data?.display_name.split(" ")[0] ?? "Someone";
-            const back = _get().people.some((p) => p.id === owner);
-            _set((s) => ({
-              ...s,
-              notice: back
-                ? `🤝 ${name} seated you back. Chats and snaps unlocked.`
-                : `👀 ${name} put you in their 25.`,
-            }));
-          });
-      }
-      scheduleReload();
-    })
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "seats" },
+      ({ eventType, new: row }) => {
+        const r = row as Partial<SeatRow>;
+        if (eventType === "INSERT" && r.guest === me && r.owner) {
+          const owner = r.owner;
+          void supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", owner)
+            .maybeSingle<{ display_name: string }>()
+            .then(({ data }) => {
+              const name = data?.display_name.split(" ")[0] ?? "Someone";
+              const back = _get().people.some((p) => p.id === owner);
+              _set((s) => ({
+                ...s,
+                notice: back
+                  ? `🤝 ${name} seated you back. Chats and snaps unlocked.`
+                  : `👀 ${name} put you in their 25.`,
+              }));
+            });
+        }
+        scheduleReload();
+      },
+    )
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quiz_attempts" }, () =>
       scheduleReload(800),
     )
@@ -687,7 +686,13 @@ export const account = {
           : friendly(error),
       );
   },
-  async createProfile(input: { name: string; username: string; avatar?: string; password: string; confirmPassword: string }) {
+  async createProfile(input: {
+    name: string;
+    username: string;
+    avatar?: string;
+    password: string;
+    confirmPassword: string;
+  }) {
     if (!myId) throw new Error("Sign in first.");
     const username = input.username.trim().toLowerCase();
     if (!/^[a-z0-9_.]{3,20}$/.test(username))
@@ -750,7 +755,11 @@ export const account = {
   },
   async blockedPeople(): Promise<{ id: string; name: string; username: string }[]> {
     const rows = await run(
-      supabase.from("blocks").select("blocked").eq("blocker", myId).returns<{ blocked: string }[]>(),
+      supabase
+        .from("blocks")
+        .select("blocked")
+        .eq("blocker", myId)
+        .returns<{ blocked: string }[]>(),
     );
     if (!rows.length) return [];
     const profiles = await run(
@@ -830,11 +839,7 @@ export const account = {
   },
   /** Take someone out of your 25. They can still keep you in theirs. */
   async remove(personId: string) {
-    const { error } = await supabase
-      .from("seats")
-      .delete()
-      .eq("owner", myId)
-      .eq("guest", personId);
+    const { error } = await supabase.from("seats").delete().eq("owner", myId).eq("guest", personId);
     if (error) throw new Error(friendly(error));
     await loadAll();
   },
@@ -963,20 +968,32 @@ registerLive({
       .then(({ error }) => error && fail(friendly(error)));
   },
 
-  addPost(image: string, caption: string) {
+  addPost(image: string, caption: string, video?: Blob) {
     if (!myId) return;
     const me = myId;
     const id = newId();
+    const preview = video ? URL.createObjectURL(video) : undefined;
     patch((s) => ({
       ...s,
       posts: [
-        { id, by: "me", image, caption: caption.trim(), at: Date.now(), likes: [], comments: [] },
+        {
+          id,
+          by: "me",
+          image: video ? "" : image,
+          video: preview,
+          caption: caption.trim(),
+          at: Date.now(),
+          likes: [],
+          comments: [],
+        },
         ...s.posts,
       ],
     }));
     void (async () => {
       try {
-        const media_path = await upload("media", image, "jpg");
+        const media_path = video
+          ? await upload("media", video, video.type.includes("quicktime") ? "mov" : "mp4")
+          : await upload("media", image, "jpg");
         await run(
           supabase
             .from("posts")
@@ -985,7 +1002,7 @@ registerLive({
               author: me,
               kind: "post",
               media_path,
-              media_type: "image",
+              media_type: video ? "video" : "image",
               caption: caption.trim(),
             })
             .select(),

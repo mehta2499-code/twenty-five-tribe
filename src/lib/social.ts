@@ -41,6 +41,8 @@ export type Post = {
   id: string;
   by: "me" | string;
   image: string;
+  /** Video posts: the video URL (image is then empty or a poster). */
+  video?: string;
   caption: string;
   at: number;
   likes: string[]; // friendIds + "me"
@@ -665,11 +667,12 @@ const demo = {
     }));
   },
 
-  addPost(image: string, caption: string) {
+  addPost(image: string, caption: string, video?: Blob) {
     const post: Post = {
       id: uid(),
       by: "me",
-      image,
+      image: video ? "" : image,
+      video: video ? URL.createObjectURL(video) : undefined,
       caption: caption.trim(),
       at: Date.now(),
       likes: [],

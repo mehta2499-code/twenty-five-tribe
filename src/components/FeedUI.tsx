@@ -24,20 +24,6 @@ export function personOf(id: string) {
   };
 }
 
-/** Posts / Reels switcher. */
-export function FeedTabs({ active }: { active: "posts" | "reels" }) {
-  return (
-    <nav className="segmented" aria-label="Feed type">
-      <Link to="/app/feed" aria-current={active === "posts" ? "page" : undefined}>
-        Posts
-      </Link>
-      <Link to="/app/reels" aria-current={active === "reels" ? "page" : undefined}>
-        Reels
-      </Link>
-    </nav>
-  );
-}
-
 export function CommentsSheet({
   kind,
   id,

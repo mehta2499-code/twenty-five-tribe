@@ -18,7 +18,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as InUsernameRouteImport } from './routes/in.$username'
 import { Route as AppSnapRouteImport } from './routes/app.snap'
-import { Route as AppReelsRouteImport } from './routes/app.reels'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
 import { Route as AppPollsRouteImport } from './routes/app.polls'
@@ -78,11 +77,6 @@ const InUsernameRoute = InUsernameRouteImport.update({
 const AppSnapRoute = AppSnapRouteImport.update({
   id: '/snap',
   path: '/snap',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReelsRoute = AppReelsRouteImport.update({
-  id: '/reels',
-  path: '/reels',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -178,7 +172,6 @@ export interface FileRoutesByFullPath {
   '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
-  '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
@@ -204,7 +197,6 @@ export interface FileRoutesByTo {
   '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
-  '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app': typeof AppIndexRoute
@@ -232,7 +224,6 @@ export interface FileRoutesById {
   '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
-  '/app/reels': typeof AppReelsRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
@@ -261,7 +252,6 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
-    | '/app/reels'
     | '/app/snap'
     | '/in/$username'
     | '/app/'
@@ -287,7 +277,6 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
-    | '/app/reels'
     | '/app/snap'
     | '/in/$username'
     | '/app'
@@ -314,7 +303,6 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
-    | '/app/reels'
     | '/app/snap'
     | '/in/$username'
     | '/app/'
@@ -398,13 +386,6 @@ declare module '@tanstack/react-router' {
       path: '/snap'
       fullPath: '/app/snap'
       preLoaderRoute: typeof AppSnapRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/app/reels': {
-      id: '/app/reels'
-      path: '/reels'
-      fullPath: '/app/reels'
-      preLoaderRoute: typeof AppReelsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/profile': {
@@ -526,7 +507,6 @@ interface AppRouteChildren {
   AppPollsRoute: typeof AppPollsRoute
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
-  AppReelsRoute: typeof AppReelsRoute
   AppSnapRoute: typeof AppSnapRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCardIdRoute: typeof AppCardIdRoute
@@ -547,7 +527,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppPollsRoute: AppPollsRoute,
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
-  AppReelsRoute: AppReelsRoute,
   AppSnapRoute: AppSnapRoute,
   AppIndexRoute: AppIndexRoute,
   AppCardIdRoute: AppCardIdRoute,

@@ -226,7 +226,10 @@ export function FriendPicker({
   single = false,
   showStreaks = false,
   note,
+  only,
 }: {
+  /** Limit the list to these people (e.g. who can see a post). */
+  only?: string[];
   title: string;
   cta: string;
   onClose: () => void;
@@ -237,7 +240,7 @@ export function FriendPicker({
 }) {
   const s = useSocial();
   const [picked, setPicked] = useState<string[]>([]);
-  const people = mutualFriends();
+  const people = only ? mutualFriends().filter((p) => only.includes(p.id)) : mutualFriends();
   const all = picked.length === people.length && people.length > 0;
   const toggle = (id: string) => {
     if (single) return onPick([id]);

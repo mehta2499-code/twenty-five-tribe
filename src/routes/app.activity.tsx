@@ -15,7 +15,7 @@ function target(a: Activity): { to: string; params?: Record<string, string> } {
   if (a.kind === "seated") return { to: "/app/people" };
   if (a.kind === "seated_back" && a.actor) return { to: "/app/seat/$id", params: { id: a.actor } };
   if (a.kind === "like" || a.kind === "comment")
-    return { to: a.ref?.startsWith("reel") ? "/app/reels" : "/app/feed" };
+    return { to: "/app/feed" };
   if (a.kind === "word_done" && a.ref?.startsWith("game:"))
     return { to: "/app/play/$id", params: { id: a.ref.slice(5) } };
   if (a.kind === "poll") return { to: "/app/polls" };
