@@ -71,3 +71,18 @@ bun install
 bun run build:node && bun run start
 ```
 The app listens on port 3000 (`PORT` and `HOST` environment variables change that).
+
+## HTTPS with a free DuckDNS address
+
+1. On duckdns.org, create a subdomain (e.g. `the25`) and set its IP to the server's IP.
+2. On the server:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/mehta2499-code/twenty-five-tribe/main/deploy/enable-https.sh -o enable-https.sh
+   sudo bash enable-https.sh the25.duckdns.org
+   ```
+
+3. In Supabase → Authentication → URL Configuration, set the Site URL to
+   `https://the25.duckdns.org` and add `https://the25.duckdns.org/**` to Redirect URLs.
+
+The certificate renews itself. Old `http://<ip>` links redirect to the new address.

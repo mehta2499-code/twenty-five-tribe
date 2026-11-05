@@ -2,10 +2,10 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
  * The phone apps load the live site, so every server deploy reaches the apps
- * straight away. Set APP_URL to your domain (https) before building store
- * releases; the default is the VPS address.
+ * straight away. Set APP_URL to change the address; the default is the
+ * live site on its https domain.
  */
-const url = process.env.APP_URL || "http://129.121.169.161";
+const url = process.env.APP_URL || "https://the25.duckdns.org";
 
 const config: CapacitorConfig = {
   appId: "app.twentyfive.social",
