@@ -28,6 +28,7 @@ import { Route as AppFeedRouteImport } from './routes/app.feed'
 import { Route as AppDropRouteImport } from './routes/app.drop'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
+import { Route as ApiPushRouteImport } from './routes/api.push'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
 import { Route as AppGroupIdRouteImport } from './routes/app.group.$id'
@@ -129,6 +130,11 @@ const AppActivityRoute = AppActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiPushRoute = ApiPushRouteImport.update({
+  id: '/api/push',
+  path: '/api/push',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppSeatIdRoute = AppSeatIdRouteImport.update({
   id: '/seat/$id',
   path: '/seat/$id',
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/api/push': typeof ApiPushRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/api/push': typeof ApiPushRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/api/push': typeof ApiPushRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/vibe'
     | '/walkthrough'
+    | '/api/push'
     | '/app/activity'
     | '/app/chats'
     | '/app/drop'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/vibe'
     | '/walkthrough'
+    | '/api/push'
     | '/app/activity'
     | '/app/chats'
     | '/app/drop'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/vibe'
     | '/walkthrough'
+    | '/api/push'
     | '/app/activity'
     | '/app/chats'
     | '/app/drop'
@@ -320,6 +332,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   VibeRoute: typeof VibeRoute
   WalkthroughRoute: typeof WalkthroughRoute
+  ApiPushRoute: typeof ApiPushRoute
   InUsernameRoute: typeof InUsernameRoute
 }
 
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/push': {
+      id: '/api/push'
+      path: '/api/push'
+      fullPath: '/api/push'
+      preLoaderRoute: typeof ApiPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/seat/$id': {
       id: '/app/seat/$id'
       path: '/seat/$id'
@@ -545,6 +565,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   VibeRoute: VibeRoute,
   WalkthroughRoute: WalkthroughRoute,
+  ApiPushRoute: ApiPushRoute,
   InUsernameRoute: InUsernameRoute,
 }
 export const routeTree = rootRouteImport

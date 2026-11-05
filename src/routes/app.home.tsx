@@ -31,6 +31,7 @@ import { GAMES } from "@/components/ArcadeGames";
 import { TRIES, dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { VOICE } from "@/lib/copy";
+import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
@@ -803,6 +804,8 @@ function Home() {
       </header>
 
       <ModeBanner />
+
+      <PushPrompt />
 
       <Birthdays />
 

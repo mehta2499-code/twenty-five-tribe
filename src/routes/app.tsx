@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { Toast } from "@/components/SocialUI";
 import { initLive } from "@/lib/live";
+import { syncPush } from "@/lib/push";
 import { clearError, clearNotice, useSocial } from "@/lib/social";
 
 export const Route = createFileRoute("/app")({
@@ -33,6 +34,11 @@ function AppLayout() {
       sub.subscription.unsubscribe();
     };
   }, [navigate]);
+
+  // Notifications already allowed on this device: keep it registered.
+  useEffect(() => {
+    if (s.mode === "live" && s.me) void syncPush();
+  }, [s.mode, s.me?.id]);
 
   // Signed in but no name yet: finish setting up first.
   useEffect(() => {

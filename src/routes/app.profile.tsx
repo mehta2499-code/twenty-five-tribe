@@ -1,4 +1,5 @@
 import { DeleteAccount } from "@/components/Safety";
+import { PushSetting } from "@/components/PushPrompt";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -196,6 +197,12 @@ function Profile() {
           </li>
         ))}
       </ul>
+
+      {live && (
+        <div className="px-5 mt-8">
+          <PushSetting />
+        </div>
+      )}
 
       <div className="px-5 mt-8">
         {live ? (

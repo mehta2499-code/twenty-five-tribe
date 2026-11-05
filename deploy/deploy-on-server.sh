@@ -40,6 +40,25 @@ rm -rf .output
 NITRO_PRESET=node-server bunx vite build
 test -f .output/server/index.mjs
 
+echo "==> Push notification keys"
+PUSH_ENV=/etc/twentyfive/push.env
+NEW_PUSH=0
+if [[ ! -f "$PUSH_ENV" ]]; then
+  mkdir -p /etc/twentyfive
+  read -r PUB PRIV < <(node -e "const c=require('crypto');const k=c.createECDH('prime256v1');k.generateKeys();let p=k.getPrivateKey();if(p.length<32)p=Buffer.concat([Buffer.alloc(32-p.length),p]);console.log(k.getPublicKey().toString('base64url')+' '+p.toString('base64url'))")
+  {
+    echo "VAPID_PUBLIC_KEY=$PUB"
+    echo "VAPID_PRIVATE_KEY=$PRIV"
+    echo "PUSH_SECRET=$(openssl rand -hex 24)"
+    echo "VAPID_SUBJECT=mailto:admin@example.com"
+  } > "$PUSH_ENV"
+  chmod 600 "$PUSH_ENV"
+  NEW_PUSH=1
+fi
+mkdir -p "/etc/systemd/system/$SERVICE.service.d"
+printf '[Service]\nEnvironmentFile=-%s\n' "$PUSH_ENV" > "/etc/systemd/system/$SERVICE.service.d/push.conf"
+systemctl daemon-reload
+
 echo "==> Switch to the new version"
 RELEASE="$APP_DIR/releases/$(date +%Y%m%d%H%M%S)-$(git rev-parse --short HEAD)"
 mkdir -p "$RELEASE"
@@ -55,6 +74,17 @@ for i in 1 2 3 4 5 6; do
   if [[ "$code" == "200" ]]; then
     IP=$(curl -fsS https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
     echo "25 is live: http://$IP (or your domain)"
+    if [[ "$NEW_PUSH" == "1" ]]; then
+      DOMAIN=$(grep -m1 -oP 'server_name \K[a-z0-9.-]+\.[a-z]{2,}' "/etc/nginx/sites-available/$SERVICE" 2>/dev/null || true)
+      if [[ -n "$DOMAIN" ]]; then PUSH_URL="https://$DOMAIN/api/push"; else PUSH_URL="http://$IP/api/push"; fi
+      SECRET=$(grep PUSH_SECRET "$PUSH_ENV" | cut -d= -f2)
+      echo ""
+      echo "==> ONE-TIME STEP for notifications. In Supabase → SQL Editor, run:"
+      echo ""
+      echo "    select public.set_push_config('$PUSH_URL', '$SECRET');"
+      echo ""
+      echo "    Keep that secret private. To see it again: sudo cat $PUSH_ENV"
+    fi
     exit 0
   fi
   sleep 3
