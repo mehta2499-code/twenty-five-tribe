@@ -101,7 +101,7 @@ function AppLayout() {
         <div className="flex flex-col items-center px-8 text-center">
           <AnimatedLogo height={230} />
           <p className="tagline-in display mt-6" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>
-            Only your people.
+            Everyone else is noise.
           </p>
           {!s.loading && s.error && (
             <>
