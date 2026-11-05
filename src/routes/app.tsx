@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/rea
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { Logo } from "@/components/Logo";
 import { Toast } from "@/components/SocialUI";
 import { initLive } from "@/lib/live";
 import { syncPush } from "@/lib/push";
@@ -74,9 +75,30 @@ function AppLayout() {
     return () => document.removeEventListener("visibilitychange", onHide);
   }, [navigate, signedIn]);
 
-  // Wait until we know you're signed in and your real 25 has loaded.
-  if (!signedIn || s.mode !== "live")
-    return <div className="min-h-screen bg-background" aria-busy="true" />;
+  // Wait until we know you're signed in and your real 25 has loaded, so the
+  // screen never shows placeholder people first.
+  if (!signedIn || s.mode !== "live" || s.loading || (!s.me && !s.needsProfile))
+    return (
+      <div
+        className="min-h-screen bg-background flex items-center justify-center"
+        aria-busy="true"
+        aria-label="Loading your 25"
+      >
+        <div className="flex flex-col items-center gap-5 px-8 text-center">
+          <span className="breathe">
+            <Logo height={72} />
+          </span>
+          {!s.loading && s.error && (
+            <>
+              <p className="text-cool text-sm">{s.error}</p>
+              <button onClick={() => window.location.reload()} className="btn-primary px-5">
+                Try again
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-background relative">

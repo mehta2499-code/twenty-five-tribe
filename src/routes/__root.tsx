@@ -77,7 +77,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "25" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      // Solid status bar: with "translucent", newer iOS blurs whatever scrolls under it.
+      { name: "apple-mobile-web-app-status-bar-style", content: "black" },
       { title: "25 — Your world. All 25 of them." },
       {
         name: "description",
