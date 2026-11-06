@@ -222,7 +222,7 @@ function Board({
     <svg
       viewBox="0 0 15 15"
       className="w-full rounded-2xl"
-      style={{ border: "2px solid var(--edge)", background: "#F6F3EA" }}
+      style={{ border: "var(--bd)", background: "#F6F3EA" }}
     >
       <defs>
         {(Object.keys(COLOR_HEX) as LudoColor[]).map((c) => (
@@ -255,7 +255,7 @@ function Board({
                 height={5.7}
                 rx={0.4}
                 fill="none"
-                stroke="#07060B"
+                stroke="#0B0A10"
                 strokeWidth={0.14}
                 strokeDasharray="0.5 0.3"
               >
@@ -288,8 +288,8 @@ function Board({
               <path
                 transform={`translate(${c + 0.5} ${r + 0.52}) scale(0.3)`}
                 d="M0,-1 L0.29,-0.4 L0.95,-0.31 L0.48,0.15 L0.59,0.81 L0,0.5 L-0.59,0.81 L-0.48,0.15 L-0.95,-0.31 L-0.29,-0.4 Z"
-                fill="#E8BE55"
-                stroke="#07060B"
+                fill="#F4C96B"
+                stroke="#0B0A10"
                 strokeWidth={0.12}
                 strokeLinejoin="round"
               />
@@ -332,7 +332,7 @@ function Board({
             onClick={() => canMove && onToken(t)}
           >
             {canMove && (
-              <circle r={0.5} fill="none" stroke="#07060B" strokeWidth={0.1}>
+              <circle r={0.5} fill="none" stroke="#0B0A10" strokeWidth={0.1}>
                 <animate
                   attributeName="r"
                   values="0.44;0.62;0.44"
@@ -348,8 +348,8 @@ function Board({
               </circle>
             )}
             {/* Chess-style pawn: wide base, tapered body, collar, round head */}
-            <ellipse cx={0.05} cy={0.4} rx={0.36} ry={0.09} fill="#07060B" opacity={0.25} />
-            <g stroke="#07060B" strokeWidth={0.06} strokeLinejoin="round">
+            <ellipse cx={0.05} cy={0.4} rx={0.36} ry={0.09} fill="#0B0A10" opacity={0.25} />
+            <g stroke="#0B0A10" strokeWidth={0.06} strokeLinejoin="round">
               <path
                 d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
                 fill={COLOR_HEX[pl.color]}
@@ -431,11 +431,11 @@ function Dice({
         height={92}
         rx={20}
         fill={color}
-        stroke="#07060B"
+        stroke="#0B0A10"
         strokeWidth={6}
       />
       {PIPS[face].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={9} fill="#07060B" />
+        <circle key={i} cx={x} cy={y} r={9} fill="#0B0A10" />
       ))}
     </svg>
   );
@@ -653,7 +653,7 @@ export function LudoTable({
           <span
             key={flash}
             className="display pop"
-            style={{ fontSize: 44, color: "#fff", textShadow: "3px 3px 0 #07060B" }}
+            style={{ fontSize: 44, color: "#fff", textShadow: "3px 3px 0 #0B0A10" }}
           >
             Captured!
           </span>
@@ -813,7 +813,7 @@ export function LudoLobby({
             style={{
               background: botCount === n ? "var(--lime)" : "var(--fill)",
               color: botCount === n ? "var(--on-accent)" : "var(--ink)",
-              border: "2px solid var(--edge)",
+              border: "var(--bd)",
             }}
           >
             {n}

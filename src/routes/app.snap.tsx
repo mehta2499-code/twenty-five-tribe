@@ -243,7 +243,7 @@ function SnapScreen() {
           style={{
             aspectRatio: "3 / 4",
             maxHeight: "56vh",
-            background: bg ?? "#07060B",
+            background: bg ?? "#0B0A10",
           }}
         >
           {!hasShot && !camError && (
@@ -266,7 +266,7 @@ function SnapScreen() {
                 style={{
                   background: "var(--lime)",
                   color: "var(--on-accent)",
-                  border: "2px solid var(--edge)",
+                  border: "var(--bd)",
                 }}
               >
                 <Camera size={34} aria-hidden="true" />

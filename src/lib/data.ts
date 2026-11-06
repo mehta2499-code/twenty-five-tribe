@@ -9,18 +9,7 @@ export type Friend = {
   daysQuiet: number;
 };
 
-const PALETTE = [
-  "#F7A8A0",
-  "#FFC4BC",
-  "#FFD9A8",
-  "#BFE9C9",
-  "#E8DEFF",
-  "#A8D4F0",
-  "#FFB8A8",
-  "#FFEAD0",
-  "#D6E8FF",
-  "#FFD0CC",
-];
+const PALETTE = ["#C1EF62", "#F15B91", "#77B9E8", "#F4C96B"];
 
 const NAMES = [
   "Rahul",

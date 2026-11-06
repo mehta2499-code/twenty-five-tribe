@@ -119,7 +119,7 @@ export function Reactable({
           className={`absolute -top-12 z-10 flex gap-1 rounded-full px-2 py-1.5 pop ${mine ? "right-0" : "left-0"}`}
           style={{
             background: "var(--surface)",
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
             boxShadow: "var(--pop)",
           }}
           role="menu"
@@ -559,7 +559,7 @@ export function GrowingInput({
       placeholder={placeholder}
       aria-label={placeholder}
       className="input flex-1 resize-none py-3 leading-snug"
-      style={{ borderRadius: 22, minHeight: 48, maxHeight: 128, overflowY: "auto" }}
+      style={{ borderRadius: 24, minHeight: 48, maxHeight: 128, overflowY: "auto" }}
       autoComplete="off"
     />
   );

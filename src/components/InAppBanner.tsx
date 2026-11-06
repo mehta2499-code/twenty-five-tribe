@@ -36,8 +36,8 @@ export function InAppBanner() {
         className="pointer-events-auto w-full max-w-md flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left banner-in"
         style={{
           background: "var(--surface)",
-          border: "2px solid var(--edge)",
-          boxShadow: "3px 3px 0 var(--edge), 0 12px 30px rgba(0,0,0,0.5)",
+          border: "var(--bd)",
+          boxShadow: "var(--pop), 0 12px 30px rgba(0,0,0,0.5)",
         }}
       >
         <Avatar src={b.avatar} initials={b.initials} color={b.color} size={40} />

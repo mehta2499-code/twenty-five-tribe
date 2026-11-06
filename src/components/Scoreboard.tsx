@@ -219,10 +219,10 @@ export function Scoreboard() {
                   <span
                     className="rounded-full"
                     style={{
-                      border: "3px solid var(--edge)",
+                      border: "var(--bd)",
                       boxShadow: first
-                        ? "0 0 0 4px var(--sun), 4px 4px 0 var(--edge)"
-                        : "3px 3px 0 var(--edge)",
+                        ? "0 0 0 4px var(--sun), var(--pop-lg)"
+                        : "var(--pop)",
                     }}
                   >
                     <Avatar
@@ -234,7 +234,7 @@ export function Scoreboard() {
                   </span>
                   <span
                     className="-mt-3 px-2.5 py-0.5 rounded-full font-extrabold tabular-nums text-[14px] relative"
-                    style={{ background: "var(--surface)", border: "2px solid var(--edge)" }}
+                    style={{ background: "var(--surface)", border: "var(--bd)" }}
                   >
                     {r.value}
                   </span>
@@ -336,7 +336,7 @@ export function Scoreboard() {
             style={{
               background: "var(--lime)",
               color: "var(--on-accent)",
-              border: "2px solid var(--edge)",
+              border: "var(--bd)",
               boxShadow: "var(--pop)",
             }}
           >
@@ -354,12 +354,12 @@ function RankRow({ row, tone, light }: { row: Row; tone: string; light?: boolean
   const me = row.id === "me";
   return (
     <li
-      className="relative flex items-center rounded-[22px] overflow-visible"
+      className="relative flex items-center rounded-[24px] overflow-visible"
       style={{
         background: tone,
         color: light ? "var(--ink)" : "var(--on-accent)",
-        border: me ? "3px solid var(--ink)" : "2px solid var(--edge)",
-        boxShadow: "4px 4px 0 var(--edge)",
+        border: me ? "3px solid var(--ink)" : "var(--bd)",
+        boxShadow: "var(--pop-lg)",
       }}
     >
       <span
@@ -369,7 +369,7 @@ function RankRow({ row, tone, light }: { row: Row; tone: string; light?: boolean
         #{row.rank}
       </span>
       <span className="py-2.5 pl-3">
-        <span className="block rounded-full" style={{ border: "2px solid var(--edge)" }}>
+        <span className="block rounded-full" style={{ border: "var(--bd)" }}>
           <Avatar src={p.avatar} initials={p.initials} color={p.color} size={52} />
         </span>
       </span>

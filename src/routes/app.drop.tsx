@@ -83,11 +83,11 @@ function DropScreen() {
       {phase !== "before" && !data.mine && (
         <section className="px-5">
           <div
-            className="rounded-[22px] p-4 text-center"
+            className="rounded-[24px] p-4 text-center"
             style={{
               background: phase === "now" ? "var(--lime)" : "var(--sun)",
               color: "var(--on-accent)",
-              border: "2px solid var(--edge)",
+              border: "var(--bd)",
               boxShadow: "var(--pop)",
             }}
           >
@@ -115,7 +115,7 @@ function DropScreen() {
 
           <div className="mt-4">
             {image ? (
-              <div className="relative rounded-3xl overflow-hidden" style={{ aspectRatio: "3 / 4", border: "2px solid var(--edge)" }}>
+              <div className="relative rounded-3xl overflow-hidden" style={{ aspectRatio: "3 / 4", border: "var(--bd)" }}>
                 <img src={image} alt="Your drop" className="absolute inset-0 w-full h-full object-cover" />
                 <button
                   onClick={() => setImage(null)}
@@ -133,7 +133,7 @@ function DropScreen() {
               >
                 <span
                   className="w-20 h-20 rounded-full flex items-center justify-center"
-                  style={{ background: "var(--lime)", color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+                  style={{ background: "var(--lime)", color: "var(--on-accent)", border: "var(--bd)" }}
                 >
                   <Camera size={34} />
                 </span>

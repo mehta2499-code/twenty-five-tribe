@@ -108,7 +108,7 @@ function Polls() {
               </div>
               <div
                 className="rounded-[24px] p-6 text-center"
-                style={{ background: TONES[qs.indexOf(current) % 4], color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "5px 5px 0 var(--edge)" }}
+                style={{ background: TONES[qs.indexOf(current) % 4], color: "var(--on-accent)", border: "var(--bd)", boxShadow: "5px 5px 0 var(--edge)" }}
               >
                 <p className="text-[13px] font-extrabold opacity-80">
                   Question {qs.indexOf(current) + 1} of {PER_DAY}
@@ -177,7 +177,7 @@ function Polls() {
                 <li
                   key={p.question}
                   className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: TONES[i % 4], color: "var(--on-accent)", border: "2px solid var(--edge)", boxShadow: "3px 3px 0 var(--edge)" }}
+                  style={{ background: TONES[i % 4], color: "var(--on-accent)", border: "var(--bd)", boxShadow: "var(--pop)" }}
                 >
                   <span className="flex-1 font-bold text-[15px] leading-snug">{p.question}</span>
                   <span className="text-right">

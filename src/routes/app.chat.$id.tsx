@@ -200,7 +200,7 @@ function ChatThread() {
                             background: mine ? "var(--blue-deep)" : "var(--surface)",
                             border: mine ? "1px solid transparent" : "1px solid var(--line)",
                             color: mine ? "var(--on-accent)" : "var(--ink)",
-                            borderRadius: 18,
+                            borderRadius: 20,
                             borderBottomRightRadius: mine ? 6 : 18,
                             borderBottomLeftRadius: mine ? 18 : 6,
                           }}

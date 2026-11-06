@@ -60,8 +60,8 @@ export function PlayingCard({
         height: h,
         borderRadius: Math.round(w * 0.14),
         background: "linear-gradient(180deg, #FFFFFF 0%, #F4F1EA 100%)",
-        border: "1.5px solid #07060B",
-        boxShadow: lifted ? "0 10px 18px -8px rgba(0,0,0,0.9)" : "2px 2px 0 #07060B",
+        border: "1.5px solid #0B0A10",
+        boxShadow: lifted ? "0 10px 18px -8px rgba(0,0,0,0.9)" : "2px 2px 0 #0B0A10",
         color,
         opacity: dim ? 0.42 : 1,
         filter: dim ? "saturate(0.6)" : undefined,
@@ -104,8 +104,8 @@ function CardBack({ w = 22, style }: { w?: number; style?: React.CSSProperties }
         width: w,
         height: Math.round(w * 1.42),
         borderRadius: Math.round(w * 0.16),
-        border: "1.5px solid #07060B",
-        background: "repeating-linear-gradient(45deg, #E0679A 0 4px, #C9558A 4px 8px)",
+        border: "1.5px solid #0B0A10",
+        background: "repeating-linear-gradient(45deg, #F15B91 0 4px, #C9558A 4px 8px)",
         boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.55)",
         ...style,
       }}
@@ -159,7 +159,7 @@ function Seat({
           style={{
             padding: 3,
             background: turn ? "var(--lime)" : "transparent",
-            boxShadow: turn ? "0 0 0 2px #07060B, 0 0 18px rgba(181,219,94,0.6)" : undefined,
+            boxShadow: turn ? "0 0 0 2px #0B0A10, 0 0 18px rgba(181,219,94,0.6)" : undefined,
           }}
         >
           <Avatar src={seat.avatar} initials={seat.initials} color={seat.color} size={42} />
@@ -167,7 +167,7 @@ function Seat({
         {state.dealer === index && (
           <span
             className="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold"
-            style={{ background: "var(--sun)", color: "#16121F", border: "1.5px solid #07060B" }}
+            style={{ background: "var(--sun)", color: "#17151F", border: "1.5px solid #0B0A10" }}
             title="Dealer"
           >
             D
@@ -196,8 +196,8 @@ function Seat({
         className="mt-0.5 rounded-full px-2 text-[11px] font-extrabold tabular-nums"
         style={{
           background: bid === null ? "rgba(7,6,11,0.55)" : made ? "var(--lime)" : "var(--sun)",
-          color: bid === null ? "#CBC5D8" : "#16121F",
-          border: "1.5px solid #07060B",
+          color: bid === null ? "#CBC5D8" : "#17151F",
+          border: "1.5px solid #0B0A10",
         }}
       >
         {bid === null
@@ -365,7 +365,7 @@ export function KachufulBoard({
                 "radial-gradient(ellipse at 50% 40%, #2E7A57 0%, #1F5A40 55%, #174632 100%)",
               border: "10px solid #3A2A22",
               boxShadow:
-                "0 0 0 2px #07060B, inset 0 0 0 2px rgba(0,0,0,0.35), inset 0 18px 40px rgba(0,0,0,0.35), 0 24px 40px -18px rgba(0,0,0,0.9)",
+                "0 0 0 2px #0B0A10, inset 0 0 0 2px rgba(0,0,0,0.35), inset 0 18px 40px rgba(0,0,0,0.35), 0 24px 40px -18px rgba(0,0,0,0.9)",
             }}
           >
             <span
@@ -419,7 +419,7 @@ export function KachufulBoard({
                   size="sm"
                   dim={lastWinner !== null && !winner}
                   style={
-                    winner ? { boxShadow: "0 0 0 3px var(--lime), 3px 3px 0 #07060B" } : undefined
+                    winner ? { boxShadow: "0 0 0 3px var(--lime), 3px 3px 0 #0B0A10" } : undefined
                   }
                 />
               </div>
@@ -643,7 +643,7 @@ const STEPS: { title: string; body: string; art: () => React.ReactNode }[] = [
         <PlayingCard
           card="S2"
           size="sm"
-          style={{ boxShadow: "0 0 0 3px var(--lime), 2px 2px 0 #07060B" }}
+          style={{ boxShadow: "0 0 0 3px var(--lime), 2px 2px 0 #0B0A10" }}
         />
         <span className="text-sm font-bold text-cool">← trump wins</span>
       </div>
@@ -656,7 +656,7 @@ const STEPS: { title: string; body: string; art: () => React.ReactNode }[] = [
       <div className="grid gap-1.5 text-sm font-bold">
         <span
           className="rounded-lg px-3 py-1.5"
-          style={{ background: "var(--lime)", color: "#16121F" }}
+          style={{ background: "var(--lime)", color: "#17151F" }}
         >
           Called 2, won 2 → +12
         </span>
@@ -699,7 +699,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
           className="rounded-2xl flex items-center justify-center py-6 px-3"
           style={{
             background: "radial-gradient(ellipse at 50% 40%, #2E7A57 0%, #1F5A40 70%)",
-            border: "2px solid #07060B",
+            border: "2px solid #0B0A10",
             minHeight: 150,
           }}
         >

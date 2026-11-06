@@ -85,16 +85,7 @@ type LikeRow = { post_id: string; user_id: string };
 type CommentRow = { id: string; post_id: string; author: string; body: string; created_at: string };
 type ScoreRow = { user_id: string; game: GameId; week: string; best: number };
 
-const COLOURS = [
-  "#2B8AC4",
-  "#1A5276",
-  "#D9534A",
-  "#17926F",
-  "#E0A21B",
-  "#1E6FA0",
-  "#7A5CC2",
-  "#C2571B",
-];
+const COLOURS = ["#C1EF62", "#F15B91", "#77B9E8", "#F4C96B"];
 const colourFor = (id: string) =>
   COLOURS[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % COLOURS.length];
 const initialsOf = (name: string) =>

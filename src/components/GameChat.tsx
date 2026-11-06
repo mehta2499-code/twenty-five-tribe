@@ -108,7 +108,7 @@ export function GameChat({
           style={{
             background: "var(--lime)",
             color: "var(--on-accent)",
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
             boxShadow: "var(--pop)",
           }}
         >
@@ -119,7 +119,7 @@ export function GameChat({
               style={{
                 background: "var(--pink)",
                 color: "var(--on-accent)",
-                border: "2px solid var(--edge)",
+                border: "var(--bd)",
               }}
             >
               {unread}
@@ -131,7 +131,7 @@ export function GameChat({
       {open && (
         <div
           className="fixed z-[60] inset-x-0 bottom-0 mx-auto max-w-md rounded-t-3xl flex flex-col"
-          style={{ background: "var(--surface)", border: "2px solid var(--edge)", height: "52vh" }}
+          style={{ background: "var(--surface)", border: "var(--bd)", height: "52vh" }}
         >
           <div className="flex items-center justify-between px-4 pt-3">
             <span className="font-bold text-cream">Game chat</span>

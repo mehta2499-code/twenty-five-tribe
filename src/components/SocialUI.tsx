@@ -432,7 +432,7 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
               lineHeight: 1.3,
               textShadow: "0 2px 12px rgba(0,0,0,0.35)",
               background: snap.image ? "rgba(0,0,0,0.45)" : "transparent",
-              borderRadius: 14,
+              borderRadius: 16,
             }}
           >
             {snap.caption}
@@ -486,8 +486,8 @@ export function Toast({ text, onDone }: { text: string; onDone: () => void }) {
         style={{
           background: "var(--surface)",
           color: "var(--ink)",
-          border: "2px solid var(--edge)",
-          boxShadow: "3px 3px 0 var(--edge), 0 10px 30px rgba(0,0,0,0.45)",
+          border: "var(--bd)",
+          boxShadow: "var(--pop), 0 10px 30px rgba(0,0,0,0.45)",
         }}
       >
         {text}

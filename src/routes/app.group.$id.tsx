@@ -112,7 +112,7 @@ function GroupThread() {
           >
             <span
               className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0"
-              style={{ background: "var(--fill)", border: "2px solid var(--edge)" }}
+              style={{ background: "var(--fill)", border: "var(--bd)" }}
             >
               {g.emoji}
             </span>
@@ -174,7 +174,7 @@ function GroupThread() {
                                 ? "2px solid var(--sun)"
                                 : "1px solid var(--line)",
                             color: mine ? "var(--on-accent)" : "var(--ink)",
-                            borderRadius: 18,
+                            borderRadius: 20,
                             borderBottomRightRadius: mine ? 6 : 18,
                             borderBottomLeftRadius: mine ? 18 : 6,
                           }}
@@ -248,8 +248,8 @@ function GroupThread() {
               className="absolute left-3 right-3 bottom-full mb-2 rounded-2xl overflow-hidden py-1 z-10"
               style={{
                 background: "var(--surface)",
-                border: "2px solid var(--edge)",
-                boxShadow: "3px 3px 0 var(--edge)",
+                border: "var(--bd)",
+                boxShadow: "var(--pop)",
               }}
               role="listbox"
               aria-label="Mention someone"

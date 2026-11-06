@@ -51,7 +51,7 @@ function CardScreen() {
         </div>
         <Cake size={48} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--pink)" }} />
         <div className="flex justify-center mt-3">
-          <span className="rounded-full" style={{ border: "2px solid var(--edge)", boxShadow: "0 0 0 4px var(--pink)" }}>
+          <span className="rounded-full" style={{ border: "var(--bd)", boxShadow: "0 0 0 4px var(--pink)" }}>
             <Avatar src={person?.avatar || undefined} initials={person?.initials ?? "?"} size={84} />
           </span>
         </div>
@@ -123,8 +123,8 @@ function CardScreen() {
                 style={{
                   background: TONES[i % TONES.length],
                   color: "var(--on-accent)",
-                  border: "2px solid var(--edge)",
-                  boxShadow: "3px 3px 0 var(--edge)",
+                  border: "var(--bd)",
+                  boxShadow: "var(--pop)",
                   transform: `rotate(${i % 2 ? 2 : -2}deg)`,
                 }}
               >

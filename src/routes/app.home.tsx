@@ -110,9 +110,9 @@ function Table({
           style={{
             inset: "27%",
             background:
-              "radial-gradient(circle at 35% 30%, rgba(181,219,94,0.22), transparent 60%), #1F1B2B",
-            border: "2px solid var(--edge)",
-            boxShadow: "5px 5px 0 var(--edge)",
+              "radial-gradient(circle at 35% 30%, rgba(181,219,94,0.22), transparent 60%), #2B2736",
+            border: "var(--bd)",
+            boxShadow: "var(--pop-lg)",
           }}
         >
           <div
@@ -138,8 +138,8 @@ function Table({
                 height: 52,
                 background: "var(--lime)",
                 color: "var(--on-accent)",
-                border: "2px solid var(--edge)",
-                boxShadow: "3px 3px 0 var(--edge)",
+                border: "var(--bd)",
+                boxShadow: "var(--pop)",
               }}
             >
               <Dices size={28} strokeWidth={2.2} aria-hidden="true" />
@@ -178,12 +178,12 @@ function Table({
               <span
                 className="rounded-full transition-transform duration-150"
                 style={{
-                  border: "2px solid var(--edge)",
+                  border: "var(--bd)",
                   boxShadow: lit
                     ? "0 0 0 4px var(--lime), 0 0 28px rgba(181,219,94,0.8)"
                     : f.postedToday
                       ? "0 0 0 3px var(--pink)"
-                      : "2px 2px 0 var(--edge)",
+                      : "var(--pop-sm)",
                   transform: lit ? "scale(1.18)" : "scale(1)",
                 }}
               >
@@ -422,7 +422,7 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
         <div className="mt-4 flex justify-center">
           <span
             className="rounded-full"
-            style={{ border: "2px solid var(--edge)", boxShadow: "0 0 0 4px var(--lime)" }}
+            style={{ border: "var(--bd)", boxShadow: "0 0 0 4px var(--lime)" }}
           >
             <Avatar src={friend.avatar} initials={friend.initials} color={friend.color} size={92} />
           </span>
@@ -537,7 +537,7 @@ function TodayTiles() {
         style={{
           background: live ? "var(--lime)" : "var(--surface)",
           color: live ? "var(--on-accent)" : "var(--ink)",
-          border: "2px solid var(--edge)",
+          border: "var(--bd)",
           boxShadow: "var(--pop)",
         }}
       >
@@ -559,7 +559,7 @@ function TodayTiles() {
         style={{
           background: voted !== null && voted < 5 ? "var(--pink)" : "var(--surface)",
           color: voted !== null && voted < 5 ? "var(--on-accent)" : "var(--ink)",
-          border: "2px solid var(--edge)",
+          border: "var(--bd)",
           boxShadow: "var(--pop)",
         }}
       >
@@ -599,7 +599,7 @@ function Birthdays() {
           style={{
             background: "var(--pink)",
             color: "var(--on-accent)",
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
             boxShadow: "var(--pop)",
           }}
         >
@@ -623,7 +623,7 @@ function Birthdays() {
           style={{
             background: "var(--sun)",
             color: "var(--on-accent)",
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
             boxShadow: "var(--pop)",
           }}
         >
@@ -665,7 +665,7 @@ function ActivityBell() {
       className="relative w-11 h-11 rounded-full flex items-center justify-center"
       style={{
         background: "var(--fill)",
-        border: "2px solid var(--edge)",
+        border: "var(--bd)",
         boxShadow: "var(--pop)",
       }}
     >
@@ -676,7 +676,7 @@ function ActivityBell() {
           style={{
             background: "var(--pink)",
             color: "var(--on-accent)",
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
           }}
         >
           {n > 9 ? "9+" : n}
@@ -756,7 +756,7 @@ function Home() {
               to="/app/profile"
               aria-label="Your profile"
               className="rounded-full"
-              style={{ border: "2px solid var(--edge)", boxShadow: "var(--pop)" }}
+              style={{ border: "var(--bd)", boxShadow: "var(--pop)" }}
             >
               <Avatar
                 src={s.me ? s.me.avatar : ME.avatar}

@@ -170,12 +170,12 @@ function GameTile({
   return (
     <button
       onClick={onClick}
-      className={`rounded-[22px] p-4 text-left flex flex-col active:scale-95 transition-transform ${wide ? "col-span-2" : ""}`}
+      className={`rounded-[24px] p-4 text-left flex flex-col active:scale-95 transition-transform ${wide ? "col-span-2" : ""}`}
       style={{
         background: tone,
         color: light ? "var(--ink)" : "var(--on-accent)",
-        border: "2px solid var(--edge)",
-        boxShadow: "4px 4px 0 var(--edge)",
+        border: "var(--bd)",
+        boxShadow: "var(--pop-lg)",
         transform: `rotate(${tilt}deg)`,
         minHeight: 178,
       }}
@@ -199,7 +199,7 @@ function GameTile({
           style={{
             background: light ? "var(--lime)" : "rgba(255,255,255,0.45)",
             color: "var(--on-accent)",
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
             transform: "rotate(-6deg)",
           }}
           aria-hidden="true"
@@ -265,12 +265,12 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
     return (
       <button
         onClick={spin}
-        className="col-span-2 rounded-[22px] p-4 text-left flex flex-col active:scale-[0.98] transition-transform relative overflow-hidden"
+        className="col-span-2 rounded-[24px] p-4 text-left flex flex-col active:scale-[0.98] transition-transform relative overflow-hidden"
         style={{
-          background: "var(--edge)",
-          color: "#fff",
-          border: "2px solid var(--lime)",
-          boxShadow: "4px 4px 0 var(--lime)",
+          background: "var(--surface)",
+          color: "var(--ink)",
+          border: "1.5px solid var(--lime)",
+          boxShadow: "0 4px 0 rgba(193, 239, 98, 0.35), var(--soft)",
           minHeight: 178,
         }}
       >
@@ -391,7 +391,7 @@ function Games() {
               onPlay={() => setDaily(true)}
             />
             <GameTile
-              tone="#1F1B2B"
+              tone="#2B2736"
               light
               Icon={Spade}
               art="kachuful"

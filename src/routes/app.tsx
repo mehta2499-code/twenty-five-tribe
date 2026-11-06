@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { InAppBanner } from "@/components/InAppBanner";
@@ -19,6 +19,22 @@ function AppLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const s = useSocial();
+
+  // Tab change: the page settles in with a short slide (no fade, no remount, so no flash).
+  const columnRef = useRef<HTMLDivElement>(null);
+  const tab = pathname.split("/")[2] ?? "";
+  const firstTab = useRef(true);
+  useEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false;
+      return;
+    }
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    columnRef.current?.animate(
+      [{ transform: "translateY(6px)" }, { transform: "none" }],
+      { duration: 200, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)" },
+    );
+  }, [tab]);
 
   // The app is for signed-in people only: no demo friends. Not signed in → sign-in screen.
   const [signedIn, setSignedIn] = useState(false);
@@ -142,7 +158,7 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <div className="mx-auto max-w-md pb-32 relative app-column">
+      <div ref={columnRef} className="mx-auto max-w-md pb-32 relative app-column">
         <Outlet />
       </div>
       <BottomNav />

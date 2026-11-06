@@ -64,7 +64,7 @@ function GroupsSection() {
                 >
                   <span
                     className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0"
-                    style={{ background: "var(--fill)", border: "2px solid var(--edge)" }}
+                    style={{ background: "var(--fill)", border: "var(--bd)" }}
                   >
                     {g.emoji}
                   </span>
@@ -87,8 +87,8 @@ function GroupsSection() {
                     )}
                     {n > 0 && (
                       <span
-                        className="inline-flex min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold items-center justify-center mt-0.5"
-                        style={{ background: "var(--lime)", color: "var(--on-accent)" }}
+                        className="pop inline-flex min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold items-center justify-center mt-0.5"
+                        style={{ background: "var(--pink)", color: "var(--on-accent)" }}
                       >
                         {n}
                       </span>
@@ -111,7 +111,7 @@ function GroupsSection() {
                 className="w-11 h-11 rounded-full text-2xl flex items-center justify-center"
                 style={{
                   background: emoji === e ? "var(--lime)" : "var(--fill)",
-                  border: "2px solid var(--edge)",
+                  border: "var(--bd)",
                 }}
               >
                 {e}
@@ -363,15 +363,15 @@ function Chats() {
                     <div className="flex flex-col items-end gap-1.5 shrink-0 self-start pt-1">
                       <span
                         className="meta tabular-nums"
-                        style={{ fontSize: 12, color: unread ? "var(--blue-deep)" : undefined }}
+                        style={{ fontSize: 12, color: unread ? "var(--pink)" : undefined }}
                       >
                         {last ? timeAgo(last.at) : ""}
                       </span>
                       {unread > 0 && (
                         <span
-                          className="min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center tabular-nums"
+                          className="pop min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center tabular-nums"
                           style={{
-                            background: "var(--blue-deep)",
+                            background: "var(--pink)",
                             color: "var(--on-accent)",
                             fontSize: 12,
                             fontWeight: 700,

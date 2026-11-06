@@ -207,11 +207,11 @@ export function WordBoard({
                   className={`aspect-square rounded-xl flex items-center justify-center display uppercase ${marks ? "pop" : ""}`}
                   style={{
                     fontSize: 26,
-                    border: "2px solid var(--edge)",
+                    border: "var(--bd)",
                     background: marks ? TONE[marks[i]] : word[i] ? "var(--fill)" : "transparent",
                     color: marks && marks[i] !== "miss" ? "var(--on-accent)" : "var(--ink)",
                     animationDelay: marks ? `${i * 70}ms` : undefined,
-                    boxShadow: word[i] && !marks ? "2px 2px 0 var(--edge)" : "none",
+                    boxShadow: word[i] && !marks ? "var(--pop-sm)" : "none",
                   }}
                 >
                   {word[i] ?? ""}
@@ -238,7 +238,7 @@ export function WordBoard({
                       flex: key.length > 1 ? 1.6 : 1,
                       maxWidth: key.length > 1 ? 60 : 36,
                       fontSize: key === "enter" ? 11 : 15,
-                      border: "2px solid var(--edge)",
+                      border: "var(--bd)",
                       background: m ? TONE[m] : "var(--surface)",
                       color: m && m !== "miss" ? "var(--on-accent)" : m === "miss" ? "var(--ink-3)" : "var(--ink)",
                     }}

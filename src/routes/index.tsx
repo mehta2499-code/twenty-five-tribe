@@ -21,11 +21,11 @@ export const Route = createFileRoute("/")({
 const C = {
   blue: "#121019",
   blueDeep: "#1A1626",
-  navy: "#16121F",
-  coral: "#B5DB5E",
+  navy: "#17151F",
+  coral: "#C1EF62",
 };
 
-const serif = { fontFamily: "'Bricolage Grotesque', system-ui, sans-serif" };
+const serif = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
 const sans = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
 
 // ----- Reveal on scroll -----
@@ -117,7 +117,7 @@ function Landing() {
           0%, 100% { transform: translateY(0); opacity: 0.7; }
           50%      { transform: translateY(8px); opacity: 1; }
         }
-        .h-serif { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 800; font-style: normal !important; letter-spacing: -0.03em; }
+        .h-serif { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-weight: 800; font-style: normal !important; letter-spacing: -0.03em; }
         .glass {
           background: rgba(255,255,255,0.08);
           border: 1px solid rgba(255,255,255,0.16);
@@ -183,8 +183,8 @@ function Landing() {
             style={{
               background: C.coral,
               color: C.navy,
-              border: "2px solid #07060B",
-              boxShadow: "3px 3px 0 #07060B",
+              border: "2px solid #0B0A10",
+              boxShadow: "3px 3px 0 #0B0A10",
               transform: "rotate(-3deg)",
             }}
           >
@@ -198,8 +198,8 @@ function Landing() {
               style={{
                 background: "var(--lime)",
                 color: "var(--on-dark-fill)",
-                border: "2px solid #07060B",
-                boxShadow: "4px 4px 0 #07060B",
+                border: "2px solid #0B0A10",
+                boxShadow: "4px 4px 0 #0B0A10",
               }}
             >
               Claim your 25
@@ -431,8 +431,8 @@ function Landing() {
                 style={{
                   background: "var(--lime)",
                   color: "var(--on-dark-fill)",
-                  border: "2px solid #07060B",
-                  boxShadow: "4px 4px 0 #07060B",
+                  border: "2px solid #0B0A10",
+                  boxShadow: "4px 4px 0 #0B0A10",
                 }}
               >
                 Claim your 25
@@ -486,7 +486,7 @@ function InstallSection() {
                   <li key={s.n} className="flex gap-4">
                     <span
                       className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-extrabold"
-                      style={{ background: C.coral, color: C.navy, border: "2px solid #07060B" }}
+                      style={{ background: C.coral, color: C.navy, border: "2px solid #0B0A10" }}
                     >
                       {s.n}
                     </span>
@@ -507,8 +507,8 @@ function InstallSection() {
                 style={{
                   background: C.coral,
                   color: C.navy,
-                  border: "2px solid #07060B",
-                  boxShadow: "3px 3px 0 #07060B",
+                  border: "2px solid #0B0A10",
+                  boxShadow: "3px 3px 0 #0B0A10",
                   transform: "rotate(-3deg)",
                 }}
               >

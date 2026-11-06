@@ -28,14 +28,16 @@ export function Avatar({
   const showImg = !!src && failed !== src;
   const inner = (
     <div
-      className="relative rounded-full overflow-hidden flex items-center justify-center font-semibold text-white shrink-0"
+      className="relative rounded-full overflow-hidden flex items-center justify-center font-bold shrink-0"
       style={{
         width: size,
         height: size,
         background: showImg
           ? "var(--bg-surface)"
-          : `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #000))`,
+          : `linear-gradient(145deg, color-mix(in oklab, ${color} 88%, #fff), color-mix(in oklab, ${color} 78%, #000))`,
+        color: showImg ? undefined : "var(--on-dark-fill)",
         fontSize: size * 0.36,
+        transition: "opacity 200ms var(--ease)",
       }}
     >
       {showImg ? (
@@ -44,7 +46,7 @@ export function Avatar({
           alt={initials}
           loading="lazy"
           draggable={false}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover avatar-img"
           ref={imgRef}
           onError={() => setFailed(src ?? null)}
         />

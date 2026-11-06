@@ -56,10 +56,10 @@ export const COLORS_FOR: Record<number, LudoColor[]> = {
 };
 
 export const COLOR_HEX: Record<LudoColor, string> = {
-  red: "#E5486F",
-  green: "#8FD05A",
-  yellow: "#E8BE55",
-  blue: "#63B8E6",
+  red: "#F15B91",
+  green: "#C1EF62",
+  yellow: "#F4C96B",
+  blue: "#77B9E8",
 };
 
 /** Square on the shared loop, or null when in base / home column / home. */

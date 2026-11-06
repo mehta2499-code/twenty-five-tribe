@@ -237,7 +237,7 @@ function TapRush({ onFinish, onClose }: RoundProps) {
               height: 64,
               transform: "translate(-50%,-50%)",
               background: "radial-gradient(circle, #fff 0%, var(--lime) 45%, #6E9A2A 100%)",
-              border: "2px solid var(--edge)",
+              border: "var(--bd)",
             }}
           />
         </div>
@@ -310,10 +310,10 @@ function QuickMath({ onFinish, onClose }: RoundProps) {
 
 // ---------- Colour Clash ----------
 const CLASH_COLOURS = [
-  { name: "Red", value: "#E5486F" },
-  { name: "Blue", value: "#63B8E6" },
-  { name: "Yellow", value: "#E8BE55" },
-  { name: "Green", value: "#8FD05A" },
+  { name: "Red", value: "#F15B91" },
+  { name: "Blue", value: "#77B9E8" },
+  { name: "Yellow", value: "#F4C96B" },
+  { name: "Green", value: "#C1EF62" },
 ];
 
 function clashRound() {
@@ -436,7 +436,7 @@ function PairUp({ onFinish, onClose }: RoundProps) {
                 aria-label={shown ? c.face : "Hidden card"}
                 className="aspect-square rounded-2xl flex items-center justify-center"
                 style={{
-                  border: "2px solid var(--edge)",
+                  border: "var(--bd)",
                   boxShadow: done ? "none" : "var(--pop)",
                   background: shown ? (done ? "var(--fill)" : "var(--sun)") : "var(--fill-2)",
                   opacity: done ? 0.55 : 1,
@@ -603,7 +603,7 @@ function Pattern({ onFinish, onClose }: RoundProps) {
               className="aspect-square rounded-3xl transition-all duration-100"
               style={{
                 background: pad.tone,
-                border: "2px solid var(--edge)",
+                border: "var(--bd)",
                 boxShadow: lit === i ? `0 0 0 4px #fff, 0 0 34px ${pad.tone}` : "var(--pop)",
                 opacity: lit === i ? 1 : 0.45,
                 transform: lit === i ? "scale(1.04)" : "scale(1)",
@@ -692,7 +692,7 @@ function Reflex({ onFinish, onClose }: RoundProps) {
         className="flex-1 mt-6 rounded-3xl flex items-center justify-center px-6 text-center select-none"
         style={{
           background: bg,
-          border: "2px solid var(--edge)",
+          border: "var(--bd)",
           boxShadow: "var(--pop)",
           color: phase === "go" || phase === "early" ? "var(--on-accent)" : "var(--ink)",
           transition: "background-color 60ms",
@@ -789,7 +789,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
           key={i}
           className="w-4 h-4 rounded-full"
           style={{
-            border: "2px solid var(--edge)",
+            border: "var(--bd)",
             background: i < tries.length ? "var(--lime)" : "var(--fill-2)",
           }}
         />
@@ -813,7 +813,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <span
               className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl"
-              style={{ background: g.tone, border: "2px solid var(--edge)", boxShadow: "var(--pop)", transform: "rotate(-4deg)" }}
+              style={{ background: g.tone, border: "var(--bd)", boxShadow: "var(--pop)", transform: "rotate(-4deg)" }}
             >
               <GameArt kind={game} size={72} />
             </span>

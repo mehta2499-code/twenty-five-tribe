@@ -395,7 +395,7 @@ export function TriviaDuel({
                       ? "var(--fill-2)"
                       : "var(--fill)",
                 color: isRight || myWrong ? "var(--on-accent)" : "var(--ink)",
-                border: "2px solid var(--edge)",
+                border: "var(--bd)",
               }}
             >
               {opt}
@@ -449,7 +449,7 @@ function Side({
             style={{
               background: "var(--lime)",
               color: "var(--on-accent)",
-              border: "2px solid var(--edge)",
+              border: "var(--bd)",
             }}
           >
             <Check size={12} strokeWidth={3} />

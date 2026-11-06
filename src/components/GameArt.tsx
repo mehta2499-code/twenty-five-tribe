@@ -1,5 +1,5 @@
 /** Little coloured illustrations for the game tiles (sticker style: dark outline). */
-const EDGE = "#07060B";
+const EDGE = "#0B0A10";
 
 export type ArtKind =
   | "kachuful"
@@ -49,8 +49,8 @@ function Cards() {
       </g>
       <g transform="rotate(14 32 40)">
         <rect x="24" y="10" width="28" height="40" rx="5" fill="#FFF8EC" stroke={EDGE} strokeWidth="2.5" />
-        <path d="M38 40c-6-4.5-9-8-9-11.5a4.5 4.5 0 0 1 9-1.5 4.5 4.5 0 0 1 9 1.5c0 3.5-3 7-9 11.5z" fill="#E5486F" stroke={EDGE} strokeWidth="1.5" />
-        <text x="29" y="19" fontSize="8" fontWeight="800" fill="#E5486F" fontFamily="system-ui">A</text>
+        <path d="M38 40c-6-4.5-9-8-9-11.5a4.5 4.5 0 0 1 9-1.5 4.5 4.5 0 0 1 9 1.5c0 3.5-3 7-9 11.5z" fill="#F15B91" stroke={EDGE} strokeWidth="1.5" />
+        <text x="29" y="19" fontSize="8" fontWeight="800" fill="#F15B91" fontFamily="system-ui">A</text>
       </g>
     </g>
   );
@@ -59,8 +59,8 @@ function Cards() {
 function Bolt() {
   return (
     <g strokeLinejoin="round">
-      <circle cx="32" cy="32" r="26" fill="#6F57F0" stroke={EDGE} strokeWidth="2.5" />
-      <path d="M36 8 16 36h13l-4 20 22-30H33z" fill="#FFD84D" stroke={EDGE} strokeWidth="2.5" />
+      <circle cx="32" cy="32" r="26" fill="#F15B91" stroke={EDGE} strokeWidth="2.5" />
+      <path d="M36 8 16 36h13l-4 20 22-30H33z" fill="#F4C96B" stroke={EDGE} strokeWidth="2.5" />
       <circle cx="47" cy="16" r="3" fill="#fff" />
     </g>
   );
@@ -73,11 +73,11 @@ function Die() {
   return (
     <g strokeLinejoin="round" transform="rotate(-10 32 32)">
       <rect x="9" y="9" width="46" height="46" rx="11" fill="#FFF8EC" stroke={EDGE} strokeWidth="2.5" />
-      {pip(21, 21, "#E5486F")}
-      {pip(43, 21, "#8FD05A")}
+      {pip(21, 21, "#F15B91")}
+      {pip(43, 21, "#C1EF62")}
       {pip(32, 32, EDGE)}
-      {pip(21, 43, "#63B8E6")}
-      {pip(43, 43, "#E8BE55")}
+      {pip(21, 43, "#77B9E8")}
+      {pip(43, 43, "#F4C96B")}
     </g>
   );
 }
@@ -92,10 +92,8 @@ function Tiles() {
         textAnchor="middle"
         fontSize="15"
         fontWeight="800"
-        fill="#fff"
+        fill={EDGE}
         fontFamily="system-ui"
-        stroke={EDGE}
-        strokeWidth="0.6"
       >
         {ch}
       </text>
@@ -103,9 +101,9 @@ function Tiles() {
   );
   return (
     <g strokeLinejoin="round">
-      {tile(4, 22, "#4CC79E", "W", -8)}
-      {tile(21, 14, "#E8BE55", "O", 4)}
-      {tile(38, 22, "#4CC79E", "W", 10)}
+      {tile(4, 22, "#C1EF62", "W", -8)}
+      {tile(21, 14, "#F4C96B", "O", 4)}
+      {tile(38, 22, "#C1EF62", "W", 10)}
     </g>
   );
 }
@@ -113,21 +111,21 @@ function Tiles() {
 function Mystery() {
   return (
     <g strokeLinejoin="round">
-      <rect x="8" y="8" width="48" height="48" rx="12" fill="#E0679A" stroke={EDGE} strokeWidth="2.5" transform="rotate(-8 32 32)" />
+      <rect x="8" y="8" width="48" height="48" rx="12" fill="#F15B91" stroke={EDGE} strokeWidth="2.5" transform="rotate(-8 32 32)" />
       <text
         x="32"
         y="45"
         textAnchor="middle"
         fontSize="38"
         fontWeight="900"
-        fill="#FFD84D"
+        fill="#F4C96B"
         stroke={EDGE}
         strokeWidth="2"
         fontFamily="system-ui"
       >
         ?
       </text>
-      <path d="M52 6l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#FFD84D" stroke={EDGE} strokeWidth="1.5" />
+      <path d="M52 6l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#F4C96B" stroke={EDGE} strokeWidth="1.5" />
     </g>
   );
 }
@@ -135,11 +133,11 @@ function Mystery() {
 function Target() {
   return (
     <g strokeLinejoin="round">
-      <circle cx="30" cy="34" r="24" fill="#E5486F" stroke={EDGE} strokeWidth="2.5" />
+      <circle cx="30" cy="34" r="24" fill="#F15B91" stroke={EDGE} strokeWidth="2.5" />
       <circle cx="30" cy="34" r="16" fill="#FFF8EC" stroke={EDGE} strokeWidth="2" />
-      <circle cx="30" cy="34" r="8" fill="#E5486F" stroke={EDGE} strokeWidth="2" />
+      <circle cx="30" cy="34" r="8" fill="#F15B91" stroke={EDGE} strokeWidth="2" />
       <path d="M30 34 52 12" stroke={EDGE} strokeWidth="3.5" strokeLinecap="round" />
-      <path d="M50 6l2 6 6 2-5 4-5-1-1-5z" fill="#FFD84D" stroke={EDGE} strokeWidth="1.8" />
+      <path d="M50 6l2 6 6 2-5 4-5-1-1-5z" fill="#F4C96B" stroke={EDGE} strokeWidth="1.8" />
     </g>
   );
 }
@@ -155,10 +153,10 @@ function MathTiles() {
   );
   return (
     <g strokeLinejoin="round">
-      {t(6, 6, "#FFD84D", "+", -6)}
-      {t(34, 6, "#63B8E6", "−", 5)}
-      {t(6, 34, "#8FD05A", "×", 4)}
-      {t(34, 34, "#E0679A", "÷", -5)}
+      {t(6, 6, "#F4C96B", "+", -6)}
+      {t(34, 6, "#77B9E8", "−", 5)}
+      {t(6, 34, "#C1EF62", "×", 4)}
+      {t(34, 34, "#F15B91", "÷", -5)}
     </g>
   );
 }
@@ -172,11 +170,11 @@ function PaletteArt() {
         stroke={EDGE}
         strokeWidth="2.5"
       />
-      <circle cx="19" cy="24" r="5" fill="#E5486F" stroke={EDGE} strokeWidth="1.5" />
-      <circle cx="31" cy="16" r="5" fill="#FFD84D" stroke={EDGE} strokeWidth="1.5" />
-      <circle cx="44" cy="20" r="5" fill="#63B8E6" stroke={EDGE} strokeWidth="1.5" />
-      <circle cx="17" cy="38" r="5" fill="#8FD05A" stroke={EDGE} strokeWidth="1.5" />
-      <circle cx="48" cy="33" r="4" fill="#6F57F0" stroke={EDGE} strokeWidth="1.5" />
+      <circle cx="19" cy="24" r="5" fill="#F15B91" stroke={EDGE} strokeWidth="1.5" />
+      <circle cx="31" cy="16" r="5" fill="#F4C96B" stroke={EDGE} strokeWidth="1.5" />
+      <circle cx="44" cy="20" r="5" fill="#77B9E8" stroke={EDGE} strokeWidth="1.5" />
+      <circle cx="17" cy="38" r="5" fill="#C1EF62" stroke={EDGE} strokeWidth="1.5" />
+      <circle cx="48" cy="33" r="4" fill="#77B9E8" stroke={EDGE} strokeWidth="1.5" />
     </g>
   );
 }
@@ -186,12 +184,12 @@ function Pairs() {
   return (
     <g strokeLinejoin="round">
       <g transform="rotate(-12 20 34)">
-        <rect x="6" y="14" width="28" height="38" rx="6" fill="#63B8E6" stroke={EDGE} strokeWidth="2.5" />
-        <path d={star} transform="translate(20 33) scale(9)" fill="#FFD84D" stroke={EDGE} strokeWidth="0.2" />
+        <rect x="6" y="14" width="28" height="38" rx="6" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" />
+        <path d={star} transform="translate(20 33) scale(9)" fill="#F4C96B" stroke={EDGE} strokeWidth="0.2" />
       </g>
       <g transform="rotate(12 44 34)">
-        <rect x="30" y="14" width="28" height="38" rx="6" fill="#63B8E6" stroke={EDGE} strokeWidth="2.5" />
-        <path d={star} transform="translate(44 33) scale(9)" fill="#FFD84D" stroke={EDGE} strokeWidth="0.2" />
+        <rect x="30" y="14" width="28" height="38" rx="6" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" />
+        <path d={star} transform="translate(44 33) scale(9)" fill="#F4C96B" stroke={EDGE} strokeWidth="0.2" />
       </g>
     </g>
   );
@@ -208,7 +206,7 @@ function OddOne() {
           cx={14 + c * 18}
           cy={14 + r * 18}
           r={odd ? 8 : 7}
-          fill={odd ? "#E5486F" : "#FFD84D"}
+          fill={odd ? "#F15B91" : "#F4C96B"}
           stroke={EDGE}
           strokeWidth="2"
         />,
@@ -216,7 +214,7 @@ function OddOne() {
     }
   return (
     <g strokeLinejoin="round">
-      <rect x="2" y="2" width="60" height="60" rx="12" fill="#6F57F0" stroke={EDGE} strokeWidth="2.5" />
+      <rect x="2" y="2" width="60" height="60" rx="12" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" />
       {cells}
     </g>
   );
@@ -225,10 +223,10 @@ function OddOne() {
 function Simon() {
   return (
     <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
-      <path d="M32 32V6A26 26 0 0 0 6 32z" fill="#8FD05A" />
-      <path d="M32 32V6a26 26 0 0 1 26 26z" fill="#E5486F" />
-      <path d="M32 32h26a26 26 0 0 1-26 26z" fill="#63B8E6" />
-      <path d="M32 32v26A26 26 0 0 1 6 32z" fill="#FFD84D" />
+      <path d="M32 32V6A26 26 0 0 0 6 32z" fill="#C1EF62" />
+      <path d="M32 32V6a26 26 0 0 1 26 26z" fill="#F15B91" />
+      <path d="M32 32h26a26 26 0 0 1-26 26z" fill="#77B9E8" />
+      <path d="M32 32v26A26 26 0 0 1 6 32z" fill="#F4C96B" />
       <circle cx="32" cy="32" r="8" fill="#1E1A28" />
     </g>
   );
@@ -237,11 +235,11 @@ function Simon() {
 function Stopwatch() {
   return (
     <g strokeLinejoin="round">
-      <rect x="27" y="3" width="10" height="7" rx="2" fill="#E5486F" stroke={EDGE} strokeWidth="2" />
-      <circle cx="32" cy="36" r="24" fill="#FFD84D" stroke={EDGE} strokeWidth="2.5" />
+      <rect x="27" y="3" width="10" height="7" rx="2" fill="#F15B91" stroke={EDGE} strokeWidth="2" />
+      <circle cx="32" cy="36" r="24" fill="#F4C96B" stroke={EDGE} strokeWidth="2.5" />
       <circle cx="32" cy="36" r="17" fill="#FFF8EC" stroke={EDGE} strokeWidth="2" />
       <path d="M32 36V24" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
-      <path d="M32 36l8 5" stroke="#E5486F" strokeWidth="3" strokeLinecap="round" />
+      <path d="M32 36l8 5" stroke="#F15B91" strokeWidth="3" strokeLinecap="round" />
       <circle cx="32" cy="36" r="2.5" fill={EDGE} />
     </g>
   );

@@ -26,11 +26,11 @@ export function BottomNav() {
       <ul
         className="pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]"
         style={{
-          background: "color-mix(in srgb, var(--surface) 92%, transparent)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          border: "2px solid var(--edge)",
-          boxShadow: "4px 4px 0 var(--edge), 0 12px 30px rgba(0,0,0,0.35)",
+          background: "color-mix(in srgb, var(--surface) 94%, transparent)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: "1px solid var(--line)",
+          boxShadow: "0 16px 36px rgba(0, 0, 0, 0.45)",
         }}
       >
         {tabs.map(({ to, label, Icon }) => {
@@ -39,7 +39,7 @@ export function BottomNav() {
             (to === "/app/home" &&
               (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat")));
           const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
-          const color = active ? "var(--ink)" : "var(--ink-3)";
+          const color = active ? "var(--lime)" : "var(--ink-2)";
           const isSnap = to === "/app/snap";
           return (
             <li key={to}>
@@ -53,12 +53,14 @@ export function BottomNav() {
               >
                 {isSnap ? (
                   <span
-                    className="relative -mt-6 w-[58px] h-[58px] rounded-[18px] flex items-center justify-center"
+                    className="relative -mt-6 w-[58px] h-[58px] rounded-[20px] flex items-center justify-center"
                     style={{
-                      background: active ? "var(--pink)" : "var(--lime)",
+                      background: "var(--lime)",
                       color: "var(--on-dark-fill)",
-                      border: "2px solid var(--edge)",
-                      boxShadow: "3px 3px 0 var(--edge)",
+                      border: "var(--bd)",
+                      boxShadow: active
+                        ? "0 0 0 3px rgba(193, 239, 98, 0.28), var(--pop)"
+                        : "var(--pop)",
                       transform: "rotate(-4deg)",
                     }}
                   >
@@ -69,16 +71,16 @@ export function BottomNav() {
                   <span
                     className="relative flex items-center justify-center w-12 h-8 rounded-xl"
                     style={{
-                      background: active ? "var(--sun)" : "transparent",
-                      border: active ? "2px solid var(--edge)" : "2px solid transparent",
-                      color: active ? "var(--on-dark-fill)" : color,
+                      background: active ? "rgba(193, 239, 98, 0.14)" : "transparent",
+                      color,
+                      transition: "background-color 180ms var(--ease), color 180ms var(--ease)",
                     }}
                   >
-                    <Icon size={21} strokeWidth={active ? 2.5 : 2} />
+                    <Icon size={21} strokeWidth={2.25} />
                     {badge > 0 && <Badge n={badge} />}
                   </span>
                 )}
-                <span style={{ fontSize: 12, fontWeight: active ? 800 : 600, color }}>{label}</span>
+                <span style={{ fontSize: 11.5, fontWeight: active ? 700 : 600, color }}>{label}</span>
               </Link>
             </li>
           );
@@ -95,11 +97,11 @@ function Badge({ n }: { n: number }) {
       aria-hidden="true"
       className="pop absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
       style={{
-        background: "var(--hot)",
-        color: "#fff",
+        background: "var(--pink)",
+        color: "var(--on-dark-fill)",
         fontSize: 11,
         fontWeight: 800,
-        border: "1px solid var(--line-2)",
+        border: "2px solid var(--surface)",
       }}
     >
       {n > 99 ? "99+" : n}

@@ -70,14 +70,14 @@ function ActivityScreen() {
                     ) : (
                       <span
                         className="w-11 h-11 rounded-full flex items-center justify-center text-xl"
-                        style={{ background: "var(--sun)", border: "2px solid var(--edge)" }}
+                        style={{ background: "var(--sun)", border: "var(--bd)" }}
                       >
                         <Lock size={20} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
                       </span>
                     )}
                     <span
                       className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-                      style={{ background: d.tone, color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+                      style={{ background: d.tone, color: "var(--on-accent)", border: "var(--bd)" }}
                     >
                       <d.Icon size={12} strokeWidth={2.5} aria-hidden="true" />
                     </span>
