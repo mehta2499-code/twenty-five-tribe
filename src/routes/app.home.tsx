@@ -200,7 +200,7 @@ function Table({
                 )
               ) : st.count > 0 ? (
                 <span
-                  className={`sticker whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2.5 !text-[11px] !px-1.5 !py-0`}
+                  className={`sticker relative z-[1] whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2.5 !text-[11px] !px-1.5 !py-0`}
                   style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
                 >
                   <Ico i={Flame} size={11} />
@@ -209,7 +209,7 @@ function Table({
                 </span>
               ) : f.mutual === false ? (
                 <span
-                  className="sticker sky -mt-2.5 !px-1.5 !py-0 whitespace-nowrap"
+                  className="sticker sky relative z-[1] -mt-2.5 !px-1.5 !py-0 whitespace-nowrap"
                   style={{
                     transform: `rotate(${i % 2 ? 4 : -4}deg)`,
                     fontSize: labelSize(f.name),
@@ -220,14 +220,14 @@ function Table({
                 </span>
               ) : f.postedToday ? (
                 <span
-                  className="sticker pink -mt-2.5 !text-[11px] !px-1.5 !py-0"
+                  className="sticker pink relative z-[1] -mt-2.5 !text-[11px] !px-1.5 !py-0"
                   style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
                 >
                   new
                 </span>
               ) : (
                 <span
-                  className="-mt-1 font-bold px-1.5 rounded-full whitespace-nowrap"
+                  className="relative z-[1] -mt-1 font-bold px-1.5 rounded-full whitespace-nowrap"
                   style={{
                     background: "var(--edge)",
                     color: "var(--ink-2)",
