@@ -26,6 +26,8 @@ import {
   type Snap,
   type SocialState,
   type Streak,
+  showBanner,
+  friendById,
 } from "@/lib/social";
 
 // ---------- Row shapes ----------
@@ -560,6 +562,23 @@ function subscribe() {
           };
         });
         if (m.recipient === me) {
+          const f = friendById(m.sender);
+          const ref = m.shared_ref ?? "";
+          showBanner({
+            id: m.id,
+            title: f?.name ?? "New message",
+            body: ref.startsWith("voice:")
+              ? "🎤 Voice note"
+              : ref.startsWith("img:")
+                ? "📷 Photo"
+                : ref.startsWith("vid:")
+                  ? "🎥 Video"
+                  : (m.body ?? "New message"),
+            to: `/app/chat/${m.sender}`,
+            avatar: f?.avatar || undefined,
+            initials: f?.initials ?? "?",
+            color: f?.color,
+          });
           void supabase
             .from("messages")
             .update({ delivered_at: new Date().toISOString() })
@@ -614,8 +633,32 @@ function subscribe() {
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quiz_attempts" }, () =>
       scheduleReload(800),
     )
-    .on("postgres_changes", { event: "*", schema: "public", table: "snap_recipients" }, () =>
-      scheduleReload(),
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "snap_recipients" },
+      ({ eventType, new: row }) => {
+        const r = row as Partial<SnapRecipientRow>;
+        if (eventType === "INSERT" && r.recipient === me && r.snap_id) {
+          void supabase
+            .from("snaps")
+            .select("sender")
+            .eq("id", r.snap_id)
+            .maybeSingle<{ sender: string }>()
+            .then(({ data }) => {
+              const f = data ? friendById(data.sender) : undefined;
+              showBanner({
+                id: `snap-${r.snap_id}`,
+                title: f?.name ?? "New snap",
+                body: "📸 Sent you a snap. Open before it vanishes.",
+                to: "/app/snap",
+                avatar: f?.avatar || undefined,
+                initials: f?.initials ?? "?",
+                color: f?.color,
+              });
+            });
+        }
+        scheduleReload();
+      },
     )
     .on("postgres_changes", { event: "*", schema: "public", table: "streaks" }, () =>
       scheduleReload(),
@@ -873,9 +916,12 @@ export const account = {
     }));
   },
   /** People you may know: seated by your 25 (most mutuals first), then newcomers. */
-  async suggestions(): Promise<Suggestion[]> {
+  async suggestions(includeNew = false): Promise<Suggestion[]> {
     if (!myId) return [];
-    const { data, error } = await supabase.rpc("suggestions", { p_limit: 30 });
+    const { data, error } = await supabase.rpc("suggestions", {
+      p_limit: 30,
+      p_include_new: includeNew,
+    });
     if (error) throw error;
     const rows = (data ?? []) as {
       id: string;

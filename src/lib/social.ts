@@ -117,6 +117,8 @@ export type SocialState = {
   others: Record<string, { name: string; initials: string; avatar?: string; color?: string }>;
   /** A friendly heads-up, e.g. "Devansh put you in their 25". */
   notice: string | null;
+  /** In-app banner for a new message/snap: tap opens `to`. */
+  banner: Banner | null;
 };
 
 // ---------- Helpers ----------
@@ -181,6 +183,7 @@ const DEMO_SESSION = {
   error: null,
   seatedByCount: 0,
   notice: null,
+  banner: null,
   others: {},
 };
 
@@ -442,6 +445,23 @@ export function meView(): { name: string; avatar?: string; initials: string } {
 export function clearError() {
   if (state.error) set((s) => ({ ...s, error: null }));
 }
+export type Banner = {
+  id: string;
+  title: string;
+  body: string;
+  to: string;
+  avatar?: string;
+  initials: string;
+  color?: string;
+  emoji?: string;
+};
+export function showBanner(b: Banner) {
+  set((s) => ({ ...s, banner: b }));
+}
+export function clearBanner(id?: string) {
+  if (state.banner && (!id || state.banner.id === id)) set((s) => ({ ...s, banner: null }));
+}
+
 export function clearNotice() {
   if (state.notice) set((s) => ({ ...s, notice: null }));
 }

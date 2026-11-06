@@ -15,7 +15,7 @@ const readHidden = (): string[] => {
   }
 };
 
-export function useSuggestions() {
+export function useSuggestions(includeNew = false) {
   const s = useSocial();
   const [list, setList] = useState<Suggestion[] | null>(null);
   const [hidden, setHidden] = useState<string[]>([]);
@@ -23,8 +23,8 @@ export function useSuggestions() {
   useEffect(() => {
     setHidden(readHidden());
     if (s.mode !== "live" || !s.me) return;
-    void account.suggestions().then(setList, () => setList([]));
-  }, [key, s.mode]);
+    void account.suggestions(includeNew).then(setList, () => setList([]));
+  }, [key, s.mode, includeNew]);
   const hide = (id: string) => {
     const next = [...hidden, id];
     setHidden(next);
@@ -46,13 +46,16 @@ export function SuggestionCards({
   title = "People you may know",
   onPick,
   max = 20,
+  includeNew = false,
 }: {
+  /** Also show newcomers (the Add page always does). */
+  includeNew?: boolean;
   title?: string;
   /** Default: open their card to prove you know them. */
   onPick?: (p: Suggestion) => void;
   max?: number;
 }) {
-  const { list, loaded, hide } = useSuggestions();
+  const { list, loaded, hide } = useSuggestions(includeNew);
   if (!loaded || list.length === 0) return null;
   return (
     <section className="mt-6" aria-label={title}>
@@ -70,7 +73,10 @@ export function SuggestionCards({
               <span className="meta truncate w-full" style={{ fontSize: 11.5 }}>
                 @{p.username}
               </span>
-              <span className="meta mt-1 leading-tight line-clamp-2 h-[2.4em]" style={{ fontSize: 11.5 }}>
+              <span
+                className="meta mt-1 leading-tight line-clamp-2 h-[2.4em]"
+                style={{ fontSize: 11.5 }}
+              >
                 {line(p)}
               </span>
               <span className="btn-primary mt-2 w-full min-h-[34px] text-[13px]">Prove it</span>

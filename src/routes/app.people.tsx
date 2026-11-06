@@ -209,7 +209,7 @@ function People() {
       )}
       {s.me?.vibeDone && <ShareCard />}
 
-      {s.me?.vibeDone && taken < SEATS && <SuggestionCards onPick={(p) => seat(p)} />}
+      {s.me?.vibeDone && taken < SEATS && <SuggestionCards includeNew onPick={(p) => seat(p)} />}
 
       <section className="px-5 mt-6">
         <label className="field" htmlFor="people-search">

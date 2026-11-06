@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/rea
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { InAppBanner } from "@/components/InAppBanner";
 import { AnimatedLogo } from "@/components/Logo";
 import { Toast } from "@/components/SocialUI";
 import { initLive } from "@/lib/live";
@@ -121,6 +122,7 @@ function AppLayout() {
         <Outlet />
       </div>
       <BottomNav />
+      <InAppBanner />
       {s.error && <Toast text={s.error} onDone={() => clearError()} />}
       {!s.error && s.notice && <Toast text={s.notice} onDone={() => clearNotice()} />}
     </div>

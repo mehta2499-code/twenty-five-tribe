@@ -1,7 +1,7 @@
 /** Group chats with people from your mutual 25. */
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { _get, friendById, mutualFriends, useSocial } from "@/lib/social";
+import { _get, friendById, mutualFriends, showBanner, useSocial } from "@/lib/social";
 import { uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 
@@ -180,7 +180,24 @@ export function useGroups() {
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "group_messages" },
-          reload,
+          ({ new: row }) => {
+            const m = row as { id: string; group_id: string; sender: string; body: string | null };
+            if (m.sender !== me) {
+              const g = store.groups.find((x) => x.id === m.group_id);
+              const who = member(m.sender, store);
+              if (g)
+                showBanner({
+                  id: m.id,
+                  title: `${g.emoji} ${g.name}`,
+                  body: `${who.name.split(" ")[0]}: ${m.body ?? "New message"}`,
+                  to: `/app/group/${g.id}`,
+                  avatar: who.avatar,
+                  initials: who.initials,
+                  color: who.color,
+                });
+            }
+            reload();
+          },
         )
         .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, reload)
         .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, reload)
@@ -350,14 +367,12 @@ export async function sendGroupMedia(groupId: string, file: File) {
   });
   if (!mine()) return;
   const path = await uploadMediaAt(`g/${groupId}`, blob, ext);
-  const { error } = await supabase
-    .from("group_messages")
-    .insert({
-      id,
-      group_id: groupId,
-      sender: _get().me!.id,
-      body: label,
-      shared_ref: `${kind}:${path}`,
-    });
+  const { error } = await supabase.from("group_messages").insert({
+    id,
+    group_id: groupId,
+    sender: _get().me!.id,
+    body: label,
+    shared_ref: `${kind}:${path}`,
+  });
   if (error) throw new Error(error.message);
 }
