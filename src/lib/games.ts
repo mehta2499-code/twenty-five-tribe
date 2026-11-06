@@ -291,6 +291,34 @@ export function useGame<S>(id: string) {
 }
 
 /**
+ * Change a game on top of its latest saved version, retrying if someone moves
+ * at the same moment. For quits and resigns: they must never be lost.
+ * `change` returns the new state and status, or null to leave it alone.
+ */
+export async function changeLatest<S>(
+  id: string,
+  change: (state: S) => { state: S; status?: "playing" | "done" } | null,
+) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const { data } = await supabase.from("games").select("*").eq("id", id).maybeSingle();
+    if (!data) return false;
+    const g = data as GameRow<S>;
+    if (g.status === "done") return true;
+    const next = change(g.state);
+    if (!next) return true;
+    const { error } = await supabase.rpc("save_game", {
+      p_id: id,
+      p_version: g.version,
+      p_state: next.state,
+      p_status: next.status ?? null,
+    });
+    if (!error) return true;
+    await new Promise((r) => setTimeout(r, 150 + Math.random() * 300));
+  }
+  return false;
+}
+
+/**
  * Save my trivia result on top of whatever is there now. Both players finish
  * a duel at the same moment, so retry with the latest version if we collide.
  */

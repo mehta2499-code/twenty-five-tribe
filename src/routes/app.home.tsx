@@ -9,7 +9,6 @@ import {
   Gamepad2,
   ImagePlus,
   MessageCircle,
-  Plus,
   Shuffle,
   Trophy,
   UserPlus,
@@ -173,25 +172,8 @@ function Table({
             top: `${y}%`,
             transform: "translate(-50%, -50%)",
           } as const;
-          if (!f) {
-            return (
-              <Link
-                key={`open-${i}`}
-                to="/app/people"
-                aria-label="Open seat. Add someone"
-                className="absolute flex items-center justify-center rounded-full text-[var(--ink-3)] hover:text-[var(--lime)]"
-                style={{
-                  ...pos,
-                  width: size,
-                  height: size,
-                  border: "2px dashed rgba(255,255,255,0.22)",
-                  background: "rgba(255,255,255,0.03)",
-                }}
-              >
-                <Plus size={inner ? 18 : 13} aria-hidden="true" />
-              </Link>
-            );
-          }
+          // Empty seats stay hidden; a bubble appears when someone takes one.
+          if (!f) return null;
           const st = streakStatus(s.streaks[f.id]);
           const lit = spot === i;
           return (
@@ -276,12 +258,11 @@ function Table({
             👀 one-way
           </span>
         )}
-        <Link
-          to="/app/people"
-          className="chip"
-          style={{ minHeight: 28, background: "var(--lime)", color: "var(--on-accent)" }}
-        >
-          all {people.length} seats →
+      </div>
+      <div className="flex justify-center mt-3">
+        <Link to="/app/people" className="btn-primary px-5 gap-2" style={{ minHeight: 44 }}>
+          <UserPlus size={18} aria-hidden="true" />
+          {people.length >= 25 ? `Your 25 is full · manage` : `Add people · ${25 - people.length} seats left`}
         </Link>
       </div>
     </section>

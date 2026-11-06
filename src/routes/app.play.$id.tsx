@@ -19,6 +19,7 @@ import { TriviaDuel, duelMax } from "@/components/TriviaDuel";
 import { Sheet, clientOnly } from "@/components/SocialUI";
 import { TRIVIA_PACKS } from "@/lib/data";
 import {
+  changeLatest,
   inviteToTrivia,
   saveTriviaResult,
   revealWord,
@@ -88,10 +89,13 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     const st = game.state as KState;
     const seat = st.seats.findIndex((p) => p.id === meId && !p.bot);
     if (seat >= 0 && st.phase !== "over") {
-      quit = () => {
-        const next = quitSeat(st, seat);
-        void live.save(next, next.phase === "over" ? "done" : undefined);
-      };
+      quit = () =>
+        void changeLatest<KState>(id, (cur) => {
+          const i = cur.seats.findIndex((p) => p.id === meId && !p.bot);
+          if (i < 0 || cur.phase === "over") return null;
+          const next = quitSeat(cur, i);
+          return { state: next, status: next.phase === "over" ? "done" : undefined };
+        });
       quitNote =
         st.seats.filter((p) => !p.bot).length <= 2
           ? "Only one person would be left, so the game ends."
@@ -99,12 +103,15 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     }
   } else if (game.status === "playing" && game.kind === "word") {
     const st = game.state as WordState;
-    quit = () => void live.save({ ...st, gaveUp: meId }, "done");
+    quit = () => void changeLatest<WordState>(id, (cur) => ({ state: { ...cur, gaveUp: meId }, status: "done" }));
     quitNote = st.guesser === meId ? "You give up and the word is revealed." : "The challenge is called off.";
   } else if (game.status === "playing" && game.kind === "trivia") {
     const st = game.state as TriviaState;
     if (!st.results[meId]) {
-      quit = () => void live.save({ ...st, forfeit: meId }, "done");
+      quit = () =>
+        void changeLatest<TriviaState>(id, (cur) =>
+          cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },
+        );
       quitNote = "You forfeit and the other player wins.";
     }
   }
@@ -471,8 +478,11 @@ function OnlineLudo({
         onStart={() => commit(beginLudo(st))}
         onClose={() => {
           // Host leaving, or only one person left: the game is called off.
-          const next = isHost ? null : leaveLobby(st, meId);
-          void save(next ?? st, next ? undefined : "done");
+          void changeLatest<LudoState>(game.id, (cur) => {
+            if (cur.phase !== "lobby") return null;
+            const next = isHost ? null : leaveLobby(cur, meId);
+            return next ? { state: next } : { state: cur, status: "done" };
+          });
           onClose();
         }}
       />
@@ -484,7 +494,16 @@ function OnlineLudo({
       onRoll={() => commit(roll(st))}
       onMove={(t) => commit(moveToken(st, t))}
       onSkip={() => commit(skipTurn(st))}
-      onResign={() => commit(resign(st, mine))}
+      onResign={() => {
+        const next = resign(st, mine);
+        // Show it right away, then make sure it lands even if someone moved at the same moment.
+        commit(next);
+        void changeLatest<LudoState>(game.id, (cur) => {
+          if (cur.phase === "over" || cur.players[mine]?.out) return null;
+          const r = resign(cur, mine);
+          return { state: r, status: r.phase === "over" ? "done" : undefined };
+        });
+      }}
       onClose={onClose}
     />
   );
