@@ -18,7 +18,9 @@ import {
   leaveGroup,
   markSeen,
   member,
+  mentionQuery,
   sendGroupMedia,
+  splitMentions,
   sendGroupVoice,
   sendToGroup,
   useGroups,
@@ -43,6 +45,7 @@ function GroupThread() {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     markSeen(id);
@@ -68,6 +71,25 @@ function GroupThread() {
   const tone = (who: string) =>
     NAME_TONES[g.members.indexOf(who) % NAME_TONES.length] ?? "var(--ink-2)";
   const canAdd = mutualFriends().filter((f) => !g.members.includes(f.id));
+
+  // @mentions
+  const everyone = g.members.map((m) => member(m, st));
+  const q = mentionQuery(text);
+  const picks =
+    q === null
+      ? []
+      : everyone
+          .filter((m) => m.id !== "me" && m.username)
+          .filter(
+            (m) =>
+              m.username!.toLowerCase().startsWith(q) ||
+              m.name.toLowerCase().split(" ").some((w) => w.startsWith(q)),
+          )
+          .slice(0, 6);
+  const pickMention = (m: (typeof everyone)[number]) => {
+    setText((t) => t.replace(/@([\w.]*)$/, `@${m.username} `));
+    boxRef.current?.focus();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--page)" }}>
@@ -145,7 +167,11 @@ function GroupThread() {
                           className="px-3.5 py-2"
                           style={{
                             background: mine ? "var(--accent)" : "var(--surface)",
-                            border: mine ? "1px solid transparent" : "1px solid var(--line)",
+                            border: mine
+                              ? "1px solid transparent"
+                              : m.text && splitMentions(m.text, everyone).some((x) => x.who?.id === "me")
+                                ? "2px solid var(--sun)"
+                                : "1px solid var(--line)",
                             color: mine ? "var(--on-accent)" : "var(--ink)",
                             borderRadius: 18,
                             borderBottomRightRadius: mine ? 6 : 18,
@@ -173,7 +199,23 @@ function GroupThread() {
                                 overflowWrap: "anywhere",
                               }}
                             >
-                              {m.text}
+                              {splitMentions(m.text ?? "", everyone).map((x, k) =>
+                                x.who ? (
+                                  <b
+                                    key={k}
+                                    className="rounded px-0.5"
+                                    style={
+                                      x.who.id === "me"
+                                        ? { background: "var(--sun)", color: "var(--on-dark-fill)" }
+                                        : { color: mine ? "inherit" : tone(x.who.id), textDecoration: mine ? "underline" : undefined }
+                                    }
+                                  >
+                                    {x.text}
+                                  </b>
+                                ) : (
+                                  <span key={k}>{x.text}</span>
+                                ),
+                              )}
                             </p>
                           )}
                           <p
@@ -200,6 +242,35 @@ function GroupThread() {
           className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
         >
+          {picks.length > 0 && (
+            <ul
+              className="absolute left-3 right-3 bottom-full mb-2 rounded-2xl overflow-hidden py-1 z-10"
+              style={{
+                background: "var(--surface)",
+                border: "2px solid var(--edge)",
+                boxShadow: "3px 3px 0 var(--edge)",
+              }}
+              role="listbox"
+              aria-label="Mention someone"
+            >
+              {picks.map((m) => (
+                <li key={m.id}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pickMention(m)}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[var(--fill)]"
+                  >
+                    <Avatar src={m.avatar} initials={m.initials} color={m.color} size={32} />
+                    <span className="min-w-0">
+                      <span className="block font-bold text-cream truncate">{m.name}</span>
+                      <span className="block meta truncate">@{m.username}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <button
             type="button"
             onClick={() => attachRef.current?.click()}
@@ -224,7 +295,8 @@ function GroupThread() {
             value={text}
             onChange={setText}
             onSend={send}
-            placeholder={`Message ${g.name}`}
+            inputRef={boxRef}
+            placeholder={`Message ${g.name} · @ to tag`}
           />
           {text.trim() ? (
             <button

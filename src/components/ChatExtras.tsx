@@ -524,14 +524,18 @@ export function GrowingInput({
   onSend,
   placeholder,
   id,
+  inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
   placeholder: string;
   id?: string;
+  /** Lets a parent (the @mention picker) put the cursor back in the box. */
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null);
+  const own = useRef<HTMLTextAreaElement>(null);
+  const ref = inputRef ?? own;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

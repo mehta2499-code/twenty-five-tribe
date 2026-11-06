@@ -19,6 +19,7 @@ export type Member = {
   initials: string;
   avatar?: string;
   color?: string;
+  username?: string;
 };
 
 type State = {
@@ -134,9 +135,17 @@ async function load(me: string) {
   );
   const people: Record<string, Member> = {};
   if (unknown.length) {
-    const { data } = await supabase.from("profiles").select("id,display_name").in("id", unknown);
-    for (const p of (data ?? []) as { id: string; display_name: string }[])
-      people[p.id] = { id: p.id, name: p.display_name, initials: initials(p.display_name) };
+    const { data } = await supabase
+      .from("profiles")
+      .select("id,display_name,username")
+      .in("id", unknown);
+    for (const p of (data ?? []) as { id: string; display_name: string; username?: string }[])
+      people[p.id] = {
+        id: p.id,
+        name: p.display_name,
+        initials: initials(p.display_name),
+        username: p.username ?? undefined,
+      };
   }
   if (liveFor !== me) return;
   store = {
@@ -217,7 +226,13 @@ export function useGroups() {
 export function member(id: string, st: State): Member {
   if (id === "me") {
     const me = _get().me;
-    return { id, name: "You", initials: me?.initials ?? "YO", avatar: me?.avatar };
+    return {
+      id,
+      name: "You",
+      initials: me?.initials ?? "YO",
+      avatar: me?.avatar,
+      username: me?.username,
+    };
   }
   const f = friendById(id);
   if (f)
@@ -227,6 +242,7 @@ export function member(id: string, st: State): Member {
       initials: f.initials,
       avatar: f.avatar || undefined,
       color: f.color,
+      username: (f as { username?: string }).username,
     };
   return st.people[id] ?? { id, name: "Someone", initials: "?" };
 }
@@ -375,4 +391,31 @@ export async function sendGroupMedia(groupId: string, file: File) {
     shared_ref: `${kind}:${path}`,
   });
   if (error) throw new Error(error.message);
+}
+
+/** "@aman hey" → the @-word being typed at the end of the text, or null. */
+export function mentionQuery(text: string) {
+  const m = /(^|\s)@([\w.]*)$/.exec(text);
+  return m ? m[2].toLowerCase() : null;
+}
+
+/** Split message text into plain parts and @mentions of group members. */
+export function splitMentions(text: string, members: Member[]) {
+  const byName = new Map(
+    members.filter((m) => m.username).map((m) => [m.username!.toLowerCase(), m]),
+  );
+  const parts: { text: string; who?: Member }[] = [];
+  let last = 0;
+  for (const m of text.matchAll(/@([\w.]+)/g)) {
+    const handle = m[1].replace(/\.+$/, "").toLowerCase();
+    const who = byName.get(handle);
+    if (!who) continue;
+    const start = m.index!;
+    const end = start + 1 + handle.length;
+    if (start > last) parts.push({ text: text.slice(last, start) });
+    parts.push({ text: text.slice(start, end), who });
+    last = end;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last) });
+  return parts;
 }
