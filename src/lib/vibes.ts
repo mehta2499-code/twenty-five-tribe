@@ -145,6 +145,7 @@ export type PublicCard = {
   username: string;
   seats: number;
   vibe_done: boolean;
+  avatar_path?: string | null;
 };
 
 export async function publicCard(username: string): Promise<PublicCard | null> {

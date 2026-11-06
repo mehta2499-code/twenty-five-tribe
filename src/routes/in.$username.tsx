@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { supabase } from "@/integrations/supabase/client";
 import { KnowThemQuiz } from "@/components/KnowThemQuiz";
 import { clientOnly } from "@/components/SocialUI";
 import { account, initLive } from "@/lib/live";
@@ -38,6 +40,7 @@ function InMy25() {
   const { username } = Route.useParams();
   const s = useSocial();
   const navigate = useNavigate();
+  const [photo, setPhoto] = useState<string | undefined>(undefined);
   const [card, setCard] = useState<PublicCard | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [quiz, setQuiz] = useState(false);
@@ -82,6 +85,15 @@ function InMy25() {
     setQuiz(true);
   };
 
+  useEffect(() => {
+    const path = card?.avatar_path;
+    if (!path || s.mode !== "live") return;
+    void supabase.storage
+      .from("avatars")
+      .createSignedUrl(path, 60 * 60)
+      .then(({ data }) => data?.signedUrl && setPhoto(data.signedUrl));
+  }, [card?.avatar_path, s.mode]);
+
   const person: Person | null = card
     ? {
         id: card.id,
@@ -94,7 +106,7 @@ function InMy25() {
           .slice(0, 2)
           .toUpperCase(),
         color: "#3A3044",
-        avatar: "",
+        avatar: photo ?? "",
         postedToday: false,
         joinedDaysAgo: 0,
         daysQuiet: 0,
@@ -106,9 +118,21 @@ function InMy25() {
     <main className="min-h-screen px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-hidden">
       <div className="mx-auto max-w-md">
         <div className="flex items-center justify-between">
-          <Link to="/" aria-label="25 home">
-            <Logo height={44} />
-          </Link>
+          {live ? (
+            <button
+              onClick={() =>
+                window.history.length > 1 ? window.history.back() : navigate({ to: "/app/home" })
+              }
+              aria-label="Back"
+              className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-cool"
+            >
+              <ArrowLeft size={22} />
+            </button>
+          ) : (
+            <Link to="/" aria-label="25 home">
+              <Logo height={44} />
+            </Link>
+          )}
           {!live && (
             <Link to="/login" className="btn-secondary min-h-[40px] px-4 text-sm">
               Sign in
@@ -155,7 +179,7 @@ function InMy25() {
                     className="rounded-full"
                     style={{ border: "1px solid var(--line-2)", boxShadow: "var(--pop)" }}
                   >
-                    <Avatar initials={person.initials} color="#3A3044" size={84} />
+                    <Avatar src={photo} initials={person.initials} color="#3A3044" size={84} />
                   </span>
                 </div>
                 <p className="mt-3 font-extrabold" style={{ fontSize: 18 }}>
