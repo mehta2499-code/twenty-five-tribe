@@ -32,6 +32,7 @@ import { TRIES, dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } 
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { VOICE } from "@/lib/copy";
 import { PushPrompt } from "@/components/PushPrompt";
+import { SuggestionCards } from "@/components/Suggestions";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
@@ -813,6 +814,8 @@ function Home() {
       <PushPrompt />
 
       <Birthdays />
+
+      {s.mode === "live" && people.length < 10 && <SuggestionCards title="Find your people 👋" max={12} />}
 
       <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
 

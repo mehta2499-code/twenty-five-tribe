@@ -6,6 +6,7 @@ import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/compo
 import { account } from "@/lib/live";
 import { KnowThemQuiz } from "@/components/KnowThemQuiz";
 import { ShareCard } from "@/components/ShareCard";
+import { SuggestionCards } from "@/components/Suggestions";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
 const SUB = "Seat anyone you know. They see your posts. Mutual seats unlock chats, snaps and games.";
@@ -207,6 +208,8 @@ function People() {
         </div>
       )}
       {s.me?.vibeDone && <ShareCard />}
+
+      {s.me?.vibeDone && taken < SEATS && <SuggestionCards onPick={(p) => seat(p)} />}
 
       <section className="px-5 mt-6">
         <label className="field" htmlFor="people-search">

@@ -159,6 +159,11 @@ async function deleteSnapFile(snapId: string, path: string) {
   if (!error) await supabase.rpc("forget_snap_file", { p_snap: snapId });
 }
 
+export type Suggestion = Person & {
+  mutuals: number;
+  reason: "mutuals" | "new";
+};
+
 // ---------- Loading ----------
 async function loadAll() {
   if (!myId) return;
@@ -865,6 +870,37 @@ export const account = {
       postedToday: false,
       joinedDaysAgo: 0,
       daysQuiet: 0,
+    }));
+  },
+  /** People you may know: seated by your 25 (most mutuals first), then newcomers. */
+  async suggestions(): Promise<Suggestion[]> {
+    if (!myId) return [];
+    const { data, error } = await supabase.rpc("suggestions", { p_limit: 30 });
+    if (error) throw error;
+    const rows = (data ?? []) as {
+      id: string;
+      display_name: string;
+      username: string;
+      avatar_path: string | null;
+      mutuals: number;
+      reason: "mutuals" | "new";
+    }[];
+    const urls = await signed(
+      "avatars",
+      rows.map((r) => r.avatar_path ?? ""),
+    );
+    return rows.map((p) => ({
+      id: p.id,
+      name: p.display_name,
+      username: p.username,
+      initials: initialsOf(p.display_name),
+      color: colourFor(p.id),
+      avatar: p.avatar_path ? (urls[p.avatar_path] ?? "") : "",
+      postedToday: false,
+      joinedDaysAgo: 0,
+      daysQuiet: 0,
+      mutuals: p.mutuals,
+      reason: p.reason,
     }));
   },
   /** Put someone in your 25 (after passing the quiz about them). */
