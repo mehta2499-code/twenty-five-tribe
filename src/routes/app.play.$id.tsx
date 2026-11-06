@@ -7,6 +7,7 @@ import {
   beginLudo,
   joinLudo,
   moveToken,
+  resign,
   roll,
   skipTurn,
   waitingFor,
@@ -380,6 +381,7 @@ function OnlineLudo({
       onRoll={() => commit(roll(st))}
       onMove={(t) => commit(moveToken(st, t))}
       onSkip={() => commit(skipTurn(st))}
+      onResign={() => commit(resign(st, mine))}
       onClose={onClose}
     />
   );

@@ -14,6 +14,7 @@ import {
   legalTokens,
   moveToken,
   newLudo,
+  resign,
   roll,
   skipTurn,
   waitingFor,
@@ -73,6 +74,8 @@ export function LocalLudo({
       onSkip={() => setState((s) => skipTurn(s))}
       onClose={onClose}
       onPlayAgain={() => setState(fresh())}
+      onResign={() => setState((s) => resign(s, 0))}
+      solo
     />
   );
 }
@@ -202,7 +205,7 @@ function Board({
     const out: { p: number; t: number; x: number; y: number }[] = [];
     const seen = new Map<string, number>();
     state.players.forEach((pl, p) =>
-      (shown[p] ?? state.tokens[p]).forEach((rel, t) => {
+      (pl.out ? [] : (shown[p] ?? state.tokens[p])).forEach((rel, t) => {
         const [x, y] = tokenXY(pl.color, rel, t);
         const key = rel === -1 ? `${p}-${t}` : `${x},${y}`;
         const n = seen.get(key) ?? 0;
@@ -422,6 +425,8 @@ export function LudoTable({
   onSkip,
   onClose,
   onPlayAgain,
+  onResign,
+  solo,
 }: {
   state: LudoState;
   mine: number;
@@ -430,7 +435,11 @@ export function LudoTable({
   onSkip: () => void;
   onClose: () => void;
   onPlayAgain?: () => void;
+  onResign: () => void;
+  /** Solo games aren't saved, so leaving ends them. */
+  solo?: boolean;
 }) {
+  const [menu, setMenu] = useState(false);
   const [rolling, setRolling] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -485,8 +494,10 @@ export function LudoTable({
             🎲 Ludo
           </span>
           <button
-            onClick={onClose}
-            aria-label="Close"
+            onClick={() =>
+              state.phase === "over" || state.players[mine]?.out ? onClose() : setMenu(true)
+            }
+            aria-label="Leave or resign"
             className="text-cool w-10 h-10 flex items-center justify-center"
           >
             <X size={22} />
@@ -511,6 +522,7 @@ export function LudoTable({
               <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-cream">
                 {i === mine ? "You" : p.name.split(" ")[0]}
                 {p.bot && " 🤖"}
+                {p.out && " 🏳️"}
               </span>
               <span className="meta tabular-nums" style={{ fontSize: 12 }}>
                 🏠{home(i)}
@@ -579,6 +591,37 @@ export function LudoTable({
           </div>
         </div>
       </div>
+      {menu && (
+        <Sheet title="Leave the game?" onClose={() => setMenu(false)}>
+          <div className="grid gap-2.5">
+            <button onClick={() => setMenu(false)} className="btn-primary">
+              Keep playing
+            </button>
+            <button
+              onClick={() => {
+                setMenu(false);
+                onClose();
+              }}
+              className="btn-secondary"
+            >
+              {solo ? "Leave (game ends)" : "Leave for now (come back from Your games)"}
+            </button>
+            <button
+              onClick={() => {
+                setMenu(false);
+                onResign();
+              }}
+              className="btn-danger"
+            >
+              🏳️ Resign
+            </button>
+          </div>
+          <p className="meta mt-3">
+            Resigning takes your pawns off the board
+            {solo ? "" : " and the game goes on without you"}.
+          </p>
+        </Sheet>
+      )}
       {flash > 0 && (
         <div className="fixed inset-0 z-[62] pointer-events-none flex items-center justify-center">
           <span

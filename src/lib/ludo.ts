@@ -23,6 +23,8 @@ export type LudoPlayer = {
   color: LudoColor;
   /** Played by the host's phone. */
   bot?: boolean;
+  /** Resigned: no longer plays, pawns off the board. */
+  out?: boolean;
 };
 
 export type LudoState = {
@@ -99,10 +101,20 @@ export function legalTokens(s: LudoState): number[] {
     .filter((i) => i >= 0);
 }
 
+/** Next player who's still in the game. */
+function nextActive(s: LudoState, from: number) {
+  const n = s.players.length;
+  for (let k = 1; k <= n; k++) {
+    const i = (from + k) % n;
+    if (!s.players[i].out) return i;
+  }
+  return from;
+}
+
 function nextTurn(s: LudoState): LudoState {
   return {
     ...s,
-    turn: (s.turn + 1) % s.players.length,
+    turn: nextActive(s, s.turn),
     dice: null,
     phase: "roll",
     sixes: 0,
@@ -186,6 +198,30 @@ export function beginLudo(s: LudoState): LudoState {
     phase: "roll",
     turnStartedAt: Date.now(),
   };
+}
+
+/** Resign: you're out, pawns off the board. Last one standing (or the
+ *  furthest-ahead player once no humans are left) wins. */
+export function resign(s: LudoState, player: number): LudoState {
+  if (s.phase === "over" || s.players[player]?.out) return s;
+  const players = s.players.map((p, i) => (i === player ? { ...p, out: true } : p));
+  const tokens = s.tokens.map((row, i) => (i === player ? row.map(() => -1) : row));
+  const name = s.players[player].name.split(" ")[0];
+  let next: LudoState = {
+    ...s,
+    players,
+    tokens,
+    last: { player, dice: 0, note: `${name} resigned 🏳️` },
+  };
+  const active = players.map((p, i) => i).filter((i) => !players[i].out);
+  const humans = active.filter((i) => !players[i].bot);
+  if (active.length <= 1 || humans.length === 0) {
+    const progress = (i: number) => tokens[i].reduce((a, r) => a + Math.max(0, r + 1), 0);
+    const winner = active.sort((a, b) => progress(b) - progress(a))[0] ?? 0;
+    return { ...next, phase: "over", winner, dice: null };
+  }
+  if (s.turn === player) next = nextTurn(next);
+  return next;
 }
 
 /** Skip a player who's gone quiet (anyone can do it after the wait). */
