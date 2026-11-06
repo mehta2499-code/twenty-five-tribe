@@ -154,6 +154,7 @@ function GameTile({
   tilt,
   onClick,
   wide,
+  outline,
 }: {
   wide?: boolean;
   tone: string;
@@ -166,6 +167,8 @@ function GameTile({
   line: string;
   tilt: number;
   onClick: () => void;
+  /** Coloured outline on a dark tile (instead of a coloured fill). */
+  outline?: string;
 }) {
   return (
     <button
@@ -174,8 +177,8 @@ function GameTile({
       style={{
         background: tone,
         color: light ? "var(--ink)" : "var(--on-accent)",
-        border: "var(--bd)",
-        boxShadow: "var(--pop-lg)",
+        border: outline ? `1.5px solid ${outline}` : "var(--bd)",
+        boxShadow: outline ? "0 4px 0 rgba(193, 239, 98, 0.35), var(--soft)" : "var(--pop-lg)",
         transform: `rotate(${tilt}deg)`,
         minHeight: 178,
       }}
@@ -303,7 +306,9 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
   return (
     <>
       <GameTile
-        tone="var(--lime)"
+        tone="var(--surface)"
+        light
+        outline="var(--lime)"
         Icon={game.Icon}
         art={gameFor(day)}
         sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY"}

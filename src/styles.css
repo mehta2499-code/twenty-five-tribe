@@ -318,7 +318,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 
 .segmented { display: inline-flex; padding: 4px; gap: 4px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); }
 .segmented > * { min-height: 36px; padding: 6px 16px; border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background-color 180ms var(--ease), color 180ms var(--ease); }
-.segmented > [aria-current="page"], .segmented > [aria-pressed="true"] { background: var(--lime); color: var(--on-dark-fill); box-shadow: var(--pop-sm); }
+.segmented > [aria-current="page"], .segmented > [aria-pressed="true"] { background: var(--fill-2); color: var(--ink); box-shadow: var(--pop-sm); }
+.segmented > [aria-current="page"] svg, .segmented > [aria-pressed="true"] svg { color: var(--lime); }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px; border-radius: 999px; background: var(--fill); border: 1px solid var(--line); color: var(--ink); font-size: 13px; font-weight: 600; transition: background-color 160ms var(--ease); }
 .chip[aria-pressed="true"] { background: var(--lime); color: var(--on-dark-fill); }
