@@ -219,11 +219,14 @@ function Table({
                 </span>
               ) : f.mutual === false ? (
                 <span
-                  className="sticker sky -mt-2.5 !text-[11px] !px-1.5 !py-0 whitespace-nowrap"
-                  style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
+                  className="sticker sky -mt-2.5 !px-1.5 !py-0 whitespace-nowrap"
+                  style={{
+                    transform: `rotate(${i % 2 ? 4 : -4}deg)`,
+                    fontSize: labelSize(f.name),
+                  }}
                   title="One-way: they haven't seated you back"
                 >
-                  👀 {f.name.split(" ")[0].slice(0, 7)}
+                  👀 {f.name.split(" ")[0]}
                 </span>
               ) : f.postedToday ? (
                 <span
@@ -234,8 +237,12 @@ function Table({
                 </span>
               ) : (
                 <span
-                  className="-mt-1 text-[11px] font-bold px-1.5 rounded-full max-w-[64px] truncate"
-                  style={{ background: "var(--edge)", color: "var(--ink-2)" }}
+                  className="-mt-1 font-bold px-1.5 rounded-full whitespace-nowrap"
+                  style={{
+                    background: "var(--edge)",
+                    color: "var(--ink-2)",
+                    fontSize: labelSize(f.name),
+                  }}
                 >
                   {f.name.split(" ")[0]}
                 </span>
@@ -262,7 +269,7 @@ function Table({
       <div className="flex justify-center mt-3">
         <Link to="/app/people" className="btn-primary px-5 gap-2" style={{ minHeight: 44 }}>
           <UserPlus size={18} aria-hidden="true" />
-          {people.length >= 25 ? `Your 25 is full · manage` : `Add people · ${25 - people.length} seats left`}
+          {people.length >= 25 ? `Your 25 is full · manage` : `Add people · ${25 - people.length} seat${25 - people.length === 1 ? "" : "s"} left`}
         </Link>
       </div>
     </section>
@@ -821,4 +828,10 @@ function Home() {
       )}
     </>
   );
+}
+
+/** Smaller text for longer first names, so the whole name fits under the bubble. */
+function labelSize(name: string) {
+  const n = name.split(" ")[0].length;
+  return n <= 6 ? 11 : n <= 8 ? 10 : n <= 11 ? 9 : 8;
 }
