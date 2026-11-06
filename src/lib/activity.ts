@@ -147,7 +147,7 @@ export function describe(a: Activity): { emoji: string; text: string } {
     case "seated":
       return { emoji: "👀", text: `${who} put you in their 25. Seat them back?` };
     case "seated_back":
-      return { emoji: "🤝", text: `${who} seated you back. Chats and snaps unlocked.` };
+      return { emoji: "🤝", text: `${who} seated you back. Chats and blinks unlocked.` };
     case "like":
       return { emoji: "❤️", text: `${who} liked your ${a.ref?.startsWith("reel") ? "reel" : "post"}` };
     case "comment":

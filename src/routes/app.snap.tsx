@@ -125,7 +125,7 @@ function SnapScreen() {
   useEffect(() => {
     if (hasShot) return;
     if (!liveCam) {
-      setCamError("Tap to take a snap");
+      setCamError("Tap to take a blink");
       return;
     }
     let cancelled = false;
@@ -218,7 +218,7 @@ function SnapScreen() {
   return (
     <div className="pb-6">
       <PageBand
-        title={target ? `Snap ${target.name.split(" ")[0]}` : "Snap"}
+        title={target ? `Blink ${target.name.split(" ")[0]}` : "Blink"}
         sub="Photos and notes that disappear after one look."
         actions={target ? <StreakBadge friendId={target.id} size={14} /> : undefined}
       />
@@ -278,7 +278,7 @@ function SnapScreen() {
           {image && (
             <img
               src={image}
-              alt="Your snap"
+              alt="Your blink"
               className="absolute inset-0 w-full h-full object-cover"
             />
           )}
@@ -407,7 +407,7 @@ function SnapScreen() {
           <div className="mt-5">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-semibold text-cool">Visible for</span>
-              <div className="segmented" role="group" aria-label="How long the snap is visible">
+              <div className="segmented" role="group" aria-label="How long the blink is visible">
                 {TIMERS.map((t) => (
                   <button
                     key={t}
@@ -442,7 +442,7 @@ function SnapScreen() {
                     <button
                       onClick={() => setViewing(snap)}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                      aria-label={`Open snap from ${f.name}`}
+                      aria-label={`Open blink from ${f.name}`}
                     >
                       <Avatar
                         src={f.avatar || undefined}
@@ -474,7 +474,7 @@ function SnapScreen() {
         {atRisk.length > 0 && (
           <section className="mt-8">
             <h2 className="text-[15px] font-semibold text-cream">Streaks ending today</h2>
-            <p className="meta mb-3">Send them a snap before midnight to keep the streak.</p>
+            <p className="meta mb-3">Send them a blink before midnight to keep the streak.</p>
             <ul className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
               {atRisk.map((f) => (
                 <li key={f.id}>
@@ -482,7 +482,7 @@ function SnapScreen() {
                     to="/app/snap"
                     search={{ to: f.id }}
                     className="flex flex-col items-center w-16"
-                    aria-label={`Snap ${f.name}`}
+                    aria-label={`Blink ${f.name}`}
                   >
                     <Avatar
                       src={f.avatar || undefined}
@@ -504,7 +504,7 @@ function SnapScreen() {
 
         {picking && (
           <FriendPicker
-            title="Send snap to"
+            title="Send blink to"
             cta="Send"
             showStreaks
             note="Each person can open it once."

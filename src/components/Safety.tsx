@@ -98,7 +98,7 @@ export function PersonMenu({ person, onClose }: { person: Person; onClose: () =>
         <div>
           <ul className="grid gap-2 text-sm text-cool">
             <li>• {first} leaves your 25, and you leave theirs.</li>
-            <li>• Chats, snaps and games with them stop.</li>
+            <li>• Chats, blinks and games with them stop.</li>
             <li>• They can't find you in search or seat you again.</li>
             <li>• They aren't told. You can unblock in Profile → Privacy.</li>
           </ul>

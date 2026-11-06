@@ -19,7 +19,7 @@ const CARDS = [
   {
     eyebrow: "the point",
     title: "Share moments, thoughts and memories with the people who matter most.",
-    body: "Seat anyone you know. Mutual seats unlock chats and snaps. No strangers, ever.",
+    body: "Seat anyone you know. Mutual seats unlock chats and blinks. No strangers, ever.",
   },
 ];
 

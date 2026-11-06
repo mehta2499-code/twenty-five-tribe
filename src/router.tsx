@@ -10,6 +10,9 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Load a tab's code as soon as a finger touches its link, so switching is instant.
+    defaultPreload: "intent",
+    defaultPreloadDelay: 0,
   });
 
   return router;

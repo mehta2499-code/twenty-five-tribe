@@ -347,7 +347,7 @@ function Landing() {
               },
               {
                 icon: "↯",
-                tag: "Snaps & Streaks",
+                tag: "Blinks & Streaks",
                 line: "Photos that disappear after one look. Keep the streak alive.",
               },
               {

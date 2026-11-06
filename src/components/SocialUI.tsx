@@ -252,7 +252,7 @@ export function FriendPicker({
         <EmptyState
           icon={Lock}
           title="No mutual seats yet"
-          body="Chats, snaps and games unlock when you're in each other's 25. Seat your people and get them to seat you back."
+          body="Chats, blinks and games unlock when you're in each other's 25. Seat your people and get them to seat you back."
           action={
             <Link to="/app/people" className="btn-primary px-5">
               Find your people
@@ -371,7 +371,7 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
       style={{ background: "#000" }}
       onClick={done}
       role="dialog"
-      aria-label={`Snap from ${sender?.name ?? "you"}`}
+      aria-label={`Blink from ${sender?.name ?? "you"}`}
     >
       <div className="absolute top-0 inset-x-0 z-10 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <div
@@ -443,7 +443,7 @@ export function StreakBadge({ friendId, size = 13 }: { friendId: string; size?: 
     <span
       className="inline-flex items-center gap-0.5 tabular-nums font-semibold whitespace-nowrap"
       style={{ fontSize: size, color }}
-      title={st.atRisk ? "Snap them today to keep your streak" : `${st.count}-day snap streak`}
+      title={st.atRisk ? "Send them a blink today to keep your streak" : `${st.count}-day blink streak`}
       aria-label={st.atRisk ? `${st.count}-day streak, ends today` : `${st.count}-day streak`}
     >
       <Flame
@@ -555,7 +555,7 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
         />
         <ul className="px-5 grid gap-2">
           {[
-            { to: "/app/chats" as const, label: "Chats and snaps" },
+            { to: "/app/chats" as const, label: "Chats and blinks" },
             { to: "/app/feed" as const, label: "Feed and reels" },
             { to: "/app/games" as const, label: "Games" },
           ].map((l) => (

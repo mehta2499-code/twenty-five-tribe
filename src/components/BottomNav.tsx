@@ -6,7 +6,7 @@ import { buzz } from "@/components/SocialUI";
 const tabs = [
   { to: "/app/home", label: "Table", Icon: Users },
   { to: "/app/feed", label: "Feed", Icon: LayoutGrid },
-  { to: "/app/snap", label: "Snap", Icon: Camera },
+  { to: "/app/snap", label: "Blink", Icon: Camera },
   { to: "/app/chats", label: "Chats", Icon: MessageCircle },
   { to: "/app/games", label: "Games", Icon: Gamepad2 },
 ] as const;
@@ -20,13 +20,19 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="fixed bottom-0 inset-x-0 z-40 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
-      style={{
-        background: "var(--surface)",
-        borderTop: "2px solid var(--edge)",
-      }}
+      className="fixed inset-x-0 z-40 px-3 pointer-events-none"
+      style={{ bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) - 0.5rem))" }}
     >
-      <ul className="mx-auto max-w-md grid grid-cols-5 items-end px-1">
+      <ul
+        className="pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]"
+        style={{
+          background: "color-mix(in srgb, var(--surface) 92%, transparent)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          border: "2px solid var(--edge)",
+          boxShadow: "4px 4px 0 var(--edge), 0 12px 30px rgba(0,0,0,0.35)",
+        }}
+      >
         {tabs.map(({ to, label, Icon }) => {
           const active =
             pathname.startsWith(to) ||

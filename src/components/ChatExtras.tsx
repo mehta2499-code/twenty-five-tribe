@@ -1,5 +1,5 @@
 /** Chat extras: emoji reactions, voice notes. Used by 1:1 and group chats. */
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Mic, Pause, Play, Square, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, _set, fileToImage, useSocial } from "@/lib/social";
@@ -559,4 +559,34 @@ export function GrowingInput({
       autoComplete="off"
     />
   );
+}
+
+/**
+ * Keeps a chat scrolled to the newest message. Opens already at the bottom
+ * (no visible scroll from the top), smooth-scrolls for new messages, and stays
+ * pinned while photos load if you were at the bottom.
+ */
+export function useStickToBottom<T extends HTMLElement>(key: string, count: number, extra?: unknown) {
+  const ref = useRef<T>(null);
+  const opened = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (opened.current !== key) {
+      opened.current = key;
+      el.scrollTop = el.scrollHeight;
+    } else {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+  }, [key, count, extra]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onLoad = () => {
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) el.scrollTop = el.scrollHeight;
+    };
+    el.addEventListener("load", onLoad, true);
+    return () => el.removeEventListener("load", onLoad, true);
+  }, []);
+  return ref;
 }

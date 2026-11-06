@@ -15,6 +15,7 @@ import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
 import {
   GrowingInput,
+  useStickToBottom,
   MediaBubble,
   Reactable,
   VoicePlayer,
@@ -63,7 +64,6 @@ function ChatThread() {
   const [viewing, setViewing] = useState<Snap | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
   const msgs = s.chats[id] ?? [];
   const typing = s.typing[id];
   const live = s.mode === "live";
@@ -71,9 +71,7 @@ function ChatThread() {
   useEffect(() => {
     social.markRead(id);
   }, [id, msgs.length]);
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs.length, typing]);
+  const logRef = useStickToBottom<HTMLDivElement>(id, msgs.length, typing);
 
   if (!f || (live && !isMutual(f))) {
     const theySeatedMe = !!f && s.requests.some((r) => r.person.id === f.id);
@@ -86,7 +84,7 @@ function ChatThread() {
         {f && (
           <p className="text-cool mt-2 text-[15px] leading-relaxed">
             {theySeatedMe
-              ? "They put you in their 25. Seat them back and you can chat and snap."
+              ? "They put you in their 25. Seat them back and you can chat and blink."
               : "You seated them, but they haven't seated you back yet. Chats unlock when it's mutual."}
           </p>
         )}
@@ -164,6 +162,7 @@ function ChatThread() {
         </header>
 
         <div
+          ref={logRef}
           className="flex-1 overflow-y-auto px-3 py-4"
           role="log"
           aria-live="polite"
@@ -238,7 +237,7 @@ function ChatThread() {
                           {m.snapId &&
                             (mine ? (
                               <p className="flex items-center gap-2 font-semibold text-sm">
-                                <Camera size={16} aria-hidden="true" /> Snap
+                                <Camera size={16} aria-hidden="true" /> Blink
                                 {snap?.openedBy.includes(id) ? " · opened" : " sent"}
                               </p>
                             ) : snap && !snap.openedBy.includes("me") ? (
@@ -247,11 +246,11 @@ function ChatThread() {
                                 className="flex items-center gap-2 font-semibold text-sm"
                                 style={{ color: "var(--coral-deep)" }}
                               >
-                                <Camera size={16} aria-hidden="true" /> New snap · tap to view
+                                <Camera size={16} aria-hidden="true" /> New blink · tap to view
                               </button>
                             ) : (
                               <p className="flex items-center gap-2 text-sm text-faint">
-                                <Camera size={16} aria-hidden="true" /> Snap opened
+                                <Camera size={16} aria-hidden="true" /> Blink opened
                               </p>
                             ))}
                           {shared && (
@@ -334,7 +333,6 @@ function ChatThread() {
               </div>
             </div>
           )}
-          <div ref={endRef} />
         </div>
 
         <form

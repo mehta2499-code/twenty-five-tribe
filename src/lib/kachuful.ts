@@ -298,3 +298,15 @@ export function botMove(s: KState): Move {
 export function applyMove(s: KState, move: Move): KState {
   return move.type === "bid" ? placeBid(s, s.turn, move.bid) : playCard(s, s.turn, move.card);
 }
+
+/** Quit: a bot takes over your seat. With one person (or nobody) left, the game ends. */
+export function quitSeat(s: KState, seat: number): KState {
+  const seats = s.seats.map((p, i) =>
+    i === seat ? { ...p, bot: true, name: `${p.name.split(" ")[0]} (bot)` } : p,
+  );
+  const humans = seats.filter((p) => !p.bot).length;
+  return { ...s, seats, phase: humans <= 1 ? "over" : s.phase };
+}
+
+/** The phone that plays the bots: the first human still at the table. */
+export const kachufulDriver = (s: KState) => s.seats.find((p) => !p.bot)?.id;

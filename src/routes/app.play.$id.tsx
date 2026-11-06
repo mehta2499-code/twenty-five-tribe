@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { KachufulBoard, useBotTurns } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { LudoTable, LudoWaiting, useLudoBots } from "@/components/Ludo";
 import {
   beginLudo,
   joinLudo,
+  leaveLobby,
+  ludoDriver,
   moveToken,
   resign,
   roll,
@@ -14,7 +16,7 @@ import {
   type LudoState,
 } from "@/lib/ludo";
 import { TriviaDuel, duelMax } from "@/components/TriviaDuel";
-import { clientOnly } from "@/components/SocialUI";
+import { Sheet, clientOnly } from "@/components/SocialUI";
 import { TRIVIA_PACKS } from "@/lib/data";
 import {
   inviteToTrivia,
@@ -27,7 +29,14 @@ import {
 import { MAX_GUESSES, WordBoard, gridOf } from "@/components/WordUp";
 import { Confetti } from "@/components/SocialUI";
 import { X } from "lucide-react";
-import { applyMove, nextRound, type KState, type Move } from "@/lib/kachuful";
+import {
+  applyMove,
+  kachufulDriver,
+  nextRound,
+  quitSeat,
+  type KState,
+  type Move,
+} from "@/lib/kachuful";
 import { _get, friendById, useSocial } from "@/lib/social";
 import { GameChat } from "@/components/GameChat";
 
@@ -59,6 +68,7 @@ type Live<S> = ReturnType<typeof useGame<S>>;
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
   const live = useGame<KState | TriviaState | WordState | LudoState>(id);
   const { game, error } = live;
+  const [leaving, setLeaving] = useState(false);
   if (error) {
     return (
       <div className="px-6 pt-24 text-center">
@@ -70,19 +80,74 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     );
   }
   if (!game) return <p className="pt-24 text-center text-faint">Pulling up a chair…</p>;
+
+  // Quitting (Ludo has its own menu). Null when there's nothing to quit.
+  let quit: (() => void) | null = null;
+  let quitNote = "";
+  if (game.status === "playing" && game.kind === "kachuful") {
+    const st = game.state as KState;
+    const seat = st.seats.findIndex((p) => p.id === meId && !p.bot);
+    if (seat >= 0 && st.phase !== "over") {
+      quit = () => {
+        const next = quitSeat(st, seat);
+        void live.save(next, next.phase === "over" ? "done" : undefined);
+      };
+      quitNote =
+        st.seats.filter((p) => !p.bot).length <= 2
+          ? "Only one person would be left, so the game ends."
+          : "A bot takes your seat and the game goes on.";
+    }
+  } else if (game.status === "playing" && game.kind === "word") {
+    const st = game.state as WordState;
+    quit = () => void live.save({ ...st, gaveUp: meId }, "done");
+    quitNote = st.guesser === meId ? "You give up and the word is revealed." : "The challenge is called off.";
+  } else if (game.status === "playing" && game.kind === "trivia") {
+    const st = game.state as TriviaState;
+    if (!st.results[meId]) {
+      quit = () => void live.save({ ...st, forfeit: meId }, "done");
+      quitNote = "You forfeit and the other player wins.";
+    }
+  }
+  const close = quit ? () => setLeaving(true) : onClose;
+
   const board =
     game.kind === "word" ? (
-      <OnlineWord live={live as Live<WordState>} meId={meId} onClose={onClose} />
+      <OnlineWord live={live as Live<WordState>} meId={meId} onClose={close} />
     ) : game.kind === "ludo" ? (
       <OnlineLudo live={live as Live<LudoState>} meId={meId} onClose={onClose} />
     ) : game.kind === "kachuful" ? (
-      <OnlineKachuful live={live as Live<KState>} meId={meId} onClose={onClose} />
+      <OnlineKachuful live={live as Live<KState>} meId={meId} onClose={close} />
     ) : (
-      <OnlineTrivia live={live as Live<TriviaState>} id={id} meId={meId} onClose={onClose} />
+      <OnlineTrivia live={live as Live<TriviaState>} id={id} meId={meId} onClose={close} />
     );
   return (
     <>
       {board}
+      {leaving && quit && (
+        <div className="relative z-[70]">
+          <Sheet title="Leave the game?" onClose={() => setLeaving(false)}>
+            <div className="grid gap-2.5">
+              <button onClick={() => setLeaving(false)} className="btn-primary">
+                Keep playing
+              </button>
+              <button onClick={onClose} className="btn-secondary">
+                Leave for now (come back from Your games)
+              </button>
+              <button
+                onClick={() => {
+                  quit?.();
+                  setLeaving(false);
+                  onClose();
+                }}
+                className="btn-danger"
+              >
+                🏳️ Quit
+              </button>
+            </div>
+            <p className="meta mt-3">{quitNote}</p>
+          </Sheet>
+        </div>
+      )}
       {game.status === "playing" && (
         <GameChat
           gameId={id}
@@ -106,7 +171,8 @@ function OnlineKachuful({
 }) {
   const { game, save } = live;
   const state = game?.state ?? null;
-  const isHost = game?.host === meId;
+  // The first human at the table plays the bots (so it still works if the host quits).
+  const isHost = !!state && kachufulDriver(state) === meId;
 
   const commit = useCallback(
     (next: KState) => void save(next, next.phase === "over" ? "done" : undefined),
@@ -120,7 +186,7 @@ function OnlineKachuful({
   const waitingOn = state.seats[state.turn];
   const note =
     !isHost && waitingOn?.bot
-      ? `Bots play from ${state.seats.find((p) => p.id === game.host)?.name.split(" ")[0] ?? "the host"}'s phone.`
+      ? `Bots play from ${state.seats.find((p) => p.id === kachufulDriver(state))?.name.split(" ")[0] ?? "the host"}'s phone.`
       : undefined;
 
   return (
@@ -162,6 +228,21 @@ function OnlineTrivia({
     color: other?.color,
     score: theirs?.score,
   };
+
+  if (game.state.forfeit) {
+    const iQuit = game.state.forfeit === meId;
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
+        <p className="label-caps">{pack.name}</p>
+        <h2 className="font-display mt-3" style={{ fontSize: 30 }}>
+          {iQuit ? "You quit this one 🏳️" : `${opponent.name.split(" ")[0]} quit. You win 🏆`}
+        </h2>
+        <button onClick={onClose} className="mt-10 btn-primary px-8">
+          Back to games
+        </button>
+      </div>
+    );
+  }
 
   const saveResult = (r: { score: number; total: number; correct?: number; points?: number }) =>
     saveTriviaResult(id, meId, { ...r, at: Date.now() }).then(() => live.reload());
@@ -276,7 +357,8 @@ function OnlineWord({
   const other = friendById(guessing ? st.setter : st.guesser);
   const first = other?.name.split(" ")[0] ?? "Your friend";
   const solved = st.guesses.includes(answer);
-  const over = solved || st.guesses.length >= MAX_GUESSES;
+  const quitter = st.gaveUp ? (st.gaveUp === meId ? "You" : first) : null;
+  const over = solved || st.guesses.length >= MAX_GUESSES || !!quitter;
 
   const guess = (g: string) => {
     const next = { ...st, guesses: [...st.guesses, g] };
@@ -284,7 +366,9 @@ function OnlineWord({
     void save(next, done ? "done" : undefined);
   };
 
-  const headline = over
+  const headline = quitter
+    ? `${quitter} quit 🏳️ The word was ${answer.toUpperCase()}`
+    : over
     ? guessing
       ? solved
         ? `Got it in ${st.guesses.length}/6 😎`
@@ -348,14 +432,15 @@ function OnlineLudo({
   const mine = st.players.findIndex((p) => p.id === meId);
   const commit = (next: LudoState) => void save(next, next.phase === "over" ? "done" : undefined);
   const isHost = game.host === meId;
-  // The host's phone plays the bots.
-  useLudoBots(st, isHost, commit);
+  // The first human still playing runs the bots (works even if the host resigned).
+  useLudoBots(st, ludoDriver(st) === meId, commit);
 
   // Waiting room: mark me as in; the host starts once everyone is.
   const inLobby = st.phase === "lobby";
   const amIn = (st.joined ?? []).includes(meId);
   const everyoneIn = inLobby && waitingFor(st).length === 0;
   useEffect(() => {
+    if (game.status === "done") return;
     if (inLobby && !amIn) commit(joinLudo(st, meId));
     else if (everyoneIn && isHost) {
       const t = setTimeout(() => commit(beginLudo(st)), 1200);
@@ -364,6 +449,19 @@ function OnlineLudo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inLobby, amIn, everyoneIn, isHost, game.version]);
 
+  if (inLobby && game.status === "done")
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-5xl">🎲</p>
+        <h2 className="font-display mt-3" style={{ fontSize: 28 }}>
+          Game called off
+        </h2>
+        <p className="mt-3 text-cool">Not enough people stayed to play.</p>
+        <button onClick={onClose} className="mt-8 btn-primary px-8">
+          Back to games
+        </button>
+      </div>
+    );
   if (inLobby)
     return (
       <LudoWaiting
@@ -371,7 +469,12 @@ function OnlineLudo({
         meId={meId}
         isHost={isHost}
         onStart={() => commit(beginLudo(st))}
-        onClose={onClose}
+        onClose={() => {
+          // Host leaving, or only one person left: the game is called off.
+          const next = isHost ? null : leaveLobby(st, meId);
+          void save(next ?? st, next ? undefined : "done");
+          onClose();
+        }}
       />
     );
   return (

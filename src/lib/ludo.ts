@@ -215,7 +215,8 @@ export function resign(s: LudoState, player: number): LudoState {
   };
   const active = players.map((p, i) => i).filter((i) => !players[i].out);
   const humans = active.filter((i) => !players[i].bot);
-  if (active.length <= 1 || humans.length === 0) {
+  // Only one person (or nobody) left: the game ends.
+  if (active.length <= 1 || humans.length <= 1) {
     const progress = (i: number) => tokens[i].reduce((a, r) => a + Math.max(0, r + 1), 0);
     const winner = active.sort((a, b) => progress(b) - progress(a))[0] ?? 0;
     return { ...next, phase: "over", winner, dice: null };
@@ -223,6 +224,24 @@ export function resign(s: LudoState, player: number): LudoState {
   if (s.turn === player) next = nextTurn(next);
   return next;
 }
+
+/** Leave the waiting room. Returns null when too few people are left to play. */
+export function leaveLobby(s: LudoState, id: string): LudoState | null {
+  if (s.phase !== "lobby") return s;
+  const keep = s.players.map((p, i) => i).filter((i) => s.players[i].id !== id);
+  const players = keep.map((i) => s.players[i]);
+  if (players.filter((p) => !p.bot).length <= 1 || players.length < 2) return null;
+  return {
+    ...s,
+    players,
+    tokens: keep.map((i) => s.tokens[i]),
+    joined: (s.joined ?? []).filter((j) => j !== id),
+  };
+}
+
+/** The phone that plays the bots: the first human still in the game. */
+export const ludoDriver = (s: LudoState) =>
+  s.players.find((p) => !p.bot && !p.out && (s.phase !== "lobby" || (s.joined ?? []).includes(p.id)))?.id;
 
 /** Skip a player who's gone quiet (anyone can do it after the wait). */
 export const IDLE_MS = 60_000;

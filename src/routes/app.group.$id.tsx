@@ -5,6 +5,7 @@ import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import {
   GrowingInput,
+  useStickToBottom,
   MediaBubble,
   Reactable,
   VoicePlayer,
@@ -41,13 +42,12 @@ function GroupThread() {
   const [info, setInfo] = useState(false);
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const endRef = useRef<HTMLDivElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     markSeen(id);
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [id, msgs.length]);
+  const logRef = useStickToBottom<HTMLDivElement>(id, msgs.length);
 
   if (!g) {
     return (
@@ -102,7 +102,7 @@ function GroupThread() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4" role="log" aria-live="polite">
+        <div ref={logRef} className="flex-1 overflow-y-auto px-3 py-4" role="log" aria-live="polite">
           {msgs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-8">
               <p className="text-6xl">{g.emoji}</p>
@@ -190,7 +190,6 @@ function GroupThread() {
               })}
             </ol>
           )}
-          <div ref={endRef} />
         </div>
 
         <form

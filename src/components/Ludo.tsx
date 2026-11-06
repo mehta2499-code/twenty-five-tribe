@@ -618,7 +618,7 @@ export function LudoTable({
           </div>
           <p className="meta mt-3">
             Resigning takes your pawns off the board
-            {solo ? "" : " and the game goes on without you"}.
+            {solo ? "" : ". If only one person is left, the game ends"}.
           </p>
         </Sheet>
       )}

@@ -640,7 +640,7 @@ function subscribe() {
               _set((s) => ({
                 ...s,
                 notice: back
-                  ? `🤝 ${name} seated you back. Chats and snaps unlocked.`
+                  ? `🤝 ${name} seated you back. Chats and blinks unlocked.`
                   : `👀 ${name} put you in their 25.`,
               }));
             });
@@ -666,8 +666,8 @@ function subscribe() {
               const f = data ? friendById(data.sender) : undefined;
               showBanner({
                 id: `snap-${r.snap_id}`,
-                title: f?.name ?? "New snap",
-                body: "📸 Sent you a snap. Open before it vanishes.",
+                title: f?.name ?? "New blink",
+                body: "👁️ Sent you a blink. Open before it vanishes.",
                 to: "/app/snap",
                 avatar: f?.avatar || undefined,
                 initials: f?.initials ?? "?",
@@ -1097,7 +1097,7 @@ registerLive({
         );
         scheduleReload(300);
       } catch (e) {
-        fail(`Snap didn't send. ${friendly(e)}`);
+        fail(`Blink didn't send. ${friendly(e)}`);
         scheduleReload(0);
       }
     })();

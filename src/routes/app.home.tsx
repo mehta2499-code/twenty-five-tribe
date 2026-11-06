@@ -292,8 +292,8 @@ function Table({
 
 const DARES: { text: string; cta: string; to: string }[] = [
   {
-    text: "Snap your lunch to someone. No caption. Let them wonder.",
-    cta: "Send a snap",
+    text: "Blink your lunch to someone. No caption. Let them wonder.",
+    cta: "Send a blink",
     to: "/app/snap",
   },
   {
@@ -308,12 +308,12 @@ const DARES: { text: string; cta: string; to: string }[] = [
   },
   { text: "Top your table in today's game. Loser buys chai.", cta: "Play", to: "/app/games" },
   {
-    text: "Snap the view from where you're sitting right now.",
-    cta: "Send a snap",
+    text: "Blink the view from where you're sitting right now.",
+    cta: "Send a blink",
     to: "/app/snap",
   },
   { text: "Ask someone 'what's the tea?' and nothing else.", cta: "Open chats", to: "/app/chats" },
-  { text: "Send an ugly selfie. Streaks were built on less.", cta: "Send a snap", to: "/app/snap" },
+  { text: "Send an ugly selfie. Streaks were built on less.", cta: "Send a blink", to: "/app/snap" },
   { text: "Finish all 3 tries of today's game before bed.", cta: "Play", to: "/app/games" },
   {
     text: "Tell someone at your table one thing you never told them.",
@@ -472,7 +472,7 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <Link to="/app/snap" search={{ to: friend.id }} className="btn-primary">
-            <Camera size={18} aria-hidden="true" /> Snap
+            <Camera size={18} aria-hidden="true" /> Blink
           </Link>
           <Link to="/app/chat/$id" params={{ id: friend.id }} className="btn-secondary">
             <MessageCircle size={18} aria-hidden="true" /> Message

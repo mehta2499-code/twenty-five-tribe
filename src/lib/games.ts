@@ -20,6 +20,8 @@ export type TriviaState = {
     string,
     { score: number; total: number; at: number; correct?: number; points?: number }
   >;
+  /** Who quit (the other player wins). */
+  forfeit?: string;
 };
 
 /** Word Up challenge: the setter picks a word, the guesser has 6 tries. */
@@ -29,6 +31,8 @@ export type WordState = {
   setter: string;
   guesser: string;
   guesses: string[];
+  /** Who quit. */
+  gaveUp?: string;
 };
 export const hideWord = (w: string) => btoa([...w].reverse().join(""));
 export const revealWord = (h: string) => [...atob(h)].reverse().join("");

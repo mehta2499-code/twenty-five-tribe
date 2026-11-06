@@ -103,7 +103,7 @@ function LiveSeat() {
 
       <div className="px-5 -mt-5 relative grid grid-cols-3 gap-3">
         {[
-          { n: st.count ? `🔥 ${st.count}` : "–", l: st.atRisk ? "snap today!" : "snap streak" },
+          { n: st.count ? `🔥 ${st.count}` : "–", l: st.atRisk ? "blink today!" : "blink streak" },
           { n: String((s.chats[id] ?? []).length), l: "messages" },
           { n: String(posts), l: "posts" },
         ].map((x) => (
@@ -113,7 +113,7 @@ function LiveSeat() {
             </p>
             <p
               className="text-xs"
-              style={{ color: x.l === "snap today!" ? "var(--accent-ember)" : "var(--text-muted)" }}
+              style={{ color: x.l === "blink today!" ? "var(--accent-ember)" : "var(--text-muted)" }}
             >
               {x.l}
             </p>
@@ -128,8 +128,8 @@ function LiveSeat() {
           </p>
           <p className="meta mt-1">
             {inMine
-              ? `${f.name.split(" ")[0]} can see your posts. Chats, snaps and games unlock when they seat you back.`
-              : `You can see ${f.name.split(" ")[0]}'s posts. Seat them back to unlock chats, snaps and games.`}
+              ? `${f.name.split(" ")[0]} can see your posts. Chats, blinks and games unlock when they seat you back.`
+              : `You can see ${f.name.split(" ")[0]}'s posts. Seat them back to unlock chats, blinks and games.`}
           </p>
           {!inMine && (
             <Link to="/app/people" className="btn-primary mt-3 px-5">
@@ -148,7 +148,7 @@ function LiveSeat() {
           search={{ to: id }}
           className="rounded-full py-3.5 text-center font-semibold card-editorial"
         >
-          Send a snap
+          Send a blink
         </Link>
       </div>
 

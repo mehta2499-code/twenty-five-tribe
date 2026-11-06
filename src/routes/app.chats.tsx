@@ -163,7 +163,7 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (typing) return "Typing…";
   if (!m) return "No messages yet";
   const who = m.from === "me" ? "You: " : "";
-  if (m.snapId) return m.from === "me" ? "You sent a snap" : "Sent you a snap";
+  if (m.snapId) return m.from === "me" ? "You sent a blink" : "Sent you a blink";
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
   if (m.sharedPostId?.startsWith("voice:")) return `${who}🎤 Voice note`;
   if (m.sharedPostId?.startsWith("img:")) return `${who}📷 Photo`;
@@ -229,7 +229,7 @@ function Chats() {
           <Link
             to="/app/snap"
             search={{ to: undefined }}
-            aria-label="New snap"
+            aria-label="New blink"
             className="btn-quiet btn-icon"
           >
             <Camera size={20} />
@@ -268,7 +268,7 @@ function Chats() {
       ) : (
         <>
           {unopened.length > 0 && (
-            <Section title="New snaps" aside={`${unopened.length} to open`} className="mt-2">
+            <Section title="New blinks" aside={`${unopened.length} to open`} className="mt-2">
               <ul className="flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar">
                 {unopened.map((snap) => {
                   const f = everyone.find((x) => x.id === snap.from);
@@ -278,7 +278,7 @@ function Chats() {
                       <button
                         onClick={() => setViewing(snap)}
                         className="flex flex-col items-center w-16"
-                        aria-label={`Open snap from ${f.name}`}
+                        aria-label={`Open blink from ${f.name}`}
                       >
                         <span
                           className="rounded-full p-[2.5px]"

@@ -9,7 +9,7 @@ import { ShareCard } from "@/components/ShareCard";
 import { SuggestionCards } from "@/components/Suggestions";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
-const SUB = "Seat anyone you know. They see your posts. Mutual seats unlock chats, snaps and games.";
+const SUB = "Seat anyone you know. They see your posts. Mutual seats unlock chats, blinks and games.";
 
 export const Route = createFileRoute("/app/people")({
   component: clientOnly(People),
@@ -256,7 +256,7 @@ function People() {
             👀 They put you in their 25 · {incoming.length}
           </h2>
           <p className="meta mt-0.5">
-            You can see their posts. Seat them back to unlock chats, snaps and games.
+            You can see their posts. Seat them back to unlock chats, blinks and games.
           </p>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {incoming.map((r) => (
