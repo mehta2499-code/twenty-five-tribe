@@ -147,13 +147,62 @@ function Board({
   const legal = state.turn === mine ? legalTokens(state) : [];
   const colorOf = (c: LudoColor) => COLOR_HEX[c];
   const used = new Set(state.players.map((p) => p.color));
+  const turnColor = state.phase === "over" ? null : state.players[state.turn]?.color;
+
+  // Pawns hop square by square instead of teleporting.
+  const [shown, setShown] = useState(state.tokens);
+  const shownRef = useRef(state.tokens);
+  useEffect(() => {
+    const prev = shownRef.current;
+    const next = state.tokens;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const STEP = 130;
+    const apply = (fn: (cur: number[][]) => void) => {
+      const cur = shownRef.current.map((r) => [...r]);
+      fn(cur);
+      shownRef.current = cur;
+      setShown(cur);
+    };
+    let longest = 0;
+    const jumps: { p: number; t: number; to: number }[] = [];
+    next.forEach((row, p) =>
+      row.forEach((to, t) => {
+        const from = prev[p]?.[t] ?? to;
+        if (from === to) return;
+        if (from >= 0 && to > from && to - from <= 6) {
+          const n = to - from;
+          longest = Math.max(longest, n);
+          for (let i = 1; i <= n; i++)
+            timers.push(setTimeout(() => apply((cur) => (cur[p][t] = from + i)), (i - 1) * STEP));
+        } else jumps.push({ p, t, to });
+      }),
+    );
+    // Leaving base lands now; getting captured lands after the hops finish.
+    for (const j of jumps)
+      timers.push(
+        setTimeout(
+          () => apply((cur) => (cur[j.p][j.t] = j.to)),
+          j.to === -1 ? longest * STEP + 60 : 0,
+        ),
+      );
+    timers.push(
+      setTimeout(
+        () => {
+          shownRef.current = next;
+          setShown(next);
+        },
+        longest * STEP + 140,
+      ),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [state.tokens]);
 
   // Spread tokens that share a cell.
   const placed = useMemo(() => {
     const out: { p: number; t: number; x: number; y: number }[] = [];
     const seen = new Map<string, number>();
     state.players.forEach((pl, p) =>
-      state.tokens[p].forEach((rel, t) => {
+      (shown[p] ?? state.tokens[p]).forEach((rel, t) => {
         const [x, y] = tokenXY(pl.color, rel, t);
         const key = rel === -1 ? `${p}-${t}` : `${x},${y}`;
         const n = seen.get(key) ?? 0;
@@ -163,7 +212,7 @@ function Board({
       }),
     );
     return out;
-  }, [state]);
+  }, [state.players, state.tokens, shown]);
 
   return (
     <svg
@@ -171,6 +220,15 @@ function Board({
       className="w-full rounded-2xl"
       style={{ border: "2px solid var(--edge)", background: "#F6F3EA" }}
     >
+      <defs>
+        {(Object.keys(COLOR_HEX) as LudoColor[]).map((c) => (
+          <radialGradient key={c} id={`pawn-${c}`} cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#fff" stopOpacity={0.55} />
+            <stop offset="35%" stopColor={COLOR_HEX[c]} />
+            <stop offset="100%" stopColor={COLOR_HEX[c]} stopOpacity={0.85} />
+          </radialGradient>
+        ))}
+      </defs>
       {/* Yards */}
       {(Object.keys(YARD_ORIGIN) as LudoColor[]).map((c) => {
         const [r, col] = YARD_ORIGIN[c];
@@ -178,6 +236,26 @@ function Board({
           <g key={c} opacity={used.has(c) ? 1 : 0.35}>
             <rect x={col} y={r} width={6} height={6} fill={colorOf(c)} />
             <rect x={col + 0.8} y={r + 0.8} width={4.4} height={4.4} rx={0.6} fill="#fff" />
+            {turnColor === c && (
+              <rect
+                x={col + 0.15}
+                y={r + 0.15}
+                width={5.7}
+                height={5.7}
+                rx={0.4}
+                fill="none"
+                stroke="#07060B"
+                strokeWidth={0.14}
+                strokeDasharray="0.5 0.3"
+              >
+                <animate
+                  attributeName="stroke-dashoffset"
+                  values="0;1.6"
+                  dur="1.2s"
+                  repeatCount="indefinite"
+                />
+              </rect>
+            )}
           </g>
         );
       })}
@@ -231,7 +309,7 @@ function Board({
           <g
             key={`${p}-${t}`}
             style={{
-              transition: "transform 260ms ease",
+              transition: "transform 120ms ease-out",
               transform: `translate(${x}px, ${y}px)`,
               cursor: canMove ? "pointer" : "default",
             }}
@@ -253,8 +331,9 @@ function Board({
                 />
               </circle>
             )}
-            <circle r={0.38} fill={colorOf(pl.color)} stroke="#07060B" strokeWidth={0.08} />
-            <circle r={0.14} fill="#fff" opacity={0.7} />
+            <ellipse cx={0.04} cy={0.3} rx={0.32} ry={0.12} fill="#07060B" opacity={0.25} />
+            <circle r={0.38} fill={`url(#pawn-${pl.color})`} stroke="#07060B" strokeWidth={0.07} />
+            <circle cx={-0.11} cy={-0.12} r={0.11} fill="#fff" opacity={0.75} />
           </g>
         );
       })}
@@ -315,7 +394,7 @@ function Dice({
     return () => clearInterval(t);
   }, [rolling, value]);
   return (
-    <svg viewBox="0 0 100 100" width={64} height={64} className={rolling ? "die-rolling" : ""}>
+    <svg viewBox="0 0 100 100" width={78} height={78} className={rolling ? "die-rolling" : ""}>
       <rect
         x={4}
         y={4}
@@ -359,6 +438,19 @@ export function LudoTable({
     return () => clearInterval(t);
   }, []);
   const turnPlayer = state.players[state.turn];
+  // Big "Captured!" flash when anyone sends a pawn home.
+  const [flash, setFlash] = useState(0);
+  const lastCaptureKey = state.last?.captured
+    ? `${state.last.player}-${state.tokens.flat().join(",")}`
+    : "";
+  useEffect(() => {
+    if (!lastCaptureKey) return;
+    setFlash((n) => n + 1);
+    buzz(state.last?.player === mine ? 25 : 60);
+    const t = setTimeout(() => setFlash(0), 1300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastCaptureKey]);
   const myTurn = state.turn === mine && state.phase !== "over";
   const idle =
     !myTurn && !turnPlayer.bot && state.phase !== "over" && now - state.turnStartedAt > IDLE_MS;
@@ -435,23 +527,45 @@ export function LudoTable({
           />
         </div>
 
-        <div className="mt-4 flex items-center gap-4">
+        <div
+          className="mt-4 flex items-center gap-4 rounded-2xl p-3"
+          style={{
+            background: myTurn ? "var(--fill)" : "transparent",
+            border: `2px solid ${myTurn ? COLOR_HEX[turnPlayer.color] : "transparent"}`,
+          }}
+        >
           <button
             onClick={doRoll}
             disabled={!myTurn || state.phase !== "roll" || rolling}
             aria-label="Roll the dice"
-            className="disabled:opacity-60"
+            className="relative shrink-0 disabled:opacity-70"
           >
-            <Dice
-              value={state.dice ?? state.last?.dice ?? null}
-              rolling={rolling}
-              color={COLOR_HEX[turnPlayer.color]}
-            />
+            <span
+              className={
+                myTurn && state.phase === "roll" && !rolling ? "inline-block float" : "inline-block"
+              }
+            >
+              <Dice
+                value={state.dice ?? state.last?.dice ?? null}
+                rolling={rolling}
+                color={COLOR_HEX[turnPlayer.color]}
+              />
+            </span>
+            {myTurn && state.phase === "roll" && !rolling && (
+              <span
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-extrabold px-2 rounded-full"
+                style={{ background: "var(--edge)", color: "#fff" }}
+              >
+                TAP TO ROLL
+              </span>
+            )}
           </button>
           <div className="flex-1 min-w-0">
-            <p className="font-extrabold text-cream text-[17px]">{status}</p>
-            {state.last?.note && <p className="meta">{state.last.note}</p>}
-            {state.last?.captured && <p className="meta">💥 Capture! Rolled again.</p>}
+            <p className="font-extrabold text-cream text-[18px] leading-tight">{status}</p>
+            {state.last?.note && <p className="meta mt-0.5">{state.last.note}</p>}
+            {state.dice === 6 && state.phase === "move" && (
+              <p className="meta mt-0.5">🎉 A six! You'll roll again.</p>
+            )}
             {state.phase === "over" && onPlayAgain && (
               <button onClick={onPlayAgain} className="btn-primary mt-2 px-4 min-h-[38px] text-sm">
                 Play again
@@ -465,6 +579,17 @@ export function LudoTable({
           </div>
         </div>
       </div>
+      {flash > 0 && (
+        <div className="fixed inset-0 z-[62] pointer-events-none flex items-center justify-center">
+          <span
+            key={flash}
+            className="display pop"
+            style={{ fontSize: 44, color: "#fff", textShadow: "3px 3px 0 #07060B" }}
+          >
+            💥 Captured!
+          </span>
+        </div>
+      )}
       <Confetti fire={state.phase === "over" && state.winner === mine ? 1 : 0} />
     </div>
   );

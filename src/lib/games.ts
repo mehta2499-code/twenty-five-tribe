@@ -250,25 +250,35 @@ export function useGame<S>(id: string) {
     return () => void supabase.removeChannel(ch);
   }, [id, load]);
 
+  // Saves go out one at a time, in order. Fast moves (roll then tap, bots)
+  // used to race: the 2nd save reached the server before the 1st, clashed on
+  // version, and the board snapped back.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+
   /** Save a new state. Returns false if someone else moved first (the game reloads). */
   const save = useCallback(
-    async (state: S, status?: "playing" | "done") => {
+    (state: S, status?: "playing" | "done") => {
       const cur = latest.current;
-      if (!cur) return false;
-      const optimistic = { ...cur, state, status: status ?? cur.status, version: cur.version + 1 };
+      if (!cur) return Promise.resolve(false);
+      const baseVersion = cur.version;
+      const optimistic = { ...cur, state, status: status ?? cur.status, version: baseVersion + 1 };
       latest.current = optimistic;
       setGame(optimistic);
-      const { error: e } = await supabase.rpc("save_game", {
-        p_id: id,
-        p_version: cur.version,
-        p_state: state,
-        p_status: status ?? null,
+      const run = queue.current.then(async () => {
+        const { error: e } = await supabase.rpc("save_game", {
+          p_id: id,
+          p_version: baseVersion,
+          p_state: state,
+          p_status: status ?? null,
+        });
+        if (e) {
+          await load();
+          return false;
+        }
+        return true;
       });
-      if (e) {
-        await load();
-        return false;
-      }
-      return true;
+      queue.current = run.catch(() => undefined);
+      return run;
     },
     [id, load],
   );

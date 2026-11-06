@@ -146,12 +146,30 @@ async function upload(bucket: "media" | "snaps" | "avatars", source: string | Bl
   if (error) throw error;
   return path;
 }
+// Signed links last 6h. Reuse them for 5h: a new link for the same photo
+// makes the phone download it again (and the image flickers), so caching
+// them is the single biggest smoothness win.
+const SIGN_TTL = 60 * 60 * 6;
+const REUSE_MS = 5 * 60 * 60 * 1000;
+const signedCache = new Map<string, { url: string; at: number }>();
+
 async function signed(bucket: "media" | "snaps" | "avatars", paths: string[]) {
   const unique = [...new Set(paths.filter(Boolean))];
-  if (!unique.length) return {} as Record<string, string>;
-  const { data } = await supabase.storage.from(bucket).createSignedUrls(unique, 60 * 60 * 6);
   const out: Record<string, string> = {};
-  data?.forEach((d) => d.signedUrl && d.path && (out[d.path] = d.signedUrl));
+  const now = Date.now();
+  const missing: string[] = [];
+  for (const p of unique) {
+    const hit = signedCache.get(`${bucket}/${p}`);
+    if (hit && now - hit.at < REUSE_MS) out[p] = hit.url;
+    else missing.push(p);
+  }
+  if (!missing.length) return out;
+  const { data } = await supabase.storage.from(bucket).createSignedUrls(missing, SIGN_TTL);
+  data?.forEach((d) => {
+    if (!d.signedUrl || !d.path) return;
+    out[d.path] = d.signedUrl;
+    signedCache.set(`${bucket}/${d.path}`, { url: d.signedUrl, at: now });
+  });
   return out;
 }
 
@@ -739,6 +757,7 @@ function stop() {
 }
 
 let started = false;
+let hiddenAt = Date.now();
 /** Call once in the browser: picks up an existing session and listens for sign-in/out. */
 export function initLive() {
   if (started || typeof window === "undefined") return;
@@ -749,10 +768,11 @@ export function initLive() {
     if (event === "SIGNED_OUT") stop();
   });
   // Refresh signed media links and catch anything missed while the tab was asleep.
-  document.addEventListener(
-    "visibilitychange",
-    () => document.visibilityState === "visible" && myId && scheduleReload(100),
-  );
+  document.addEventListener("visibilitychange", () => {
+    // Back after a while: catch up. Quick app switches don't need a full reload.
+    if (document.visibilityState === "hidden") hiddenAt = Date.now();
+    else if (myId && Date.now() - hiddenAt > 30_000) scheduleReload(100);
+  });
 }
 
 // ---------- Account ----------

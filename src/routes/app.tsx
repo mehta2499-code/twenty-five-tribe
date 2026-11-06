@@ -39,6 +39,12 @@ function AppLayout() {
     };
   }, [navigate]);
 
+  // Service worker: caches the app's built files on the phone for a fast start.
+  useEffect(() => {
+    if ("serviceWorker" in navigator)
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  }, []);
+
   // Notifications already allowed on this device: keep it registered.
   useEffect(() => {
     if (s.mode === "live" && s.me) void syncPush();

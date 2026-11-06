@@ -435,3 +435,7 @@ html.privacy-blur body { filter: blur(28px) saturate(0.6); transition: filter 80
 /* In-app message banner */
 @keyframes banner-in { from { transform: translateY(-120%); opacity: 0; } to { transform: none; opacity: 1; } }
 .banner-in { animation: banner-in 0.35s var(--spring, cubic-bezier(.2,.9,.3,1.2)) both; }
+
+/* Snappier taps in the home-screen app */
+html { -webkit-tap-highlight-color: transparent; }
+button, a, [role="button"] { touch-action: manipulation; }
