@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronRight, CircleHelp, Dices, Gamepad2, Spade, Trophy, Type, Zap, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { GameArt, type ArtKind } from "@/components/GameArt";
 import { Confetti, FriendPicker, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { DailyRunner, GAMES } from "@/components/ArcadeGames";
 import { Scoreboard } from "@/components/Scoreboard";
@@ -146,6 +147,7 @@ function GameTile({
   tone,
   light,
   Icon,
+  art,
   sticker,
   title,
   line,
@@ -157,6 +159,8 @@ function GameTile({
   tone: string;
   light?: boolean;
   Icon: LucideIcon;
+  /** Coloured illustration; falls back to the line icon. */
+  art?: ArtKind;
   sticker: string;
   title: string;
   line: string;
@@ -185,18 +189,24 @@ function GameTile({
       >
         {sticker}
       </span>
-      <span
-        className="mt-3 w-14 h-14 rounded-2xl flex items-center justify-center"
-        style={{
-          background: light ? "var(--lime)" : "rgba(255,255,255,0.45)",
-          color: "var(--on-accent)",
-          border: "2px solid var(--edge)",
-          transform: "rotate(-6deg)",
-        }}
-        aria-hidden="true"
-      >
-        <Icon size={30} strokeWidth={2.25} />
-      </span>
+      {art ? (
+        <span className="mt-3 -ml-1" aria-hidden="true">
+          <GameArt kind={art} size={60} />
+        </span>
+      ) : (
+        <span
+          className="mt-3 w-14 h-14 rounded-2xl flex items-center justify-center"
+          style={{
+            background: light ? "var(--lime)" : "rgba(255,255,255,0.45)",
+            color: "var(--on-accent)",
+            border: "2px solid var(--edge)",
+            transform: "rotate(-6deg)",
+          }}
+          aria-hidden="true"
+        >
+          <Icon size={30} strokeWidth={2.25} />
+        </span>
+      )}
       <span className="display mt-auto pt-2" style={{ fontSize: 22, lineHeight: 1.05 }}>
         {title}
       </span>
@@ -271,14 +281,15 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
           {spinning ? "SPINNING…" : "TODAY'S GAME · TAP TO REVEAL"}
         </span>
         <span className="flex-1 flex items-center justify-center gap-4 py-2">
-          <span
-            key={spinning ? face : "q"}
-            className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center ${spinning ? "slot-tick" : ""}`}
-            style={{ background: "var(--lime)", color: "var(--on-accent)", transform: "rotate(-6deg)" }}
-            aria-hidden="true"
-          >
-            {spinning ? <g.Icon size={34} strokeWidth={2.25} /> : <CircleHelp size={34} strokeWidth={2.25} />}
-          </span>
+          {spinning ? (
+            <span key={face} className="shrink-0 slot-tick" aria-hidden="true">
+              <GameArt kind={face} size={68} />
+            </span>
+          ) : (
+            <span className="shrink-0" aria-hidden="true">
+              <GameArt kind="mystery" size={68} />
+            </span>
+          )}
           <span className="display" style={{ fontSize: 26, lineHeight: 1.05 }}>
             {spinning ? g.name : "Mystery game"}
           </span>
@@ -294,6 +305,7 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
       <GameTile
         tone="var(--lime)"
         Icon={game.Icon}
+        art={gameFor(day)}
         sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY"}
         title={game.name}
         line={game.blurb}
@@ -382,6 +394,7 @@ function Games() {
               tone="#1F1B2B"
               light
               Icon={Spade}
+              art="kachuful"
               sticker="2–7 PLAYERS"
               title="Kachuful"
               line="Call your tricks. Nail them."
@@ -391,6 +404,7 @@ function Games() {
             <GameTile
               tone="var(--sky)"
               Icon={Zap}
+              art="trivia"
               sticker="LIVE DUEL"
               title="Trivia"
               line="Same questions, same time. Fastest wins."
@@ -400,6 +414,7 @@ function Games() {
             <GameTile
               tone="var(--pink)"
               Icon={Dices}
+              art="ludo"
               sticker="LIVE · 2–4"
               title="Ludo"
               line="Roll, race, capture. Send them home."
@@ -409,6 +424,7 @@ function Games() {
             <GameTile
               tone="var(--sun)"
               Icon={Type}
+              art="word"
               sticker="DAILY WORD"
               title="Word Up"
               line="Guess it in 6, or set one for a friend."

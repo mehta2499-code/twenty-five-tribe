@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
+import { GameArt } from "@/components/GameArt";
 import { friendById, social } from "@/lib/social";
 import {
   TRIES,
@@ -814,7 +815,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
               className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl"
               style={{ background: g.tone, border: "2px solid var(--edge)", boxShadow: "var(--pop)", transform: "rotate(-4deg)" }}
             >
-              <g.Icon size={48} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
+              <GameArt kind={game} size={72} />
             </span>
             <h1 className="title mt-5">{g.name}</h1>
             <p className="text-cool mt-2 max-w-[19rem]" style={{ fontSize: 15, lineHeight: 1.5 }}>

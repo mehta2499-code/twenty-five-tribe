@@ -4,6 +4,7 @@ import { Logo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Armchair, Bell, Cake, Camera, ChevronRight, CircleHelp, Dices, Eye, Flame, Gamepad2, Hourglass, ImagePlus, MessageCircle, PartyPopper, Shuffle, Trophy, UserPlus, Vote, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { GameArt } from "@/components/GameArt";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
 import {
@@ -368,15 +369,8 @@ function GameRank() {
   return (
     <section className="px-5 mt-6">
       <Link to="/app/games" className="card p-4 flex items-center gap-3 hover:bg-[var(--fill)]">
-        <span
-          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
-          style={{
-            background: g.tone,
-            border: "2px solid var(--edge)",
-            transform: "rotate(-4deg)",
-          }}
-        >
-          <g.Icon size={24} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
+        <span className="shrink-0" aria-hidden="true">
+          <GameArt kind={revealed || (d.board[day]?.me ?? []).length ? gameFor(day) : "mystery"} size={48} />
         </span>
         <span className="flex-1 min-w-0">
           <span className="block font-bold text-cream text-[15px]">
