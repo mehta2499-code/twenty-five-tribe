@@ -16,6 +16,8 @@ export function pushStatus(): PushStatus {
   const supported =
     "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   // iPhones only allow notifications for apps added to the Home Screen.
+  // Inside the native app shell, web push isn't available (native push comes later).
+  if ((window as unknown as { Capacitor?: unknown }).Capacitor) return "unsupported";
   if (isIos() && !standalone()) return "needs-install";
   if (!supported || !window.isSecureContext) return "unsupported";
   if (Notification.permission === "denied") return "denied";

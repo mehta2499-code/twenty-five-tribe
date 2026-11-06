@@ -75,6 +75,7 @@ function useOpenApp() {
   const navigate = useNavigate();
   useEffect(() => {
     const standalone =
+      !!(window as unknown as { Capacitor?: unknown }).Capacitor ||
       window.matchMedia?.("(display-mode: standalone)").matches ||
       (navigator as unknown as { standalone?: boolean }).standalone === true;
     if (standalone) {
