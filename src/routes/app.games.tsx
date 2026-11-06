@@ -8,7 +8,7 @@ import { Scoreboard } from "@/components/Scoreboard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
 import { TRIES, gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
-import { LudoLobby } from "@/components/Ludo";
+import { LocalLudo, LudoLobby } from "@/components/Ludo";
 import type { LudoState } from "@/lib/ludo";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
@@ -82,7 +82,12 @@ function YourGames({ meId }: { meId: string }) {
             const turn = l.players[l.turn];
             yourTurn = turn?.id === meId;
             title = `Ludo · ${l.players.length} players`;
-            status = yourTurn ? "Your turn 🎲" : `${turn?.name.split(" ")[0] ?? "Their"}'s turn`;
+            status =
+              l.phase === "lobby"
+                ? "Waiting room ⏳"
+                : yourTurn
+                  ? "Your turn 🎲"
+                  : `${turn?.name.split(" ")[0] ?? "Their"}'s turn`;
           } else if (g.kind === "word") {
             const w = g.state as WordState;
             const guessing = w.guesser === meId;
@@ -214,6 +219,7 @@ function Games() {
   const [tab, setTab] = useState<"play" | "scores">("play");
   const [packs, setPacks] = useState(false);
   const [ludo, setLudo] = useState(false);
+  const [soloLudo, setSoloLudo] = useState<number | null>(null);
   const [wordMenu, setWordMenu] = useState(false);
   const dailyState = useDaily();
   const todayGame = GAMES[gameFor(today())];
@@ -322,15 +328,27 @@ function Games() {
       {ludo && (
         <LudoLobby
           onClose={() => setLudo(false)}
-          onStart={async (friends) => {
+          onStart={async (friends, bots) => {
             setLudo(false);
+            if (!friends.length) {
+              setSoloLudo(bots);
+              return;
+            }
             try {
-              const id = await startLudo(friends);
+              const id = await startLudo(friends, bots);
               navigate({ to: "/app/play/$id", params: { id } });
             } catch (e) {
               setToast((e as Error).message);
             }
           }}
+        />
+      )}
+
+      {soloLudo !== null && (
+        <LocalLudo
+          me={{ id: s.me?.id ?? "me", name: me.name, avatar: me.avatar, initials: me.initials }}
+          bots={soloLudo}
+          onClose={() => setSoloLudo(null)}
         />
       )}
 

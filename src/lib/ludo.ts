@@ -21,6 +21,8 @@ export type LudoPlayer = {
   avatar?: string;
   initials: string;
   color: LudoColor;
+  /** Played by the host's phone. */
+  bot?: boolean;
 };
 
 export type LudoState = {
@@ -28,8 +30,10 @@ export type LudoState = {
   tokens: number[][]; // [player][token]
   turn: number;
   dice: number | null;
-  /** "roll": waiting for the dice. "move": pick a token. */
-  phase: "roll" | "move" | "over";
+  /** "lobby": waiting for players to join. "roll": waiting for the dice. "move": pick a token. */
+  phase: "lobby" | "roll" | "move" | "over";
+  /** Online games: who has opened the game (the lobby waits for everyone). */
+  joined?: string[];
   sixes: number;
   winner?: number;
   /** Last thing that happened, for the screen. */
@@ -62,7 +66,10 @@ export function absOf(color: LudoColor, rel: number) {
   return (START[color] + rel) % LOOP;
 }
 
-export function newLudo(players: Omit<LudoPlayer, "color">[]): LudoState {
+export function newLudo(
+  players: Omit<LudoPlayer, "color">[],
+  opts: { lobby?: boolean } = {},
+): LudoState {
   if (players.length < 2 || players.length > 4) throw new Error("Ludo needs 2 to 4 players.");
   const colors = COLORS_FOR[players.length];
   return {
@@ -70,7 +77,8 @@ export function newLudo(players: Omit<LudoPlayer, "color">[]): LudoState {
     tokens: players.map(() => [-1, -1, -1, -1]),
     turn: 0,
     dice: null,
-    phase: "roll",
+    phase: opts.lobby ? "lobby" : "roll",
+    joined: opts.lobby ? [players[0].id] : undefined,
     sixes: 0,
     turnStartedAt: Date.now(),
   };
@@ -155,15 +163,87 @@ export function moveToken(s: LudoState, token: number): LudoState {
     : nextTurn(moved);
 }
 
+/** Humans who still need to open the game. */
+export const waitingFor = (s: LudoState) =>
+  s.players.filter((p) => !p.bot && !(s.joined ?? []).includes(p.id));
+
+export function joinLudo(s: LudoState, id: string): LudoState {
+  if (s.phase !== "lobby" || (s.joined ?? []).includes(id)) return s;
+  return { ...s, joined: [...(s.joined ?? []), id] };
+}
+
+/** Start from the lobby. Anyone who didn't show up is played by a bot. */
+export function beginLudo(s: LudoState): LudoState {
+  if (s.phase !== "lobby") return s;
+  const joined = s.joined ?? [];
+  return {
+    ...s,
+    players: s.players.map((p) =>
+      p.bot || joined.includes(p.id)
+        ? p
+        : { ...p, bot: true, name: `${p.name.split(" ")[0]} (bot)` },
+    ),
+    phase: "roll",
+    turnStartedAt: Date.now(),
+  };
+}
+
 /** Skip a player who's gone quiet (anyone can do it after the wait). */
 export const IDLE_MS = 60_000;
 export function skipTurn(s: LudoState): LudoState {
-  if (s.phase === "over") return s;
+  if (s.phase === "over" || s.phase === "lobby") return s;
   return nextTurn({ ...s, last: { player: s.turn, dice: 0, note: "Skipped (too slow)" } });
 }
 
-/** Simple pick for tests: capture > finish > leave base > furthest ahead. */
+/** Simple pick for tests: furthest-ahead token. */
 export function autoPick(s: LudoState): number {
   const legal = legalTokens(s);
   return legal.sort((a, b) => s.tokens[s.turn][b] - s.tokens[s.turn][a])[0];
+}
+
+/** Would an opponent be able to land on this loop square with one roll (1-6)? */
+function threatened(s: LudoState, me: number, sq: number) {
+  if (SAFE.has(sq)) return false;
+  return s.players.some((p, pi) => {
+    if (pi === me) return false;
+    return s.tokens[pi].some((rel) => {
+      const from = absOf(p.color, rel);
+      if (from === null) return false;
+      const gap = (sq - from + LOOP) % LOOP;
+      return gap >= 1 && gap <= 6;
+    });
+  });
+}
+
+/** Bot choice: capture > finish > leave base > reach safety > escape danger > furthest. */
+export function botPick(s: LudoState): number {
+  const me = s.turn;
+  const color = s.players[me].color;
+  const legal = legalTokens(s);
+  let best = legal[0];
+  let bestScore = -Infinity;
+  for (const t of legal) {
+    const from = s.tokens[me][t];
+    const to = target(from, s.dice!)!;
+    const sq = absOf(color, to);
+    let score = to / 10;
+    if (sq !== null && !SAFE.has(sq)) {
+      const hits = s.players.some(
+        (p, pi) => pi !== me && s.tokens[pi].some((rel) => absOf(p.color, rel) === sq),
+      );
+      if (hits) score += 100;
+    }
+    if (to === HOME) score += 80;
+    if (from === -1) score += 60;
+    if (to > 50) score += 30; // safe in the home column
+    if (sq !== null && SAFE.has(sq)) score += 20;
+    const fromSq = absOf(color, from);
+    if (fromSq !== null && threatened(s, me, fromSq)) score += 25;
+    if (sq !== null && threatened(s, me, sq)) score -= 30;
+    if (score > bestScore) {
+      bestScore = score;
+      best = t;
+    }
+  }
+  return best;
 }

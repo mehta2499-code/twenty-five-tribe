@@ -141,19 +141,26 @@ export async function startTriviaChallenge(packId: string, friend: Person) {
   return id;
 }
 
-export async function startLudo(friends: Person[]) {
+export async function startLudo(friends: Person[], bots = 0) {
   const me = _get().me!;
+  const { ludoBots } = await import("@/components/Ludo");
   const players = [
     { id: me.id, name: me.name, avatar: me.avatar, initials: me.initials },
-    ...friends.map((f) => ({ id: f.id, name: f.name, avatar: f.avatar || undefined, initials: f.initials })),
+    ...friends.map((f) => ({
+      id: f.id,
+      name: f.name,
+      avatar: f.avatar || undefined,
+      initials: f.initials,
+    })),
+    ...ludoBots(bots),
   ];
-  const state = newLudo(players);
+  const state = newLudo(players, { lobby: true });
   const id = uuid();
   const { error } = await supabase.from("games").insert({
     id,
     kind: "ludo",
     host: me.id,
-    players: players.map((p) => p.id),
+    players: [me.id, ...friends.map((f) => f.id)],
     state,
     version: 0,
   });
@@ -161,7 +168,7 @@ export async function startLudo(friends: Person[]) {
   await invite(
     friends.map((f) => f.id),
     id,
-    `🎲 Ludo, ${players.length} players. Join now, it's live!`,
+    `🎲 Ludo, ${players.length} players${bots ? ` (${bots} bot${bots > 1 ? "s" : ""})` : ""}. Join now, it's live!`,
   );
   return id;
 }

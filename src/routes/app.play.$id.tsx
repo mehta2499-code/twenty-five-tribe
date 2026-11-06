@@ -1,9 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { KachufulBoard, useBotTurns } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
-import { LudoTable } from "@/components/Ludo";
-import { moveToken, roll, skipTurn, type LudoState } from "@/lib/ludo";
+import { LudoTable, LudoWaiting, useLudoBots } from "@/components/Ludo";
+import {
+  beginLudo,
+  joinLudo,
+  moveToken,
+  roll,
+  skipTurn,
+  waitingFor,
+  type LudoState,
+} from "@/lib/ludo";
 import { TriviaDuel, duelMax } from "@/components/TriviaDuel";
 import { clientOnly } from "@/components/SocialUI";
 import { TRIVIA_PACKS } from "@/lib/data";
@@ -323,6 +331,33 @@ function OnlineLudo({
   const st = game.state;
   const mine = st.players.findIndex((p) => p.id === meId);
   const commit = (next: LudoState) => void save(next, next.phase === "over" ? "done" : undefined);
+  const isHost = game.host === meId;
+  // The host's phone plays the bots.
+  useLudoBots(st, isHost, commit);
+
+  // Waiting room: mark me as in; the host starts once everyone is.
+  const inLobby = st.phase === "lobby";
+  const amIn = (st.joined ?? []).includes(meId);
+  const everyoneIn = inLobby && waitingFor(st).length === 0;
+  useEffect(() => {
+    if (inLobby && !amIn) commit(joinLudo(st, meId));
+    else if (everyoneIn && isHost) {
+      const t = setTimeout(() => commit(beginLudo(st)), 1200);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inLobby, amIn, everyoneIn, isHost, game.version]);
+
+  if (inLobby)
+    return (
+      <LudoWaiting
+        state={st}
+        meId={meId}
+        isHost={isHost}
+        onStart={() => commit(beginLudo(st))}
+        onClose={onClose}
+      />
+    );
   return (
     <LudoTable
       state={st}

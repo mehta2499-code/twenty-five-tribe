@@ -1,5 +1,5 @@
 /** Ludo board, dice and lobby. Rules live in lib/ludo.ts. */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
@@ -10,10 +10,72 @@ import {
   IDLE_MS,
   SAFE,
   START,
+  botPick,
   legalTokens,
+  moveToken,
+  newLudo,
+  roll,
+  skipTurn,
+  waitingFor,
   type LudoColor,
   type LudoState,
 } from "@/lib/ludo";
+
+export const LUDO_BOT_NAMES = ["Chintu", "Pinky", "Bunty"];
+export const ludoBots = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `bot-${i + 1}`,
+    name: LUDO_BOT_NAMES[i],
+    initials: LUDO_BOT_NAMES[i].slice(0, 2).toUpperCase(),
+    bot: true,
+  }));
+
+/** Plays the bots' turns (one phone only: the host's). */
+export function useLudoBots(
+  state: LudoState | null,
+  drive: boolean,
+  apply: (s: LudoState) => void,
+) {
+  const applyRef = useRef(apply);
+  applyRef.current = apply;
+  useEffect(() => {
+    if (!drive || !state || state.phase === "over" || state.phase === "lobby") return;
+    const p = state.players[state.turn];
+    if (!p?.bot) return;
+    const t = setTimeout(
+      () =>
+        applyRef.current(state.phase === "roll" ? roll(state) : moveToken(state, botPick(state))),
+      state.phase === "roll" ? 750 : 550,
+    );
+    return () => clearTimeout(t);
+  }, [state, drive]);
+}
+
+/** Solo against bots: lives on this phone only. */
+export function LocalLudo({
+  me,
+  bots,
+  onClose,
+}: {
+  me: { id: string; name: string; avatar?: string; initials: string };
+  bots: number;
+  onClose: () => void;
+}) {
+  const fresh = () => newLudo([me, ...ludoBots(bots)]);
+  const [state, setState] = useState<LudoState>(fresh);
+  useLudoBots(state, true, setState);
+  return (
+    <LudoTable
+      state={state}
+      mine={0}
+      onRoll={() => setState((s) => roll(s))}
+      onMove={(t) => setState((s) => moveToken(s, t))}
+      onSkip={() => setState((s) => skipTurn(s))}
+      onClose={onClose}
+      onPlayAgain={() => setState(fresh())}
+    />
+  );
+}
 
 // ---------- Board geometry (15 × 15 grid; [row, col]) ----------
 
@@ -104,7 +166,11 @@ function Board({
   }, [state]);
 
   return (
-    <svg viewBox="0 0 15 15" className="w-full rounded-2xl" style={{ border: "2px solid var(--edge)", background: "#F6F3EA" }}>
+    <svg
+      viewBox="0 0 15 15"
+      className="w-full rounded-2xl"
+      style={{ border: "2px solid var(--edge)", background: "#F6F3EA" }}
+    >
       {/* Yards */}
       {(Object.keys(YARD_ORIGIN) as LudoColor[]).map((c) => {
         const [r, col] = YARD_ORIGIN[c];
@@ -120,7 +186,15 @@ function Board({
         const startOf = (Object.keys(START) as LudoColor[]).find((k) => START[k] === i);
         return (
           <g key={i}>
-            <rect x={c} y={r} width={1} height={1} fill={startOf ? colorOf(startOf) : "#fff"} stroke="#cfc8b8" strokeWidth={0.03} />
+            <rect
+              x={c}
+              y={r}
+              width={1}
+              height={1}
+              fill={startOf ? colorOf(startOf) : "#fff"}
+              stroke="#cfc8b8"
+              strokeWidth={0.03}
+            />
             {SAFE.has(i) && !startOf && (
               <text x={c + 0.5} y={r + 0.72} fontSize={0.62} textAnchor="middle">
                 ⭐
@@ -132,7 +206,16 @@ function Board({
       {/* Home columns */}
       {(Object.keys(HOME_COLUMN) as LudoColor[]).map((c) =>
         HOME_COLUMN[c].map(([r, col], i) => (
-          <rect key={`${c}${i}`} x={col} y={r} width={1} height={1} fill={colorOf(c)} stroke="#cfc8b8" strokeWidth={0.03} />
+          <rect
+            key={`${c}${i}`}
+            x={col}
+            y={r}
+            width={1}
+            height={1}
+            fill={colorOf(c)}
+            stroke="#cfc8b8"
+            strokeWidth={0.03}
+          />
         )),
       )}
       {/* Centre */}
@@ -147,13 +230,27 @@ function Board({
         return (
           <g
             key={`${p}-${t}`}
-            style={{ transition: "transform 260ms ease", transform: `translate(${x}px, ${y}px)`, cursor: canMove ? "pointer" : "default" }}
+            style={{
+              transition: "transform 260ms ease",
+              transform: `translate(${x}px, ${y}px)`,
+              cursor: canMove ? "pointer" : "default",
+            }}
             onClick={() => canMove && onToken(t)}
           >
             {canMove && (
               <circle r={0.5} fill="none" stroke="#07060B" strokeWidth={0.1}>
-                <animate attributeName="r" values="0.44;0.62;0.44" dur="1s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="1;0.35;1" dur="1s" repeatCount="indefinite" />
+                <animate
+                  attributeName="r"
+                  values="0.44;0.62;0.44"
+                  dur="1s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="1;0.35;1"
+                  dur="1s"
+                  repeatCount="indefinite"
+                />
               </circle>
             )}
             <circle r={0.38} fill={colorOf(pl.color)} stroke="#07060B" strokeWidth={0.08} />
@@ -167,14 +264,47 @@ function Board({
 
 const PIPS: Record<number, [number, number][]> = {
   1: [[50, 50]],
-  2: [[28, 28], [72, 72]],
-  3: [[28, 28], [50, 50], [72, 72]],
-  4: [[28, 28], [72, 28], [28, 72], [72, 72]],
-  5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]],
-  6: [[28, 25], [72, 25], [28, 50], [72, 50], [28, 75], [72, 75]],
+  2: [
+    [28, 28],
+    [72, 72],
+  ],
+  3: [
+    [28, 28],
+    [50, 50],
+    [72, 72],
+  ],
+  4: [
+    [28, 28],
+    [72, 28],
+    [28, 72],
+    [72, 72],
+  ],
+  5: [
+    [28, 28],
+    [72, 28],
+    [50, 50],
+    [28, 72],
+    [72, 72],
+  ],
+  6: [
+    [28, 25],
+    [72, 25],
+    [28, 50],
+    [72, 50],
+    [28, 75],
+    [72, 75],
+  ],
 };
 
-function Dice({ value, rolling, color }: { value: number | null; rolling: boolean; color: string }) {
+function Dice({
+  value,
+  rolling,
+  color,
+}: {
+  value: number | null;
+  rolling: boolean;
+  color: string;
+}) {
   const [face, setFace] = useState(value ?? 6);
   useEffect(() => {
     if (!rolling) {
@@ -186,7 +316,16 @@ function Dice({ value, rolling, color }: { value: number | null; rolling: boolea
   }, [rolling, value]);
   return (
     <svg viewBox="0 0 100 100" width={64} height={64} className={rolling ? "die-rolling" : ""}>
-      <rect x={4} y={4} width={92} height={92} rx={20} fill={color} stroke="#07060B" strokeWidth={6} />
+      <rect
+        x={4}
+        y={4}
+        width={92}
+        height={92}
+        rx={20}
+        fill={color}
+        stroke="#07060B"
+        strokeWidth={6}
+      />
       {PIPS[face].map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={9} fill="#07060B" />
       ))}
@@ -203,6 +342,7 @@ export function LudoTable({
   onMove,
   onSkip,
   onClose,
+  onPlayAgain,
 }: {
   state: LudoState;
   mine: number;
@@ -210,6 +350,7 @@ export function LudoTable({
   onMove: (token: number) => void;
   onSkip: () => void;
   onClose: () => void;
+  onPlayAgain?: () => void;
 }) {
   const [rolling, setRolling] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -219,7 +360,8 @@ export function LudoTable({
   }, []);
   const turnPlayer = state.players[state.turn];
   const myTurn = state.turn === mine && state.phase !== "over";
-  const idle = !myTurn && state.phase !== "over" && now - state.turnStartedAt > IDLE_MS;
+  const idle =
+    !myTurn && !turnPlayer.bot && state.phase !== "over" && now - state.turnStartedAt > IDLE_MS;
   const home = (p: number) => state.tokens[p].filter((t) => t === HOME).length;
 
   const doRoll = () => {
@@ -250,7 +392,11 @@ export function LudoTable({
           <span className="heading" style={{ fontSize: 20 }}>
             🎲 Ludo
           </span>
-          <button onClick={onClose} aria-label="Close" className="text-cool w-10 h-10 flex items-center justify-center">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-cool w-10 h-10 flex items-center justify-center"
+          >
             <X size={22} />
           </button>
         </header>
@@ -265,10 +411,14 @@ export function LudoTable({
                 background: i === state.turn ? "var(--fill)" : "transparent",
               }}
             >
-              <span className="w-3 h-3 rounded-full shrink-0" style={{ background: COLOR_HEX[p.color] }} />
+              <span
+                className="w-3 h-3 rounded-full shrink-0"
+                style={{ background: COLOR_HEX[p.color] }}
+              />
               <Avatar src={p.avatar} initials={p.initials} size={26} />
               <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-cream">
                 {i === mine ? "You" : p.name.split(" ")[0]}
+                {p.bot && " 🤖"}
               </span>
               <span className="meta tabular-nums" style={{ fontSize: 12 }}>
                 🏠{home(i)}
@@ -278,7 +428,11 @@ export function LudoTable({
         </div>
 
         <div className="mt-3">
-          <Board state={state} mine={mine} onToken={(t) => myTurn && state.phase === "move" && onMove(t)} />
+          <Board
+            state={state}
+            mine={mine}
+            onToken={(t) => myTurn && state.phase === "move" && onMove(t)}
+          />
         </div>
 
         <div className="mt-4 flex items-center gap-4">
@@ -298,6 +452,11 @@ export function LudoTable({
             <p className="font-extrabold text-cream text-[17px]">{status}</p>
             {state.last?.note && <p className="meta">{state.last.note}</p>}
             {state.last?.captured && <p className="meta">💥 Capture! Rolled again.</p>}
+            {state.phase === "over" && onPlayAgain && (
+              <button onClick={onPlayAgain} className="btn-primary mt-2 px-4 min-h-[38px] text-sm">
+                Play again
+              </button>
+            )}
             {idle && (
               <button onClick={onSkip} className="btn-quiet mt-1 px-3 min-h-[34px] text-sm">
                 Skip {turnPlayer.name.split(" ")[0]}'s turn
@@ -311,6 +470,86 @@ export function LudoTable({
   );
 }
 
+// ---------- Waiting room (online games) ----------
+
+export function LudoWaiting({
+  state,
+  meId,
+  isHost,
+  onStart,
+  onClose,
+}: {
+  state: LudoState;
+  meId: string;
+  isHost: boolean;
+  onStart: () => void;
+  onClose: () => void;
+}) {
+  const missing = waitingFor(state);
+  const joined = state.joined ?? [];
+  return (
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8 min-h-full flex flex-col">
+        <header className="flex items-center justify-between">
+          <span className="heading" style={{ fontSize: 20 }}>
+            🎲 Ludo · waiting room
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-cool w-10 h-10 flex items-center justify-center"
+          >
+            <X size={22} />
+          </button>
+        </header>
+        <div className="flex-1 flex flex-col justify-center">
+          <ul className="grid gap-3">
+            {state.players.map((p) => {
+              const here = p.bot || joined.includes(p.id);
+              return (
+                <li
+                  key={p.id}
+                  className="card flex items-center gap-3 p-3"
+                  style={{ opacity: here ? 1 : 0.6 }}
+                >
+                  <span
+                    className="w-3.5 h-3.5 rounded-full"
+                    style={{ background: COLOR_HEX[p.color] }}
+                  />
+                  <Avatar src={p.avatar} initials={p.initials} size={40} />
+                  <span className="flex-1 font-bold text-cream">
+                    {p.id === meId ? "You" : p.name.split(" ")[0]}
+                    {p.bot && " 🤖"}
+                  </span>
+                  <span
+                    className="text-sm font-bold"
+                    style={{ color: here ? "var(--lime)" : "var(--ink-3)" }}
+                  >
+                    {here ? "✓ in" : "joining…"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="meta text-center mt-5">
+            {missing.length
+              ? `Waiting for ${missing.map((p) => p.name.split(" ")[0]).join(", ")}. They got an invite.`
+              : "Everyone's in. Starting…"}
+          </p>
+          {isHost && missing.length > 0 && (
+            <button onClick={onStart} className="btn-secondary mt-4 mx-auto px-5">
+              Start now (bots play for anyone missing)
+            </button>
+          )}
+          {!isHost && missing.length > 0 && (
+            <p className="meta text-center mt-3">The host starts the game.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Lobby ----------
 
 export function LudoLobby({
@@ -318,44 +557,86 @@ export function LudoLobby({
   onStart,
 }: {
   onClose: () => void;
-  onStart: (friends: Person[]) => void;
+  onStart: (friends: Person[], bots: number) => void;
 }) {
   const s = useSocial();
   const people = s.mode === "live" ? mutualFriends() : [];
   const [picked, setPicked] = useState<string[]>([]);
+  const [bots, setBots] = useState(0);
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 3 ? p : [...p, id]));
   const friends = people.filter((p) => picked.includes(p.id));
+  const maxBots = 3 - friends.length;
+  const botCount = Math.min(bots, maxBots);
+  const total = 1 + friends.length + botCount;
   return (
     <Sheet title="🎲 Ludo" onClose={onClose}>
       <p className="text-sm text-cool leading-relaxed">
-        Live, 2 to 4 players. Roll a 6 to get out. Land on someone to send them home. First to
-        get all 4 tokens home wins.
+        Live, 2 to 4 players. Roll a 6 to get out. Land on someone to send them home. First to get
+        all 4 tokens home wins.
       </p>
-      <p className="label-caps mt-5 mb-2">pick 1 to 3 from your 25</p>
+      <p className="label-caps mt-5 mb-2">friends (optional, up to 3)</p>
       {people.length === 0 ? (
-        <p className="text-sm text-faint">You need mutual seats to play Ludo.</p>
+        <p className="text-sm text-faint">No mutual seats yet. Play the bots for now.</p>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {people.map((p) => {
             const on = picked.includes(p.id);
             return (
-              <button key={p.id} onClick={() => toggle(p.id)} className="flex flex-col items-center shrink-0" style={{ width: 60 }}>
-                <span className="rounded-full p-[2px]" style={{ background: on ? "var(--lime)" : "transparent" }}>
-                  <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={48} />
+              <button
+                key={p.id}
+                onClick={() => toggle(p.id)}
+                className="flex flex-col items-center shrink-0"
+                style={{ width: 60 }}
+              >
+                <span
+                  className="rounded-full p-[2px]"
+                  style={{ background: on ? "var(--lime)" : "transparent" }}
+                >
+                  <Avatar
+                    src={p.avatar || undefined}
+                    initials={p.initials}
+                    color={p.color}
+                    size={48}
+                  />
                 </span>
-                <span className="text-[11px] mt-1 truncate w-full text-center text-cream">{p.name.split(" ")[0]}</span>
+                <span className="text-[11px] mt-1 truncate w-full text-center text-cream">
+                  {p.name.split(" ")[0]}
+                </span>
               </button>
             );
           })}
         </div>
       )}
+      <p className="label-caps mt-5 mb-2">bots 🤖</p>
+      <div className="flex gap-2">
+        {[0, 1, 2, 3].map((n) => (
+          <button
+            key={n}
+            disabled={n > maxBots}
+            onClick={() => setBots(n)}
+            className="flex-1 h-11 rounded-2xl font-bold tabular-nums disabled:opacity-30"
+            style={{
+              background: botCount === n ? "var(--lime)" : "var(--fill)",
+              color: botCount === n ? "var(--on-accent)" : "var(--ink)",
+              border: "2px solid var(--edge)",
+            }}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <p className="meta mt-2">
+        {friends.length === 0
+          ? "Solo: plays on this phone only."
+          : "Your phone plays the bots, so keep 25 open."}
+      </p>
       <button
-        disabled={friends.length < 1}
-        onClick={() => onStart(friends)}
-        className="btn-primary w-full mt-5"
+        disabled={total < 2}
+        onClick={() => onStart(friends, botCount)}
+        className="btn-primary w-full mt-4"
       >
-        {friends.length ? `Start with ${friends.length + 1} players` : "Pick at least 1 friend"}
+        {total < 2 ? "Add a friend or a bot" : `Start · ${total} players`}
       </button>
     </Sheet>
   );
