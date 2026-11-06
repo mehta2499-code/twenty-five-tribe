@@ -9,7 +9,19 @@ import { today } from "@/lib/daily";
 import { signedMedia, uploadMedia } from "@/lib/live";
 
 export const WINDOW_MIN = 10;
-export type DropPost = { id: string; image: string; caption: string; late: number; at: number };
+export type DropComment = { id: string; by: string; body: string; at: number };
+export type DropPost = {
+  /** "me" or the owner's id. */
+  id: string;
+  /** Real user id (for likes/comments). */
+  owner?: string;
+  image: string;
+  caption: string;
+  late: number;
+  at: number;
+  likes?: string[];
+  comments?: DropComment[];
+};
 
 function hash(s: string) {
   let h = 2166136261;
@@ -91,8 +103,26 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
   }[];
   const urls = await signedMedia(rows.map((r) => r.image_path));
   const me = s.me?.id;
+  const who = (id: string) => (id === me ? "me" : id);
+  const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
+    supabase.from("drop_likes").select("owner,user_id").eq("day", day),
+    supabase.from("drop_comments").select("id,owner,author,body,created_at").eq("day", day).order("created_at"),
+  ]);
+  const likes = (likeRows ?? []) as { owner: string; user_id: string }[];
+  const comments = (commentRows ?? []) as {
+    id: string;
+    owner: string;
+    author: string;
+    body: string;
+    created_at: string;
+  }[];
   const posts = rows.map((r) => ({
-    id: r.user_id === me ? "me" : r.user_id,
+    id: who(r.user_id),
+    owner: r.user_id,
+    likes: likes.filter((l) => l.owner === r.user_id).map((l) => who(l.user_id)),
+    comments: comments
+      .filter((c) => c.owner === r.user_id)
+      .map((c) => ({ id: c.id, by: who(c.author), body: c.body, at: Date.parse(c.created_at) })),
     image: urls[r.image_path] ?? "",
     caption: r.caption,
     late: r.late_minutes,
@@ -127,4 +157,22 @@ export async function postDrop(image: string, caption: string, at: number) {
           : error.message,
     );
   }
+}
+
+export async function toggleDropLike(owner: string, liked: boolean) {
+  const me = _get().me;
+  if (!me) return;
+  const day = today();
+  if (liked)
+    await supabase.from("drop_likes").delete().eq("owner", owner).eq("day", day).eq("user_id", me.id);
+  else await supabase.from("drop_likes").insert({ owner, day, user_id: me.id });
+}
+
+export async function commentOnDrop(owner: string, body: string) {
+  const me = _get().me;
+  if (!me) return;
+  const { error } = await supabase
+    .from("drop_comments")
+    .insert({ owner, day: today(), author: me.id, body: body.trim().slice(0, 300) });
+  if (error) throw new Error(error.message);
 }

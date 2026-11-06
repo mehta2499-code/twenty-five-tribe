@@ -1,7 +1,7 @@
 {
   "name": "25",
   "short_name": "25",
-  "description": "A social app for your 25 closest people.",
+  "description": "Everyone else is noise. A social app for your 25 closest people.",
   "id": "/app/home",
   "start_url": "/app/home",
   "scope": "/",

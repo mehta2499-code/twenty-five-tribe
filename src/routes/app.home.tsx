@@ -41,7 +41,18 @@ export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
 });
 
-const SEATS = 8;
+/** All 25 seats: an inner ring of 8 (your closest, by streak) and an outer ring of 17. */
+const SEATS = 25;
+const INNER = 8;
+const OUTER = SEATS - INNER;
+function seatPos(i: number) {
+  const inner = i < INNER;
+  const n = inner ? INNER : OUTER;
+  const k = inner ? i : i - INNER;
+  const angle = (k / n) * Math.PI * 2 - Math.PI / 2 + (inner ? 0 : Math.PI / OUTER);
+  const r = inner ? 31 : 46;
+  return { x: 50 + r * Math.cos(angle), y: 50 + r * Math.sin(angle), inner };
+}
 
 /** Friends worth showing at the table first: streaks, then who posted today. */
 function tableOrder(s: SocialState): Person[] {
@@ -95,18 +106,19 @@ function Table({
 }) {
   const s = useSocial();
   const seated = people.slice(0, SEATS);
-  const open = Math.max(0, Math.min(SEATS - seated.length, 25 - people.length));
-  const chairs: (Person | null)[] = [...seated, ...Array.from({ length: open }, () => null)];
-  const n = Math.max(chairs.length, 1);
+  const chairs: (Person | null)[] = [
+    ...seated,
+    ...Array.from({ length: SEATS - seated.length }, () => null),
+  ];
 
   return (
     <section className="px-5 pt-6" aria-label="Your table">
-      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 360, aspectRatio: "1" }}>
+      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 380, aspectRatio: "1" }}>
         {/* Table top */}
         <div
           className="absolute rounded-full"
           style={{
-            inset: "19%",
+            inset: "27%",
             background:
               "radial-gradient(circle at 35% 30%, rgba(181,219,94,0.22), transparent 60%), #1F1B2B",
             border: "2px solid var(--edge)",
@@ -118,21 +130,7 @@ function Table({
             style={{ inset: 10, border: "2px dashed rgba(181,219,94,0.35)" }}
           />
           {/* little things on the table */}
-          <span className="absolute text-xl float" style={{ left: "16%", top: "18%" }}>
-            ☕
-          </span>
-          <span
-            className="absolute text-lg float"
-            style={{ right: "15%", bottom: "17%", animationDelay: "1.4s" }}
-          >
-            🍟
-          </span>
-          <span
-            className="absolute text-lg float"
-            style={{ right: "18%", top: "16%", animationDelay: "0.7s" }}
-          >
-            🃏
-          </span>
+
         </div>
 
         {/* You + the dice */}
@@ -146,15 +144,15 @@ function Table({
             <span
               className={`flex items-center justify-center rounded-2xl ${rolling ? "die-rolling" : "wiggle-idle"}`}
               style={{
-                width: 64,
-                height: 64,
+                width: 52,
+                height: 52,
                 background: "var(--lime)",
                 color: "var(--on-accent)",
                 border: "2px solid var(--edge)",
                 boxShadow: "3px 3px 0 var(--edge)",
               }}
             >
-              <Dices size={34} strokeWidth={2.2} aria-hidden="true" />
+              <Dices size={28} strokeWidth={2.2} aria-hidden="true" />
             </span>
             <span
               className="mt-2 font-display font-extrabold text-[13px] px-2 py-0.5 rounded-full"
@@ -167,10 +165,8 @@ function Table({
 
         {/* Chairs */}
         {chairs.map((f, i) => {
-          const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
-          const r = 41;
-          const x = 50 + r * Math.cos(angle);
-          const y = 50 + r * Math.sin(angle);
+          const { x, y, inner } = seatPos(i);
+          const size = inner ? 46 : 30;
           const pos = {
             left: `${x}%`,
             top: `${y}%`,
@@ -185,13 +181,13 @@ function Table({
                 className="absolute flex items-center justify-center rounded-full text-[var(--ink-3)] hover:text-[var(--lime)]"
                 style={{
                   ...pos,
-                  width: 52,
-                  height: 52,
-                  border: "2px dashed rgba(255,255,255,0.28)",
+                  width: size,
+                  height: size,
+                  border: "2px dashed rgba(255,255,255,0.22)",
                   background: "rgba(255,255,255,0.03)",
                 }}
               >
-                <Plus size={20} aria-hidden="true" />
+                <Plus size={inner ? 18 : 13} aria-hidden="true" />
               </Link>
             );
           }
@@ -218,9 +214,18 @@ function Table({
                   transform: lit ? "scale(1.18)" : "scale(1)",
                 }}
               >
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={54} />
+                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={size} />
               </span>
-              {st.count > 0 ? (
+              {!inner ? (
+                st.count > 0 && (
+                  <span
+                    className="absolute -bottom-1.5 -right-1.5 text-[11px] leading-none"
+                    aria-hidden="true"
+                  >
+                    🔥
+                  </span>
+                )
+              ) : st.count > 0 ? (
                 <span
                   className={`sticker whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2.5 !text-[11px] !px-1.5 !py-0`}
                   style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}

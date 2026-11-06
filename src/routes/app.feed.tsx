@@ -48,10 +48,8 @@ function PostCard({
   const [burst, setBurst] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const lastTap = useRef(0);
-  const likers = post.likes
-    .filter((x) => x !== "me")
-    .map((x) => friendById(x)?.name.split(" ")[0])
-    .filter(Boolean) as string[];
+  const [showLikers, setShowLikers] = useState(false);
+  const likers = post.likes.filter((x) => x !== "me").map((x) => personOf(x).name.split(" ")[0]);
 
   const onTap = () => {
     const now = Date.now();
@@ -176,9 +174,29 @@ function PostCard({
       </div>
       <div className="px-4 pb-4 grid gap-1">
         {likedBy && (
-          <p className="text-cream font-semibold" style={{ fontSize: 14 }}>
+          <button
+            onClick={() => setShowLikers(true)}
+            className="text-left text-cream font-semibold"
+            style={{ fontSize: 14 }}
+          >
             {likedBy}
-          </p>
+          </button>
+        )}
+        {showLikers && (
+          <Sheet title={`Likes · ${post.likes.length}`} onClose={() => setShowLikers(false)}>
+            <ul className="grid gap-3 pb-2">
+              {post.likes.map((id) => {
+                const p = personOf(id);
+                return (
+                  <li key={id} className="flex items-center gap-3">
+                    <Avatar src={p.avatar} initials={p.initials} color={p.color} size={40} />
+                    <span className="flex-1 font-semibold text-cream">{p.name}</span>
+                    <Heart size={16} fill="var(--coral-deep)" style={{ color: "var(--coral-deep)" }} />
+                  </li>
+                );
+              })}
+            </ul>
+          </Sheet>
         )}
         {post.caption && (
           <p className="text-cream" style={{ fontSize: 15, lineHeight: 1.45 }}>

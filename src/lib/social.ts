@@ -113,6 +113,8 @@ export type SocialState = {
   week: string;
   /** How many people have you in their 25 (only you see this). */
   seatedByCount: number;
+  /** Names/photos of people who aren't in your 25 but show up (likes, comments). */
+  others: Record<string, { name: string; initials: string; avatar?: string; color?: string }>;
   /** A friendly heads-up, e.g. "Devansh put you in their 25". */
   notice: string | null;
 };
@@ -179,6 +181,7 @@ const DEMO_SESSION = {
   error: null,
   seatedByCount: 0,
   notice: null,
+  others: {},
 };
 
 const PHOTOS = [

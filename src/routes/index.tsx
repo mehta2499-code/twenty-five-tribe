@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "25 — A social app for the only people that matter." },
+      { title: "25 — Everyone else is noise." },
       {
         name: "description",
         content:
@@ -130,6 +130,14 @@ function Landing() {
         className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6"
         style={{ background: C.blue }}
       >
+        <Link
+          to="/login"
+          className="absolute z-20 right-5 top-[max(1.25rem,env(safe-area-inset-top))] rounded-full px-5 py-2 font-bold text-white"
+          style={{ border: "1.5px solid rgba(255,255,255,0.7)" }}
+        >
+          Log in
+        </Link>
+
         {/* soft floating orbs */}
         <div
           aria-hidden
@@ -160,9 +168,12 @@ function Landing() {
           </h1>
 
           <p
-            className="mt-8 italic text-white/90 h-serif"
-            style={{ fontSize: "clamp(1.25rem, 2.6vw, 1.875rem)" }}
+            className="mt-8 h-serif font-extrabold text-white"
+            style={{ fontSize: "clamp(1.6rem, 3.4vw, 2.5rem)", letterSpacing: "-0.02em" }}
           >
+            Everyone else is noise.
+          </p>
+          <p className="mt-3 text-white/80" style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)" }}>
             A social app for the only people that matter.
           </p>
 
@@ -191,13 +202,6 @@ function Landing() {
               }}
             >
               Claim your 25
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center rounded-full px-8 py-4 font-semibold text-white"
-              style={{ border: "1.5px solid rgba(255,255,255,0.6)" }}
-            >
-              I already have an account
             </Link>
           </div>
         </div>
@@ -389,65 +393,8 @@ function Landing() {
         </div>
       </section>
 
-      {/* ============ SECTION 5 — AI THAT CARES ============ */}
-      <section className="px-6 py-32 md:py-40" style={{ background: C.navy }}>
-        <div className="mx-auto max-w-6xl">
-          <Reveal>
-            <h2
-              className="h-serif text-white text-center max-w-4xl mx-auto"
-              style={{ fontSize: "clamp(2rem, 4.4vw, 3.25rem)", lineHeight: 1.15 }}
-            >
-              AI that doesn't optimize for time spent.
-              <br />
-              <span className="italic" style={{ color: C.coral }}>
-                It optimizes for friendships kept.
-              </span>
-            </h2>
-          </Reveal>
-
-          <div className="mt-20 grid gap-6 md:grid-cols-2">
-            {[
-              {
-                icon: "◐",
-                title: "Drift Prediction",
-                line: "Catches fading friendships before you lose them.",
-              },
-              {
-                icon: "◑",
-                title: "Vibe Match",
-                line: "Connects you with the friend who needs you right now.",
-              },
-              {
-                icon: "◓",
-                title: "Capsule Narrator",
-                line: "Writes the story of your friendship — in your style.",
-              },
-              {
-                icon: "◒",
-                title: "Friendship Wrapped",
-                line: "Spotify Wrapped, but for the people you love.",
-              },
-            ].map((a, i) => (
-              <Reveal key={a.title} delay={i * 90}>
-                <div className="glass rounded-3xl p-8 h-full">
-                  <div
-                    className="mb-5 flex h-11 w-11 items-center justify-center rounded-full text-lg"
-                    style={{
-                      background: "rgba(255,255,255,0.12)",
-                      border: "1px solid rgba(255,255,255,0.25)",
-                      color: C.coral,
-                    }}
-                  >
-                    {a.icon}
-                  </div>
-                  <h3 className="h-serif text-white text-2xl mb-2">{a.title}</h3>
-                  <p className="text-white/80 leading-relaxed">{a.line}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ============ GET IT ON YOUR PHONE ============ */}
+      <InstallSection />
 
       {/* ============ CLOSING — CLAIM YOUR 25 ============ */}
       <section
@@ -472,7 +419,7 @@ function Landing() {
           </Reveal>
           <Reveal delay={150}>
             <p className="mt-8 h-serif text-white/90 text-xl md:text-2xl">
-              This app is for the 25.
+              This app is for the 25. Everyone else is noise.
             </p>
           </Reveal>
           <Reveal delay={250}>
@@ -489,13 +436,91 @@ function Landing() {
               >
                 Claim your 25
               </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center rounded-full px-9 py-4 font-semibold text-white"
+                style={{ border: "1.5px solid rgba(255,255,255,0.6)" }}
+              >
+                I already have an account · Log in
+              </Link>
             </div>
           </Reveal>
           <p className="mt-16 text-white/70 text-xs uppercase" style={{ letterSpacing: "0.28em" }}>
-            © 2026 25
+            © 2026 25 · Everyone else is noise.
           </p>
         </div>
       </section>
     </main>
+  );
+}
+
+const IOS_STEPS = [
+  { n: "1", t: "Open in Safari", d: "Go to the25.duckdns.org in Safari (not Chrome or Instagram)." },
+  { n: "2", t: "Tap Share", d: "The square with the arrow, at the bottom of the screen." },
+  { n: "3", t: "Add to Home Screen", d: "Scroll down the share menu and tap it, then Add." },
+  { n: "4", t: "Open 25 from your Home Screen", d: "Sign in once, then turn on notifications. That's it." },
+];
+
+function InstallSection() {
+  return (
+    <section className="px-6 py-28 md:py-36" style={{ background: C.navy }}>
+      <div className="mx-auto max-w-4xl">
+        <Reveal>
+          <h2
+            className="h-serif text-white text-center font-extrabold"
+            style={{ fontSize: "clamp(2rem, 4.6vw, 3.25rem)", lineHeight: 1.1 }}
+          >
+            Get 25 on your phone
+          </h2>
+          <p className="mt-4 text-center text-white/80 text-lg">
+            No App Store needed. Takes 20 seconds.
+          </p>
+        </Reveal>
+        <div className="mt-14 grid gap-6 md:grid-cols-2">
+          <Reveal>
+            <div className="glass rounded-3xl p-7 h-full">
+              <p className="text-white font-extrabold text-xl"> iPhone</p>
+              <ol className="mt-5 grid gap-4">
+                {IOS_STEPS.map((s) => (
+                  <li key={s.n} className="flex gap-4">
+                    <span
+                      className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-extrabold"
+                      style={{ background: C.coral, color: C.navy, border: "2px solid #07060B" }}
+                    >
+                      {s.n}
+                    </span>
+                    <span>
+                      <span className="block text-white font-bold">{s.t}</span>
+                      <span className="block text-white/75 text-sm mt-0.5">{s.d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </Reveal>
+          <Reveal delay={120}>
+            <div className="glass rounded-3xl p-7 h-full flex flex-col">
+              <p className="text-white font-extrabold text-xl">🤖 Android</p>
+              <span
+                className="mt-5 self-start rounded-full px-4 py-1.5 font-extrabold text-sm"
+                style={{
+                  background: C.coral,
+                  color: C.navy,
+                  border: "2px solid #07060B",
+                  boxShadow: "3px 3px 0 #07060B",
+                  transform: "rotate(-3deg)",
+                }}
+              >
+                Coming soon
+              </span>
+              <p className="mt-5 text-white/80">
+                The Android app is on its way. Until then, open 25 in Chrome and tap ⋮ →{" "}
+                <b className="text-white">Add to Home screen</b>.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
   );
 }

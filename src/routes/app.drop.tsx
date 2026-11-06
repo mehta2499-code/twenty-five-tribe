@@ -1,10 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Lock } from "lucide-react";
+import { Camera, Heart, Lock, MessageCircle, Send, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { fileToImage, friendById, mutualFriends, meView, useSocial } from "@/lib/social";
-import { WINDOW_MIN, dropTime, loadDrops, phaseOf, postDrop, type DropPost } from "@/lib/drop";
+import {
+  WINDOW_MIN,
+  commentOnDrop,
+  dropTime,
+  loadDrops,
+  phaseOf,
+  postDrop,
+  toggleDropLike,
+  type DropPost,
+} from "@/lib/drop";
+import { personOf } from "@/components/FeedUI";
 
 export const Route = createFileRoute("/app/drop")({
   head: () => ({ meta: [{ title: "The 25 Drop · 25" }] }),
@@ -36,6 +46,7 @@ function DropScreen() {
   const shootRef = useRef<HTMLInputElement>(null);
 
   const reload = () => void loadDrops().then(setData);
+  const [open, setOpen] = useState<string | null>(null);
   useEffect(() => {
     void dropTime().then(setAt);
     reload();
@@ -178,9 +189,9 @@ function DropScreen() {
       {data.mine && (
         <section className="px-5">
           <div className="grid grid-cols-2 gap-3">
-            <DropCard post={data.mine} />
+            <DropCard post={data.mine} onOpen={() => setOpen(data.mine!.id)} />
             {data.others.map((p) => (
-              <DropCard key={p.id} post={p} />
+              <DropCard key={p.id} post={p} onOpen={() => setOpen(p.id)} />
             ))}
           </div>
           {waiting > 0 && (
@@ -201,18 +212,25 @@ function DropScreen() {
           </div>
         </section>
       )}
+      {open && data && (
+        <DropViewer
+          post={[data.mine, ...data.others].find((x) => x?.id === open)!}
+          onClose={() => setOpen(null)}
+          onChanged={reload}
+        />
+      )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
       <Confetti fire={party} />
     </div>
   );
 }
 
-function DropCard({ post }: { post: DropPost }) {
+function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
   const me = post.id === "me";
   const f = me ? null : friendById(post.id);
   const who = me ? meView() : f;
   return (
-    <figure className="card overflow-hidden p-0">
+    <figure className="card overflow-hidden p-0 cursor-pointer" onClick={onOpen}>
       <div className="relative" style={{ aspectRatio: "3 / 4" }}>
         {post.image ? (
           <img src={post.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -234,7 +252,117 @@ function DropCard({ post }: { post: DropPost }) {
           </span>
           {post.caption && <span className="block meta truncate" style={{ fontSize: 12 }}>{post.caption}</span>}
         </span>
+        <span className="ml-auto flex items-center gap-2 meta shrink-0" style={{ fontSize: 12 }}>
+          <span className="flex items-center gap-0.5">
+            <Heart size={13} fill={post.likes?.includes("me") ? "var(--pink)" : "none"} /> {post.likes?.length ?? 0}
+          </span>
+          <span className="flex items-center gap-0.5">
+            <MessageCircle size={13} /> {post.comments?.length ?? 0}
+          </span>
+        </span>
       </figcaption>
     </figure>
+  );
+}
+
+function DropViewer({ post, onClose, onChanged }: { post: DropPost; onClose: () => void; onChanged: () => void }) {
+  const by = personOf(post.id);
+  const [likes, setLikes] = useState(post.likes ?? []);
+  const [comments, setComments] = useState(post.comments ?? []);
+  const [text, setText] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const liked = likes.includes("me");
+  const owner = post.owner;
+  const like = () => {
+    if (!owner) return;
+    buzz(10);
+    setLikes((l) => (liked ? l.filter((x) => x !== "me") : [...l, "me"]));
+    void toggleDropLike(owner, liked).then(onChanged);
+  };
+  const send = async () => {
+    const t = text.trim();
+    if (!t || !owner) return;
+    setText("");
+    setComments((c) => [...c, { id: `tmp-${Date.now()}`, by: "me", body: t, at: Date.now() }]);
+    try {
+      await commentOnDrop(owner, t);
+      onChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-[70] flex flex-col" style={{ background: "#000" }}>
+      <div className="mx-auto w-full max-w-md flex flex-col h-full">
+        <header className="flex items-center gap-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 text-white">
+          <Avatar src={by.avatar} initials={by.initials} color={by.color} size={34} />
+          <span className="flex-1 min-w-0">
+            <span className="block font-bold truncate">{by.name}</span>
+            <span className="block text-xs text-white/70">
+              {post.late ? `⏰ ${post.late}m late` : "⚡ on time"}
+            </span>
+          </span>
+          <button onClick={onClose} aria-label="Close" className="w-10 h-10 flex items-center justify-center">
+            <X size={22} />
+          </button>
+        </header>
+        <div className="relative flex-1 min-h-0" onDoubleClick={() => !liked && like()}>
+          {post.image && <img src={post.image} alt="" className="absolute inset-0 w-full h-full object-contain" />}
+        </div>
+        <div className="px-4 pt-3 text-white">
+          {post.caption && <p className="text-[15px]">{post.caption}</p>}
+          <div className="flex items-center gap-4 mt-2">
+            <button onClick={like} aria-label={liked ? "Unlike" : "Like"} className="flex items-center gap-1.5 font-bold">
+              <Heart size={24} fill={liked ? "var(--pink)" : "none"} style={{ color: liked ? "var(--pink)" : "#fff" }} />
+              {likes.length}
+            </button>
+            <span className="flex items-center gap-1.5 font-bold">
+              <MessageCircle size={22} /> {comments.length}
+            </span>
+          </div>
+          {likes.length > 0 && (
+            <p className="text-xs text-white/70 mt-1">
+              Liked by {likes.map((id) => personOf(id).name.split(" ")[0]).join(", ")}
+            </p>
+          )}
+          <ul className="mt-3 grid gap-2 max-h-40 overflow-y-auto">
+            {comments.map((c) => {
+              const p = personOf(c.by);
+              return (
+                <li key={c.id} className="text-[14px]">
+                  <b className="mr-1.5">{p.name.split(" ")[0]}</b>
+                  {c.body}
+                </li>
+              );
+            })}
+          </ul>
+          {err && <p className="text-xs mt-1" style={{ color: "var(--pink)" }}>{err}</p>}
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void send();
+          }}
+          className="flex gap-2 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        >
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 300))}
+            placeholder="Add a comment…"
+            className="input flex-1"
+            style={{ borderRadius: 22 }}
+          />
+          <button
+            type="submit"
+            disabled={!text.trim()}
+            aria-label="Send comment"
+            className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center disabled:opacity-40"
+            style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+          >
+            <Send size={19} />
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

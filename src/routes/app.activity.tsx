@@ -19,7 +19,7 @@ function target(a: Activity): { to: string; params?: Record<string, string> } {
   if (a.kind === "word_done" && a.ref?.startsWith("game:"))
     return { to: "/app/play/$id", params: { id: a.ref.slice(5) } };
   if (a.kind === "poll") return { to: "/app/polls" };
-  if (a.kind === "drop") return { to: "/app/drop" };
+  if (a.kind === "drop" || a.kind === "drop_like" || a.kind === "drop_comment") return { to: "/app/drop" };
   if (a.kind === "card") return { to: "/app/card/$id", params: { id: "me" } };
   return { to: "/app/home" };
 }

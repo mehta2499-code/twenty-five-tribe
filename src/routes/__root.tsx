@@ -79,21 +79,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "25" },
       // Solid status bar: with "translucent", newer iOS blurs whatever scrolls under it.
       { name: "apple-mobile-web-app-status-bar-style", content: "black" },
-      { title: "25 — Your world. All 25 of them." },
+      { title: "25 — Everyone else is noise." },
       {
         name: "description",
-        content: "A social app for your 25 closest people. No more, no less.",
+        content: "Everyone else is noise. A social app for your 25 closest people.",
       },
       { property: "og:title", content: "25 — Your world. All 25 of them." },
       {
         property: "og:description",
-        content: "A social app for your 25 closest people. No more, no less.",
+        content: "Everyone else is noise. A social app for your 25 closest people.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "25 — Your world. All 25 of them." },
       {
         name: "twitter:description",
-        content: "A social app for your 25 closest people. No more, no less.",
+        content: "Everyone else is noise. A social app for your 25 closest people.",
       },
       {
         property: "og:image",

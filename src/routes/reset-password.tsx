@@ -92,7 +92,7 @@ function ResetPassword() {
         {notice && <p role="status" className="mt-4 rounded-2xl px-4 py-3 bg-white/10 text-white border border-white/20 text-sm">{notice}</p>}
         {error && <p role="alert" className="mt-4 rounded-2xl px-4 py-3 bg-[rgba(214,62,98,0.12)] text-[#F08AA3] border border-[rgba(214,62,98,0.35)] font-semibold text-sm">{error}</p>}
         <Link to="/login" className="mt-5 text-center text-sm text-white/80 underline underline-offset-4">Back to sign in</Link>
-        <p className="mt-auto pt-10 text-center text-white/80 text-xs">25 seats. No more, no less.</p>
+        <p className="mt-auto pt-10 text-center text-white/80 text-xs">Everyone else is noise.</p>
       </div>
     </main>
   );

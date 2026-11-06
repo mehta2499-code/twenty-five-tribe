@@ -410,7 +410,7 @@ function Login() {
         )}
 
         <p className="mt-auto pt-10 text-center text-white/80 text-xs">
-          25 seats. No more, no less.
+          Everyone else is noise.
         </p>
       </div>
     </main>

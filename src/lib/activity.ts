@@ -158,6 +158,10 @@ export function describe(a: Activity): { emoji: string; text: string } {
       return { emoji: "🗳️", text: `Someone in your 25 picked you for “${a.body}”` };
     case "card":
       return { emoji: "🎂", text: `${who} signed your birthday card` };
+    case "drop_like":
+      return { emoji: "❤️", text: `${who} liked your Drop` };
+    case "drop_comment":
+      return { emoji: "💬", text: `${who} commented on your Drop: ${a.body}` };
     case "drop":
       return { emoji: "📸", text: `${who} posted their Drop` };
     default:

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { AudienceNote, EmptyState, Sheet } from "@/components/SocialUI";
-import { friendById, meView, social, timeAgo, type Comment } from "@/lib/social";
+import { friendById, meView, social, timeAgo, type Comment, _get } from "@/lib/social";
 
 export function personOf(id: string) {
   if (id === "me") {
@@ -15,7 +15,7 @@ export function personOf(id: string) {
       color: undefined as string | undefined,
     };
   }
-  const f = friendById(id);
+  const f = friendById(id) ?? _get().others[id];
   return {
     name: f?.name ?? "Someone",
     avatar: f?.avatar || undefined,

@@ -396,6 +396,31 @@ async function loadAll() {
       postRows.map((p) => p.media_path),
     );
     const who = (id: string) => (id === me ? "me" : id);
+    // People who liked/commented/posted but aren't loaded yet: fetch their names.
+    const strangerIds = [
+      ...new Set([
+        ...likes.map((l) => l.user_id),
+        ...comments.map((c) => c.author),
+        ...postRows.map((p) => p.author),
+      ]),
+    ].filter((id) => id !== me && !byId.has(id));
+    const strangerRows = strangerIds.length
+      ? await run(
+          supabase.from("profiles").select("*").in("id", strangerIds).returns<ProfileRow[]>(),
+        )
+      : [];
+    const strangerUrls = await signed(
+      "avatars",
+      strangerRows.map((p) => p.avatar_path ?? ""),
+    );
+    const others: SocialState["others"] = {};
+    for (const p of strangerRows)
+      others[p.id] = {
+        name: p.display_name,
+        initials: initialsOf(p.display_name),
+        avatar: p.avatar_path ? strangerUrls[p.avatar_path] : undefined,
+        color: colourFor(p.id),
+      };
     const likesFor = (id: string) =>
       likes.filter((l) => l.post_id === id).map((l) => who(l.user_id));
     const commentsFor = (id: string): Comment[] =>
@@ -456,6 +481,7 @@ async function loadAll() {
       people,
       requests,
       seatedByCount: seatedMe.size,
+      others,
       chats,
       unread,
       snaps,

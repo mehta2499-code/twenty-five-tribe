@@ -725,8 +725,25 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
   const ranking = dayRanking(d, day);
   const mine = ranking.find((r) => r.id === "me");
 
+  const practiceKey = `tf.practice.${day}`;
+  const [practiced, setPracticed] = useState(() => {
+    try {
+      return localStorage.getItem(practiceKey) === "1";
+    } catch {
+      return false;
+    }
+  });
+
   const begin = async (practice: boolean) => {
     if (practice) {
+      // One practice round per day.
+      if (practiced) return;
+      setPracticed(true);
+      try {
+        localStorage.setItem(practiceKey, "1");
+      } catch {
+        // ignore
+      }
       setSession(null);
     } else {
       setBusy(true);
@@ -831,9 +848,11 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                 </>
               ) : (
                 <>
-                  <button onClick={() => begin(true)} className="btn-secondary w-full" style={{ minHeight: 52 }}>
-                    Practice (doesn't count)
-                  </button>
+                  {!practiced && (
+                    <button onClick={() => begin(true)} className="btn-secondary w-full" style={{ minHeight: 52 }}>
+                      Practice once (doesn't count)
+                    </button>
+                  )}
                   <p className="meta">Come back at midnight for tomorrow's game.</p>
                 </>
               )}
@@ -871,11 +890,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                   Another try ({left} left)
                 </button>
               )}
-              {!session && (
-                <button onClick={() => begin(true)} className="btn-primary w-full" style={{ minHeight: 52 }}>
-                  Practice again
-                </button>
-              )}
+
               <button onClick={() => setChallenging(true)} className="btn-secondary w-full" style={{ minHeight: 52 }}>
                 Trash talk someone 😏
               </button>
