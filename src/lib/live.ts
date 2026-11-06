@@ -153,7 +153,70 @@ const SIGN_TTL = 60 * 60 * 6;
 const REUSE_MS = 5 * 60 * 60 * 1000;
 const signedCache = new Map<string, { url: string; at: number }>();
 
+/** Avatars also get a small copy next to the original, e.g. "me/x.jpg" → "me/x.thumb.jpg". */
+const thumbOf = (path: string) => path.replace(/\.(\w+)$/, ".thumb.$1");
+const THUMB_PX = 256;
+/** Thumbnails we know aren't there yet (don't ask again for a while). */
+const noThumb = new Map<string, number>();
+
+async function makeThumb(source: string | Blob): Promise<Blob> {
+  const url = typeof source === "string" ? source : URL.createObjectURL(source);
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((ok, bad) => {
+      img.onload = () => ok();
+      img.onerror = () => bad(new Error("Couldn't read the photo."));
+      img.src = url;
+    });
+    const scale = Math.min(1, THUMB_PX / Math.min(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth * scale);
+    c.height = Math.round(img.naturalHeight * scale);
+    c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise<Blob>((ok, bad) =>
+      c.toBlob((b) => (b ? ok(b) : bad(new Error("Couldn't shrink the photo."))), "image/jpeg", 0.82),
+    );
+  } finally {
+    if (typeof source !== "string") URL.revokeObjectURL(url);
+  }
+}
+
+/** Save the small copy of an avatar (quietly; the full photo still works without it). */
+async function uploadThumb(path: string, source: string | Blob) {
+  try {
+    const blob = await makeThumb(source);
+    await supabase.storage
+      .from("avatars")
+      .upload(thumbOf(path), blob, { contentType: "image/jpeg" });
+    noThumb.delete(path);
+  } catch {
+    // ignore
+  }
+}
+
 async function signed(bucket: "media" | "snaps" | "avatars", paths: string[]) {
+  if (bucket !== "avatars") return signedRaw(bucket, paths);
+  // Avatars are shown small: use the thumbnail, fall back to the full photo.
+  const unique = [...new Set(paths.filter(Boolean))];
+  const now = Date.now();
+  const tryThumb = unique.filter((p) => !(now - (noThumb.get(p) ?? 0) < 10 * 60_000));
+  const thumbs = await signedRaw("avatars", tryThumb.map(thumbOf));
+  const out: Record<string, string> = {};
+  const needFull: string[] = [];
+  for (const p of unique) {
+    const t = thumbs[thumbOf(p)];
+    if (t) out[p] = t;
+    else {
+      if (tryThumb.includes(p)) noThumb.set(p, now);
+      needFull.push(p);
+    }
+  }
+  if (needFull.length) Object.assign(out, await signedRaw("avatars", needFull));
+  return out;
+}
+
+async function signedRaw(bucket: "media" | "snaps" | "avatars", paths: string[]) {
   const unique = [...new Set(paths.filter(Boolean))];
   const out: Record<string, string> = {};
   const now = Date.now();
@@ -214,6 +277,10 @@ async function loadAll() {
       profile.avatar_path ?? "",
       ...profiles.map((p) => p.avatar_path ?? ""),
     ]);
+    // Older accounts have no small copy yet: make mine from the full photo.
+    const myAvatar = profile.avatar_path;
+    if (myAvatar && noThumb.has(myAvatar) && avatarUrls[myAvatar])
+      void uploadThumb(myAvatar, avatarUrls[myAvatar]);
     const byId = new Map(profiles.map((p) => [p.id, p]));
     const toPerson = (p: ProfileRow, since?: string | null): Person => ({
       id: p.id,
@@ -827,6 +894,7 @@ export const account = {
 
     // Profile first, so a password hiccup can't block the account.
     const avatar_path = await upload("avatars", input.avatar, "jpg");
+    await uploadThumb(avatar_path, input.avatar);
     const { error } = await supabase
       .from("profiles")
       .upsert({ id: myId, username, display_name: displayName, avatar_path }, { onConflict: "id" });
@@ -843,6 +911,7 @@ export const account = {
   async updateAvatar(image: string) {
     if (!myId) throw new Error("Sign in first.");
     const path = await upload("avatars", image, "jpg");
+    await uploadThumb(path, image);
     const { error } = await supabase.from("profiles").update({ avatar_path: path }).eq("id", myId);
     if (error) throw new Error(friendly(error));
     await loadAll();
