@@ -153,6 +153,12 @@ async function signed(bucket: "media" | "snaps" | "avatars", paths: string[]) {
   return out;
 }
 
+/** Delete a snap's photo from storage, then forget its path. */
+async function deleteSnapFile(snapId: string, path: string) {
+  const { error } = await supabase.storage.from("snaps").remove([path]);
+  if (!error) await supabase.rpc("forget_snap_file", { p_snap: snapId });
+}
+
 // ---------- Loading ----------
 async function loadAll() {
   if (!myId) return;
@@ -324,6 +330,15 @@ async function loadAll() {
             .returns<SnapRecipientRow[]>(),
         )
       : [];
+    // Clean up: my sent snaps everyone has opened lose their file for good.
+    for (const x of sent) {
+      if (!x.image_path) continue;
+      const rs = sentRecipients.filter((r) => r.snap_id === x.id);
+      if (rs.length && rs.every((r) => r.opened_at)) {
+        void deleteSnapFile(x.id, x.image_path);
+        x.image_path = null;
+      }
+    }
     const snapUrls = await signed(
       "snaps",
       [...inboxSnaps, ...sent].map((x) => x.image_path ?? ""),
@@ -965,9 +980,11 @@ registerLive({
       ...s,
       snaps: s.snaps.map((x) => (x.id === snapId ? { ...x, openedBy: [...x.openedBy, "me"] } : x)),
     }));
-    void supabase
-      .rpc("open_snap", { p_snap: snapId })
-      .then(({ error }) => error && fail(friendly(error)));
+    void supabase.rpc("open_snap", { p_snap: snapId }).then(async ({ data, error }) => {
+      if (error) return fail(friendly(error));
+      // Last one to open it: delete the photo for good.
+      if (typeof data === "string" && data) await deleteSnapFile(snapId, data);
+    });
   },
 
   deletePost(postId: string) {
