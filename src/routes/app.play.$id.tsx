@@ -27,7 +27,8 @@ import { MAX_GUESSES, WordBoard, gridOf } from "@/components/WordUp";
 import { Confetti } from "@/components/SocialUI";
 import { X } from "lucide-react";
 import { applyMove, nextRound, type KState, type Move } from "@/lib/kachuful";
-import { friendById, useSocial } from "@/lib/social";
+import { _get, friendById, useSocial } from "@/lib/social";
+import { GameChat } from "@/components/GameChat";
 
 export const Route = createFileRoute("/app/play/$id")({
   component: clientOnly(PlayScreen),
@@ -68,14 +69,28 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     );
   }
   if (!game) return <p className="pt-24 text-center text-faint">Pulling up a chair…</p>;
-  if (game.kind === "word")
-    return <OnlineWord live={live as Live<WordState>} meId={meId} onClose={onClose} />;
-  if (game.kind === "ludo")
-    return <OnlineLudo live={live as Live<LudoState>} meId={meId} onClose={onClose} />;
-  return game.kind === "kachuful" ? (
-    <OnlineKachuful live={live as Live<KState>} meId={meId} onClose={onClose} />
-  ) : (
-    <OnlineTrivia live={live as Live<TriviaState>} id={id} meId={meId} onClose={onClose} />
+  const board =
+    game.kind === "word" ? (
+      <OnlineWord live={live as Live<WordState>} meId={meId} onClose={onClose} />
+    ) : game.kind === "ludo" ? (
+      <OnlineLudo live={live as Live<LudoState>} meId={meId} onClose={onClose} />
+    ) : game.kind === "kachuful" ? (
+      <OnlineKachuful live={live as Live<KState>} meId={meId} onClose={onClose} />
+    ) : (
+      <OnlineTrivia live={live as Live<TriviaState>} id={id} meId={meId} onClose={onClose} />
+    );
+  return (
+    <>
+      {board}
+      {game.status === "playing" && (
+        <GameChat
+          gameId={id}
+          meId={meId}
+          myName={_get().me?.name ?? "You"}
+          spot={game.kind === "kachuful" || game.kind === "word" ? "side" : "corner"}
+        />
+      )}
+    </>
   );
 }
 
