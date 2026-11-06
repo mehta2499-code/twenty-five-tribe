@@ -35,7 +35,8 @@ export function GameChat({
   const endRef = useRef<HTMLDivElement>(null);
 
   const receive = (m: Msg) => {
-    setMsgs((list) => [...list.slice(-49), m]);
+    // Reactions only float up; the chat list is for words.
+    if (m.text) setMsgs((list) => [...list.slice(-49), m]);
     if (m.emoji) {
       const b = { id: m.id, emoji: m.emoji, name: m.name, x: 15 + Math.random() * 70 };
       setBursts((bs) => [...bs, b]);
@@ -167,7 +168,7 @@ export function GameChat({
                 <b style={{ color: m.from === meId ? "var(--lime)" : "var(--sky)" }}>
                   {m.from === meId ? "You" : m.name}
                 </b>{" "}
-                {m.emoji ? <span className="text-xl">{m.emoji}</span> : m.text}
+                {m.text}
               </p>
             ))}
             <div ref={endRef} />

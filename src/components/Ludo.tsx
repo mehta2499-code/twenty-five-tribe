@@ -231,6 +231,13 @@ function Board({
             <stop offset="100%" stopColor={COLOR_HEX[c]} stopOpacity={0.85} />
           </radialGradient>
         ))}
+        {(Object.keys(COLOR_HEX) as LudoColor[]).map((c) => (
+          <linearGradient key={`l${c}`} id={`pawnl-${c}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#fff" stopOpacity={0.5} />
+            <stop offset="30%" stopColor={COLOR_HEX[c]} />
+            <stop offset="100%" stopColor="#000" stopOpacity={0.35} />
+          </linearGradient>
+        ))}
       </defs>
       {/* Yards */}
       {(Object.keys(YARD_ORIGIN) as LudoColor[]).map((c) => {
@@ -334,9 +341,22 @@ function Board({
                 />
               </circle>
             )}
-            <ellipse cx={0.04} cy={0.3} rx={0.32} ry={0.12} fill="#07060B" opacity={0.25} />
-            <circle r={0.38} fill={`url(#pawn-${pl.color})`} stroke="#07060B" strokeWidth={0.07} />
-            <circle cx={-0.11} cy={-0.12} r={0.11} fill="#fff" opacity={0.75} />
+            {/* Chess-style pawn: wide base, tapered body, collar, round head */}
+            <ellipse cx={0.05} cy={0.4} rx={0.36} ry={0.09} fill="#07060B" opacity={0.25} />
+            <g stroke="#07060B" strokeWidth={0.06} strokeLinejoin="round">
+              <path
+                d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
+                fill={COLOR_HEX[pl.color]}
+              />
+              <path
+                d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
+                fill={`url(#pawnl-${pl.color})`}
+                stroke="none"
+              />
+              <ellipse cx={0} cy={-0.09} rx={0.2} ry={0.06} fill={COLOR_HEX[pl.color]} />
+              <circle cy={-0.29} r={0.17} fill={`url(#pawn-${pl.color})`} />
+            </g>
+            <circle cx={-0.06} cy={-0.34} r={0.05} fill="#fff" opacity={0.8} />
           </g>
         );
       })}
