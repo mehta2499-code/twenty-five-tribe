@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { KachufulBoard, useBotTurns } from "@/components/Kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
+import { LudoTable } from "@/components/Ludo";
+import { moveToken, roll, skipTurn, type LudoState } from "@/lib/ludo";
 import { TriviaDuel, duelMax } from "@/components/TriviaDuel";
 import { clientOnly } from "@/components/SocialUI";
 import { TRIVIA_PACKS } from "@/lib/data";
@@ -45,7 +47,7 @@ function PlayScreen() {
 type Live<S> = ReturnType<typeof useGame<S>>;
 
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
-  const live = useGame<KState | TriviaState | WordState>(id);
+  const live = useGame<KState | TriviaState | WordState | LudoState>(id);
   const { game, error } = live;
   if (error) {
     return (
@@ -60,6 +62,8 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   if (!game) return <p className="pt-24 text-center text-faint">Pulling up a chair…</p>;
   if (game.kind === "word")
     return <OnlineWord live={live as Live<WordState>} meId={meId} onClose={onClose} />;
+  if (game.kind === "ludo")
+    return <OnlineLudo live={live as Live<LudoState>} meId={meId} onClose={onClose} />;
   return game.kind === "kachuful" ? (
     <OnlineKachuful live={live as Live<KState>} meId={meId} onClose={onClose} />
   ) : (
@@ -302,5 +306,31 @@ function OnlineWord({
       </div>
       <Confetti fire={over && solved && guessing ? 1 : 0} />
     </div>
+  );
+}
+
+function OnlineLudo({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<LudoState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game, save } = live;
+  if (!game) return null;
+  const st = game.state;
+  const mine = st.players.findIndex((p) => p.id === meId);
+  const commit = (next: LudoState) => void save(next, next.phase === "over" ? "done" : undefined);
+  return (
+    <LudoTable
+      state={st}
+      mine={mine}
+      onRoll={() => commit(roll(st))}
+      onMove={(t) => commit(moveToken(st, t))}
+      onSkip={() => commit(skipTurn(st))}
+      onClose={onClose}
+    />
   );
 }

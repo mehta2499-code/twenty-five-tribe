@@ -1,0 +1,362 @@
+/** Ludo board, dice and lobby. Rules live in lib/ludo.ts. */
+import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
+import { Avatar } from "@/components/Avatar";
+import { Confetti, Sheet, buzz } from "@/components/SocialUI";
+import { mutualFriends, useSocial, type Person } from "@/lib/social";
+import {
+  COLOR_HEX,
+  HOME,
+  IDLE_MS,
+  SAFE,
+  START,
+  legalTokens,
+  type LudoColor,
+  type LudoState,
+} from "@/lib/ludo";
+
+// ---------- Board geometry (15 × 15 grid; [row, col]) ----------
+
+/** The shared loop, clockwise, starting at red's start square. */
+const LOOP_CELLS: [number, number][] = [
+  ...[1, 2, 3, 4, 5].map((c) => [6, c] as [number, number]),
+  ...[5, 4, 3, 2, 1, 0].map((r) => [r, 6] as [number, number]),
+  [0, 7],
+  ...[0, 1, 2, 3, 4, 5].map((r) => [r, 8] as [number, number]),
+  ...[9, 10, 11, 12, 13, 14].map((c) => [6, c] as [number, number]),
+  [7, 14],
+  ...[14, 13, 12, 11, 10, 9].map((c) => [8, c] as [number, number]),
+  ...[9, 10, 11, 12, 13, 14].map((r) => [r, 8] as [number, number]),
+  [14, 7],
+  ...[14, 13, 12, 11, 10, 9].map((r) => [r, 6] as [number, number]),
+  ...[5, 4, 3, 2, 1, 0].map((c) => [8, c] as [number, number]),
+  [7, 0],
+  [6, 0],
+];
+
+const HOME_COLUMN: Record<LudoColor, [number, number][]> = {
+  red: [1, 2, 3, 4, 5].map((c) => [7, c]),
+  green: [1, 2, 3, 4, 5].map((r) => [r, 7]),
+  yellow: [13, 12, 11, 10, 9].map((c) => [7, c]),
+  blue: [13, 12, 11, 10, 9].map((r) => [r, 7]),
+};
+const YARD_ORIGIN: Record<LudoColor, [number, number]> = {
+  red: [0, 0],
+  green: [0, 9],
+  yellow: [9, 9],
+  blue: [9, 0],
+};
+const HOME_SPOT: Record<LudoColor, [number, number]> = {
+  red: [7, 6.3],
+  green: [6.3, 7],
+  yellow: [7, 7.7],
+  blue: [7.7, 7],
+};
+
+/** Centre of a token's cell, in grid units (x = col, y = row). */
+function tokenXY(color: LudoColor, rel: number, idx: number): [number, number] {
+  if (rel === -1) {
+    const [r0, c0] = YARD_ORIGIN[color];
+    const spots = [
+      [1.75, 1.75],
+      [1.75, 4.25],
+      [4.25, 1.75],
+      [4.25, 4.25],
+    ];
+    return [c0 + spots[idx][1], r0 + spots[idx][0]];
+  }
+  if (rel === HOME) {
+    const [r, c] = HOME_SPOT[color];
+    return [c + 0.5, r + 0.5];
+  }
+  const [r, c] = rel <= 50 ? LOOP_CELLS[(START[color] + rel) % 52] : HOME_COLUMN[color][rel - 51];
+  return [c + 0.5, r + 0.5];
+}
+
+function Board({
+  state,
+  mine,
+  onToken,
+}: {
+  state: LudoState;
+  mine: number;
+  onToken: (i: number) => void;
+}) {
+  const legal = state.turn === mine ? legalTokens(state) : [];
+  const colorOf = (c: LudoColor) => COLOR_HEX[c];
+  const used = new Set(state.players.map((p) => p.color));
+
+  // Spread tokens that share a cell.
+  const placed = useMemo(() => {
+    const out: { p: number; t: number; x: number; y: number }[] = [];
+    const seen = new Map<string, number>();
+    state.players.forEach((pl, p) =>
+      state.tokens[p].forEach((rel, t) => {
+        const [x, y] = tokenXY(pl.color, rel, t);
+        const key = rel === -1 ? `${p}-${t}` : `${x},${y}`;
+        const n = seen.get(key) ?? 0;
+        seen.set(key, n + 1);
+        const off = n ? [0, 0.22, -0.22, 0][n % 4] : 0;
+        out.push({ p, t, x: x + off, y: y + (n ? [0, -0.22, 0.22, 0.22][n % 4] : 0) });
+      }),
+    );
+    return out;
+  }, [state]);
+
+  return (
+    <svg viewBox="0 0 15 15" className="w-full rounded-2xl" style={{ border: "2px solid var(--edge)", background: "#F6F3EA" }}>
+      {/* Yards */}
+      {(Object.keys(YARD_ORIGIN) as LudoColor[]).map((c) => {
+        const [r, col] = YARD_ORIGIN[c];
+        return (
+          <g key={c} opacity={used.has(c) ? 1 : 0.35}>
+            <rect x={col} y={r} width={6} height={6} fill={colorOf(c)} />
+            <rect x={col + 0.8} y={r + 0.8} width={4.4} height={4.4} rx={0.6} fill="#fff" />
+          </g>
+        );
+      })}
+      {/* Loop */}
+      {LOOP_CELLS.map(([r, c], i) => {
+        const startOf = (Object.keys(START) as LudoColor[]).find((k) => START[k] === i);
+        return (
+          <g key={i}>
+            <rect x={c} y={r} width={1} height={1} fill={startOf ? colorOf(startOf) : "#fff"} stroke="#cfc8b8" strokeWidth={0.03} />
+            {SAFE.has(i) && !startOf && (
+              <text x={c + 0.5} y={r + 0.72} fontSize={0.62} textAnchor="middle">
+                ⭐
+              </text>
+            )}
+          </g>
+        );
+      })}
+      {/* Home columns */}
+      {(Object.keys(HOME_COLUMN) as LudoColor[]).map((c) =>
+        HOME_COLUMN[c].map(([r, col], i) => (
+          <rect key={`${c}${i}`} x={col} y={r} width={1} height={1} fill={colorOf(c)} stroke="#cfc8b8" strokeWidth={0.03} />
+        )),
+      )}
+      {/* Centre */}
+      <polygon points="6,6 9,6 7.5,7.5" fill={colorOf("green")} />
+      <polygon points="9,6 9,9 7.5,7.5" fill={colorOf("yellow")} />
+      <polygon points="9,9 6,9 7.5,7.5" fill={colorOf("blue")} />
+      <polygon points="6,9 6,6 7.5,7.5" fill={colorOf("red")} />
+      {/* Tokens */}
+      {placed.map(({ p, t, x, y }) => {
+        const pl = state.players[p];
+        const canMove = p === mine && legal.includes(t);
+        return (
+          <g
+            key={`${p}-${t}`}
+            style={{ transition: "transform 260ms ease", transform: `translate(${x}px, ${y}px)`, cursor: canMove ? "pointer" : "default" }}
+            onClick={() => canMove && onToken(t)}
+          >
+            {canMove && (
+              <circle r={0.5} fill="none" stroke="#07060B" strokeWidth={0.1}>
+                <animate attributeName="r" values="0.44;0.62;0.44" dur="1s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.35;1" dur="1s" repeatCount="indefinite" />
+              </circle>
+            )}
+            <circle r={0.38} fill={colorOf(pl.color)} stroke="#07060B" strokeWidth={0.08} />
+            <circle r={0.14} fill="#fff" opacity={0.7} />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+const PIPS: Record<number, [number, number][]> = {
+  1: [[50, 50]],
+  2: [[28, 28], [72, 72]],
+  3: [[28, 28], [50, 50], [72, 72]],
+  4: [[28, 28], [72, 28], [28, 72], [72, 72]],
+  5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]],
+  6: [[28, 25], [72, 25], [28, 50], [72, 50], [28, 75], [72, 75]],
+};
+
+function Dice({ value, rolling, color }: { value: number | null; rolling: boolean; color: string }) {
+  const [face, setFace] = useState(value ?? 6);
+  useEffect(() => {
+    if (!rolling) {
+      if (value) setFace(value);
+      return;
+    }
+    const t = setInterval(() => setFace(1 + Math.floor(Math.random() * 6)), 80);
+    return () => clearInterval(t);
+  }, [rolling, value]);
+  return (
+    <svg viewBox="0 0 100 100" width={64} height={64} className={rolling ? "die-rolling" : ""}>
+      <rect x={4} y={4} width={92} height={92} rx={20} fill={color} stroke="#07060B" strokeWidth={6} />
+      {PIPS[face].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={9} fill="#07060B" />
+      ))}
+    </svg>
+  );
+}
+
+// ---------- Game screen ----------
+
+export function LudoTable({
+  state,
+  mine,
+  onRoll,
+  onMove,
+  onSkip,
+  onClose,
+}: {
+  state: LudoState;
+  mine: number;
+  onRoll: () => void;
+  onMove: (token: number) => void;
+  onSkip: () => void;
+  onClose: () => void;
+}) {
+  const [rolling, setRolling] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const turnPlayer = state.players[state.turn];
+  const myTurn = state.turn === mine && state.phase !== "over";
+  const idle = !myTurn && state.phase !== "over" && now - state.turnStartedAt > IDLE_MS;
+  const home = (p: number) => state.tokens[p].filter((t) => t === HOME).length;
+
+  const doRoll = () => {
+    if (!myTurn || state.phase !== "roll" || rolling) return;
+    setRolling(true);
+    buzz(15);
+    setTimeout(() => {
+      setRolling(false);
+      onRoll();
+    }, 600);
+  };
+
+  const status =
+    state.phase === "over"
+      ? state.winner === mine
+        ? "You win! 🏆"
+        : `${state.players[state.winner!].name.split(" ")[0]} wins 🏆`
+      : myTurn
+        ? state.phase === "roll"
+          ? "Your turn: roll"
+          : "Pick a glowing token"
+        : `${turnPlayer.name.split(" ")[0]}'s turn`;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
+      <div className="mx-auto w-full max-w-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8">
+        <header className="flex items-center justify-between">
+          <span className="heading" style={{ fontSize: 20 }}>
+            🎲 Ludo
+          </span>
+          <button onClick={onClose} aria-label="Close" className="text-cool w-10 h-10 flex items-center justify-center">
+            <X size={22} />
+          </button>
+        </header>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {state.players.map((p, i) => (
+            <div
+              key={p.id}
+              className="flex items-center gap-2 rounded-xl px-2.5 py-1.5"
+              style={{
+                border: `2px solid ${i === state.turn && state.phase !== "over" ? COLOR_HEX[p.color] : "var(--edge)"}`,
+                background: i === state.turn ? "var(--fill)" : "transparent",
+              }}
+            >
+              <span className="w-3 h-3 rounded-full shrink-0" style={{ background: COLOR_HEX[p.color] }} />
+              <Avatar src={p.avatar} initials={p.initials} size={26} />
+              <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-cream">
+                {i === mine ? "You" : p.name.split(" ")[0]}
+              </span>
+              <span className="meta tabular-nums" style={{ fontSize: 12 }}>
+                🏠{home(i)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3">
+          <Board state={state} mine={mine} onToken={(t) => myTurn && state.phase === "move" && onMove(t)} />
+        </div>
+
+        <div className="mt-4 flex items-center gap-4">
+          <button
+            onClick={doRoll}
+            disabled={!myTurn || state.phase !== "roll" || rolling}
+            aria-label="Roll the dice"
+            className="disabled:opacity-60"
+          >
+            <Dice
+              value={state.dice ?? state.last?.dice ?? null}
+              rolling={rolling}
+              color={COLOR_HEX[turnPlayer.color]}
+            />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="font-extrabold text-cream text-[17px]">{status}</p>
+            {state.last?.note && <p className="meta">{state.last.note}</p>}
+            {state.last?.captured && <p className="meta">💥 Capture! Rolled again.</p>}
+            {idle && (
+              <button onClick={onSkip} className="btn-quiet mt-1 px-3 min-h-[34px] text-sm">
+                Skip {turnPlayer.name.split(" ")[0]}'s turn
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      <Confetti fire={state.phase === "over" && state.winner === mine ? 1 : 0} />
+    </div>
+  );
+}
+
+// ---------- Lobby ----------
+
+export function LudoLobby({
+  onClose,
+  onStart,
+}: {
+  onClose: () => void;
+  onStart: (friends: Person[]) => void;
+}) {
+  const s = useSocial();
+  const people = s.mode === "live" ? mutualFriends() : [];
+  const [picked, setPicked] = useState<string[]>([]);
+  const toggle = (id: string) =>
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 3 ? p : [...p, id]));
+  const friends = people.filter((p) => picked.includes(p.id));
+  return (
+    <Sheet title="🎲 Ludo" onClose={onClose}>
+      <p className="text-sm text-cool leading-relaxed">
+        Live, 2 to 4 players. Roll a 6 to get out. Land on someone to send them home. First to
+        get all 4 tokens home wins.
+      </p>
+      <p className="label-caps mt-5 mb-2">pick 1 to 3 from your 25</p>
+      {people.length === 0 ? (
+        <p className="text-sm text-faint">You need mutual seats to play Ludo.</p>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {people.map((p) => {
+            const on = picked.includes(p.id);
+            return (
+              <button key={p.id} onClick={() => toggle(p.id)} className="flex flex-col items-center shrink-0" style={{ width: 60 }}>
+                <span className="rounded-full p-[2px]" style={{ background: on ? "var(--lime)" : "transparent" }}>
+                  <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={48} />
+                </span>
+                <span className="text-[11px] mt-1 truncate w-full text-center text-cream">{p.name.split(" ")[0]}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <button
+        disabled={friends.length < 1}
+        onClick={() => onStart(friends)}
+        className="btn-primary w-full mt-5"
+      >
+        {friends.length ? `Start with ${friends.length + 1} players` : "Pick at least 1 friend"}
+      </button>
+    </Sheet>
+  );
+}

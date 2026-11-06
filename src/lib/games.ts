@@ -8,6 +8,7 @@ import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
 import { newGame, type KState, type Scoring, type Seat } from "@/lib/kachuful";
+import { newLudo, type LudoState } from "@/lib/ludo";
 
 export type TriviaState = {
   pack: string;
@@ -32,9 +33,9 @@ export type WordState = {
 export const hideWord = (w: string) => btoa([...w].reverse().join(""));
 export const revealWord = (h: string) => [...atob(h)].reverse().join("");
 
-export type GameRow<S = KState | TriviaState | WordState> = {
+export type GameRow<S = KState | TriviaState | WordState | LudoState> = {
   id: string;
-  kind: "kachuful" | "trivia" | "word";
+  kind: "kachuful" | "trivia" | "word" | "ludo";
   host: string;
   players: string[];
   status: "playing" | "done";
@@ -137,6 +138,31 @@ export async function startTriviaChallenge(packId: string, friend: Person) {
     .from("games")
     .insert({ id, kind: "trivia", host: me, players: [me, friend.id], state, version: 0 });
   if (error) throw new Error(error.message);
+  return id;
+}
+
+export async function startLudo(friends: Person[]) {
+  const me = _get().me!;
+  const players = [
+    { id: me.id, name: me.name, avatar: me.avatar, initials: me.initials },
+    ...friends.map((f) => ({ id: f.id, name: f.name, avatar: f.avatar || undefined, initials: f.initials })),
+  ];
+  const state = newLudo(players);
+  const id = uuid();
+  const { error } = await supabase.from("games").insert({
+    id,
+    kind: "ludo",
+    host: me.id,
+    players: players.map((p) => p.id),
+    state,
+    version: 0,
+  });
+  if (error) throw new Error(error.message);
+  await invite(
+    friends.map((f) => f.id),
+    id,
+    `🎲 Ludo, ${players.length} players. Join now, it's live!`,
+  );
   return id;
 }
 

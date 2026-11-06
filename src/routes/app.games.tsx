@@ -8,6 +8,8 @@ import { Scoreboard } from "@/components/Scoreboard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
 import { TRIES, gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
+import { LudoLobby } from "@/components/Ludo";
+import type { LudoState } from "@/lib/ludo";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
 import { TRIVIA_PACKS, type TriviaPack } from "@/lib/data";
@@ -18,6 +20,7 @@ import {
   seatFor,
   startKachuful,
   inviteToDuel,
+  startLudo,
   startTriviaChallenge,
   startWordChallenge,
   type GameRow,
@@ -74,6 +77,12 @@ function YourGames({ meId }: { meId: string }) {
               : turn
                 ? `${turn.name.split(" ")[0]}'s turn`
                 : "In play";
+          } else if (g.kind === "ludo") {
+            const l = g.state as LudoState;
+            const turn = l.players[l.turn];
+            yourTurn = turn?.id === meId;
+            title = `Ludo · ${l.players.length} players`;
+            status = yourTurn ? "Your turn 🎲" : `${turn?.name.split(" ")[0] ?? "Their"}'s turn`;
           } else if (g.kind === "word") {
             const w = g.state as WordState;
             const guessing = w.guesser === meId;
@@ -137,7 +146,9 @@ function GameTile({
   line,
   tilt,
   onClick,
+  wide,
 }: {
+  wide?: boolean;
   tone: string;
   light?: boolean;
   emoji: string;
@@ -150,7 +161,7 @@ function GameTile({
   return (
     <button
       onClick={onClick}
-      className="rounded-[22px] p-4 text-left flex flex-col active:scale-95 transition-transform"
+      className={`rounded-[22px] p-4 text-left flex flex-col active:scale-95 transition-transform ${wide ? "col-span-2" : ""}`}
       style={{
         background: tone,
         color: light ? "var(--ink)" : "var(--on-accent)",
@@ -202,6 +213,7 @@ function Games() {
   const [toast, setToast] = useState<string | null>(null);
   const [tab, setTab] = useState<"play" | "scores">("play");
   const [packs, setPacks] = useState(false);
+  const [ludo, setLudo] = useState(false);
   const [wordMenu, setWordMenu] = useState(false);
   const dailyState = useDaily();
   const todayGame = GAMES[gameFor(today())];
@@ -256,7 +268,8 @@ function Games() {
               }
               title={todayGame.name}
               line="Today's game. Best of 3 counts."
-              tilt={-1.5}
+              tilt={-0.8}
+              wide
               onClick={() => setDaily(true)}
             />
             <GameTile
@@ -279,6 +292,15 @@ function Games() {
               onClick={() => setPacks(true)}
             />
             <GameTile
+              tone="var(--pink)"
+              emoji="🎲"
+              sticker="LIVE · 2–4"
+              title="Ludo"
+              line="Roll, race, capture. Send them home."
+              tilt={-1}
+              onClick={() => setLudo(true)}
+            />
+            <GameTile
               tone="var(--sun)"
               emoji="🔤"
               sticker="DAILY WORD"
@@ -295,6 +317,21 @@ function Games() {
         <>
           <Scoreboard />
         </>
+      )}
+
+      {ludo && (
+        <LudoLobby
+          onClose={() => setLudo(false)}
+          onStart={async (friends) => {
+            setLudo(false);
+            try {
+              const id = await startLudo(friends);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
       )}
 
       {packs && (
