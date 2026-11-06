@@ -512,3 +512,51 @@ export async function sendMedia(friendId: string, file: File) {
   });
   if (error) throw new Error(error.message);
 }
+
+/**
+ * Message box that grows with the text (up to ~5 lines, then scrolls).
+ * Enter adds a new line on phones; on a keyboard, Enter sends and
+ * Shift+Enter adds a line.
+ */
+export function GrowingInput({
+  value,
+  onChange,
+  onSend,
+  placeholder,
+  id,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  placeholder: string;
+  id?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, [value]);
+  const touch = typeof window !== "undefined" && matchMedia("(pointer: coarse)").matches;
+  return (
+    <textarea
+      ref={ref}
+      id={id}
+      rows={1}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && !e.shiftKey && !touch) {
+          e.preventDefault();
+          if (value.trim()) onSend();
+        }
+      }}
+      placeholder={placeholder}
+      aria-label={placeholder}
+      className="input flex-1 resize-none py-3 leading-snug"
+      style={{ borderRadius: 22, minHeight: 48, maxHeight: 128, overflowY: "auto" }}
+      autoComplete="off"
+    />
+  );
+}

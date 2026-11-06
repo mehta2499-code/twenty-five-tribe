@@ -31,7 +31,7 @@ function GroupsSection() {
     return lb - la;
   });
   return (
-    <section className="mt-5">
+    <section className="mt-3">
       <div className="px-5 flex items-center justify-between">
         <h2 className="text-[15px] font-semibold text-cream">Groups</h2>
         <button
@@ -173,12 +173,42 @@ function preview(m?: ChatMessage, typing?: boolean) {
   return who + (m.text ?? "");
 }
 
+function TabBadge({ n }: { n: number }) {
+  if (n <= 0) return null;
+  return (
+    <span
+      className="ml-1.5 inline-flex min-w-[20px] h-5 px-1 rounded-full text-[11px] font-extrabold items-center justify-center"
+      style={{ background: "var(--pink)", color: "var(--on-accent)" }}
+    >
+      {n > 9 ? "9+" : n}
+    </span>
+  );
+}
+
 function Chats() {
   const s = useSocial();
   const [q, setQ] = useState("");
   const [viewing, setViewing] = useState<Snap | null>(null);
   const everyone = mutualFriends();
   const term = q.trim().toLowerCase();
+  const gs = useGroups();
+  const [tab, setTab] = useState<"private" | "groups">(() => {
+    try {
+      return localStorage.getItem("tf.chats.tab") === "groups" ? "groups" : "private";
+    } catch {
+      return "private";
+    }
+  });
+  const pick = (t: "private" | "groups") => {
+    setTab(t);
+    try {
+      localStorage.setItem("tf.chats.tab", t);
+    } catch {
+      // ignore
+    }
+  };
+  const privateUnread = Object.values(s.unread).reduce((a, n) => a + n, 0);
+  const groupUnread = gs.groups.reduce((a, g) => a + unreadIn(gs, g.id), 0);
 
   const rows = everyone
     .filter((f) => !term || f.name.toLowerCase().includes(term) || f.username?.includes(term))
@@ -207,7 +237,22 @@ function Chats() {
         }
       />
 
-      {s.loading ? (
+      <div className="px-5 mt-1 mb-2">
+        <div className="segmented w-full" role="tablist" aria-label="Chats">
+          <button className="flex-1" role="tab" aria-pressed={tab === "private"} onClick={() => pick("private")}>
+            💬 Private
+            <TabBadge n={privateUnread} />
+          </button>
+          <button className="flex-1" role="tab" aria-pressed={tab === "groups"} onClick={() => pick("groups")}>
+            👥 Groups
+            <TabBadge n={groupUnread} />
+          </button>
+        </div>
+      </div>
+
+      {tab === "groups" ? (
+        <GroupsSection />
+      ) : s.loading ? (
         <SkeletonRows count={6} />
       ) : everyone.length === 0 ? (
         <EmptyState
@@ -264,9 +309,7 @@ function Chats() {
             </Section>
           )}
 
-          <GroupsSection />
-
-          <div className="px-5 mt-5">
+          <div className="px-5 mt-3">
             <label className="field" htmlFor="chat-search">
               <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
               <input

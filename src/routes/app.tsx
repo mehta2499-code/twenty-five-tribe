@@ -45,6 +45,24 @@ function AppLayout() {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
   }, []);
 
+  // While the app is open and visible, tell the server we're here so it holds
+  // back push notifications (the in-app banner covers it).
+  useEffect(() => {
+    if (s.mode !== "live" || !s.me) return;
+    const ping = (active: boolean) =>
+      void supabase.rpc("set_active", { p_active: active }).then(() => undefined);
+    const beat = () => document.visibilityState === "visible" && ping(true);
+    beat();
+    const t = setInterval(beat, 30_000);
+    const onVis = () => ping(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", () => ping(false));
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [s.mode, s.me?.id]);
+
   // Notifications already allowed on this device: keep it registered.
   useEffect(() => {
     if (s.mode === "live" && s.me) void syncPush();

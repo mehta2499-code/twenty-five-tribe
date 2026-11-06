@@ -4,6 +4,7 @@ import { ArrowLeft, Paperclip, Send, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import {
+  GrowingInput,
   MediaBubble,
   Reactable,
   VoicePlayer,
@@ -220,15 +221,11 @@ function GroupThread() {
                 void sendGroupMedia(id, file).catch((err) => setToast((err as Error).message));
             }}
           />
-          <input
+          <GrowingInput
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={setText}
+            onSend={send}
             placeholder={`Message ${g.name}`}
-            aria-label={`Message ${g.name}`}
-            className="input flex-1"
-            style={{ borderRadius: 22 }}
-            autoComplete="off"
-            enterKeyHint="send"
           />
           {text.trim() ? (
             <button

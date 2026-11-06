@@ -14,6 +14,7 @@ import {
 import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
 import {
+  GrowingInput,
   MediaBubble,
   Reactable,
   VoicePlayer,
@@ -366,18 +367,15 @@ function ChatThread() {
           <label htmlFor="chat-input" className="sr-only">
             Message {f.name}
           </label>
-          <input
+          <GrowingInput
             id="chat-input"
             value={text}
-            onChange={(e) => {
-              setText(e.target.value);
+            onChange={(v) => {
+              setText(v);
               if (live) sendTyping(id);
             }}
+            onSend={send}
             placeholder={`Message ${firstName}`}
-            className="input flex-1"
-            style={{ borderRadius: 22 }}
-            autoComplete="off"
-            enterKeyHint="send"
           />
           {text.trim() ? (
             <button

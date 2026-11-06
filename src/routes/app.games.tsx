@@ -2,11 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { FriendPicker, PageBand, Sheet, Toast, clientOnly } from "@/components/SocialUI";
+import { Confetti, FriendPicker, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { DailyRunner, GAMES } from "@/components/ArcadeGames";
 import { Scoreboard } from "@/components/Scoreboard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
-import { TRIES, gameFor, today, useDaily } from "@/lib/daily";
+import { LINEUP, TRIES, gameFor, today, useDaily, type DailyId } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { LocalLudo, LudoLobby } from "@/components/Ludo";
 import type { LudoState } from "@/lib/ludo";
@@ -196,6 +196,106 @@ function GameTile({
   );
 }
 
+/** Today's game starts as a mystery: tap to spin and reveal it, tap again to play. */
+function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
+  const day = today();
+  const key = `tf.reveal.${day}`;
+  const game = GAMES[gameFor(day)];
+  const [revealed, setRevealed] = useState(() => {
+    try {
+      return localStorage.getItem(key) === "1" || left < TRIES;
+    } catch {
+      return false;
+    }
+  });
+  const [spinning, setSpinning] = useState(false);
+  const [face, setFace] = useState<DailyId>(gameFor(day));
+  const [party, setParty] = useState(0);
+
+  const spin = () => {
+    if (spinning) return;
+    setSpinning(true);
+    buzz(10);
+    // Slot machine: fast, then slower, landing on today's game.
+    const target = LINEUP.indexOf(gameFor(day));
+    const total = LINEUP.length * 3 + target;
+    let t = 0;
+    for (let k = 0; k <= total; k++) {
+      t += 45 + Math.pow(k / total, 3) * 260;
+      const g = LINEUP[k % LINEUP.length];
+      setTimeout(() => {
+        setFace(g);
+        buzz(4);
+        if (k === total) {
+          setSpinning(false);
+          setRevealed(true);
+          setParty((n) => n + 1);
+          buzz(40);
+          try {
+            localStorage.setItem(key, "1");
+          } catch {
+            // ignore
+          }
+        }
+      }, t);
+    }
+  };
+
+  if (!revealed || spinning) {
+    const g = GAMES[face];
+    return (
+      <button
+        onClick={spin}
+        className="col-span-2 rounded-[22px] p-4 text-left flex flex-col active:scale-[0.98] transition-transform relative overflow-hidden"
+        style={{
+          background: "var(--edge)",
+          color: "#fff",
+          border: "2px solid var(--lime)",
+          boxShadow: "4px 4px 0 var(--lime)",
+          minHeight: 178,
+        }}
+      >
+        <span
+          className="self-start text-[10.5px] font-extrabold px-2 py-0.5 rounded-full"
+          style={{ background: "var(--lime)", color: "var(--on-accent)" }}
+        >
+          {spinning ? "SPINNING…" : "TODAY'S GAME · TAP TO REVEAL"}
+        </span>
+        <span className="flex-1 flex items-center justify-center gap-4 py-2">
+          <span
+            key={spinning ? face : "q"}
+            className={spinning ? "text-6xl slot-tick" : "text-6xl float"}
+            aria-hidden="true"
+          >
+            {spinning ? g.emoji : "❓"}
+          </span>
+          <span className="display" style={{ fontSize: 26, lineHeight: 1.05 }}>
+            {spinning ? g.name : "Mystery game"}
+          </span>
+        </span>
+        <span className="text-[12.5px] font-semibold opacity-80">
+          A new one every day. Best of 3 counts.
+        </span>
+      </button>
+    );
+  }
+  return (
+    <>
+      <GameTile
+        tone="var(--lime)"
+        emoji={game.emoji}
+        sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY ✅"}
+        title={game.name}
+        line={game.blurb}
+        tilt={-0.8}
+        wide
+        onClick={onPlay}
+      />
+      <Confetti fire={party} />
+    </>
+  );
+}
+
 function Games() {
   const s = useSocial();
   const navigate = useNavigate();
@@ -264,19 +364,9 @@ function Games() {
           {live && <YourGames meId={s.me!.id} />}
 
           <section className="px-5 mt-6 grid grid-cols-2 gap-3.5" aria-label="All games">
-            <GameTile
-              tone="var(--lime)"
-              emoji={todayGame.emoji}
-              sticker={
-                dailyLeft > 0
-                  ? `NEW TODAY · ${dailyLeft} ${dailyLeft === 1 ? "try" : "tries"}`
-                  : "DONE TODAY ✅"
-              }
-              title={todayGame.name}
-              line="Today's game. Best of 3 counts."
-              tilt={-0.8}
-              wide
-              onClick={() => setDaily(true)}
+            <MysteryTile
+              left={dailyLeft}
+              onPlay={() => setDaily(true)}
             />
             <GameTile
               tone="#1F1B2B"

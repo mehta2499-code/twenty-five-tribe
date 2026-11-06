@@ -439,3 +439,7 @@ html.privacy-blur body { filter: blur(28px) saturate(0.6); transition: filter 80
 /* Snappier taps in the home-screen app */
 html { -webkit-tap-highlight-color: transparent; }
 button, a, [role="button"] { touch-action: manipulation; }
+
+/* Mystery game reveal: each slot flips in */
+@keyframes slot-tick { from { transform: translateY(-40%); opacity: 0.2; } to { transform: none; opacity: 1; } }
+.slot-tick { display: inline-block; animation: slot-tick 90ms ease-out both; }

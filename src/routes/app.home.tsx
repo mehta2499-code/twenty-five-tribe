@@ -371,7 +371,17 @@ function Dare() {
 function GameRank() {
   const d = useDaily();
   const day = today();
-  const g = GAMES[gameFor(day)];
+  const real = GAMES[gameFor(day)];
+  // Keep today's game a mystery until it's revealed on the Games tab.
+  let revealed = true;
+  try {
+    revealed = localStorage.getItem(`tf.reveal.${day}`) === "1";
+  } catch {
+    // ignore
+  }
+  const g = revealed || (d.board[day]?.me ?? []).length
+    ? real
+    : { ...real, emoji: "❓", name: "Mystery game", tone: "var(--sun)" };
   const tries = d.board[day]?.me ?? [];
   const left = TRIES - tries.length;
   const todayRank = dayRanking(d, day).find((r) => r.id === "me");
