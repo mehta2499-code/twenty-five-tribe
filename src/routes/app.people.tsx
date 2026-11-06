@@ -1,6 +1,7 @@
+import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, MessageCircle, Search, UserPlus } from "lucide-react";
+import { Check, Eye, Handshake, MessageCircle, Search, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { account } from "@/lib/live";
@@ -72,7 +73,7 @@ function People() {
   const seatedMe = new Set(incoming.map((r) => r.person.id));
   const seat = (p: Person) =>
     s.requests.find((r) => r.person.id === p.id)?.iPassed
-      ? act(p.id, () => account.request(p.id), `🤝 ${p.name} is in your 25. Chats unlocked.`, true)
+      ? act(p.id, () => account.request(p.id), `${p.name} is in your 25. Chats unlocked.`, true)
       : setQuiz({ person: p, mode: seatedMe.has(p.id) ? "accept" : "request" });
 
   useEffect(() => {
@@ -117,7 +118,7 @@ function People() {
             <p className="heading mt-3">No seat without proof.</p>
             <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
               To seat someone, guess their vibe-check answers. Get 4 of 7 right and they're in
-              your 25: they see your posts. When they seat you back, it's mutual 🤝 and chats,
+              your 25: they see your posts. When they seat you back, it's mutual and chats,
               snaps and games unlock.
             </p>
             <button
@@ -183,14 +184,14 @@ function People() {
             ))}
           </div>
           <p className="mt-2 meta flex flex-wrap gap-x-3">
-            <span>🤝 {mutualCount} mutual</span>
-            <span>👀 {taken - mutualCount} one-way</span>
+            <span><Ico i={Handshake} c={TONE.mutual} size={14} /> {mutualCount} mutual</span>
+            <span><Ico i={Eye} c={TONE.oneWay} size={14} /> {taken - mutualCount} one-way</span>
             {taken >= SEATS && <span>Full. Remove someone to seat someone new.</span>}
           </p>
         </div>
         <div className="mt-3 flex">
           <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
-            👀 you're in {s.seatedByCount} {s.seatedByCount === 1 ? "person's" : "people's"} 25
+            <Ico i={Eye} size={13} /> you're in {s.seatedByCount} {s.seatedByCount === 1 ? "person's" : "people's"} 25
           </span>
           <span className="meta ml-2 self-center">only you see this</span>
         </div>
@@ -253,7 +254,7 @@ function People() {
       {incoming.length > 0 && (
         <section className="px-5 mt-8">
           <h2 className="heading" style={{ fontSize: 18 }}>
-            👀 They put you in their 25 · {incoming.length}
+            <Ico i={Eye} c={TONE.oneWay} size={18} /> They put you in their 25 · {incoming.length}
           </h2>
           <p className="meta mt-0.5">
             You can see their posts. Seat them back to unlock chats, blinks and games.
@@ -314,7 +315,7 @@ function People() {
                   </button>
                 </li>
               ) : (
-                <Row key={p.id} p={p} note={p.mutual ? "🤝 mutual" : "⏳ hasn't seated you back"}>
+                <Row key={p.id} p={p} note={p.mutual ? "Mutual" : "Hasn't seated you back"}>
                   {p.mutual && (
                     <Link
                       to="/app/chat/$id"

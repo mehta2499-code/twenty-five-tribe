@@ -1,8 +1,10 @@
+import { Ico, TONE } from "@/components/Ico";
 /**
  * Scores tab: a podium for the top 3, a "best player" banner and colourful
  * ranked rows. Today (best try in today's game) or the week (points).
  */
 import { useEffect, useState } from "react";
+import { Crown, Flag, Flame, RotateCw, Sparkles, Trophy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar } from "@/components/Avatar";
 import { GAMES } from "@/components/ArcadeGames";
@@ -24,7 +26,7 @@ type Row = {
   rank: number;
   value: number;
   unit: string;
-  chips: string[];
+  chips: { k: string; node: React.ReactNode }[];
 };
 
 const ROW_TONES = ["var(--pink)", "var(--lime)", "var(--sky)"];
@@ -109,8 +111,12 @@ export function Scoreboard() {
             value: r.points,
             unit: "pts",
             chips: [
-              ...(r.live_wins ? [`🏆 ${r.live_wins} win${r.live_wins === 1 ? "" : "s"}`] : []),
-              ...(r.daily_crowns ? [`👑 ×${r.daily_crowns}`] : []),
+              ...(r.live_wins
+                ? [{ k: "w", node: <><Ico i={Trophy} c={TONE.win} size={12} /> {r.live_wins} win{r.live_wins === 1 ? "" : "s"}</> }]
+                : []),
+              ...(r.daily_crowns
+                ? [{ k: "c", node: <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.daily_crowns}</> }]
+                : []),
             ],
           }))
       : view === "today"
@@ -119,14 +125,20 @@ export function Scoreboard() {
           rank: r.rank,
           value: r.best,
           unit: g.unit,
-          chips: [`↻ ${r.tries.length}`, `+${r.points} pts`],
+          chips: [
+            { k: "t", node: <><Ico i={RotateCw} size={12} /> {r.tries.length}</> },
+            { k: "p", node: `+${r.points} pts` },
+          ],
         }))
       : weekStandings(d, view === "week" ? thisWeek() : lastWeek()).map((r, i, all) => ({
           id: r.id,
           rank: i > 0 && all[i - 1].points === r.points ? i : i + 1,
           value: r.points,
           unit: "pts",
-          chips: [...(r.wins ? [`👑 ×${r.wins}`] : []), `${r.days}d played`],
+          chips: [
+            ...(r.wins ? [{ k: "c", node: <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.wins}</> }] : []),
+            { k: "d", node: `${r.days}d played` },
+          ],
         }));
 
   const top = rows.slice(0, 3);
@@ -135,12 +147,12 @@ export function Scoreboard() {
   const streak = playStreak(d.board);
   const title =
     view === "today"
-      ? `${g.emoji} ${g.name}`
+      ? <><g.Icon size={14} strokeWidth={2.25} aria-hidden="true" /> {g.name}</>
       : view === "week"
-        ? "🏆 This week"
+        ? <><Ico i={Trophy} size={14} /> This week</>
         : view === "last"
-          ? "🏆 Last week"
-          : "🏆 All-time";
+          ? <><Ico i={Trophy} size={14} /> Last week</>
+          : <><Ico i={Trophy} size={14} /> All-time</>;
   const mine = lifetime.find((r) => r.user_id === "me");
 
   return (
@@ -181,7 +193,7 @@ export function Scoreboard() {
 
       {rows.length === 0 ? (
         <div className="card mt-6 p-6 text-center">
-          <p className="text-5xl">🏁</p>
+          <Flag size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--lime)" }} />
           <p className="heading mt-3">No scores yet</p>
           <p className="meta mt-1">Play first. Set the bar. Make them sweat.</p>
         </div>
@@ -196,9 +208,13 @@ export function Scoreboard() {
               return (
                 <div key={r.id} className="flex flex-col items-center">
                   {first && (
-                    <span className="text-4xl -mb-2 float" aria-hidden="true">
-                      👑
-                    </span>
+                    <Crown
+                      size={36}
+                      strokeWidth={2.25}
+                      aria-hidden="true"
+                      className="-mb-1.5"
+                      style={{ color: "var(--sun)", fill: "var(--sun)", stroke: "var(--edge)" }}
+                    />
                   )}
                   <span
                     className="rounded-full"
@@ -230,9 +246,7 @@ export function Scoreboard() {
           {/* Best player */}
           {best && (
             <div className="mt-7 flex items-center justify-center gap-3 text-center">
-              <span className="text-3xl" style={{ transform: "scaleX(-1)" }} aria-hidden="true">
-                🌿
-              </span>
+              <Sparkles size={26} aria-hidden="true" style={{ color: "var(--sun)" }} />
               <div>
                 <p className="meta font-bold">
                   {view === "today"
@@ -248,9 +262,7 @@ export function Scoreboard() {
                   {best.value} {best.unit}
                 </p>
               </div>
-              <span className="text-3xl" aria-hidden="true">
-                🌿
-              </span>
+              <Sparkles size={26} aria-hidden="true" style={{ color: "var(--sun)", transform: "scaleX(-1)" }} />
             </div>
           )}
 
@@ -280,7 +292,7 @@ export function Scoreboard() {
             {[
               ["Daily pts", mine.daily_points],
               ["Days played", mine.daily_days],
-              ["Daily 👑", mine.daily_crowns],
+              ["Daily wins", mine.daily_crowns],
               ["Live games", mine.live_played],
               ["Live wins", mine.live_wins],
               [
@@ -328,7 +340,7 @@ export function Scoreboard() {
               boxShadow: "var(--pop)",
             }}
           >
-            🔥 DAY {streak} of playing in a row
+            <Ico i={Flame} size={15} /> Day {streak} of playing in a row
           </span>
         </div>
       )}
@@ -371,11 +383,11 @@ function RankRow({ row, tone, light }: { row: Row; tone: string; light?: boolean
       <span className="absolute -bottom-3 right-3 flex gap-1.5">
         {row.chips.map((c) => (
           <span
-            key={c}
+            key={c.k}
             className="px-2 py-0.5 rounded-full text-[12px] font-extrabold whitespace-nowrap"
             style={{ background: "var(--edge)", color: "#fff" }}
           >
-            {c}
+            {c.node}
           </span>
         ))}
       </span>

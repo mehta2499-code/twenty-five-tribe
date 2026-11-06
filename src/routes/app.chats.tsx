@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Camera, MessageCircle, Search, UserPlus } from "lucide-react";
+import { Camera, MessageCircle, Search, UserPlus, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
   EmptyState,
@@ -165,9 +165,9 @@ function preview(m?: ChatMessage, typing?: boolean) {
   const who = m.from === "me" ? "You: " : "";
   if (m.snapId) return m.from === "me" ? "You sent a blink" : "Sent you a blink";
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
-  if (m.sharedPostId?.startsWith("voice:")) return `${who}🎤 Voice note`;
-  if (m.sharedPostId?.startsWith("img:")) return `${who}📷 Photo`;
-  if (m.sharedPostId?.startsWith("vid:")) return `${who}🎥 Video`;
+  if (m.sharedPostId?.startsWith("voice:")) return `${who}Voice note`;
+  if (m.sharedPostId?.startsWith("img:")) return `${who}Photo`;
+  if (m.sharedPostId?.startsWith("vid:")) return `${who}Video`;
   if (m.sharedPostId)
     return `${who}shared a ${m.sharedPostId.startsWith("reel") ? "reel" : "post"}`;
   return who + (m.text ?? "");
@@ -239,12 +239,12 @@ function Chats() {
 
       <div className="px-5 mt-1 mb-2">
         <div className="segmented w-full" role="tablist" aria-label="Chats">
-          <button className="flex-1" role="tab" aria-pressed={tab === "private"} onClick={() => pick("private")}>
-            💬 Private
+          <button className="flex-1 gap-1.5" role="tab" aria-pressed={tab === "private"} onClick={() => pick("private")}>
+            <MessageCircle size={16} aria-hidden="true" /> Private
             <TabBadge n={privateUnread} />
           </button>
-          <button className="flex-1" role="tab" aria-pressed={tab === "groups"} onClick={() => pick("groups")}>
-            👥 Groups
+          <button className="flex-1 gap-1.5" role="tab" aria-pressed={tab === "groups"} onClick={() => pick("groups")}>
+            <Users size={16} aria-hidden="true" /> Groups
             <TabBadge n={groupUnread} />
           </button>
         </div>

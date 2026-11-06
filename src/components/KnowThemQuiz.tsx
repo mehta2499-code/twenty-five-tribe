@@ -206,7 +206,7 @@ export function KnowThemQuiz({
                 {phase.passed
                   ? demo
                     ? "That's how it works. In the real app, this unlocks their seat."
-                    : `${actionLabel === "Seat them back" ? "🤝 Mutual. Chats, blinks and games unlocked." : "They're in your 25 now. They'll get pinged 👀"}`
+                    : `${actionLabel === "Seat them back" ? "Mutual. Chats, blinks and games unlocked." : "They're in your 25 now. They'll get pinged 👀"}`
                   : `You need ${PASS_MARK} right. Try again in 30 minutes, or ask ${first} something IRL.`}
               </p>
               <button

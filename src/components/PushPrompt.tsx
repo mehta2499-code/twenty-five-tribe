@@ -30,7 +30,7 @@ export function PushPrompt() {
   return (
     <section className="px-5 mt-5">
       <div className="card p-4 flex gap-3 items-start">
-        <span className="text-3xl">🔔</span>
+        <Bell size={28} strokeWidth={2.25} aria-hidden="true" className="shrink-0" style={{ color: "var(--sun)" }} />
         <div className="flex-1 min-w-0">
           <p className="font-bold text-cream">Don't miss your 25</p>
           {st === "needs-install" ? (

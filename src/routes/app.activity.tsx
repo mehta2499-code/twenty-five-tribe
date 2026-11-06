@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState, PageBand, clientOnly } from "@/components/SocialUI";
-import { Bell } from "lucide-react";
+import { Bell, Lock } from "lucide-react";
 import { describe, markAllRead, useActivity, type Activity } from "@/lib/activity";
 import { friendById, timeAgo } from "@/lib/social";
 
@@ -72,10 +72,15 @@ function ActivityScreen() {
                         className="w-11 h-11 rounded-full flex items-center justify-center text-xl"
                         style={{ background: "var(--sun)", border: "2px solid var(--edge)" }}
                       >
-                        🤫
+                        <Lock size={20} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
                       </span>
                     )}
-                    <span className="absolute -bottom-1 -right-1 text-base">{d.emoji}</span>
+                    <span
+                      className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{ background: d.tone, color: "var(--on-accent)", border: "2px solid var(--edge)" }}
+                    >
+                      <d.Icon size={12} strokeWidth={2.5} aria-hidden="true" />
+                    </span>
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-cream text-[14.5px] leading-snug line-clamp-2">

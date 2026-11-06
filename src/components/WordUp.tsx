@@ -312,7 +312,7 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
       <div className="mx-auto w-full max-w-md min-h-full flex flex-col px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-6">
         <header className="flex items-center justify-between">
           <div>
-            <p className="heading">Word Up 🔤</p>
+            <p className="heading">Word Up</p>
             <p className="meta">Daily word #{wordNumber(day)} · same for everyone</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="text-cool">
@@ -332,12 +332,12 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
           <div className="mt-6 text-center animate-soft-in">
             <p className="display" style={{ fontSize: 30 }}>
               {result.guesses <= 6
-                ? ["", "Genius 🤯", "Unreal 🔥", "Big brain 🧠", "Solid 💪", "Phew 😮‍💨", "Clutch 😅"][result.guesses]
-                : `It was ${answer.toUpperCase()} 💀`}
+                ? ["", "Genius", "Unreal", "Big brain", "Solid", "Phew", "Clutch"][result.guesses]
+                : `It was ${answer.toUpperCase()}`}
             </p>
             <pre className="mt-3 text-[20px] leading-tight">{result.grid}</pre>
             <button onClick={() => setSharing(true)} className="btn-primary mt-4 px-6">
-              Send my result 😏
+              Send my result
             </button>
 
             <div className="mt-6 card p-4 text-left">
@@ -351,7 +351,7 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
                     <li key={r.id} className="flex items-center gap-3">
                       <Avatar src={v?.avatar || undefined} initials={v?.initials ?? "?"} color={f?.color} size={30} />
                       <span className="flex-1 font-semibold text-cream truncate">{me ? "You" : f?.name}</span>
-                      <span className="font-bold tabular-nums">{r.guesses > 6 ? "❌" : `${r.guesses}/6`}</span>
+                      <span className="font-bold tabular-nums">{r.guesses > 6 ? "X/6" : `${r.guesses}/6`}</span>
                     </li>
                   );
                 })}
@@ -369,7 +369,7 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
           onPick={(ids) => {
             ids.forEach((id) => social.sendMessage(id, shareText));
             setSharing(false);
-            setToast("Sent 🔤");
+            setToast("Sent");
           }}
         />
       )}

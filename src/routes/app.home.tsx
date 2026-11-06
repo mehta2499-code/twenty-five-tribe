@@ -1,19 +1,8 @@
+import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Bell,
-  Camera,
-  ChevronRight,
-  Dices,
-  Gamepad2,
-  ImagePlus,
-  MessageCircle,
-  Shuffle,
-  Trophy,
-  UserPlus,
-  type LucideIcon,
-} from "lucide-react";
+import { Armchair, Bell, Cake, Camera, ChevronRight, CircleHelp, Dices, Eye, Flame, Gamepad2, Hourglass, ImagePlus, MessageCircle, PartyPopper, Shuffle, Trophy, UserPlus, Vote, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
@@ -205,7 +194,7 @@ function Table({
                     className="absolute -bottom-1.5 -right-1.5 text-[11px] leading-none"
                     aria-hidden="true"
                   >
-                    🔥
+                    <Ico i={Flame} c={TONE.streak} size={13} />
                   </span>
                 )
               ) : st.count > 0 ? (
@@ -213,9 +202,9 @@ function Table({
                   className={`sticker whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2.5 !text-[11px] !px-1.5 !py-0`}
                   style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
                 >
-                  <span className="flame">🔥</span>
+                  <Ico i={Flame} size={11} />
                   {st.count}
-                  {st.atRisk && "⏳"}
+                  {st.atRisk && <Ico i={Hourglass} size={11} />}
                 </span>
               ) : f.mutual === false ? (
                 <span
@@ -226,7 +215,7 @@ function Table({
                   }}
                   title="One-way: they haven't seated you back"
                 >
-                  👀 {f.name.split(" ")[0]}
+                  <Ico i={Eye} size={11} /> {f.name.split(" ")[0]}
                 </span>
               ) : f.postedToday ? (
                 <span
@@ -258,11 +247,11 @@ function Table({
           posted today
         </span>
         <span className="chip" style={{ minHeight: 28 }}>
-          🔥 streak
+          <Ico i={Flame} c={TONE.streak} size={14} /> streak
         </span>
         {s.mode === "live" && (
           <span className="chip" style={{ minHeight: 28 }}>
-            👀 one-way
+            <Ico i={Eye} c={TONE.oneWay} size={14} /> one-way
           </span>
         )}
       </div>
@@ -327,7 +316,7 @@ function Dare() {
         >
           today's dare
         </span>
-        <p className="text-[34px] leading-none">🎲</p>
+        <Dices size={34} strokeWidth={2} aria-hidden="true" style={{ color: "var(--lime)" }} />
         <p
           key={skip}
           className="heading mt-2 animate-soft-in"
@@ -369,7 +358,7 @@ function GameRank() {
   }
   const g = revealed || (d.board[day]?.me ?? []).length
     ? real
-    : { ...real, emoji: "❓", name: "Mystery game", tone: "var(--sun)" };
+    : { ...real, Icon: CircleHelp, name: "Mystery game", tone: "var(--sun)" };
   const tries = d.board[day]?.me ?? [];
   const left = TRIES - tries.length;
   const todayRank = dayRanking(d, day).find((r) => r.id === "me");
@@ -387,12 +376,12 @@ function GameRank() {
             transform: "rotate(-4deg)",
           }}
         >
-          {g.emoji}
+          <g.Icon size={24} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
         </span>
         <span className="flex-1 min-w-0">
           <span className="block font-bold text-cream text-[15px]">
             Today: {g.name}
-            {left > 0 ? ` · ${left} ${left === 1 ? "try" : "tries"} left` : " · done ✅"}
+            {left > 0 ? ` · ${left} ${left === 1 ? "try" : "tries"} left` : " · done"}
           </span>
           <span className="block meta">
             {todayRank
@@ -434,7 +423,7 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
         aria-label={`You rolled ${friend.name}`}
       >
         <span className="sticker sun" style={{ transform: "rotate(-5deg)" }}>
-          🎲 the table chose
+          <Ico i={Dices} size={13} /> the table chose
         </span>
         <div className="mt-4 flex justify-center">
           <span
@@ -449,7 +438,7 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
         </h3>
         {st.count > 0 && (
           <p className="meta mt-1">
-            🔥 {st.count}-day streak{st.atRisk ? ", ends tonight" : ""}
+            <Ico i={Flame} c={TONE.streak} size={14} /> {st.count}-day streak{st.atRisk ? ", ends tonight" : ""}
           </p>
         )}
         <p
@@ -558,16 +547,16 @@ function TodayTiles() {
           boxShadow: "var(--pop)",
         }}
       >
-        <span className="text-3xl">📸</span>
+        <Camera size={30} strokeWidth={2.25} aria-hidden="true" />
         <span className="font-extrabold text-[15px]">The 25 Drop</span>
         <span className="text-[12.5px] font-semibold opacity-80">
           {dropped
-            ? "Dropped ✅ See theirs"
+            ? "Dropped. See theirs"
             : phase === "now"
               ? "IT'S DROP TIME. Go!"
               : phase === "after"
-                ? "Missed it. Post late ⏰"
-                : "Surprise time today 👀"}
+                ? "Missed it. Post late"
+                : "Surprise time today"}
         </span>
       </Link>
       <Link
@@ -580,14 +569,14 @@ function TodayTiles() {
           boxShadow: "var(--pop)",
         }}
       >
-        <span className="text-3xl">🗳️</span>
+        <Vote size={30} strokeWidth={2.25} aria-hidden="true" />
         <span className="font-extrabold text-[15px]">Polls</span>
         <span className="text-[12.5px] font-semibold opacity-80">
           {voted === null
             ? "…"
             : voted < 5
               ? `${5 - voted} anonymous picks left`
-              : "Done ✅ See your picks"}
+              : "Done. See your picks"}
         </span>
       </Link>
     </section>
@@ -620,7 +609,7 @@ function Birthdays() {
             boxShadow: "var(--pop)",
           }}
         >
-          <span className="text-4xl float">🎉</span>
+          <PartyPopper size={36} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
           <span className="flex-1">
             <span className="block display text-[20px]">
               Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!
@@ -644,10 +633,10 @@ function Birthdays() {
             boxShadow: "var(--pop)",
           }}
         >
-          <span className="text-4xl wiggle">🎂</span>
+          <Cake size={36} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
           <span className="flex-1">
             <span className="block display text-[19px]">It's {name(b.id)}'s birthday!</span>
-            <span className="block font-bold text-[13px]">Sign their card before midnight ✍️</span>
+            <span className="block font-bold text-[13px]">Sign their card before midnight</span>
           </span>
         </Link>
       ))}
@@ -661,7 +650,7 @@ function Birthdays() {
               className="chip shrink-0"
               style={{ minHeight: 34 }}
             >
-              🎂 {name(b.id)} · {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
+              <Ico i={Cake} c={TONE.birthday} size={14} /> {name(b.id)} · {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
             </Link>
           ))}
         </div>
@@ -786,11 +775,11 @@ function Home() {
         <h1 className="title mt-4" style={{ fontSize: 30 }}>
           {first ? (
             <>
-              Hey <span className="mark">{first}</span> 👋
+              Hey <span className="mark">{first}</span>
             </>
           ) : (
             <>
-              Your <span className="mark">table</span> 👋
+              Your <span className="mark">table</span>
             </>
           )}
         </h1>
@@ -799,10 +788,10 @@ function Home() {
         </p>
         <div className="mt-4 flex gap-2 flex-wrap">
           <Link to="/app/people" className="sticker" style={{ transform: "rotate(-3deg)" }}>
-            🪑 {filled}/25 seats
+            <Ico i={Armchair} size={13} /> {filled}/25 seats
           </Link>
           <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
-            👀 in {s.seatedByCount} people's 25
+            <Ico i={Eye} size={13} /> in {s.seatedByCount} people's 25
           </span>
         </div>
       </header>
@@ -813,7 +802,7 @@ function Home() {
 
       <Birthdays />
 
-      {s.mode === "live" && people.length < 10 && <SuggestionCards title="Find your people 👋" max={12} />}
+      {s.mode === "live" && people.length < 10 && <SuggestionCards title="Find your people" max={12} />}
 
       <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
 

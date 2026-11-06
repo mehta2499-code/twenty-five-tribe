@@ -1,6 +1,7 @@
+import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Heart, Lock, MessageCircle, Send, X } from "lucide-react";
+import { Camera, Clock, Heart, Lock, MessageCircle, Send, X, Zap } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { fileToImage, friendById, mutualFriends, meView, useSocial } from "@/lib/social";
@@ -73,7 +74,7 @@ function DropScreen() {
             <p className="text-5xl float">⏳</p>
             <p className="heading mt-3">Today's Drop hasn't happened yet</p>
             <p className="meta mt-1">
-              It lands at a surprise time between 10 AM and 10 PM. Keep 25 close 👀
+              It lands at a surprise time between 10 AM and 10 PM. Keep 25 close.
             </p>
           </div>
         </section>
@@ -93,7 +94,7 @@ function DropScreen() {
             {phase === "now" ? (
               <>
                 <p className="display" style={{ fontSize: 30 }}>
-                  📸 DROP TIME
+                  DROP TIME
                 </p>
                 <p className="display tabular-nums mt-1" style={{ fontSize: 40 }}>
                   {mm}:{ss}
@@ -179,7 +180,7 @@ function DropScreen() {
                 className="btn-primary w-full mt-3"
                 style={{ minHeight: 54, fontSize: 17 }}
               >
-                {busy ? "Dropping…" : "Drop it 📸"}
+                {busy ? "Dropping…" : <><Camera size={18} aria-hidden="true" /> Drop it</>}
               </button>
             </>
           )}
@@ -196,7 +197,7 @@ function DropScreen() {
           </div>
           {waiting > 0 && (
             <p className="meta text-center mt-5">
-              {waiting} of your 25 {waiting === 1 ? "hasn't" : "haven't"} dropped yet. Nudge them 😏
+              {waiting} of your 25 {waiting === 1 ? "hasn't" : "haven't"} dropped yet. Nudge them.
             </p>
           )}
         </section>
@@ -241,7 +242,7 @@ function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
           className={`sticker ${post.late ? "pink" : ""} absolute top-2 left-2 !text-[11px]`}
           style={{ transform: "rotate(-4deg)" }}
         >
-          {post.late ? `⏰ ${post.late}m late` : "⚡ on time"}
+          {post.late ? <><Ico i={Clock} size={11} /> {post.late}m late</> : <><Ico i={Zap} size={11} /> on time</>}
         </span>
       </div>
       <figcaption className="p-2.5 flex items-center gap-2">
@@ -299,7 +300,7 @@ function DropViewer({ post, onClose, onChanged }: { post: DropPost; onClose: () 
           <span className="flex-1 min-w-0">
             <span className="block font-bold truncate">{by.name}</span>
             <span className="block text-xs text-white/70">
-              {post.late ? `⏰ ${post.late}m late` : "⚡ on time"}
+              {post.late ? <><Ico i={Clock} size={11} /> {post.late}m late</> : <><Ico i={Zap} size={11} /> on time</>}
             </span>
           </span>
           <button onClick={onClose} aria-label="Close" className="w-10 h-10 flex items-center justify-center">

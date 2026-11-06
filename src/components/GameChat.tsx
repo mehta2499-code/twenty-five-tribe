@@ -161,7 +161,7 @@ export function GameChat({
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-2 grid content-start gap-1.5">
             {msgs.length === 0 && (
-              <p className="meta text-center mt-6">Talk your trash here 😤 Nothing is saved.</p>
+              <p className="meta text-center mt-6">Talk your trash here. Nothing is saved.</p>
             )}
             {msgs.map((m) => (
               <p key={m.id} className="text-[14px] text-cream" style={{ overflowWrap: "anywhere" }}>

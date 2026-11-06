@@ -29,7 +29,7 @@ import {
 } from "@/lib/games";
 import { MAX_GUESSES, WordBoard, gridOf } from "@/components/WordUp";
 import { Confetti } from "@/components/SocialUI";
-import { X } from "lucide-react";
+import { Dices, Flag, X } from "lucide-react";
 import {
   applyMove,
   kachufulDriver,
@@ -148,7 +148,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
                 }}
                 className="btn-danger"
               >
-                🏳️ Quit
+                <Flag size={16} aria-hidden="true" /> Quit
               </button>
             </div>
             <p className="meta mt-3">{quitNote}</p>
@@ -242,7 +242,7 @@ function OnlineTrivia({
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
         <p className="label-caps">{pack.name}</p>
         <h2 className="font-display mt-3" style={{ fontSize: 30 }}>
-          {iQuit ? "You quit this one 🏳️" : `${opponent.name.split(" ")[0]} quit. You win 🏆`}
+          {iQuit ? "You quit this one" : `${opponent.name.split(" ")[0]} quit. You win`}
         </h2>
         <button onClick={onClose} className="mt-10 btn-primary px-8">
           Back to games
@@ -294,7 +294,7 @@ function OnlineTrivia({
             You missed this duel
           </h2>
           <p className="mt-4 text-cool">
-            {opponent.name.split(" ")[0]} scored {theirs!.score}. Challenge them back 😤
+            {opponent.name.split(" ")[0]} scored {theirs!.score}. Challenge them back
           </p>
           <button onClick={onClose} className="mt-10 btn-primary px-8">
             Back to games
@@ -374,25 +374,25 @@ function OnlineWord({
   };
 
   const headline = quitter
-    ? `${quitter} quit 🏳️ The word was ${answer.toUpperCase()}`
+    ? `${quitter} quit. The word was ${answer.toUpperCase()}`
     : over
     ? guessing
       ? solved
-        ? `Got it in ${st.guesses.length}/6 😎`
-        : `It was ${answer.toUpperCase()} 💀`
+        ? `Got it in ${st.guesses.length}/6`
+        : `It was ${answer.toUpperCase()}`
       : solved
         ? `${first} cracked it in ${st.guesses.length}/6`
-        : `${first} couldn't get it 😈`
+        : `${first} couldn't get it`
     : guessing
       ? `${first} set you a word`
-      : `Watching ${first} guess ${answer.toUpperCase()} 👀`;
+      : `Watching ${first} guess ${answer.toUpperCase()}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       <div className="mx-auto w-full max-w-md min-h-full flex flex-col px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-6">
         <header className="flex items-center justify-between">
           <div>
-            <p className="heading">Word Up 🔤</p>
+            <p className="heading">Word Up</p>
             <p className="meta">{headline}</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="text-cool">
@@ -459,7 +459,7 @@ function OnlineLudo({
   if (inLobby && game.status === "done")
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-5xl">🎲</p>
+        <Dices size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--lime)" }} />
         <h2 className="font-display mt-3" style={{ fontSize: 28 }}>
           Game called off
         </h2>

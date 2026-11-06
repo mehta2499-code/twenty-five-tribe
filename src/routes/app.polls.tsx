@@ -1,6 +1,7 @@
+import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Shuffle } from "lucide-react";
+import { Lock, Shuffle, Vote } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { mutualFriends, timeAgo, useSocial } from "@/lib/social";
@@ -74,7 +75,7 @@ function Polls() {
             Today's polls · {done}/{PER_DAY}
           </button>
           <button className="flex-1" aria-pressed={tab === "picked"} onClick={() => setTab("picked")}>
-            Picked you 👀
+            Picked you
           </button>
         </div>
       </div>
@@ -143,17 +144,17 @@ function Polls() {
                   <Shuffle size={16} /> Shuffle
                 </button>
               </div>
-              <p className="meta text-center mt-3">🤫 Your pick is anonymous. Always.</p>
+              <p className="meta text-center mt-3"><Ico i={Lock} size={13} /> Your pick is anonymous. Always.</p>
             </div>
           ) : (
             <div className="card p-6 text-center">
-              <p className="text-5xl">🗳️</p>
+              <Vote size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--lime)" }} />
               <p className="heading mt-3">All done for today</p>
               <p className="meta mt-1">
                 5 people just got a little dopamine because of you. New polls in {untilMidnight()}.
               </p>
               <button onClick={() => setTab("picked")} className="btn-primary mt-4 px-5">
-                See what you got picked for 👀
+                See what you got picked for
               </button>
             </div>
           )}
@@ -166,7 +167,7 @@ function Polls() {
             <p className="meta text-center mt-10">Loading…</p>
           ) : picks.length === 0 ? (
             <div className="card p-6 text-center">
-              <p className="text-5xl">🤫</p>
+              <Lock size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--sun)" }} />
               <p className="heading mt-3">Nothing yet</p>
               <p className="meta mt-1">When someone picks you in a poll, it shows up here. Never who.</p>
             </div>

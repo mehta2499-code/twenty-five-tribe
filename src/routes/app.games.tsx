@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, CircleHelp, Dices, Gamepad2, Spade, Trophy, Type, Zap, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, FriendPicker, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { DailyRunner, GAMES } from "@/components/ArcadeGames";
@@ -84,9 +84,9 @@ function YourGames({ meId }: { meId: string }) {
             title = `Ludo · ${l.players.length} players`;
             status =
               l.phase === "lobby"
-                ? "Waiting room ⏳"
+                ? "Waiting room"
                 : yourTurn
-                  ? "Your turn 🎲"
+                  ? "Your turn"
                   : `${turn?.name.split(" ")[0] ?? "Their"}'s turn`;
           } else if (g.kind === "word") {
             const w = g.state as WordState;
@@ -95,7 +95,7 @@ function YourGames({ meId }: { meId: string }) {
             title = guessing ? "Word Up · your word" : "Word Up · you set it";
             status = guessing
               ? `Your turn · ${w.guesses.length}/6`
-              : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6 👀`;
+              : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6`;
           } else {
             const t = g.state as TriviaState;
             const pack = TRIVIA_PACKS.find((p) => p.id === t.pack);
@@ -145,7 +145,7 @@ function YourGames({ meId }: { meId: string }) {
 function GameTile({
   tone,
   light,
-  emoji,
+  Icon,
   sticker,
   title,
   line,
@@ -156,7 +156,7 @@ function GameTile({
   wide?: boolean;
   tone: string;
   light?: boolean;
-  emoji: string;
+  Icon: LucideIcon;
   sticker: string;
   title: string;
   line: string;
@@ -185,8 +185,17 @@ function GameTile({
       >
         {sticker}
       </span>
-      <span className="text-5xl mt-3 float" aria-hidden="true">
-        {emoji}
+      <span
+        className="mt-3 w-14 h-14 rounded-2xl flex items-center justify-center"
+        style={{
+          background: light ? "var(--lime)" : "rgba(255,255,255,0.45)",
+          color: "var(--on-accent)",
+          border: "2px solid var(--edge)",
+          transform: "rotate(-6deg)",
+        }}
+        aria-hidden="true"
+      >
+        <Icon size={30} strokeWidth={2.25} />
       </span>
       <span className="display mt-auto pt-2" style={{ fontSize: 22, lineHeight: 1.05 }}>
         {title}
@@ -264,10 +273,11 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
         <span className="flex-1 flex items-center justify-center gap-4 py-2">
           <span
             key={spinning ? face : "q"}
-            className={spinning ? "text-6xl slot-tick" : "text-6xl float"}
+            className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center ${spinning ? "slot-tick" : ""}`}
+            style={{ background: "var(--lime)", color: "var(--on-accent)", transform: "rotate(-6deg)" }}
             aria-hidden="true"
           >
-            {spinning ? g.emoji : "❓"}
+            {spinning ? <g.Icon size={34} strokeWidth={2.25} /> : <CircleHelp size={34} strokeWidth={2.25} />}
           </span>
           <span className="display" style={{ fontSize: 26, lineHeight: 1.05 }}>
             {spinning ? g.name : "Mystery game"}
@@ -283,8 +293,8 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
     <>
       <GameTile
         tone="var(--lime)"
-        emoji={game.emoji}
-        sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY ✅"}
+        Icon={game.Icon}
+        sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY"}
         title={game.name}
         line={game.blurb}
         tilt={-0.8}
@@ -341,20 +351,20 @@ function Games() {
       <div className="px-5">
         <div className="segmented w-full" role="tablist" aria-label="Games">
           <button
-            className="flex-1"
+            className="flex-1 gap-1.5"
             role="tab"
             aria-pressed={tab === "play"}
             onClick={() => setTab("play")}
           >
-            🎮 Play
+            <Gamepad2 size={16} aria-hidden="true" /> Play
           </button>
           <button
-            className="flex-1"
+            className="flex-1 gap-1.5"
             role="tab"
             aria-pressed={tab === "scores"}
             onClick={() => setTab("scores")}
           >
-            🏆 Scores
+            <Trophy size={16} aria-hidden="true" /> Scores
           </button>
         </div>
       </div>
@@ -371,7 +381,7 @@ function Games() {
             <GameTile
               tone="#1F1B2B"
               light
-              emoji="🃏"
+              Icon={Spade}
               sticker="2–7 PLAYERS"
               title="Kachuful"
               line="Call your tricks. Nail them."
@@ -380,7 +390,7 @@ function Games() {
             />
             <GameTile
               tone="var(--sky)"
-              emoji="⚡"
+              Icon={Zap}
               sticker="LIVE DUEL"
               title="Trivia"
               line="Same questions, same time. Fastest wins."
@@ -389,7 +399,7 @@ function Games() {
             />
             <GameTile
               tone="var(--pink)"
-              emoji="🎲"
+              Icon={Dices}
               sticker="LIVE · 2–4"
               title="Ludo"
               line="Roll, race, capture. Send them home."
@@ -398,7 +408,7 @@ function Games() {
             />
             <GameTile
               tone="var(--sun)"
-              emoji="🔤"
+              Icon={Type}
               sticker="DAILY WORD"
               title="Word Up"
               line="Guess it in 6, or set one for a friend."
@@ -443,7 +453,7 @@ function Games() {
       )}
 
       {packs && (
-        <Sheet title="⚡ Trivia: pick a pack" onClose={() => setPacks(false)}>
+        <Sheet title="Trivia: pick a pack" onClose={() => setPacks(false)}>
           <ul className="grid gap-2.5">
             {TRIVIA_PACKS.filter((p) => p.price === "Free").map((p) => (
               <li key={p.id}>
@@ -469,7 +479,7 @@ function Games() {
       )}
 
       {wordMenu && (
-        <Sheet title="🔤 Word Up" onClose={() => setWordMenu(false)}>
+        <Sheet title="Word Up" onClose={() => setWordMenu(false)}>
           <p className="text-cool text-[14px] leading-snug">
             Guess the 5-letter word in 6 tries. Green = right spot, yellow = wrong spot.
           </p>
@@ -493,7 +503,7 @@ function Games() {
                 }}
                 className="btn-secondary"
               >
-                Set a secret word for a friend 😈
+                Set a secret word for a friend
               </button>
             ) : (
               <Link to="/login" className="btn-secondary">

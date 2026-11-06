@@ -591,7 +591,7 @@ function Pattern({ onFinish, onClose }: RoundProps) {
     <GameFrame title="pattern recall" score={best} stat={{ label: "length", value: seq.length }} onClose={onClose}>
       <div className="flex-1 flex flex-col justify-center">
         <p className="text-center font-bold text-cream mb-5" aria-live="polite">
-          {over ? "Oops. That's the one 💥" : showing ? "Watch…" : "Your turn"}
+          {over ? "Oops. That's the one" : showing ? "Watch…" : "Your turn"}
         </p>
         <div className="grid grid-cols-2 gap-3 mx-auto w-full max-w-[320px]">
           {PADS.map((pad, i) => (
@@ -676,7 +676,7 @@ function Reflex({ onFinish, onClose }: RoundProps) {
         : phase === "go"
           ? "TAP!"
           : phase === "early"
-            ? "Too soon 😬 0 points. Tap to go on."
+            ? "Too soon. 0 points. Tap to go on."
             : `${last} ms · +${reflexPoints(last ?? 999)}. Tap to go on.`;
 
   return (
@@ -698,7 +698,7 @@ function Reflex({ onFinish, onClose }: RoundProps) {
         }}
       >
         <span className="display" style={{ fontSize: phase === "go" ? 64 : 24 }}>
-          {over ? "Done ⚡" : text}
+          {over ? "Done" : text}
         </span>
       </button>
     </GameFrame>
@@ -814,7 +814,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
               className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl"
               style={{ background: g.tone, border: "2px solid var(--edge)", boxShadow: "var(--pop)", transform: "rotate(-4deg)" }}
             >
-              {g.emoji}
+              <g.Icon size={48} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
             </span>
             <h1 className="title mt-5">{g.name}</h1>
             <p className="text-cool mt-2 max-w-[19rem]" style={{ fontSize: 15, lineHeight: 1.5 }}>
@@ -842,7 +842,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                   </button>
                   <p className="meta">
                     {tries.length > 0
-                      ? "Only your best try counts. Go again and beat it 💪"
+                      ? "Only your best try counts. Go again and beat it"
                       : "A try counts the moment you start. Quitting = 0."}
                   </p>
                 </>
@@ -877,7 +877,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                   <p className="meta mt-0.5">
                     {mine
                       ? mine.rank === 1
-                        ? `👑 #1 of ${ranking.length} at your table. For now.`
+                        ? `#1 of ${ranking.length} at your table. For now.`
                         : `#${mine.rank} of ${ranking.length} at your table today`
                       : "You're on the board."}
                   </p>
@@ -892,7 +892,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
               )}
 
               <button onClick={() => setChallenging(true)} className="btn-secondary w-full" style={{ minHeight: 52 }}>
-                Trash talk someone 😏
+                Trash talk someone
               </button>
               <button onClick={onClose} className="btn-quiet w-full">
                 Done

@@ -128,7 +128,7 @@ export function roll(s: LudoState, rand: () => number = Math.random): LudoState 
   const dice = 1 + Math.floor(rand() * 6);
   const sixes = dice === 6 ? s.sixes + 1 : 0;
   if (sixes === 3) {
-    return nextTurn({ ...s, last: { player: s.turn, dice, note: "Three 6s. Turn over 😬" } });
+    return nextTurn({ ...s, last: { player: s.turn, dice, note: "Three 6s. Turn over" } });
   }
   const rolled: LudoState = { ...s, dice, sixes, phase: "move", last: { player: s.turn, dice } };
   if (legalTokens(rolled).length === 0) {
@@ -211,7 +211,7 @@ export function resign(s: LudoState, player: number): LudoState {
     ...s,
     players,
     tokens,
-    last: { player, dice: 0, note: `${name} resigned 🏳️` },
+    last: { player, dice: 0, note: `${name} resigned` },
   };
   const active = players.map((p, i) => i).filter((i) => !players[i].out);
   const humans = active.filter((i) => !players[i].bot);

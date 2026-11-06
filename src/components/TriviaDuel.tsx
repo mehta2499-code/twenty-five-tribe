@@ -239,7 +239,7 @@ export function TriviaDuel({
     <div className="fixed inset-0 z-50 bg-background flex flex-col animate-soft-in">
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
         <header className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-2">
-          <span className="label-caps">⚡ {pack.name} duel</span>
+          <span className="label-caps">{pack.name} duel</span>
           <button onClick={onClose} aria-label="Close" className="text-cool">
             <X size={22} />
           </button>
@@ -314,12 +314,12 @@ export function TriviaDuel({
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <h2 className="title" style={{ fontSize: 34 }}>
           {result === "win"
-            ? "You win 🏆"
+            ? "You win"
             : result === "walkover"
               ? `${them.name.split(" ")[0]} left. You win by walkover.`
               : result === "tie"
-                ? "Dead heat 🤝"
-                : `${them.name.split(" ")[0]} wins 😤`}
+                ? "Dead heat"
+                : `${them.name.split(" ")[0]} wins`}
         </h2>
         <div className="mt-8 flex items-center gap-8">
           {[

@@ -1,6 +1,7 @@
+import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Cake, Eye, Flame, Handshake, MoreHorizontal } from "lucide-react";
 import { PersonMenu } from "@/components/Safety";
 import { bdayLabel, daysUntil, useBirthdays } from "@/lib/birthdays";
 import { Avatar } from "@/components/Avatar";
@@ -43,7 +44,7 @@ function LiveSeat() {
   const avg = (who: string) => todayRows.find((r) => r.id === who)?.best;
   const rivalry = [
     { label: "This week's points", you: pts("me")?.points, them: pts(id)?.points },
-    { label: "Days won 👑", you: pts("me")?.wins, them: pts(id)?.wins },
+    { label: "Days won", you: pts("me")?.wins, them: pts(id)?.wins },
     { label: `Today · ${GAMES[gameFor(today())].name}`, you: avg("me"), them: avg(id) },
   ];
   return (
@@ -76,7 +77,7 @@ function LiveSeat() {
         {f.username && <p className="sub mt-1">@{f.username}</p>}
         {bday && (
           <Link to="/app/card/$id" params={{ id }} className="sub mt-1 inline-block underline underline-offset-4">
-            🎂 {bdayLabel(bday)}
+            <Ico i={Cake} c={TONE.birthday} size={14} /> {bdayLabel(bday)}
             {daysUntil(bday) === 0 ? " · today! Sign the card" : daysUntil(bday) <= 7 ? ` · in ${daysUntil(bday)}d` : ""}
           </Link>
         )}
@@ -85,11 +86,12 @@ function LiveSeat() {
             className={`sticker ${mutual ? "" : inMine ? "sun" : "pink"}`}
             style={{ transform: "rotate(-3deg)" }}
           >
+            <Ico i={mutual ? Handshake : Eye} size={13} />{" "}
             {mutual
-              ? "🤝 in each other's 25"
+              ? "in each other's 25"
               : inMine
-                ? "👀 in your 25 · not seated you back"
-                : "👀 has you in their 25"}
+                ? "in your 25 · not seated you back"
+                : "has you in their 25"}
           </span>
         </p>
         <p className="sub mt-2 text-sm">
@@ -103,7 +105,7 @@ function LiveSeat() {
 
       <div className="px-5 -mt-5 relative grid grid-cols-3 gap-3">
         {[
-          { n: st.count ? `🔥 ${st.count}` : "–", l: st.atRisk ? "blink today!" : "blink streak" },
+          { n: st.count ? <><Ico i={Flame} c={TONE.streak} size={18} /> {st.count}</> : "–", l: st.atRisk ? "blink today!" : "blink streak" },
           { n: String((s.chats[id] ?? []).length), l: "messages" },
           { n: String(posts), l: "posts" },
         ].map((x) => (
@@ -124,7 +126,7 @@ function LiveSeat() {
       {!mutual && (
         <div className="mx-5 mt-6 card p-4">
           <p className="font-bold text-cream">
-            {inMine ? "Waiting on them 👀" : "Your move 👀"}
+            {inMine ? "Waiting on them" : "Your move"}
           </p>
           <p className="meta mt-1">
             {inMine

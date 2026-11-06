@@ -172,7 +172,7 @@ export async function startLudo(friends: Person[], bots = 0) {
   await invite(
     friends.map((f) => f.id),
     id,
-    `🎲 Ludo, ${players.length} players${bots ? ` (${bots} bot${bots > 1 ? "s" : ""})` : ""}. Join now, it's live!`,
+    `Ludo, ${players.length} players${bots ? ` (${bots} bot${bots > 1 ? "s" : ""})` : ""}. Join now, it's live!`,
   );
   return id;
 }
@@ -185,12 +185,12 @@ export async function startWordChallenge(friend: Person, word: string) {
     .from("games")
     .insert({ id, kind: "word", host: me, players: [me, friend.id], state, version: 0 });
   if (error) throw new Error(error.message);
-  await invite([friend.id], id, "I set you a word 🔤 6 guesses. I'm watching live 👀");
+  await invite([friend.id], id, "I set you a word. 6 guesses. I'm watching live.");
   return id;
 }
 
 export async function inviteToDuel(gameId: string, friendId: string, packName: string) {
-  await invite([friendId], gameId, `⚡ Trivia duel: ${packName}. Join now, we play live!`);
+  await invite([friendId], gameId, `Trivia duel: ${packName}. Join now, we play live!`);
 }
 
 export async function inviteToTrivia(
@@ -203,7 +203,7 @@ export async function inviteToTrivia(
   await invite(
     [friendId],
     gameId,
-    `I got ${score}/${total} in ${packName} trivia. Same questions, your turn 🧠`,
+    `I got ${score}/${total} in ${packName} trivia. Same questions, your turn.`,
   );
 }
 

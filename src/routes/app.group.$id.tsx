@@ -371,7 +371,7 @@ function GroupThread() {
             const fresh = ids.filter((x) => !g.members.includes(x));
             if (fresh.length)
               void addMembers(id, fresh)
-                .then(() => setToast("Added 🎉"))
+                .then(() => setToast("Added"))
                 .catch((e) => setToast((e as Error).message));
           }}
         />

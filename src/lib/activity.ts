@@ -3,6 +3,18 @@
  * word results, anonymous poll picks. Stored in Supabase `notifications`.
  */
 import { useEffect, useSyncExternalStore } from "react";
+import {
+  Cake,
+  Camera,
+  Eye,
+  Handshake,
+  Heart,
+  MessageCircle,
+  Sparkles,
+  Type,
+  Vote,
+  type LucideIcon,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, seatedFriends, useSocial } from "@/lib/social";
 
@@ -141,30 +153,30 @@ export async function markAllRead() {
 }
 
 /** One line of text for an activity item. */
-export function describe(a: Activity): { emoji: string; text: string } {
+export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: string } {
   const who = a.actorName?.split(" ")[0] ?? "Someone";
   switch (a.kind) {
     case "seated":
-      return { emoji: "👀", text: `${who} put you in their 25. Seat them back?` };
+      return { Icon: Eye, tone: "var(--sky)", text: `${who} put you in their 25. Seat them back?` };
     case "seated_back":
-      return { emoji: "🤝", text: `${who} seated you back. Chats and blinks unlocked.` };
+      return { Icon: Handshake, tone: "var(--lime)", text: `${who} seated you back. Chats and blinks unlocked.` };
     case "like":
-      return { emoji: "❤️", text: `${who} liked your ${a.ref?.startsWith("reel") ? "reel" : "post"}` };
+      return { Icon: Heart, tone: "var(--hot)", text: `${who} liked your ${a.ref?.startsWith("reel") ? "reel" : "post"}` };
     case "comment":
-      return { emoji: "💬", text: `${who} commented: ${a.body}` };
+      return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} commented: ${a.body}` };
     case "word_done":
-      return { emoji: "🔤", text: `${who} ${a.body}` };
+      return { Icon: Type, tone: "var(--sun)", text: `${who} ${a.body}` };
     case "poll":
-      return { emoji: "🗳️", text: `Someone in your 25 picked you for “${a.body}”` };
+      return { Icon: Vote, tone: "var(--pink)", text: `Someone in your 25 picked you for “${a.body}”` };
     case "card":
-      return { emoji: "🎂", text: `${who} signed your birthday card` };
+      return { Icon: Cake, tone: "var(--pink)", text: `${who} signed your birthday card` };
     case "drop_like":
-      return { emoji: "❤️", text: `${who} liked your Drop` };
+      return { Icon: Heart, tone: "var(--hot)", text: `${who} liked your Drop` };
     case "drop_comment":
-      return { emoji: "💬", text: `${who} commented on your Drop: ${a.body}` };
+      return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} commented on your Drop: ${a.body}` };
     case "drop":
-      return { emoji: "📸", text: `${who} posted their Drop` };
+      return { Icon: Camera, tone: "var(--lime)", text: `${who} posted their Drop` };
     default:
-      return { emoji: "✨", text: a.body || "Something happened" };
+      return { Icon: Sparkles, tone: "var(--sun)", text: a.body || "Something happened" };
   }
 }

@@ -1,7 +1,8 @@
+import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Check, Eye, Handshake } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { KnowThemQuiz } from "@/components/KnowThemQuiz";
@@ -216,7 +217,7 @@ function InMy25() {
                 </p>
               ) : live && theyHaveMe && iHaveThem ? (
                 <div className="text-center">
-                  <span className="sticker">🤝 mutual</span>
+                  <span className="sticker"><Ico i={Handshake} size={13} /> mutual</span>
                   <p className="heading mt-3">You're in each other's 25.</p>
                   <Link
                     to="/app/chat/$id"
@@ -228,7 +229,7 @@ function InMy25() {
                 </div>
               ) : live && iHaveThem ? (
                 <div className="text-center">
-                  <span className="sticker sun">👀 not yet</span>
+                  <span className="sticker sun"><Ico i={Eye} size={13} /> not yet</span>
                   <p className="heading mt-3">
                     {first} is in your 25. You're not in theirs… yet.
                   </p>
@@ -249,7 +250,7 @@ function InMy25() {
                   {live && (
                     <div className="text-center mb-5">
                       <span className={`sticker ${theyHaveMe ? "" : "pink"}`}>
-                        {theyHaveMe ? "✅ YES" : "👀 not yet"}
+                        {theyHaveMe ? <><Ico i={Check} size={13} /> YES</> : <><Ico i={Eye} size={13} /> not yet</>}
                       </span>
                       <p className="heading mt-3">
                         {theyHaveMe
@@ -267,7 +268,7 @@ function InMy25() {
                   </button>
                   <p className="mt-3 text-center meta">
                     {live
-                      ? `Get 4 of 7 right about ${first} to put them in your 25. They get pinged 👀`
+                      ? `Get 4 of 7 right about ${first} to put them in your 25. They get pinged.`
                       : `Sign in to find out if you're in ${first}'s 25.`}
                   </p>
                 </>

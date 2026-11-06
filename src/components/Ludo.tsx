@@ -1,6 +1,7 @@
+import { Ico, TONE } from "@/components/Ico";
 /** Ludo board, dice and lobby. Rules live in lib/ludo.ts. */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Bot, Flag, House, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
 import { mutualFriends, useSocial, type Person } from "@/lib/social";
@@ -284,9 +285,14 @@ function Board({
               strokeWidth={0.03}
             />
             {SAFE.has(i) && !startOf && (
-              <text x={c + 0.5} y={r + 0.72} fontSize={0.62} textAnchor="middle">
-                ⭐
-              </text>
+              <path
+                transform={`translate(${c + 0.5} ${r + 0.52}) scale(0.3)`}
+                d="M0,-1 L0.29,-0.4 L0.95,-0.31 L0.48,0.15 L0.59,0.81 L0,0.5 L-0.59,0.81 L-0.48,0.15 L-0.95,-0.31 L-0.29,-0.4 Z"
+                fill="#E8BE55"
+                stroke="#07060B"
+                strokeWidth={0.12}
+                strokeLinejoin="round"
+              />
             )}
           </g>
         );
@@ -498,8 +504,8 @@ export function LudoTable({
   const status =
     state.phase === "over"
       ? state.winner === mine
-        ? "You win! 🏆"
-        : `${state.players[state.winner!].name.split(" ")[0]} wins 🏆`
+        ? "You win!"
+        : `${state.players[state.winner!].name.split(" ")[0]} wins`
       : myTurn
         ? state.phase === "roll"
           ? "Your turn: roll"
@@ -511,7 +517,7 @@ export function LudoTable({
       <div className="mx-auto w-full max-w-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8">
         <header className="flex items-center justify-between">
           <span className="heading" style={{ fontSize: 20 }}>
-            🎲 Ludo
+            Ludo
           </span>
           <button
             onClick={() =>
@@ -541,11 +547,11 @@ export function LudoTable({
               <Avatar src={p.avatar} initials={p.initials} size={26} />
               <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-cream">
                 {i === mine ? "You" : p.name.split(" ")[0]}
-                {p.bot && " 🤖"}
-                {p.out && " 🏳️"}
+                {p.bot && <> <Ico i={Bot} size={13} c="var(--ink-3)" /></>}
+                {p.out && <> <Ico i={Flag} size={13} c="var(--ink-3)" /></>}
               </span>
               <span className="meta tabular-nums" style={{ fontSize: 12 }}>
-                🏠{home(i)}
+                <Ico i={House} size={12} /> {home(i)}
               </span>
             </div>
           ))}
@@ -596,7 +602,7 @@ export function LudoTable({
             <p className="font-extrabold text-cream text-[18px] leading-tight">{status}</p>
             {state.last?.note && <p className="meta mt-0.5">{state.last.note}</p>}
             {state.dice === 6 && state.phase === "move" && (
-              <p className="meta mt-0.5">🎉 A six! You'll roll again.</p>
+              <p className="meta mt-0.5">A six! You'll roll again.</p>
             )}
             {state.phase === "over" && onPlayAgain && (
               <button onClick={onPlayAgain} className="btn-primary mt-2 px-4 min-h-[38px] text-sm">
@@ -633,7 +639,7 @@ export function LudoTable({
               }}
               className="btn-danger"
             >
-              🏳️ Resign
+              <Flag size={16} aria-hidden="true" /> Resign
             </button>
           </div>
           <p className="meta mt-3">
@@ -649,7 +655,7 @@ export function LudoTable({
             className="display pop"
             style={{ fontSize: 44, color: "#fff", textShadow: "3px 3px 0 #07060B" }}
           >
-            💥 Captured!
+            Captured!
           </span>
         </div>
       )}
@@ -680,7 +686,7 @@ export function LudoWaiting({
       <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8 min-h-full flex flex-col">
         <header className="flex items-center justify-between">
           <span className="heading" style={{ fontSize: 20 }}>
-            🎲 Ludo · waiting room
+            Ludo · waiting room
           </span>
           <button
             onClick={onClose}
@@ -707,13 +713,13 @@ export function LudoWaiting({
                   <Avatar src={p.avatar} initials={p.initials} size={40} />
                   <span className="flex-1 font-bold text-cream">
                     {p.id === meId ? "You" : p.name.split(" ")[0]}
-                    {p.bot && " 🤖"}
+                    {p.bot && <> <Ico i={Bot} size={14} c="var(--ink-3)" /></>}
                   </span>
                   <span
                     className="text-sm font-bold"
                     style={{ color: here ? "var(--lime)" : "var(--ink-3)" }}
                   >
-                    {here ? "✓ in" : "joining…"}
+                    {here ? "in" : "joining…"}
                   </span>
                 </li>
               );
@@ -758,7 +764,7 @@ export function LudoLobby({
   const botCount = Math.min(bots, maxBots);
   const total = 1 + friends.length + botCount;
   return (
-    <Sheet title="🎲 Ludo" onClose={onClose}>
+    <Sheet title="Ludo" onClose={onClose}>
       <p className="text-sm text-cool leading-relaxed">
         Live, 2 to 4 players. Roll a 6 to get out. Land on someone to send them home. First to get
         all 4 tokens home wins.
@@ -796,7 +802,7 @@ export function LudoLobby({
           })}
         </div>
       )}
-      <p className="label-caps mt-5 mb-2">bots 🤖</p>
+      <p className="label-caps mt-5 mb-2">Bots</p>
       <div className="flex gap-2">
         {[0, 1, 2, 3].map((n) => (
           <button

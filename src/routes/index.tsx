@@ -501,7 +501,7 @@ function InstallSection() {
           </Reveal>
           <Reveal delay={120}>
             <div className="glass rounded-3xl p-7 h-full flex flex-col">
-              <p className="text-white font-extrabold text-xl">🤖 Android</p>
+              <p className="text-white font-extrabold text-xl">Android</p>
               <span
                 className="mt-5 self-start rounded-full px-4 py-1.5 font-extrabold text-sm"
                 style={{

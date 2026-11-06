@@ -319,7 +319,7 @@ export async function sendGroupVoice(groupId: string, blob: Blob, secs: number) 
   pushLocal(groupId, {
     id,
     from: "me",
-    text: "🎤 Voice note",
+    text: "Voice note",
     ref: ref(URL.createObjectURL(blob)),
     at: Date.now(),
   });
@@ -330,7 +330,7 @@ export async function sendGroupVoice(groupId: string, blob: Blob, secs: number) 
     id,
     group_id: groupId,
     sender: _get().me!.id,
-    body: "🎤 Voice note",
+    body: "Voice note",
     shared_ref: ref(path),
   });
   if (error) throw new Error(error.message);
@@ -373,7 +373,7 @@ export async function sendGroupMedia(groupId: string, file: File) {
   const { prepareMedia } = await import("@/components/ChatExtras");
   const { blob, kind, ext } = await prepareMedia(file);
   const id = uuid();
-  const label = kind === "vid" ? "🎥 Video" : "📷 Photo";
+  const label = kind === "vid" ? "Video" : "Photo";
   pushLocal(groupId, {
     id,
     from: "me",

@@ -38,8 +38,8 @@ export function useSuggestions(includeNew = false) {
 }
 
 function line(p: Suggestion) {
-  if (p.reason === "new") return "New on 25 👋";
-  return `${p.mutuals} mutual${p.mutuals === 1 ? "" : "s"} 🤫`;
+  if (p.reason === "new") return "New on 25";
+  return `${p.mutuals} mutual${p.mutuals === 1 ? "" : "s"}`;
 }
 
 export function SuggestionCards({

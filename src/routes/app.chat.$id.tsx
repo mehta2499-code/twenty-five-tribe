@@ -1,16 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  Camera,
-  Check,
-  CheckCheck,
-  Image as ImageIcon,
-  Lock,
-  Send,
-  Spade,
-  Paperclip,
-} from "lucide-react";
+import { ArrowLeft, Camera, Check, CheckCheck, Image as ImageIcon, Lock, Paperclip, Send, Spade } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
 import {
@@ -77,7 +67,7 @@ function ChatThread() {
     const theySeatedMe = !!f && s.requests.some((r) => r.person.id === f.id);
     return (
       <div className="px-6 pt-24 text-center">
-        <p className="text-5xl">🔒</p>
+        <Lock size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--sun)" }} />
         <p className="heading mt-3">
           {f ? `Chats with ${f.name.split(" ")[0]} are locked` : "This person isn't in your 25."}
         </p>

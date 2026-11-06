@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Cake } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { friendById, meView, useSocial } from "@/lib/social";
@@ -49,7 +49,7 @@ function CardScreen() {
             <ArrowLeft size={18} />
           </button>
         </div>
-        <p className="text-5xl float">🎂</p>
+        <Cake size={48} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--pink)" }} />
         <div className="flex justify-center mt-3">
           <span className="rounded-full" style={{ border: "2px solid var(--edge)", boxShadow: "0 0 0 4px var(--pink)" }}>
             <Avatar src={person?.avatar || undefined} initials={person?.initials ?? "?"} size={84} />
@@ -61,7 +61,7 @@ function CardScreen() {
         {b && (
           <p className="sub mt-1">
             {bdayLabel(b)} ·{" "}
-            {daysUntil(b) === 0 ? "TODAY 🎉" : `in ${daysUntil(b)} day${daysUntil(b) > 1 ? "s" : ""}`}
+            {daysUntil(b) === 0 ? "TODAY" : `in ${daysUntil(b)} day${daysUntil(b) > 1 ? "s" : ""}`}
           </p>
         )}
       </header>
@@ -69,7 +69,7 @@ function CardScreen() {
       {!mine && !signed && (
         <section className="px-5 mt-6">
           <div className="card p-4">
-            <p className="font-bold text-cream">Sign {first}'s card ✍️</p>
+            <p className="font-bold text-cream">Sign {first}'s card</p>
             <p className="meta mt-0.5">
               Only {first} and the people who sign can read the card.
             </p>
@@ -110,7 +110,7 @@ function CardScreen() {
           {notes?.length ? `${notes.length} signature${notes.length > 1 ? "s" : ""}` : "No signatures yet"}
         </h2>
         {!mine && !signed && (notes?.length ?? 0) > 0 && (
-          <p className="meta mt-1">Sign it to read what everyone wrote 👀</p>
+          <p className="meta mt-1">Sign it to read what everyone wrote</p>
         )}
         <div className="mt-3 grid grid-cols-2 gap-3">
           {(notes ?? []).map((n, i) => {

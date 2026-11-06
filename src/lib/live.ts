@@ -586,11 +586,11 @@ function subscribe() {
             id: m.id,
             title: f?.name ?? "New message",
             body: ref.startsWith("voice:")
-              ? "🎤 Voice note"
+              ? "Voice note"
               : ref.startsWith("img:")
-                ? "📷 Photo"
+                ? "Photo"
                 : ref.startsWith("vid:")
-                  ? "🎥 Video"
+                  ? "Video"
                   : (m.body ?? "New message"),
             to: `/app/chat/${m.sender}`,
             avatar: f?.avatar || undefined,
@@ -640,8 +640,8 @@ function subscribe() {
               _set((s) => ({
                 ...s,
                 notice: back
-                  ? `🤝 ${name} seated you back. Chats and blinks unlocked.`
-                  : `👀 ${name} put you in their 25.`,
+                  ? `${name} seated you back. Chats and blinks unlocked.`
+                  : `${name} put you in their 25.`,
               }));
             });
         }
@@ -667,7 +667,7 @@ function subscribe() {
               showBanner({
                 id: `snap-${r.snap_id}`,
                 title: f?.name ?? "New blink",
-                body: "👁️ Sent you a blink. Open before it vanishes.",
+                body: "Sent you a blink. Open before it vanishes.",
                 to: "/app/snap",
                 avatar: f?.avatar || undefined,
                 initials: f?.initials ?? "?",

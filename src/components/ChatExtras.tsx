@@ -390,7 +390,7 @@ export async function sendVoice(friendId: string, blob: Blob, secs: number) {
         {
           id,
           from: "me",
-          text: "🎤 Voice note",
+          text: "Voice note",
           sharedPostId: voiceRef(local, secs),
           at: Date.now(),
           status: "sent",
@@ -405,7 +405,7 @@ export async function sendVoice(friendId: string, blob: Blob, secs: number) {
     id,
     sender: s.me.id,
     recipient: friendId,
-    body: "🎤 Voice note",
+    body: "Voice note",
     shared_ref: voiceRef(path, secs),
   });
   if (error) throw new Error(error.message);
@@ -483,7 +483,7 @@ export async function sendMedia(friendId: string, file: File) {
   const { blob, kind, ext } = await prepareMedia(file);
   const s = _get();
   const id = uuid();
-  const label = kind === "vid" ? "🎥 Video" : "📷 Photo";
+  const label = kind === "vid" ? "Video" : "Photo";
   _set((st) => ({
     ...st,
     chats: {

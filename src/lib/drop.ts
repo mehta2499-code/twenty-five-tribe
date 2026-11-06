@@ -153,7 +153,7 @@ export async function postDrop(image: string, caption: string, at: number) {
       /duplicate/i.test(error.message)
         ? "You've already dropped today."
         : /row-level/i.test(error.message)
-          ? "Today's Drop hasn't happened yet. Hold tight 👀"
+          ? "Today's Drop hasn't happened yet. Hold tight."
           : error.message,
     );
   }
