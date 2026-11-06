@@ -566,31 +566,56 @@ export function GrowingInput({
 }
 
 /**
- * Keeps a chat scrolled to the newest message. Opens already at the bottom
- * (no visible scroll from the top), smooth-scrolls for new messages, and stays
- * pinned while photos load if you were at the bottom.
+ * Keeps a chat scrolled to the newest message. Opens at the bottom and stays
+ * there while messages, photos and voice notes load in (they make the chat
+ * taller after it opens). Stops following once you scroll up to read.
  */
 export function useStickToBottom<T extends HTMLElement>(key: string, count: number, extra?: unknown) {
-  const ref = useRef<T>(null);
-  const opened = useRef<string | null>(null);
+  // A callback ref: the list may appear after a loading screen.
+  const [el, setEl] = useState<T | null>(null);
+  const stick = useRef(true);
+  const toBottom = () => {
+    if (el) el.scrollTop = el.scrollHeight;
+  };
+
+  // New chat (or the list just appeared): start pinned.
   useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (opened.current !== key) {
-      opened.current = key;
-      el.scrollTop = el.scrollHeight;
-    } else {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    }
-  }, [key, count, extra]);
+    stick.current = true;
+    toBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, el]);
+
+  // New messages (or typing dots): follow if pinned.
+  useLayoutEffect(() => {
+    if (stick.current) toBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count, extra]);
+
   useEffect(() => {
-    const el = ref.current;
     if (!el) return;
-    const onLoad = () => {
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) el.scrollTop = el.scrollHeight;
+    const onScroll = () => {
+      stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     };
-    el.addEventListener("load", onLoad, true);
-    return () => el.removeEventListener("load", onLoad, true);
-  }, []);
-  return ref;
+    // Anything inside growing (photos, videos, fonts, a late batch of messages).
+    const ro = new ResizeObserver(() => {
+      if (stick.current) el.scrollTop = el.scrollHeight;
+    });
+    const watch = () => {
+      ro.disconnect();
+      ro.observe(el);
+      for (const child of Array.from(el.children)) ro.observe(child);
+    };
+    watch();
+    const mo = new MutationObserver(watch);
+    mo.observe(el, { childList: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      el.removeEventListener("scroll", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [el]);
+
+  return setEl;
 }

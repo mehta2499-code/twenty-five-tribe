@@ -94,6 +94,7 @@ function ChatThread() {
     if (!text.trim()) return;
     social.sendMessage(id, text);
     setText("");
+    document.getElementById("chat-input")?.focus();
   };
   const firstName = f.name.split(" ")[0];
   const statusLine = typing
@@ -369,6 +370,9 @@ function ChatThread() {
             <button
               type="submit"
               aria-label="Send"
+              // Keep the keyboard up: the tap shouldn't take focus from the text box.
+              onPointerDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => e.preventDefault()}
               className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
               style={{ background: "var(--accent)", color: "var(--on-accent)" }}
             >

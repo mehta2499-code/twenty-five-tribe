@@ -66,6 +66,7 @@ function GroupThread() {
   const send = () => {
     const t = text;
     setText("");
+    boxRef.current?.focus();
     void sendToGroup(id, t).catch((e) => setToast((e as Error).message));
   };
   const tone = (who: string) =>
@@ -302,6 +303,9 @@ function GroupThread() {
             <button
               type="submit"
               aria-label="Send"
+              // Keep the keyboard up: the tap shouldn't take focus from the text box.
+              onPointerDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => e.preventDefault()}
               className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
               style={{ background: "var(--accent)", color: "var(--on-accent)" }}
             >
