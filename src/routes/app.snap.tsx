@@ -137,7 +137,10 @@ function SnapScreen() {
     const cached = takeCachedStream(facing);
     (cached
       ? Promise.resolve(cached)
-      : navigator.mediaDevices.getUserMedia({ video: { facingMode: facing }, audio: false })
+      : navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } },
+          audio: false,
+        })
     )
       .then((ms) => {
         if (cancelled) return ms.getTracks().forEach((t) => t.stop());
@@ -157,16 +160,26 @@ function SnapScreen() {
   const capture = () => {
     const v = videoRef.current;
     if (!v || !v.videoWidth) return;
+    // Keep exactly what the 3:4 viewfinder showed (no surprise crop later).
+    const vw = v.videoWidth;
+    const vh = v.videoHeight;
+    const ratio = 3 / 4;
+    let sw = vw;
+    let sh = vh;
+    if (vw / vh > ratio) sw = vh * ratio;
+    else sh = vw / ratio;
+    const sx = (vw - sw) / 2;
+    const sy = (vh - sh) / 2;
+    const scale = Math.min(1, 1440 / sh);
     const c = document.createElement("canvas");
-    const scale = Math.min(1, 1080 / Math.max(v.videoWidth, v.videoHeight));
-    c.width = v.videoWidth * scale;
-    c.height = v.videoHeight * scale;
+    c.width = Math.round(sw * scale);
+    c.height = Math.round(sh * scale);
     const ctx = c.getContext("2d")!;
     if (facing === "user") {
       ctx.translate(c.width, 0);
       ctx.scale(-1, 1);
     }
-    ctx.drawImage(v, 0, 0, c.width, c.height);
+    ctx.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
     setImage(c.toDataURL("image/jpeg", 0.82));
   };
 
@@ -279,7 +292,7 @@ function SnapScreen() {
             <img
               src={image}
               alt="Your blink"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-contain"
             />
           )}
           {hasShot && (

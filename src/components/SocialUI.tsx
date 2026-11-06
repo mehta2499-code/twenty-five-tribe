@@ -408,11 +408,21 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
         </div>
       </div>
       <div
-        className="flex-1 relative flex items-center justify-center"
+        className="flex-1 relative overflow-hidden flex items-center justify-center"
         style={{ background: snap.bg ?? "#000" }}
       >
         {snap.image && (
-          <img src={snap.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <>
+            {/* Whole photo, never cropped; a blurred copy fills the rest of the screen. */}
+            <img
+              src={snap.image}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover scale-110"
+              style={{ filter: "blur(28px) brightness(0.6)" }}
+            />
+            <img src={snap.image} alt="" className="absolute inset-0 w-full h-full object-contain" />
+          </>
         )}
         {snap.caption && (
           <p
