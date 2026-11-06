@@ -2,10 +2,11 @@
  * Scores tab: a podium for the top 3, a "best player" banner and colourful
  * ranked rows. Today (best try in today's game) or the week (points).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Avatar } from "@/components/Avatar";
 import { GAMES } from "@/components/ArcadeGames";
-import { friendById, meView } from "@/lib/social";
+import { friendById, meView, useSocial } from "@/lib/social";
 import {
   DAY_NAMES,
   addDays,
@@ -47,6 +48,38 @@ function person(id: string) {
   };
 }
 
+type Lifetime = {
+  user_id: string;
+  points: number;
+  daily_points: number;
+  daily_days: number;
+  daily_crowns: number;
+  live_played: number;
+  live_wins: number;
+  trivia_wins: number;
+  ludo_wins: number;
+  kachuful_wins: number;
+  word_wins: number;
+};
+
+/** All-time scores for you and your mutual 25 (worked out on the server). */
+function useLifetime(on: boolean) {
+  const s = useSocial();
+  const [rows, setRows] = useState<Lifetime[] | null>(null);
+  useEffect(() => {
+    if (!on || s.mode !== "live") return;
+    let alive = true;
+    void supabase.rpc("lifetime_scores" as never).then(({ data }) => {
+      if (alive) setRows(((data as Lifetime[] | null) ?? []).filter((r) => r.points > 0));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [on, s.mode]);
+  const myId = s.me?.id;
+  return (rows ?? []).map((r) => ({ ...r, user_id: r.user_id === myId ? "me" : r.user_id }));
+}
+
 /** Days in a row you've played the daily game, counting back from today (or yesterday). */
 function playStreak(board: Record<string, Record<string, number[]>>) {
   let day = today();
@@ -61,12 +94,26 @@ function playStreak(board: Record<string, Record<string, number[]>>) {
 
 export function Scoreboard() {
   const d = useDaily();
-  const [view, setView] = useState<"today" | "week" | "last">("today");
+  const [view, setView] = useState<"today" | "week" | "last" | "all">("today");
+  const lifetime = useLifetime(view === "all");
   const day = today();
   const g = GAMES[gameFor(day)];
 
   const rows: Row[] =
-    view === "today"
+    view === "all"
+      ? [...lifetime]
+          .sort((a, b) => b.points - a.points || b.live_wins - a.live_wins)
+          .map((r, i, all) => ({
+            id: r.user_id,
+            rank: i > 0 && all[i - 1].points === r.points ? i : i + 1,
+            value: r.points,
+            unit: "pts",
+            chips: [
+              ...(r.live_wins ? [`🏆 ${r.live_wins} win${r.live_wins === 1 ? "" : "s"}`] : []),
+              ...(r.daily_crowns ? [`👑 ×${r.daily_crowns}`] : []),
+            ],
+          }))
+      : view === "today"
       ? dayRanking(d, day).map((r) => ({
           id: r.id,
           rank: r.rank,
@@ -87,7 +134,14 @@ export function Scoreboard() {
   const best = rows[0];
   const streak = playStreak(d.board);
   const title =
-    view === "today" ? `${g.emoji} ${g.name}` : view === "week" ? "🏆 This week" : "🏆 Last week";
+    view === "today"
+      ? `${g.emoji} ${g.name}`
+      : view === "week"
+        ? "🏆 This week"
+        : view === "last"
+          ? "🏆 Last week"
+          : "🏆 All-time";
+  const mine = lifetime.find((r) => r.user_id === "me");
 
   return (
     <section className="px-5 mt-5 pb-4">
@@ -97,9 +151,16 @@ export function Scoreboard() {
             ["today", "Today"],
             ["week", "This week"],
             ["last", "Last week"],
+            ["all", "All-time"],
           ] as const
         ).map(([k, label]) => (
-          <button key={k} className="flex-1" aria-pressed={view === k} onClick={() => setView(k)}>
+          <button
+            key={k}
+            className="flex-1"
+            style={{ paddingInline: 6, fontSize: 13 }}
+            aria-pressed={view === k}
+            onClick={() => setView(k)}
+          >
             {label}
           </button>
         ))}
@@ -112,7 +173,9 @@ export function Scoreboard() {
         <p className="meta mt-2">
           {view === "today"
             ? `${DAY_NAMES[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · best try counts`
-            : "Daily points: 1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2"}
+            : view === "all"
+              ? "Every daily point ever, plus live games: win 10 · played 2"
+              : "Daily points: 1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2"}
         </p>
       </div>
 
@@ -172,7 +235,11 @@ export function Scoreboard() {
               </span>
               <div>
                 <p className="meta font-bold">
-                  {view === "today" ? "Best player today" : "Player of the week"}
+                  {view === "today"
+                    ? "Best player today"
+                    : view === "all"
+                      ? "All-time champ"
+                      : "Player of the week"}
                 </p>
                 <p className="display uppercase" style={{ fontSize: 30, lineHeight: 1 }}>
                   {person(best.id).name}
@@ -204,6 +271,50 @@ export function Scoreboard() {
             </>
           )}
         </>
+      )}
+
+      {view === "all" && mine && (
+        <div className="card mt-8 p-4">
+          <p className="font-bold text-cream">Your all-time</p>
+          <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
+            {[
+              ["Daily pts", mine.daily_points],
+              ["Days played", mine.daily_days],
+              ["Daily 👑", mine.daily_crowns],
+              ["Live games", mine.live_played],
+              ["Live wins", mine.live_wins],
+              [
+                "Win rate",
+                mine.live_played ? `${Math.round((mine.live_wins / mine.live_played) * 100)}%` : "–",
+              ],
+            ].map(([k, v]) => (
+              <div key={k as string} className="rounded-xl py-2" style={{ background: "var(--fill)" }}>
+                <dd className="display tabular-nums" style={{ fontSize: 22 }}>
+                  {v}
+                </dd>
+                <dt className="meta" style={{ fontSize: 12 }}>
+                  {k}
+                </dt>
+              </div>
+            ))}
+          </dl>
+          <p className="meta mt-4 mb-2">Wins by game</p>
+          <dl className="grid grid-cols-4 gap-2 text-center">
+            {[
+              ["Trivia", mine.trivia_wins],
+              ["Ludo", mine.ludo_wins],
+              ["Kachuful", mine.kachuful_wins],
+              ["Word Up", mine.word_wins],
+            ].map(([k, v]) => (
+              <div key={k as string} className="rounded-xl py-2" style={{ background: "var(--fill)" }}>
+                <dd className="font-extrabold tabular-nums text-cream">{v}</dd>
+                <dt className="meta" style={{ fontSize: 11.5 }}>
+                  {k}
+                </dt>
+              </div>
+            ))}
+          </dl>
+        </div>
       )}
 
       {streak > 0 && (
