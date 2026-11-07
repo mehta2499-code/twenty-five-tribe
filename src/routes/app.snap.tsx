@@ -5,6 +5,7 @@ import { Avatar } from "@/components/Avatar";
 import {
   cameraDenied,
   canvasToUrl,
+  isIOS,
   fileToPhoto,
   openCamera,
   parkStream,
@@ -92,7 +93,9 @@ function SnapScreen() {
   // use the phone's own camera (no permission prompt) unless asked for live.
   // Live viewfinder everywhere (like any camera app). If the phone says no,
   // fall back to the phone's own camera app.
-  const [liveCam, setLiveCam] = useState(() => !cameraDenied());
+  // iPhone home-screen apps ask for camera permission again and again, so
+  // there we use the phone's own camera app (no prompts). Elsewhere: live.
+  const [liveCam, setLiveCam] = useState(() => !isIOS() && !cameraDenied());
   const [flash, setFlash] = useState(0);
   const [ready, setReady] = useState(false);
   const drag = useRef<{ startY: number; startPct: number; moved: boolean } | null>(null);
@@ -149,7 +152,7 @@ function SnapScreen() {
     else sh = vw / ratio;
     const sx = (vw - sw) / 2;
     const sy = (vh - sh) / 2;
-    const scale = Math.min(1, 1440 / sh);
+    const scale = Math.min(1, 1920 / sh);
     const c = document.createElement("canvas");
     c.width = Math.round(sw * scale);
     c.height = Math.round(sh * scale);
@@ -163,7 +166,7 @@ function SnapScreen() {
     v.pause();
     setFlash((n) => n + 1);
     buzz(12);
-    void canvasToUrl(c, 0.82).then(setImage, (e) => setToast((e as Error).message));
+    void canvasToUrl(c, 0.9).then(setImage, (e) => setToast((e as Error).message));
   };
 
   const onFile = async (file?: File) => {

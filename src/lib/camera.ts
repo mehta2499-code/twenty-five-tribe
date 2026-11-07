@@ -8,18 +8,15 @@ let cache: { stream: MediaStream; facing: Facing; stopTimer?: ReturnType<typeof 
 let warming: Promise<MediaStream> | null = null;
 
 export const CAMERA_CONSTRAINTS = (facing: Facing): MediaStreamConstraints => ({
-  // 1280 is plenty for a phone screen and starts much faster than full resolution.
-  video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 1280 } },
+  video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } },
   audio: false,
 });
 
 /*
- * iPhone home-screen apps don't remember camera permission: every new
- * getUserMedia() asks again. So once you've allowed it, keep the stream for as
- * long as the app is open (paused while you're not on Blink) and only let go
- * when you leave the app. That's at most one question per app launch.
+ * Keep the stream (paused) for a minute after leaving Blink, so coming back is
+ * instant; let it go when the app is left. (iPhone uses the camera app instead.)
  */
-const PERSIST = 365 * 24 * 3600_000;
+const PERSIST = 60_000;
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden" && cache) {
@@ -90,8 +87,13 @@ export function openCamera(facing: Facing): Promise<MediaStream> {
 }
 
 /** Start the front camera the moment a finger touches the Blink tab. */
+export const isIOS = () =>
+  typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+
 export function warmCamera() {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+  // iPhone uses the camera app for blinks: never trigger a permission prompt.
+  if (isIOS()) return;
   if (cache || warming || cameraDenied()) return;
   warming = navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS("user"));
   warming.catch(() => {
@@ -119,7 +121,7 @@ export function canvasToUrl(c: HTMLCanvasElement, quality = 0.85): Promise<strin
 }
 
 /** Shrink a picked photo to `max` px without blocking the screen. */
-export async function fileToPhoto(file: File, max = 1440): Promise<string> {
+export async function fileToPhoto(file: File, max = 1920): Promise<string> {
   const url = URL.createObjectURL(file);
   try {
     const img = new Image();
@@ -132,7 +134,7 @@ export async function fileToPhoto(file: File, max = 1440): Promise<string> {
     c.width = Math.round(img.naturalWidth * scale);
     c.height = Math.round(img.naturalHeight * scale);
     c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
-    return await canvasToUrl(c, 0.82);
+    return await canvasToUrl(c, 0.88);
   } finally {
     URL.revokeObjectURL(url);
   }
