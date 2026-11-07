@@ -98,7 +98,10 @@ async function load(me: string) {
   const ids = groups.map((g) => g.id);
   const [mem, msg] = ids.length
     ? await Promise.all([
-        supabase.from("group_members").select("group_id,user_id").in("group_id", ids),
+        supabase
+          .from("group_members")
+          .select("group_id,user_id,last_read_at")
+          .in("group_id", ids),
         supabase
           .from("group_messages")
           .select("id,group_id,sender,body,shared_ref,created_at")
@@ -109,8 +112,15 @@ async function load(me: string) {
     : [{ data: [] }, { data: [] }];
   const who = (id: string) => (id === me ? "me" : id);
   const members: Record<string, string[]> = {};
-  for (const r of (mem.data ?? []) as { group_id: string; user_id: string }[])
+  for (const r of (mem.data ?? []) as {
+    group_id: string;
+    user_id: string;
+    last_read_at?: string | null;
+  }[]) {
     (members[r.group_id] ??= []).push(who(r.user_id));
+    if (r.user_id === me && r.last_read_at)
+      serverSeen[r.group_id] = Math.max(serverSeen[r.group_id] ?? 0, Date.parse(r.last_read_at));
+  }
   const msgs: Record<string, GMsg[]> = {};
   for (const r of (
     (msg.data ?? []) as {
@@ -247,7 +257,10 @@ export function member(id: string, st: State): Member {
   return st.people[id] ?? { id, name: "Someone", initials: "?" };
 }
 
-// ---------- Unread (per phone) ----------
+// ---------- Unread ----------
+// Saved on the server per member (follows you across devices), with a local
+// copy so opening a group clears its badge instantly.
+const serverSeen: Record<string, number> = {};
 const SEEN_KEY = "tf.groups.seen";
 function seenMap(): Record<string, number> {
   try {
@@ -264,9 +277,14 @@ export function markSeen(groupId: string) {
   } catch {
     // ignore
   }
+  // Tell the server, so other devices and future logins know too.
+  if (mine()) {
+    serverSeen[groupId] = Date.now();
+    void supabase.rpc("mark_group_read" as never, { p_group: groupId } as never);
+  }
 }
 export function unreadIn(st: State, groupId: string) {
-  const since = seenMap()[groupId] ?? 0;
+  const since = Math.max(seenMap()[groupId] ?? 0, serverSeen[groupId] ?? 0);
   return (st.msgs[groupId] ?? []).filter((m) => m.from !== "me" && m.at > since).length;
 }
 
