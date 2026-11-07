@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#121019" },
+      { name: "theme-color", content: "#17151F" },
       // "Add to Home Screen" on iPhone: open full screen, like an app.
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -84,13 +84,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "Everyone else is noise. A social app for your 25 closest people.",
       },
-      { property: "og:title", content: "25 — Your world. All 25 of them." },
+      { property: "og:title", content: "25 — Everyone else is noise." },
       {
         property: "og:description",
         content: "Everyone else is noise. A social app for your 25 closest people.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "25 — Your world. All 25 of them." },
+      { name: "twitter:title", content: "25 — Everyone else is noise." },
       {
         name: "twitter:description",
         content: "Everyone else is noise. A social app for your 25 closest people.",
@@ -98,12 +98,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:image",
         content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/074fc143-d4de-49fd-b8a8-c540c803849f/id-preview-814f2a46--cd199ca9-8d7c-4d25-82c7-6566a8a88a81.lovable.app-1779872820420.png",
+          "https://the25.world/og.png",
       },
       {
         name: "twitter:image",
         content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/074fc143-d4de-49fd-b8a8-c540c803849f/id-preview-814f2a46--cd199ca9-8d7c-4d25-82c7-6566a8a88a81.lovable.app-1779872820420.png",
+          "https://the25.world/og.png",
       },
       { name: "twitter:card", content: "summary_large_image" },
     ],

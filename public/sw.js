@@ -1,5 +1,5 @@
 /* 25 — service worker: shows push notifications and opens the right screen. */
-const ASSETS = "25-assets-v1";
+const ASSETS = "25-assets-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) =>
