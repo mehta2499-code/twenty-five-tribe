@@ -1,6 +1,6 @@
 # 25 on iPhone (Capacitor + Xcode, free Apple ID)
 
-The app is a native shell that loads https://the25.duckdns.org, so server
+The app is a native shell that loads https://the25.world, so server
 deploys reach it instantly. Rebuild only for the 7-day free-signing renewal or
 when the shell changes (icon, permissions).
 
@@ -57,4 +57,4 @@ different bundle ID (e.g. `app.twentyfive.rahul`), then Run.
 
 - "maximum number of registered iPhone devices": use another Apple ID (above).
 - "No profiles for …": bundle ID taken; change it.
-- Blank white screen: server down or no internet; check https://the25.duckdns.org.
+- Blank white screen: server down or no internet; check https://the25.world.
