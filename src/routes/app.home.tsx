@@ -1,3 +1,4 @@
+import { Tour } from "@/components/Tour";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
@@ -819,6 +820,32 @@ function Home() {
       {s.mode === "live" && people.length < 10 && <SuggestionCards title="Find your people" max={12} />}
 
       <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
+      <Tour
+        id="table"
+        delay={1200}
+        steps={[
+          {
+            at: 'section[aria-label="Your table"]',
+            title: "This is your Table",
+            body: "25 seats for the people who matter. Tap a face to open them. Tap the dice to pick someone to catch up with.",
+          },
+          {
+            at: 'a[href="/app/people"].btn-primary',
+            title: "Fill your seats",
+            body: "Add people you actually know. When you're in each other's 25, chats, blinks and games unlock.",
+          },
+          {
+            at: 'a[href="/app/drop"]',
+            title: "Every day",
+            body: "The Drop: everyone posts at the same surprise time. Polls: anonymous picks about your 25.",
+          },
+          {
+            at: 'nav[aria-label="Main"]',
+            title: "Everything else",
+            body: "Feed, Blink, Chats and Games live down here. Swipe left and right to move between them.",
+          },
+        ]}
+      />
 
       <TodayTiles />
 

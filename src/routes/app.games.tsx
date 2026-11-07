@@ -1,3 +1,4 @@
+import { Tour } from "@/components/Tour";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronRight, CircleHelp, Dices, Gamepad2, Spade, Trophy, Type, Users, Zap, type LucideIcon } from "lucide-react";
@@ -172,6 +173,7 @@ function GameTile({
   onClick,
   wide,
   outline,
+  tour,
 }: {
   wide?: boolean;
   tone: string;
@@ -186,10 +188,12 @@ function GameTile({
   onClick: () => void;
   /** Coloured outline on a dark tile (instead of a coloured fill). */
   outline?: string;
+  tour?: string;
 }) {
   return (
     <button
       onClick={onClick}
+      data-tour={tour}
       className={`rounded-[24px] p-4 text-left flex flex-col active:scale-95 transition-transform ${wide ? "col-span-2" : ""}`}
       style={{
         background: tone,
@@ -285,6 +289,7 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
     return (
       <button
         onClick={spin}
+        data-tour="daily"
         className="col-span-2 rounded-[24px] p-4 text-left flex flex-col active:scale-[0.98] transition-transform relative overflow-hidden"
         style={{
           background: "var(--surface)",
@@ -326,6 +331,7 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
         tone="var(--surface)"
         light
         outline="var(--lime)"
+        tour="daily"
         Icon={game.Icon}
         art={gameFor(day)}
         sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY"}
@@ -392,6 +398,31 @@ function Games() {
 
   return (
     <>
+      <Tour
+        id="games"
+        steps={[
+          {
+            at: '[data-tour="daily"]',
+            title: "A new game every day",
+            body: "Same mini game for everyone in your 25. Best of 3 tries counts. Win the day, climb the week.",
+          },
+          {
+            at: 'section[aria-label="All games"]',
+            title: "Play live with your 25",
+            body: "Judgement, Trivia duels, Ludo and Word Up. Invite friends, chat and react while you play.",
+          },
+          {
+            at: '[data-tour="imposter"]',
+            title: "Together in a room? Imposter",
+            body: "A party game for 4 to 20. Share the link and anyone can join, even if they're new to 25.",
+          },
+          {
+            at: 'div[role="tablist"][aria-label="Games"]',
+            title: "Scores",
+            body: "Weekly and all-time tables, Word Up and Trivia boards. Bragging rights live here.",
+          },
+        ]}
+      />
       <PageBand
         ring title="Games" sub="Pick one. Your 25 is waiting." />
 
@@ -471,6 +502,7 @@ function Games() {
               tone="var(--sky)"
               Icon={Users}
               art="imposter"
+              tour="imposter"
               sticker="PARTY · 4–20"
               title="Imposter"
               line="Everyone knows the word except the imposter. Give clues, vote them out. Best with the whole group."

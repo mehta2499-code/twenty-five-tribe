@@ -1,3 +1,4 @@
+import { Tour } from "@/components/Tour";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import {
@@ -333,6 +334,21 @@ function Feed() {
 
   return (
     <>
+      <Tour
+        id="feed"
+        steps={[
+          {
+            at: 'button[aria-label="New post"]',
+            title: "Post to your 25 only",
+            body: "Photos and videos go to the people at your Table, nobody else. The feed ends when you're caught up.",
+          },
+          {
+            at: 'nav[aria-label="Main"]',
+            title: "Swipe or tap",
+            body: "Swipe left and right to move between Table, Feed, Blink, Chats and Games.",
+          },
+        ]}
+      />
       <PageBand
         ring
         title="Feed"

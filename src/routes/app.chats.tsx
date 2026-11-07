@@ -1,3 +1,4 @@
+import { Tour } from "@/components/Tour";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Camera, MessageCircle, Search, UserPlus, Users } from "lucide-react";
@@ -229,6 +230,21 @@ function Chats() {
 
   return (
     <div className="pb-6">
+      <Tour
+        id="chats"
+        steps={[
+          {
+            at: 'div[role="tablist"][aria-label="Chats"]',
+            title: "Private and group chats",
+            body: "Chats open once you're in each other's 25. No randoms, ever. Make groups with people from your 25.",
+          },
+          {
+            at: 'a[aria-label="New blink"]',
+            title: "Send a Blink",
+            body: "A photo or note that disappears after one look.",
+          },
+        ]}
+      />
       <PageBand
         ring
         title="Chats"

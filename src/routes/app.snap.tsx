@@ -1,3 +1,4 @@
+import { Tour } from "@/components/Tour";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, RefreshCw, Type, X } from "lucide-react";
@@ -223,6 +224,21 @@ function SnapScreen() {
 
   return (
     <div className="pb-6">
+      <Tour
+        id="blink"
+        steps={[
+          {
+            at: '[data-tour="viewfinder"]',
+            title: "Blink: here, then gone",
+            body: "Photos and notes your 25 can open once. Then they vanish, from their phone and ours.",
+          },
+          {
+            at: 'button[aria-label="Take photo"], [data-tour="viewfinder"]',
+            title: "Shoot, then pick who",
+            body: "Take a photo (or tap Text for a note), choose how many seconds it shows, and send it to anyone in your 25. Daily blinks keep your streaks alive.",
+          },
+        ]}
+      />
       <PageBand
         ring
         title={target ? `Blink ${target.name.split(" ")[0]}` : "Blink"}
@@ -233,6 +249,7 @@ function SnapScreen() {
         {/* Viewfinder */}
         <div
           ref={frameRef}
+          data-tour="viewfinder"
           className="relative rounded-3xl overflow-hidden mx-auto"
           style={{
             // Full camera: as tall as the screen allows (like a camera app).
