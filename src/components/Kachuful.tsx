@@ -12,6 +12,7 @@ import {
   forbiddenBid,
   isRed,
   legalCards,
+  maxCards,
   newGame,
   nextRound,
   rankLabel,
@@ -971,11 +972,6 @@ export function LocalKachuful({
 }
 
 // ---------- Lobby ----------
-const ROUND_CHOICES = [
-  { rounds: 5, peak: 3 },
-  { rounds: 9, peak: 5 },
-  { rounds: 13, peak: 7 },
-];
 const TIMER_CHOICES = [0, 15, 30, 60];
 
 export function KachufulLobby({
@@ -995,13 +991,20 @@ export function KachufulLobby({
   const live = s.mode === "live";
   const people = live ? mutualFriends() : [];
   const [picked, setPicked] = useState<string[]>([]);
-  const [peak, setPeak] = useState(5);
+  const [rounds, setRounds] = useState(5);
+  const [upDown, setUpDown] = useState(false);
   const [scoring, setScoring] = useState<Scoring>("classic");
   const [timer, setTimer] = useState(30);
   const [howTo, setHowTo] = useState(false);
   const friends = people.filter((p) => picked.includes(p.id));
   // Solo: three bots. With friends: just you and them.
   const bots = friends.length ? 0 : 3;
+  const players = friends.length ? friends.length + 1 : 4;
+  // At least one round per player; at most as many cards as the deck allows.
+  const most = maxCards(players);
+  const minRounds = Math.min(players, most);
+  const shown = Math.min(Math.max(rounds, minRounds), most);
+  const total = upDown ? shown * 2 - 1 : shown;
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 6 ? p : [...p, id]));
@@ -1069,17 +1072,50 @@ export function KachufulLobby({
       )}
 
       <p className="label-caps mt-5 mb-2">Rounds</p>
-      <div className="flex gap-2">
-        {ROUND_CHOICES.map((c) => (
-          <Opt
-            key={c.rounds}
-            on={peak === c.peak}
-            onClick={() => setPeak(c.peak)}
-            title={`${c.rounds}`}
-            sub={`up to ${c.peak} cards`}
-          />
-        ))}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setRounds(Math.max(minRounds, shown - 1))}
+          disabled={shown <= minRounds}
+          className="btn-secondary btn-icon text-xl"
+          aria-label="Fewer rounds"
+        >
+          −
+        </button>
+        <div className="flex-1 text-center">
+          <p className="display tabular-nums" style={{ fontSize: 34, lineHeight: 1 }}>
+            {total}
+          </p>
+          <p className="meta mt-1">
+            1 → {shown} cards{upDown ? ` → 1` : ""}
+          </p>
+        </div>
+        <button
+          onClick={() => setRounds(Math.min(most, shown + 1))}
+          disabled={shown >= most}
+          className="btn-secondary btn-icon text-xl"
+          aria-label="More rounds"
+        >
+          +
+        </button>
       </div>
+      <button
+        onClick={() => setUpDown((v) => !v)}
+        aria-pressed={upDown}
+        className="mt-2.5 w-full flex items-center justify-between rounded-2xl px-4 py-2.5"
+        style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+      >
+        <span className="text-sm font-semibold text-cream">And back down to 1</span>
+        <span
+          className="w-11 h-6 rounded-full relative transition-colors"
+          style={{ background: upDown ? "var(--lime)" : "var(--fill-2)" }}
+        >
+          <span
+            className="absolute top-0.5 w-5 h-5 rounded-full transition-transform"
+            style={{ background: "#fff", left: 2, transform: upDown ? "translateX(20px)" : "none" }}
+          />
+        </span>
+      </button>
+      <p className="meta mt-1.5">At least {minRounds} rounds with {players} players.</p>
 
       <p className="label-caps mt-5 mb-2">Scoring</p>
       <div className="flex gap-2">
@@ -1099,7 +1135,10 @@ export function KachufulLobby({
       </button>
       {howTo && <HowToPlay onClose={() => setHowTo(false)} />}
 
-      <button onClick={() => onStart(friends, bots, peak, scoring, timer)} className="mt-3 w-full btn-primary">
+      <button
+        onClick={() => onStart(friends, bots, { rounds: shown, upDown }, scoring, timer)}
+        className="mt-3 w-full btn-primary"
+      >
         {friends.length
           ? `Deal in ${friends.length} friend${friends.length > 1 ? "s" : ""}`
           : "Deal me in (vs 3 bots)"}

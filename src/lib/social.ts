@@ -602,7 +602,7 @@ function markStatus(friendId: string, status: MsgStatus) {
 
 // ---------- Actions ----------
 const demo = {
-  sendMessage(friendId: string, text: string) {
+  sendMessage(friendId: string, text: string, ref?: string) {
     const t = text.trim();
     if (!t) return;
     set((s) => ({
@@ -611,7 +611,7 @@ const demo = {
         ...s.chats,
         [friendId]: [
           ...(s.chats[friendId] ?? []),
-          { id: uid(), from: "me", text: t, at: Date.now(), status: "sent" },
+          { id: uid(), from: "me", text: t, sharedPostId: ref, at: Date.now(), status: "sent" },
         ],
       },
     }));

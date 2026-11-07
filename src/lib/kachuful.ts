@@ -75,10 +75,16 @@ export const suitOf = (c: Card) => c[0] as Suit;
 export const rankOf = (c: Card) => Number(c.slice(1));
 export const rankLabel = (r: number) => ({ 11: "J", 12: "Q", 13: "K", 14: "A" })[r] ?? String(r);
 
-/** "short" (up to 5 cards), "full" (up to 8), or the peak number of cards. */
-export type Length = "short" | "full" | number;
+/**
+ * "short" (1→5→1), "full" (1→8→1), a peak (1→peak→1), or exactly how many
+ * rounds to play: cards go up by one each round (and back down if upDown).
+ */
+export type Length = "short" | "full" | number | { rounds: number; upDown?: boolean };
 
-export function peakFor(players: number, length: Length) {
+/** Most cards each player can get. */
+export const maxCards = (players: number) => Math.floor(52 / players);
+
+export function peakFor(players: number, length: Exclude<Length, { rounds: number }>) {
   const most = Math.floor(52 / players);
   const want = typeof length === "number" ? length : length === "short" ? 5 : 8;
   return Math.max(1, Math.min(want, most));
@@ -86,6 +92,12 @@ export function peakFor(players: number, length: Length) {
 
 /** 1, 2 … peak … 2, 1 */
 export function roundPlan(players: number, length: Length) {
+  if (typeof length === "object") {
+    const most = maxCards(players);
+    const up = Math.max(1, Math.min(length.rounds, most));
+    const ups = Array.from({ length: up }, (_, i) => i + 1);
+    return length.upDown ? [...ups, ...ups.slice(0, -1).reverse()] : ups;
+  }
   const peak = peakFor(players, length);
   const up = Array.from({ length: peak }, (_, i) => i + 1);
   return [...up, ...up.slice(0, -1).reverse()];

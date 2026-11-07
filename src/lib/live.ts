@@ -1056,7 +1056,8 @@ function patch(fn: (s: SocialState) => SocialState) {
 }
 
 registerLive({
-  sendMessage(friendId: string, text: string) {
+  /** Send a message; `ref` attaches a card (e.g. "wordup:2026-11-07"). */
+  sendMessage(friendId: string, text: string, ref?: string) {
     const t = text.trim();
     if (!t || !myId) return;
     const id = newId();
@@ -1066,13 +1067,13 @@ registerLive({
         ...s.chats,
         [friendId]: [
           ...(s.chats[friendId] ?? []),
-          { id, from: "me", text: t, at: Date.now(), status: "sent" },
+          { id, from: "me", text: t, sharedPostId: ref, at: Date.now(), status: "sent" },
         ],
       },
     }));
     void supabase
       .from("messages")
-      .insert({ id, sender: myId, recipient: friendId, body: t })
+      .insert({ id, sender: myId, recipient: friendId, body: t, shared_ref: ref ?? null })
       .then(({ error }) => {
         if (error) fail(friendly(error));
       });

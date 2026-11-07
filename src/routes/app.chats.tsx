@@ -164,6 +164,7 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (!m) return "No messages yet";
   const who = m.from === "me" ? "You: " : "";
   if (m.snapId) return m.from === "me" ? "You sent a blink" : "Sent you a blink";
+  if (m.sharedPostId?.startsWith("wordup:")) return `${m.from === "me" ? "You: " : ""}Word Up result`;
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
   if (m.sharedPostId?.startsWith("voice:")) return `${who}Voice note`;
   if (m.sharedPostId?.startsWith("img:")) return `${who}Photo`;

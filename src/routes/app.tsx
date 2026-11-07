@@ -1,4 +1,5 @@
 import { savePendingPath } from "@/lib/pending";
+import { SeatRing } from "@/components/Brand";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,12 +161,24 @@ function AppLayout() {
     return () => document.removeEventListener("visibilitychange", onHide);
   }, [navigate, signedIn]);
 
-  // Let the opening logo finish drawing (once per launch).
-  const [intro, setIntro] = useState(!introShown);
+  // The opening logo plays once ever (first open on this phone), not on every sign-in.
+  const [firstEver] = useState(() => {
+    try {
+      return localStorage.getItem("tf.intro.seen") !== "1";
+    } catch {
+      return false;
+    }
+  });
+  const [intro, setIntro] = useState(firstEver && !introShown);
   useEffect(() => {
     if (!intro) return;
     const t = setTimeout(() => {
       introShown = true;
+      try {
+        localStorage.setItem("tf.intro.seen", "1");
+      } catch {
+        // ignore
+      }
       setIntro(false);
     }, 2300);
     return () => clearTimeout(t);
@@ -182,10 +195,19 @@ function AppLayout() {
         aria-label="Loading your 25"
       >
         <div className="flex flex-col items-center px-8 text-center">
-          <AnimatedLogo height={230} />
-          <p className="tagline-in display mt-6" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>
-            Everyone else is noise.
-          </p>
+          {firstEver ? (
+            <>
+              <AnimatedLogo height={230} />
+              <p className="tagline-in display mt-6" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>
+                Everyone else is noise.
+              </p>
+            </>
+          ) : (
+            // Returning: just a quiet loader while your 25 loads.
+            <span className="breathe-ring" aria-hidden="true">
+              <SeatRing filled={25} size={64} />
+            </span>
+          )}
           {!s.loading && s.error && (
             <>
               <p className="text-cool text-sm mt-6">{s.error}</p>

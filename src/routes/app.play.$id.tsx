@@ -22,6 +22,7 @@ import {
   changeLatest,
   inviteToTrivia,
   joinParty,
+  leaveGame,
   type GameRow,
   saveTriviaResult,
   revealWord,
@@ -112,7 +113,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
           if (i < 0 || cur.phase === "over") return null;
           const next = quitSeat(cur, i);
           return { state: next, status: next.phase === "over" ? "done" : undefined };
-        });
+        }).then(() => leaveGame(id));
       quitNote =
         st.seats.filter((p) => !p.bot).length <= 2
           ? "Only one person would be left, so the game ends."
@@ -120,7 +121,10 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     }
   } else if (game.status === "playing" && game.kind === "word") {
     const st = game.state as WordState;
-    quit = () => void changeLatest<WordState>(id, (cur) => ({ state: { ...cur, gaveUp: meId }, status: "done" }));
+    quit = () =>
+      void changeLatest<WordState>(id, (cur) => ({ state: { ...cur, gaveUp: meId }, status: "done" })).then(
+        () => leaveGame(id),
+      );
     quitNote = st.guesser === meId ? "You give up and the word is revealed." : "The challenge is called off.";
   } else if (game.status === "playing" && game.kind === "trivia") {
     const st = game.state as TriviaState;
@@ -128,7 +132,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
       quit = () =>
         void changeLatest<TriviaState>(id, (cur) =>
           cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },
-        );
+        ).then(() => leaveGame(id));
       quitNote = "You forfeit and the other player wins.";
     }
   }
@@ -521,7 +525,7 @@ function OnlineLudo({
           if (cur.phase === "over" || cur.players[mine]?.out) return null;
           const r = resign(cur, mine);
           return { state: r, status: r.phase === "over" ? "done" : undefined };
-        });
+        }).then(() => leaveGame(game.id));
       }}
       onClose={onClose}
     />

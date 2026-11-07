@@ -469,3 +469,7 @@ button, a, [role="button"] { touch-action: manipulation; }
 /* Blink shutter */
 @keyframes shutter-flash { from { opacity: 0.85; } to { opacity: 0; } }
 .shutter-flash { animation: shutter-flash 220ms ease-out forwards; }
+/* Returning-user loader: the Seat Ring turns slowly. */
+@keyframes ring-turn { to { transform: rotate(360deg); } }
+.breathe-ring { display: inline-block; animation: ring-turn 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .breathe-ring { animation: none; } }

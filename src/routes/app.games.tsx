@@ -347,6 +347,17 @@ function Games() {
   useDaily();
   const [daily, setDaily] = useState(false);
   const [wordDaily, setWordDaily] = useState(false);
+  // Opened from a friend's Word Up card in chat: go straight to today's word.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("tf.open") === "word") {
+        localStorage.removeItem("tf.open");
+        setWordDaily(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
   const [wordSheet, setWordSheet] = useState(false);
   const [secret, setSecret] = useState("");
   const [wordFor, setWordFor] = useState<string | null>(null);

@@ -367,7 +367,7 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
           cta="Send"
           onClose={() => setSharing(false)}
           onPick={(ids) => {
-            ids.forEach((id) => social.sendMessage(id, shareText));
+            ids.forEach((id) => social.sendMessage(id, shareText, `wordup:${day}`));
             setSharing(false);
             setToast("Sent");
           }}

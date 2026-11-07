@@ -191,6 +191,11 @@ export async function startWordChallenge(friend: Person, word: string) {
   return id;
 }
 
+/** Take yourself off a game after quitting (it leaves "Your games"). */
+export async function leaveGame(id: string) {
+  await supabase.rpc("leave_game" as never, { p_id: id } as never);
+}
+
 /** Start an Imposter party: you're the host; others join from the link. */
 export async function startParty() {
   const me = _get().me!;

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Camera, Check, CheckCheck, Image as ImageIcon, Lock, Paperclip, Send, Spade } from "lucide-react";
+import { ArrowLeft, Camera, Check, CheckCheck, Image as ImageIcon, Lock, Paperclip, Send, Spade, Type } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
 import {
@@ -219,6 +219,7 @@ function ChatThread() {
                           )}
                           {m.text &&
                             !shareKind?.startsWith("game") &&
+                            shareKind !== "wordup" &&
                             !["voice", "img", "vid"].includes(shareKind ?? "") && (
                               <p
                                 style={{
@@ -274,6 +275,9 @@ function ChatThread() {
                                 </p>
                               )}
                             </Link>
+                          )}
+                          {shareKind === "wordup" && m.text && (
+                            <WordUpCard text={m.text} day={shareId} mine={mine} />
                           )}
                           {shareKind === "game" && shareId && (
                             <>
@@ -397,6 +401,38 @@ function ChatThread() {
       </div>
       {viewing && <SnapViewer snap={viewing} onClose={() => setViewing(null)} />}
       {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
+    </div>
+  );
+}
+
+/** A friend's Word Up result, with a button to play the same word. */
+function WordUpCard({ text, day, mine }: { text: string; day?: string; mine: boolean }) {
+  const [head, ...rows] = text.split("\n");
+  const today = day === dayKey(Date.now());
+  return (
+    <div className="w-56 max-w-full">
+      <p className="flex items-center gap-1.5 font-extrabold" style={{ fontSize: 14 }}>
+        <Type size={15} aria-hidden="true" /> {head}
+      </p>
+      <pre className="mt-1.5 leading-tight" style={{ fontSize: 18 }}>
+        {rows.join("\n")}
+      </pre>
+      {!mine && (
+        <Link
+          to="/app/games"
+          onClick={() => {
+            try {
+              localStorage.setItem("tf.open", "word");
+            } catch {
+              // ignore
+            }
+          }}
+          className="mt-2.5 flex items-center justify-center gap-2 rounded-xl min-h-[40px] px-3 font-bold text-sm"
+          style={{ background: "var(--lime)", color: "var(--on-accent)", border: "var(--bd)" }}
+        >
+          {today ? "Play today's word" : "Play today's Word Up"}
+        </Link>
+      )}
     </div>
   );
 }
