@@ -250,25 +250,31 @@ function Table({
         })}
       </div>
 
-      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-        <span className="chip" style={{ minHeight: 28 }}>
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--pink)" }} />
-          posted today
-        </span>
-        <span className="chip" style={{ minHeight: 28 }}>
-          <Ico i={Flame} c={TONE.streak} size={14} /> streak
-        </span>
-        {Object.values(quiz.knowsMe).some((b) => badgeOf(b)) && (
-          <span className="chip" style={{ minHeight: 28 }}>
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--sun)" }} />
-            knows you best
+      {/* Key: one compact line. */}
+      <div className="mt-3 flex justify-center">
+        <div
+          className="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full whitespace-nowrap text-cool"
+          style={{ background: "var(--fill)", border: "1px solid var(--line)", fontSize: 12, fontWeight: 600 }}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ background: "var(--pink)" }} />
+            posted
           </span>
-        )}
-        {s.mode === "live" && (
-          <span className="chip" style={{ minHeight: 28 }}>
-            <Ico i={Eye} c={TONE.oneWay} size={14} /> one-way
+          <span className="inline-flex items-center gap-1">
+            <Ico i={Flame} c={TONE.streak} size={12} /> streak
           </span>
-        )}
+          {Object.values(quiz.knowsMe).some((b) => badgeOf(b)) && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: "var(--sun)" }} />
+              knows you
+            </span>
+          )}
+          {s.mode === "live" && (
+            <span className="inline-flex items-center gap-1">
+              <Ico i={Eye} c={TONE.oneWay} size={12} /> one-way
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex justify-center mt-3">
         <Link to="/app/people" className="btn-primary px-5 gap-2" style={{ minHeight: 44 }}>

@@ -389,18 +389,13 @@ export function Scoreboard() {
     ) : (
       <><Ico i={Trophy} size={14} /> {VIEWS.overall.find(([k]) => k === view)?.[1]}</>
     );
+  // Only a short hint where it's needed; no scoring maths on screen.
   const sub =
     board === "daily"
       ? `${DAY_NAMES[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · best try counts`
-      : board === "word"
-        ? view === "all"
-          ? "Average guesses when solved. Lower is better."
-          : "Fewest guesses wins the day: 1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2"
-        : board === "trivia"
-          ? "Duels won. The score on the right is you against them."
-          : view === "all"
-            ? "Every point ever: daily game and Word Up, plus live games (win 10, played 2)"
-            : "Daily game + Word Up (1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2) + Trivia (win 10, played 2)";
+      : board === "word" && view === "all"
+        ? "Average guesses"
+        : "";
   const champ =
     board === "daily"
       ? "Best player today"
@@ -459,7 +454,7 @@ export function Scoreboard() {
         <span className="sticker" style={{ transform: "rotate(-2deg)" }}>
           {title}
         </span>
-        <p className="meta mt-2 px-2">{sub}</p>
+        {sub && <p className="meta mt-2 px-2">{sub}</p>}
       </div>
 
       {rows.length === 0 ? (
