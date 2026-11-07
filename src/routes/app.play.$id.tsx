@@ -21,6 +21,8 @@ import { TRIVIA_PACKS } from "@/lib/data";
 import {
   changeLatest,
   inviteToTrivia,
+  joinParty,
+  type GameRow,
   saveTriviaResult,
   revealWord,
   useGame,
@@ -40,6 +42,8 @@ import {
 } from "@/lib/kachuful";
 import { _get, friendById, useSocial } from "@/lib/social";
 import { GameChat } from "@/components/GameChat";
+import { ImposterGame } from "@/components/Imposter";
+import type { ImpState } from "@/lib/imposter";
 
 export const Route = createFileRoute("/app/play/$id")({
   component: clientOnly(PlayScreen),
@@ -67,13 +71,26 @@ function PlayScreen() {
 type Live<S> = ReturnType<typeof useGame<S>>;
 
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
-  const live = useGame<KState | TriviaState | WordState | LudoState>(id);
+  const live = useGame<KState | TriviaState | WordState | LudoState | ImpState>(id);
   const { game, error } = live;
   const [leaving, setLeaving] = useState(false);
+  // Opened a party link you're not in yet: join it, then load.
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  useEffect(() => {
+    if (!error || joining || joinError) return;
+    setJoining(true);
+    joinParty(id)
+      .then(() => live.reload())
+      .catch((e: Error) => setJoinError(/doesn't exist/.test(e.message) ? error : e.message))
+      .finally(() => setJoining(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+  if (error && !joinError) return <p className="pt-24 text-center text-faint">Getting you in…</p>;
   if (error) {
     return (
       <div className="px-6 pt-24 text-center">
-        <p className="font-semibold text-cream">{error}</p>
+        <p className="font-semibold text-cream">{joinError ?? error}</p>
         <button onClick={onClose} className="btn-bronze mt-5 px-6 py-3">
           Back to games
         </button>
@@ -118,7 +135,9 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   const close = quit ? () => setLeaving(true) : onClose;
 
   const board =
-    game.kind === "word" ? (
+    game.kind === "imposter" ? (
+      <ImposterGame game={game as GameRow<ImpState>} meId={meId} onClose={onClose} />
+    ) : game.kind === "word" ? (
       <OnlineWord live={live as Live<WordState>} meId={meId} onClose={close} />
     ) : game.kind === "ludo" ? (
       <OnlineLudo live={live as Live<LudoState>} meId={meId} onClose={onClose} />

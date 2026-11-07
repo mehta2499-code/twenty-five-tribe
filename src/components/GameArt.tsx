@@ -7,6 +7,7 @@ export type ArtKind =
   | "ludo"
   | "word"
   | "mystery"
+  | "imposter"
   | "tap-rush"
   | "quick-math"
   | "colour-clash"
@@ -29,6 +30,7 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "ludo" && <Die />}
       {kind === "word" && <Tiles />}
       {kind === "mystery" && <Mystery />}
+      {kind === "imposter" && <Hooded />}
       {kind === "tap-rush" && <Target />}
       {kind === "quick-math" && <MathTiles />}
       {kind === "colour-clash" && <PaletteArt />}
@@ -241,6 +243,28 @@ function Stopwatch() {
       <path d="M32 36V24" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
       <path d="M32 36l8 5" stroke="#F15B91" strokeWidth="3" strokeLinecap="round" />
       <circle cx="32" cy="36" r="2.5" fill={EDGE} />
+    </g>
+  );
+}
+
+function Hooded() {
+  return (
+    <g strokeLinejoin="round">
+      <rect x="6" y="6" width="52" height="52" rx="14" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" transform="rotate(6 32 32)" />
+      {/* hooded figure */}
+      <path
+        d="M32 10c-11 0-18 9-18 20v22c0 4 3 6 6 6h24c3 0 6-2 6-6V30c0-11-7-20-18-20z"
+        fill="#17151F"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <ellipse cx="32" cy="31" rx="11" ry="9" fill="#2B2736" />
+      {/* eyes: one looks away */}
+      <ellipse cx="27.5" cy="31" rx="3" ry="3.6" fill="#F5F1FA" />
+      <ellipse cx="36.5" cy="31" rx="3" ry="3.6" fill="#F5F1FA" />
+      <circle cx="28.6" cy="31.6" r="1.6" fill="#17151F" />
+      <circle cx="37.6" cy="31.6" r="1.6" fill="#17151F" />
+      <path d="M50 8l2 4.5 4.5 2-4.5 2-2 4.5-2-4.5-4.5-2 4.5-2z" fill="#F15B91" stroke={EDGE} strokeWidth="1.5" />
     </g>
   );
 }

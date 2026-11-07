@@ -1,3 +1,4 @@
+import { peekPendingPath } from "@/lib/pending";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useState } from "react";
@@ -85,7 +86,7 @@ function VibeCheck() {
       // ignore
     }
     if (invite) navigate({ to: "/in/$username", params: { username: invite } });
-    else navigate({ to: "/app/home" });
+    else navigate({ to: (peekPendingPath() ?? "/app/home") as "/app/home" });
   };
 
   // Done

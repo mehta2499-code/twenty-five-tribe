@@ -1,3 +1,4 @@
+import { takePendingPath } from "@/lib/pending";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
@@ -71,7 +72,9 @@ function Login() {
       } catch {
         // ignore
       }
+      const pending = takePendingPath();
       if (invite) navigate({ to: "/in/$username", params: { username: invite } });
+      else if (pending) navigate({ to: pending as "/app/home" });
       else navigate({ to: "/app/home" });
     }
   }, [s.mode, s.loading, s.needsProfile, s.me, navigate, step]);

@@ -8,6 +8,7 @@ import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
 import { newGame, type KState, type Length, type Scoring, type Seat } from "@/lib/kachuful";
+import { newParty, type ImpState } from "@/lib/imposter";
 import { newLudo, type LudoState } from "@/lib/ludo";
 
 export type TriviaState = {
@@ -37,9 +38,9 @@ export type WordState = {
 export const hideWord = (w: string) => btoa([...w].reverse().join(""));
 export const revealWord = (h: string) => [...atob(h)].reverse().join("");
 
-export type GameRow<S = KState | TriviaState | WordState | LudoState> = {
+export type GameRow<S = KState | TriviaState | WordState | LudoState | ImpState> = {
   id: string;
-  kind: "kachuful" | "trivia" | "word" | "ludo";
+  kind: "kachuful" | "trivia" | "word" | "ludo" | "imposter";
   host: string;
   players: string[];
   status: "playing" | "done";
@@ -190,6 +191,34 @@ export async function startWordChallenge(friend: Person, word: string) {
   return id;
 }
 
+/** Start an Imposter party: you're the host; others join from the link. */
+export async function startParty() {
+  const me = _get().me!;
+  const state = newParty({ id: me.id, name: me.name, initials: me.initials });
+  const id = uuid();
+  const { error } = await supabase.from("games").insert({
+    id,
+    kind: "imposter",
+    host: me.id,
+    players: [me.id],
+    state,
+    version: 0,
+  });
+  if (error) throw new Error(error.message);
+  return id;
+}
+
+/** Join a party from its link (anyone signed in, while it's in the lobby). */
+export async function joinParty(id: string) {
+  const { error } = await supabase.rpc("join_party" as never, { p_id: id } as never);
+  if (error) throw new Error(error.message);
+}
+
+/** Invite people from your 25 to a party (a chat message with the link). */
+export async function inviteToParty(id: string, friendIds: string[]) {
+  await invite(friendIds, id, "Imposter party 🕵️ Join now, we're starting in a sec!");
+}
+
 export async function inviteToDuel(gameId: string, friendId: string, packName: string) {
   await invite([friendId], gameId, `Trivia duel: ${packName}. Join now, we play live!`);
 }
@@ -231,6 +260,7 @@ export function useGame<S>(id: string) {
     if (e) setError(e.message);
     else if (!data) setError("This game doesn't exist, or you're not in it.");
     else {
+      setError(null);
       latest.current = data as GameRow<S>;
       setGame(data as GameRow<S>);
     }

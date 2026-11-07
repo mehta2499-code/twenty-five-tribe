@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronRight, CircleHelp, Dices, Gamepad2, Spade, Trophy, Type, Zap, type LucideIcon } from "lucide-react";
+import { ChevronRight, CircleHelp, Dices, Gamepad2, Spade, Trophy, Type, Users, Zap, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt, type ArtKind } from "@/components/GameArt";
 import { Confetti, FriendPicker, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
@@ -12,6 +12,7 @@ import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { LocalLudo, LudoLobby } from "@/components/Ludo";
 import type { LudoState } from "@/lib/ludo";
 import type { Length } from "@/lib/kachuful";
+import type { ImpState } from "@/lib/imposter";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
 import { TRIVIA_PACKS, type TriviaPack } from "@/lib/data";
@@ -23,6 +24,7 @@ import {
   startKachuful,
   inviteToDuel,
   startLudo,
+  startParty,
   startTriviaChallenge,
   startWordChallenge,
   type GameRow,
@@ -98,6 +100,20 @@ function YourGames({ meId }: { meId: string }) {
             status = guessing
               ? `Your turn · ${w.guesses.length}/6`
               : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6`;
+          } else if (g.kind === "imposter") {
+            const p = g.state as ImpState;
+            yourTurn = p.phase === "clues" ? p.order?.[p.turn] === meId : p.phase === "vote" ? !p.votes[meId] : false;
+            title = `Imposter · ${p.players.length} players`;
+            status =
+              p.phase === "lobby"
+                ? "In the lobby"
+                : p.phase === "over"
+                  ? "Round over"
+                  : yourTurn
+                    ? p.phase === "vote"
+                      ? "Vote now"
+                      : "Your clue"
+                    : "In progress";
           } else {
             const t = g.state as TriviaState;
             const pack = TRIVIA_PACKS.find((p) => p.id === t.pack);
@@ -437,6 +453,25 @@ function Games() {
               line="Guess it in 6, or set one for a friend."
               tilt={-1.2}
               onClick={() => setWordMenu(true)}
+            />
+            <GameTile
+              wide
+              tone="var(--sky)"
+              Icon={Users}
+              art="imposter"
+              sticker="PARTY · 4–20"
+              title="Imposter"
+              line="Everyone knows the word except the imposter. Give clues, vote them out. Best with the whole group."
+              tilt={0.6}
+              onClick={async () => {
+                if (!live) return setToast("Sign in to start a party.");
+                try {
+                  const id = await startParty();
+                  navigate({ to: "/app/play/$id", params: { id } });
+                } catch (e) {
+                  setToast((e as Error).message);
+                }
+              }}
             />
           </section>
 

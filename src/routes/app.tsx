@@ -1,3 +1,4 @@
+import { savePendingPath } from "@/lib/pending";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,7 +83,10 @@ function AppLayout() {
     void supabase.auth.getSession().then(({ data }) => {
       if (!alive) return;
       if (data.session) setSignedIn(true);
-      else navigate({ to: "/login", replace: true });
+      else {
+        savePendingPath(window.location.pathname);
+        navigate({ to: "/login", replace: true });
+      }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") navigate({ to: "/login", replace: true });

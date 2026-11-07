@@ -1,3 +1,4 @@
+import { takePendingPath } from "@/lib/pending";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -33,7 +34,7 @@ function Walkthrough() {
       try {
         localStorage.setItem("tf.walkthrough.done", "1");
       } catch {}
-      navigate({ to: "/app/home" });
+      navigate({ to: (takePendingPath() ?? "/app/home") as "/app/home" });
     } else {
       setI(i + 1);
     }
@@ -43,7 +44,7 @@ function Walkthrough() {
     try {
       localStorage.setItem("tf.walkthrough.done", "1");
     } catch {}
-    navigate({ to: "/app/home" });
+    navigate({ to: (takePendingPath() ?? "/app/home") as "/app/home" });
   };
 
   const card = CARDS[i];
