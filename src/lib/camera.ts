@@ -13,12 +13,48 @@ export const CAMERA_CONSTRAINTS = (facing: Facing): MediaStreamConstraints => ({
   audio: false,
 });
 
+/*
+ * iPhone home-screen apps don't remember camera permission: every new
+ * getUserMedia() asks again. So once you've allowed it, keep the stream for as
+ * long as the app is open (paused while you're not on Blink) and only let go
+ * when you leave the app. That's at most one question per app launch.
+ */
+const PERSIST = 365 * 24 * 3600_000;
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && cache) {
+      cache.stream.getTracks().forEach((t) => t.stop());
+      if (cache.stopTimer) clearTimeout(cache.stopTimer);
+      cache = null;
+    }
+  });
+}
+
+/** Remember "no thanks" to the live camera: use the phone's camera app instead. */
+const DENIED = "tf.cam.denied";
+export const cameraDenied = () => {
+  try {
+    return localStorage.getItem(DENIED) === "1";
+  } catch {
+    return false;
+  }
+};
+export const setCameraDenied = (v: boolean) => {
+  try {
+    if (v) localStorage.setItem(DENIED, "1");
+    else localStorage.removeItem(DENIED);
+  } catch {
+    // ignore
+  }
+};
+
 export function takeCachedStream(facing: Facing) {
   if (!cache) return null;
   if (cache.stopTimer) clearTimeout(cache.stopTimer);
   const live = cache.stream.getVideoTracks().some((t) => t.readyState === "live");
   if (live && cache.facing === facing) {
     const s = cache.stream;
+    s.getVideoTracks().forEach((t) => (t.enabled = true));
     cache = null;
     return s;
   }
@@ -27,8 +63,10 @@ export function takeCachedStream(facing: Facing) {
   return null;
 }
 
-export function parkStream(stream: MediaStream, facing: Facing, ms = 60_000) {
+export function parkStream(stream: MediaStream, facing: Facing, ms = PERSIST) {
   if (cache && cache.stream !== stream) cache.stream.getTracks().forEach((t) => t.stop());
+  // Paused while parked: no frames are processed.
+  stream.getVideoTracks().forEach((t) => (t.enabled = false));
   cache = {
     stream,
     facing,
@@ -54,7 +92,7 @@ export function openCamera(facing: Facing): Promise<MediaStream> {
 /** Start the front camera the moment a finger touches the Blink tab. */
 export function warmCamera() {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
-  if (cache || warming) return;
+  if (cache || warming || cameraDenied()) return;
   warming = navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS("user"));
   warming.catch(() => {
     warming = null;
@@ -64,7 +102,7 @@ export function warmCamera() {
   setTimeout(() => {
     if (warming === w) {
       warming = null;
-      void w.then((s) => parkStream(s, "user", 15_000)).catch(() => undefined);
+      void w.then((s) => parkStream(s, "user")).catch(() => undefined);
     }
   }, 4000);
 }

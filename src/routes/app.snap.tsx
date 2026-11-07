@@ -2,7 +2,14 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, RefreshCw, Type, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { canvasToUrl, fileToPhoto, openCamera, parkStream } from "@/lib/camera";
+import {
+  cameraDenied,
+  canvasToUrl,
+  fileToPhoto,
+  openCamera,
+  parkStream,
+  setCameraDenied,
+} from "@/lib/camera";
 import {
   Confetti,
   FriendPicker,
@@ -85,7 +92,7 @@ function SnapScreen() {
   // use the phone's own camera (no permission prompt) unless asked for live.
   // Live viewfinder everywhere (like any camera app). If the phone says no,
   // fall back to the phone's own camera app.
-  const [liveCam, setLiveCam] = useState(true);
+  const [liveCam, setLiveCam] = useState(() => !cameraDenied());
   const [flash, setFlash] = useState(0);
   const [ready, setReady] = useState(false);
   const drag = useRef<{ startY: number; startPct: number; moved: boolean } | null>(null);
@@ -116,7 +123,9 @@ function SnapScreen() {
         setCamError(null);
         if (videoRef.current) videoRef.current.srcObject = ms;
       })
-      .catch(() => {
+      .catch((e: Error) => {
+        // Said no: stop asking, use the phone's camera app from now on.
+        if (e?.name === "NotAllowedError") setCameraDenied(true);
         setLiveCam(false);
         setCamError("Tap to open your camera");
       });
@@ -274,6 +283,7 @@ function SnapScreen() {
             <button
               onClick={() => {
                 setCamError(null);
+                setCameraDenied(false);
                 setLiveCam(true);
               }}
               className="absolute bottom-3 inset-x-0 mx-auto w-max text-[13px] font-semibold underline underline-offset-4"
