@@ -142,10 +142,11 @@ function SnapScreen() {
   const capture = () => {
     const v = videoRef.current;
     if (!v || !v.videoWidth) return;
-    // Keep exactly what the 3:4 viewfinder showed (no surprise crop later).
+    // Keep exactly what the viewfinder showed (no surprise crop or zoom later).
     const vw = v.videoWidth;
     const vh = v.videoHeight;
-    const ratio = 3 / 4;
+    const frame = frameRef.current;
+    const ratio = frame ? frame.clientWidth / frame.clientHeight : 3 / 4;
     let sw = vw;
     let sh = vh;
     if (vw / vh > ratio) sw = vh * ratio;
@@ -224,7 +225,7 @@ function SnapScreen() {
     <div className="pb-6">
       <PageBand
         title={target ? `Blink ${target.name.split(" ")[0]}` : "Blink"}
-        sub="Photos and notes that disappear after one look."
+
         actions={target ? <StreakBadge friendId={target.id} size={14} /> : undefined}
       />
       <div className="px-5">
@@ -233,8 +234,8 @@ function SnapScreen() {
           ref={frameRef}
           className="relative rounded-3xl overflow-hidden mx-auto"
           style={{
-            aspectRatio: "3 / 4",
-            maxHeight: "56vh",
+            // Full camera: as tall as the screen allows (like a camera app).
+            height: "max(420px, calc(100dvh - 270px))",
             background: bg ?? "#0B0A10",
           }}
         >
@@ -296,11 +297,21 @@ function SnapScreen() {
             </button>
           )}
           {image && (
-            <img
-              src={image}
-              alt="Your blink"
-              className="absolute inset-0 w-full h-full object-contain"
-            />
+            <>
+              {/* Whole photo, never cropped; a blurred copy fills the edges. */}
+              <img
+                src={image}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover scale-110"
+                style={{ filter: "blur(24px) brightness(0.6)" }}
+              />
+              <img
+                src={image}
+                alt="Your blink"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            </>
           )}
           {hasShot && (
             <div
