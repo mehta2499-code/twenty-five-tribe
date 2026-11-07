@@ -1,7 +1,7 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronRight, CircleHelp, Dices, Gamepad2, Spade, Trophy, Type, Users, Zap, type LucideIcon } from "lucide-react";
+import { ChevronRight, CircleHelp, X, Dices, Gamepad2, Spade, Trophy, Type, Users, Zap, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt, type ArtKind } from "@/components/GameArt";
 import { Confetti, FriendPicker, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
@@ -24,6 +24,7 @@ import {
   seatFor,
   startKachuful,
   inviteToDuel,
+  quitGame,
   startLudo,
   startParty,
   startTriviaChallenge,
@@ -51,11 +52,25 @@ function YourGames({ meId }: { meId: string }) {
       clearInterval(t);
     };
   }, []);
-  // Hide games that are over, and trivia you've already played (the result comes in chat).
-  const open = (games ?? []).filter(
-    (g) =>
-      g.status === "playing" && !(g.kind === "trivia" && (g.state as TriviaState).results[meId]),
-  );
+  const [confirm, setConfirm] = useState<string | null>(null);
+  const [gone, setGone] = useState<string[]>([]);
+  // Hide games that are over, trivia you've already played (the result comes in
+  // chat), games nobody has touched in a week, and party lobbies that never started.
+  const now = Date.now();
+  const open = (games ?? []).filter((g) => {
+    if (g.status !== "playing" || gone.includes(g.id)) return false;
+    if (g.kind === "trivia" && (g.state as TriviaState).results[meId]) return false;
+    const idle = now - Date.parse(g.updated_at);
+    if (idle > 7 * 86_400_000) return false;
+    if (g.kind === "imposter" && (g.state as ImpState).phase === "lobby" && idle > 6 * 3_600_000)
+      return false;
+    return true;
+  });
+  const remove = async (g: GameRow) => {
+    setConfirm(null);
+    setGone((x) => [...x, g.id]);
+    await quitGame(g, meId).catch(() => undefined);
+  };
   if (!open.length) return null;
   return (
     <section className="mt-7">
@@ -124,16 +139,43 @@ function YourGames({ meId }: { meId: string }) {
               ? "Your turn"
               : `Waiting for ${others[0]?.name.split(" ")[0] ?? "them"}`;
           }
+          if (confirm === g.id)
+            return (
+              <div key={g.id} className="shrink-0 w-56 card p-4 flex flex-col justify-between">
+                <p className="font-semibold text-cream text-sm">Quit {title}?</p>
+                <p className="meta mt-1" style={{ fontSize: 12 }}>
+                  {g.kind === "kachuful" ? "A bot takes your seat." : "You can't come back to it."}
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button onClick={() => setConfirm(null)} className="btn-secondary flex-1" style={{ minHeight: 38 }}>
+                    Keep
+                  </button>
+                  <button onClick={() => void remove(g)} className="btn-danger flex-1" style={{ minHeight: 38 }}>
+                    Quit
+                  </button>
+                </div>
+              </div>
+            );
           return (
             <Link
               key={g.id}
               to="/app/play/$id"
               params={{ id: g.id }}
-              className="shrink-0 w-56 card p-4 text-left hover:bg-[var(--fill)]"
+              className="shrink-0 w-56 card p-4 text-left hover:bg-[var(--fill)] relative"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold text-cream text-sm truncate">{title}</span>
-                <ChevronRight size={16} className="text-bronze shrink-0" />
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setConfirm(g.id);
+                  }}
+                  aria-label={`Quit ${title}`}
+                  className="w-7 h-7 -mr-1.5 -mt-1 rounded-full flex items-center justify-center text-cool shrink-0 hover:bg-[var(--fill-2)]"
+                >
+                  <X size={15} />
+                </button>
               </div>
               <div className="mt-3 flex -space-x-2">
                 {others.slice(0, 5).map((f) => (

@@ -7,9 +7,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
-import { newGame, type KState, type Length, type Scoring, type Seat } from "@/lib/kachuful";
+import { newGame, quitSeat, type KState, type Length, type Scoring, type Seat } from "@/lib/kachuful";
 import { newParty, type ImpState } from "@/lib/imposter";
-import { newLudo, type LudoState } from "@/lib/ludo";
+import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 
 export type TriviaState = {
   pack: string;
@@ -194,6 +194,49 @@ export async function startWordChallenge(friend: Person, word: string) {
 /** Take yourself off a game after quitting (it leaves "Your games"). */
 export async function leaveGame(id: string) {
   await supabase.rpc("leave_game" as never, { p_id: id } as never);
+}
+
+/**
+ * Quit any game for good, from anywhere (game screen or Your games):
+ * hand your seat over / resign / forfeit as the game needs, then take
+ * yourself off it so it leaves Your games.
+ */
+export async function quitGame(g: GameRow, meId: string) {
+  if (g.status === "playing") {
+    if (g.kind === "kachuful") {
+      await changeLatest<KState>(g.id, (cur) => {
+        const i = cur.seats.findIndex((p) => p.id === meId && !p.bot);
+        if (i < 0 || cur.phase === "over") return null;
+        const next = quitSeat(cur, i);
+        return { state: next, status: next.phase === "over" ? "done" : undefined };
+      });
+    } else if (g.kind === "ludo") {
+      await changeLatest<LudoState>(g.id, (cur) => {
+        if (cur.phase === "over") return null;
+        if (cur.phase === "lobby") {
+          const next = g.host === meId ? null : leaveLobby(cur, meId);
+          return next ? { state: next } : { state: cur, status: "done" };
+        }
+        const mine = cur.players.findIndex((p) => p.id === meId);
+        if (mine < 0 || cur.players[mine].out) return null;
+        const r = resign(cur, mine);
+        return { state: r, status: r.phase === "over" ? "done" : undefined };
+      });
+    } else if (g.kind === "word") {
+      await changeLatest<WordState>(g.id, (cur) => ({ state: { ...cur, gaveUp: meId }, status: "done" }));
+    } else if (g.kind === "trivia") {
+      await changeLatest<TriviaState>(g.id, (cur) =>
+        cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },
+      );
+    } else if (g.kind === "imposter") {
+      await changeLatest<ImpState>(g.id, (cur) => {
+        // The host leaving, or a round in progress: the party ends.
+        if (cur.host === meId || cur.phase !== "lobby") return { state: cur, status: "done" };
+        return { state: { ...cur, players: cur.players.filter((p) => p.id !== meId) } };
+      });
+    }
+  }
+  await leaveGame(g.id);
 }
 
 /** Start an Imposter party: you're the host; others join from the link. */

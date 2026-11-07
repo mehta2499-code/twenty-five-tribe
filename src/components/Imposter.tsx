@@ -4,7 +4,7 @@ import { Check, Copy, Crown, Eye, Share2, UserPlus, Users, X } from "lucide-reac
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
 import { Confetti, Toast, buzz } from "@/components/SocialUI";
-import { changeLatest, inviteToParty, type GameRow } from "@/lib/games";
+import { changeLatest, inviteToParty, quitGame, type GameRow } from "@/lib/games";
 import { friendById, mutualFriends } from "@/lib/social";
 
 import {
@@ -63,7 +63,16 @@ export function ImposterGame({
             <span className="meta flex items-center gap-1">
               <Users size={14} aria-hidden="true" /> {st.players.length}
             </span>
-            <button onClick={onClose} aria-label="Close" className="text-cool w-10 h-10 flex items-center justify-center">
+            <button
+              onClick={() => {
+                // Leaving the lobby: a party nobody joined is deleted; guests leave it.
+                if (st.phase === "lobby" && (!host || st.players.length <= 1))
+                  void quitGame(game as GameRow, meId);
+                onClose();
+              }}
+              aria-label="Close"
+              className="text-cool w-10 h-10 flex items-center justify-center"
+            >
               <X size={22} />
             </button>
           </span>
