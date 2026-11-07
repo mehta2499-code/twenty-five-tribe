@@ -334,6 +334,7 @@ function Feed() {
   return (
     <>
       <PageBand
+        ring
         title="Feed"
         sub="Posts from your 25. Nobody else sees them."
         actions={

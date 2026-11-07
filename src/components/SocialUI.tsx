@@ -1,3 +1,4 @@
+import { SeatRing } from "@/components/Brand";
 import {
   useEffect,
   useRef,
@@ -32,7 +33,10 @@ export function PageBand({
   children,
   actions,
   back,
+  ring,
 }: {
+  /** Show the Seat Ring mark (how full your 25 is) next to the title. */
+  ring?: boolean;
   eyebrow?: string;
   title: string;
   sub?: string;
@@ -60,7 +64,10 @@ export function PageBand({
               {eyebrow}
             </p>
           )}
-          <h1 className="title mt-0.5">{title}</h1>
+          <h1 className="title mt-0.5 flex items-center gap-2.5">
+            {ring && <HeaderRing />}
+            {title}
+          </h1>
           {sub && (
             <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.45 }}>
               {sub}
@@ -583,4 +590,11 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
       </div>
     );
   };
+}
+
+/** The Seat Ring in page headers: fills up as your 25 fills up. */
+function HeaderRing() {
+  const s = useSocial();
+  const n = s.people.length;
+  return <SeatRing filled={n} size={30} label={`${n} of 25 seats filled`} />;
 }

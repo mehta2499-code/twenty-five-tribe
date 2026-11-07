@@ -229,6 +229,7 @@ function Chats() {
   return (
     <div className="pb-6">
       <PageBand
+        ring
         title="Chats"
         sub="Mutual seats only. No randoms in your DMs."
         actions={

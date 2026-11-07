@@ -224,6 +224,7 @@ function SnapScreen() {
   return (
     <div className="pb-6">
       <PageBand
+        ring
         title={target ? `Blink ${target.name.split(" ")[0]}` : "Blink"}
 
         actions={target ? <StreakBadge friendId={target.id} size={14} /> : undefined}

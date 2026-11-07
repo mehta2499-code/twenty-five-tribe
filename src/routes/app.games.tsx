@@ -381,7 +381,8 @@ function Games() {
 
   return (
     <>
-      <PageBand title="Games" sub="Pick one. Your 25 is waiting." />
+      <PageBand
+        ring title="Games" sub="Pick one. Your 25 is waiting." />
 
       <div className="px-5">
         <div className="segmented w-full" role="tablist" aria-label="Games">

@@ -1,15 +1,15 @@
+import { BlinkGlyph, ChatsGlyph, FeedGlyph, GamesGlyph, TableGlyph } from "@/components/Brand";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Camera, Gamepad2, LayoutGrid, MessageCircle, Users } from "lucide-react";
 import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
 import { warmCamera } from "@/lib/camera";
 
 const tabs = [
-  { to: "/app/home", label: "Table", Icon: Users },
-  { to: "/app/feed", label: "Feed", Icon: LayoutGrid },
-  { to: "/app/snap", label: "Blink", Icon: Camera },
-  { to: "/app/chats", label: "Chats", Icon: MessageCircle },
-  { to: "/app/games", label: "Games", Icon: Gamepad2 },
+  { to: "/app/home", label: "Table", Icon: TableGlyph },
+  { to: "/app/feed", label: "Feed", Icon: FeedGlyph },
+  { to: "/app/snap", label: "Blink", Icon: BlinkGlyph },
+  { to: "/app/chats", label: "Chats", Icon: ChatsGlyph },
+  { to: "/app/games", label: "Games", Icon: GamesGlyph },
 ] as const;
 
 export function BottomNav() {
@@ -67,7 +67,7 @@ export function BottomNav() {
                       transform: "rotate(-4deg)",
                     }}
                   >
-                    <Camera size={26} strokeWidth={2.4} />
+                    <BlinkGlyph size={28} />
                     {badge > 0 && <Badge n={badge} />}
                   </span>
                 ) : (
@@ -79,7 +79,7 @@ export function BottomNav() {
                       transition: "background-color 180ms var(--ease), color 180ms var(--ease)",
                     }}
                   >
-                    <Icon size={21} strokeWidth={2.25} />
+                    <Icon size={22} active={active} />
                     {badge > 0 && <Badge n={badge} />}
                   </span>
                 )}
