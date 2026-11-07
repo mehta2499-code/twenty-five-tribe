@@ -43,6 +43,10 @@ export type KState = {
   /** "classic": 10 + bid. "x10": 10 × bid (zero bid = 10). Older games: classic. */
   scoring?: Scoring;
   lastTrick?: { cards: TrickCard[]; winner: number };
+  /** Seconds each player gets per turn (0 or missing = no timer). */
+  turnSeconds?: number;
+  /** When the current turn started (for the timer). */
+  turnStartedAt?: number;
 };
 
 export type Scoring = "classic" | "x10";
@@ -71,13 +75,17 @@ export const suitOf = (c: Card) => c[0] as Suit;
 export const rankOf = (c: Card) => Number(c.slice(1));
 export const rankLabel = (r: number) => ({ 11: "J", 12: "Q", 13: "K", 14: "A" })[r] ?? String(r);
 
-export function peakFor(players: number, length: "short" | "full") {
+/** "short" (up to 5 cards), "full" (up to 8), or the peak number of cards. */
+export type Length = "short" | "full" | number;
+
+export function peakFor(players: number, length: Length) {
   const most = Math.floor(52 / players);
-  return Math.min(length === "short" ? 5 : 8, most);
+  const want = typeof length === "number" ? length : length === "short" ? 5 : 8;
+  return Math.max(1, Math.min(want, most));
 }
 
 /** 1, 2 … peak … 2, 1 */
-export function roundPlan(players: number, length: "short" | "full") {
+export function roundPlan(players: number, length: Length) {
   const peak = peakFor(players, length);
   const up = Array.from({ length: peak }, (_, i) => i + 1);
   return [...up, ...up.slice(0, -1).reverse()];
@@ -117,16 +125,18 @@ function dealRound(s: KState, rand?: () => number): KState {
     lastTrick: undefined,
     turn: (s.dealer + 1) % n,
     phase: "bidding",
+    turnStartedAt: Date.now(),
   };
 }
 
 export function newGame(
   seats: Seat[],
-  length: "short" | "full" = "short",
+  length: Length = "short",
   rand?: () => number,
   scoring: Scoring = "classic",
+  turnSeconds = 0,
 ): KState {
-  if (seats.length < 2 || seats.length > 7) throw new Error("Kachuful needs 2 to 7 players.");
+  if (seats.length < 2 || seats.length > 7) throw new Error("Judgement needs 2 to 7 players.");
   const base: KState = {
     seats,
     plan: roundPlan(seats.length, length),
@@ -141,6 +151,7 @@ export function newGame(
     phase: "bidding",
     scores: [],
     scoring,
+    turnSeconds: turnSeconds || undefined,
   };
   return dealRound(base, rand);
 }
@@ -296,8 +307,12 @@ export function botMove(s: KState): Move {
 }
 
 export function applyMove(s: KState, move: Move): KState {
-  return move.type === "bid" ? placeBid(s, s.turn, move.bid) : playCard(s, s.turn, move.card);
+  const next = move.type === "bid" ? placeBid(s, s.turn, move.bid) : playCard(s, s.turn, move.card);
+  return next === s ? s : { ...next, turnStartedAt: Date.now() };
 }
+
+/** Rounds for a game whose biggest hand is `peak` cards: 1 … peak … 1. */
+export const roundsFor = (peak: number) => peak * 2 - 1;
 
 /** Quit: a bot takes over your seat. With one person (or nobody) left, the game ends. */
 export function quitSeat(s: KState, seat: number): KState {

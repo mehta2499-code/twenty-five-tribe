@@ -221,8 +221,8 @@ function Board({
   return (
     <svg
       viewBox="0 0 15 15"
-      className="w-full rounded-2xl"
-      style={{ border: "var(--bd)", background: "#F6F3EA" }}
+      className="w-full rounded-3xl"
+      style={{ border: "var(--bd)", background: "#17151F", boxShadow: "var(--pop-lg)" }}
     >
       <defs>
         {(Object.keys(COLOR_HEX) as LudoColor[]).map((c) => (
@@ -245,8 +245,22 @@ function Board({
         const [r, col] = YARD_ORIGIN[c];
         return (
           <g key={c} opacity={used.has(c) ? 1 : 0.35}>
-            <rect x={col} y={r} width={6} height={6} fill={colorOf(c)} />
-            <rect x={col + 0.8} y={r + 0.8} width={4.4} height={4.4} rx={0.6} fill="#fff" />
+            <rect x={col + 0.1} y={r + 0.1} width={5.8} height={5.8} rx={0.35} fill={colorOf(c)} />
+            <rect x={col + 0.9} y={r + 0.9} width={4.2} height={4.2} rx={0.25} fill="#211E2B" />
+            {[0, 1, 2, 3].map((t) => {
+              const [x, y] = tokenXY(c, -1, t);
+              return (
+                <circle
+                  key={t}
+                  cx={x}
+                  cy={y}
+                  r={0.62}
+                  fill="#2B2736"
+                  stroke={colorOf(c)}
+                  strokeWidth={0.1}
+                />
+              );
+            })}
             {turnColor === c && (
               <rect
                 x={col + 0.15}
@@ -276,13 +290,12 @@ function Board({
         return (
           <g key={i}>
             <rect
-              x={c}
-              y={r}
-              width={1}
-              height={1}
-              fill={startOf ? colorOf(startOf) : "#fff"}
-              stroke="#cfc8b8"
-              strokeWidth={0.03}
+              x={c + 0.05}
+              y={r + 0.05}
+              width={0.9}
+              height={0.9}
+              rx={0.12}
+              fill={startOf ? colorOf(startOf) : "#393442"}
             />
             {SAFE.has(i) && !startOf && (
               <path
@@ -302,21 +315,22 @@ function Board({
         HOME_COLUMN[c].map(([r, col], i) => (
           <rect
             key={`${c}${i}`}
-            x={col}
-            y={r}
-            width={1}
-            height={1}
+            x={col + 0.05}
+            y={r + 0.05}
+            width={0.9}
+            height={0.9}
+            rx={0.12}
             fill={colorOf(c)}
-            stroke="#cfc8b8"
-            strokeWidth={0.03}
           />
         )),
       )}
       {/* Centre */}
-      <polygon points="6,6 9,6 7.5,7.5" fill={colorOf("green")} />
-      <polygon points="9,6 9,9 7.5,7.5" fill={colorOf("yellow")} />
-      <polygon points="9,9 6,9 7.5,7.5" fill={colorOf("blue")} />
-      <polygon points="6,9 6,6 7.5,7.5" fill={colorOf("red")} />
+      <g stroke="#17151F" strokeWidth={0.08} strokeLinejoin="round">
+        <polygon points="6.05,6.05 8.95,6.05 7.5,7.5" fill={colorOf("green")} />
+        <polygon points="8.95,6.05 8.95,8.95 7.5,7.5" fill={colorOf("yellow")} />
+        <polygon points="8.95,8.95 6.05,8.95 7.5,7.5" fill={colorOf("blue")} />
+        <polygon points="6.05,8.95 6.05,6.05 7.5,7.5" fill={colorOf("red")} />
+      </g>
       {/* Tokens */}
       {placed.map(({ p, t, x, y }) => {
         const pl = state.players[p];
@@ -348,8 +362,9 @@ function Board({
               </circle>
             )}
             {/* Chess-style pawn: wide base, tapered body, collar, round head */}
-            <ellipse cx={0.05} cy={0.4} rx={0.36} ry={0.09} fill="#0B0A10" opacity={0.25} />
-            <g stroke="#0B0A10" strokeWidth={0.06} strokeLinejoin="round">
+            <g transform="scale(1.36)">
+            <ellipse cx={0.05} cy={0.4} rx={0.38} ry={0.1} fill="#000" opacity={0.45} />
+            <g stroke="#0B0A10" strokeWidth={0.08} strokeLinejoin="round">
               <path
                 d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
                 fill={COLOR_HEX[pl.color]}
@@ -362,7 +377,8 @@ function Board({
               <ellipse cx={0} cy={-0.09} rx={0.2} ry={0.06} fill={COLOR_HEX[pl.color]} />
               <circle cy={-0.29} r={0.17} fill={`url(#pawn-${pl.color})`} />
             </g>
-            <circle cx={-0.06} cy={-0.34} r={0.05} fill="#fff" opacity={0.8} />
+            <circle cx={-0.06} cy={-0.34} r={0.055} fill="#fff" opacity={0.85} />
+            </g>
           </g>
         );
       })}

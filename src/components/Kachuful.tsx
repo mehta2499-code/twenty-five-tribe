@@ -20,6 +20,7 @@ import {
   totals,
   type Card,
   type KState,
+  type Length,
   type Move,
   type Seat,
   scoringRule,
@@ -47,11 +48,11 @@ export function PlayingCard({
   style?: React.CSSProperties;
 }) {
   const s = suitOf(card);
-  const w = size === "sm" ? 46 : size === "lg" ? 70 : 60;
+  const w = size === "sm" ? 58 : size === "lg" ? 84 : 70;
   const h = Math.round(w * 1.42);
   const color = isRed(s) ? RED : BLACK;
   const rank = rankLabel(rankOf(card));
-  const corner = Math.round(w * 0.24);
+  const corner = Math.round(w * 0.27);
   return (
     <span
       className="relative inline-block select-none shrink-0"
@@ -60,8 +61,8 @@ export function PlayingCard({
         height: h,
         borderRadius: Math.round(w * 0.14),
         background: "linear-gradient(180deg, #FFFFFF 0%, #F4F1EA 100%)",
-        border: "1.5px solid #0B0A10",
-        boxShadow: lifted ? "0 10px 18px -8px rgba(0,0,0,0.9)" : "2px 2px 0 #0B0A10",
+        border: "2px solid #0B0A10",
+        boxShadow: lifted ? "0 12px 22px -8px rgba(0,0,0,0.9)" : "0 3px 0 #0B0A10",
         color,
         opacity: dim ? 0.42 : 1,
         filter: dim ? "saturate(0.6)" : undefined,
@@ -70,22 +71,22 @@ export function PlayingCard({
       aria-label={`${rank} of ${SUIT_NAME[s]}`}
     >
       <span
-        className="absolute flex flex-col items-center leading-none font-extrabold"
-        style={{ top: 4, left: 5, fontSize: corner }}
+        className="absolute flex flex-col items-center leading-none"
+        style={{ top: 5, left: 6, fontSize: corner, fontWeight: 900, letterSpacing: "-0.03em" }}
       >
         <span>{rank}</span>
         <span style={{ fontSize: corner * 0.95, marginTop: 1 }}>{SUIT_SYMBOL[s]}</span>
       </span>
       <span
         className="absolute inset-0 flex items-center justify-center"
-        style={{ fontSize: Math.round(w * 0.52), lineHeight: 1 }}
+        style={{ fontSize: Math.round(w * 0.62), lineHeight: 1 }}
         aria-hidden="true"
       >
         {SUIT_SYMBOL[s]}
       </span>
       <span
-        className="absolute flex flex-col items-center leading-none font-extrabold"
-        style={{ bottom: 4, right: 5, fontSize: corner, transform: "rotate(180deg)" }}
+        className="absolute flex flex-col items-center leading-none"
+        style={{ bottom: 5, right: 6, fontSize: corner, fontWeight: 900, letterSpacing: "-0.03em", transform: "rotate(180deg)" }}
         aria-hidden="true"
       >
         <span>{rank}</span>
@@ -308,7 +309,8 @@ export function KachufulBoard({
   }
 
   // Fan the hand: a gentle arc, overlapping more as it grows.
-  const overlap = hand.length > 6 ? -26 : hand.length > 4 ? -18 : -8;
+  // Bigger cards: overlap more so up to 8 still fit across a phone.
+  const overlap = hand.length > 6 ? -46 : hand.length > 4 ? -34 : hand.length > 3 ? -20 : -8;
 
   return (
     <div
@@ -316,6 +318,7 @@ export function KachufulBoard({
       style={{ background: "radial-gradient(120% 70% at 50% 40%, #1B2A24 0%, #121019 70%)" }}
     >
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
+        <TurnTimer state={state} mine={state.turn === mySeat} />
         {/* Header */}
         <header className="flex items-center justify-between gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2">
           <button
@@ -529,7 +532,7 @@ export function KachufulBoard({
               </span>
             )}
           </div>
-          <div className="flex justify-center items-end pt-4 pb-1" style={{ minHeight: 112 }}>
+          <div className="flex justify-center items-end pt-4 pb-1" style={{ minHeight: 136 }}>
             {hand.map((c, i) => {
               const canPlay = legal.includes(c);
               const mid = (hand.length - 1) / 2;
@@ -684,7 +687,7 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
     onClose();
   };
   return (
-    <Sheet title="How to play Kachuful" onClose={done}>
+    <Sheet title="How to play Judgement" onClose={done}>
       <div className="flex gap-1.5 mb-5" aria-hidden="true">
         {STEPS.map((_, k) => (
           <span
@@ -880,12 +883,18 @@ export function useBotTurns(state: KState | null, drive: boolean, apply: (s: KSt
   const applyRef = useRef(apply);
   applyRef.current = apply;
   const key = state
-    ? `${state.round}:${state.phase}:${state.turn}:${state.trick.length}:${state.bids.join()}`
+    ? `${state.round}:${state.phase}:${state.turn}:${state.trick.length}:${state.bids.join()}:${state.turnStartedAt ?? 0}`
     : "";
   useEffect(() => {
     if (!state || !drive) return;
     if (state.phase !== "bidding" && state.phase !== "playing") return;
-    if (!state.seats[state.turn]?.bot) return;
+    // Turn timer: a person who runs out of time gets a sensible move played for them.
+    if (!state.seats[state.turn]?.bot) {
+      if (!state.turnSeconds || !state.turnStartedAt) return;
+      const left = state.turnStartedAt + state.turnSeconds * 1000 - Date.now();
+      const t = setTimeout(() => applyRef.current(applyMove(state, botMove(state))), Math.max(0, left));
+      return () => clearTimeout(t);
+    }
     const justFinishedTrick =
       state.phase === "playing" && state.trick.length === 0 && !!state.lastTrick;
     const t = setTimeout(
@@ -902,14 +911,16 @@ export function LocalKachuful({
   seats,
   length,
   scoring = "classic",
+  turnSeconds = 0,
   onClose,
 }: {
   seats: Seat[];
-  length: "short" | "full";
+  length: Length;
   scoring?: Scoring;
+  turnSeconds?: number;
   onClose: () => void;
 }) {
-  const [state, setState] = useState(() => newGame(seats, length, undefined, scoring));
+  const [state, setState] = useState(() => newGame(seats, length, undefined, scoring, turnSeconds));
   const [confirmLeave, setConfirmLeave] = useState(false);
   useBotTurns(state, true, setState);
   // A solo game isn't saved anywhere, so check before throwing it away mid-game.
@@ -925,7 +936,7 @@ export function LocalKachuful({
         onMove={(m) => setState((s) => applyMove(s, m))}
         onNext={() => setState((s) => nextRound(s))}
         onClose={leave}
-        onPlayAgain={() => setState(newGame(seats, length, undefined, scoring))}
+        onPlayAgain={() => setState(newGame(seats, length, undefined, scoring, turnSeconds))}
       />
       {confirmLeave && (
         <div
@@ -960,159 +971,177 @@ export function LocalKachuful({
 }
 
 // ---------- Lobby ----------
+const ROUND_CHOICES = [
+  { rounds: 5, peak: 3 },
+  { rounds: 9, peak: 5 },
+  { rounds: 13, peak: 7 },
+];
+const TIMER_CHOICES = [0, 15, 30, 60];
+
 export function KachufulLobby({
   onClose,
   onStart,
 }: {
   onClose: () => void;
-  onStart: (friends: Person[], bots: number, length: "short" | "full", scoring: Scoring) => void;
+  onStart: (
+    friends: Person[],
+    bots: number,
+    length: Length,
+    scoring: Scoring,
+    turnSeconds: number,
+  ) => void;
 }) {
   const s = useSocial();
   const live = s.mode === "live";
   const people = live ? mutualFriends() : [];
   const [picked, setPicked] = useState<string[]>([]);
-  const [players, setPlayers] = useState(4);
-  const [length, setLength] = useState<"short" | "full">("short");
+  const [peak, setPeak] = useState(5);
   const [scoring, setScoring] = useState<Scoring>("classic");
+  const [timer, setTimer] = useState(30);
   const [howTo, setHowTo] = useState(false);
   const friends = people.filter((p) => picked.includes(p.id));
-  const total = Math.max(players, friends.length + 1);
-  const bots = total - 1 - friends.length;
+  // Solo: three bots. With friends: just you and them.
+  const bots = friends.length ? 0 : 3;
 
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 6 ? p : [...p, id]));
 
+  const Opt = ({
+    on,
+    onClick,
+    title,
+    sub,
+  }: {
+    on: boolean;
+    onClick: () => void;
+    title: string;
+    sub?: string;
+  }) => (
+    <button
+      onClick={onClick}
+      aria-pressed={on}
+      className="flex-1 rounded-2xl py-3 px-2 text-center transition-colors"
+      style={{
+        background: on ? "var(--lime)" : "var(--fill)",
+        color: on ? "var(--on-accent)" : "var(--ink)",
+        border: on ? "var(--bd)" : "1px solid var(--line)",
+        boxShadow: on ? "var(--pop-sm)" : "none",
+      }}
+    >
+      <span className="block font-extrabold tabular-nums">{title}</span>
+      {sub && <span className="block text-[11.5px] opacity-75 mt-0.5">{sub}</span>}
+    </button>
+  );
+
   return (
-    <Sheet title="kachuful · judgement" onClose={onClose}>
+    <Sheet title="Judgement" onClose={onClose}>
       <p className="text-sm text-cool" style={{ lineHeight: 1.5 }}>
-        Call how many tricks you'll win, then win exactly that many. Trump changes every round. The
-        dealer can't make the bids add up.
+        Call your tricks, then win exactly that many.
       </p>
 
-      {live ? (
+      {live && people.length > 0 && (
         <>
-          <p className="label-caps mt-5 mb-2">invite from your 25</p>
-          {people.length === 0 ? (
-            <p className="text-sm text-faint">
-              Add people to your 25 to play with them. Bots can fill in for now.
-            </p>
-          ) : (
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {people.map((p) => {
-                const on = picked.includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => toggle(p.id)}
-                    className="flex flex-col items-center shrink-0"
-                    style={{ width: 60 }}
+          <p className="label-caps mt-5 mb-2">Invite from your 25</p>
+          <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+            {people.map((p) => {
+              const on = picked.includes(p.id);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => toggle(p.id)}
+                  className="flex flex-col items-center shrink-0"
+                  style={{ width: 60 }}
+                >
+                  <span
+                    className="rounded-full p-[2px]"
+                    style={{ background: on ? "var(--lime)" : "transparent" }}
                   >
-                    <span
-                      className="rounded-full p-[2px]"
-                      style={{ background: on ? "var(--blue)" : "transparent" }}
-                    >
-                      <Avatar
-                        src={p.avatar || undefined}
-                        initials={p.initials}
-                        color={p.color}
-                        size={48}
-                      />
-                    </span>
-                    <span className="text-[11px] mt-1 truncate w-full text-center text-cream">
-                      {p.name.split(" ")[0]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                    <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={48} />
+                  </span>
+                  <span className="text-[11px] mt-1 truncate w-full text-center text-cream">
+                    {p.name.split(" ")[0]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </>
-      ) : (
-        <p className="mt-5 text-sm text-faint">
-          Demo mode: you'll play against bots. Sign in to play with your 25.
-        </p>
       )}
 
-      <p className="label-caps mt-5 mb-2">players at the table</p>
+      <p className="label-caps mt-5 mb-2">Rounds</p>
       <div className="flex gap-2">
-        {[2, 3, 4, 5, 6, 7].map((n) => (
-          <button
-            key={n}
-            disabled={n < friends.length + 1}
-            onClick={() => setPlayers(n)}
-            className="flex-1 h-11 rounded-2xl font-bold tabular-nums disabled:opacity-30"
-            style={{
-              background: total === n ? "var(--blue-deep)" : "var(--bg-surface)",
-              color: total === n ? "var(--on-accent)" : "var(--text-primary)",
-            }}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 text-xs text-cool">
-        You{friends.length ? ` + ${friends.map((f) => f.name.split(" ")[0]).join(", ")}` : ""}
-        {bots > 0 ? ` + ${bots} bot${bots > 1 ? "s" : ""}` : ""}
-      </p>
-
-      <p className="label-caps mt-5 mb-2">length</p>
-      <div className="flex gap-2">
-        {(["short", "full"] as const).map((l) => (
-          <button
-            key={l}
-            onClick={() => setLength(l)}
-            className="flex-1 rounded-2xl py-3 text-left px-4"
-            style={{
-              background: length === l ? "var(--blue-deep)" : "var(--bg-surface)",
-              color: length === l ? "var(--on-accent)" : "var(--text-primary)",
-            }}
-          >
-            <span className="block font-bold">{l === "short" ? "Short" : "Full"}</span>
-            <span className="block text-xs opacity-80">
-              {l === "short" ? "1 → 5 → 1 cards" : "1 → 8 → 1 cards"}
-            </span>
-          </button>
+        {ROUND_CHOICES.map((c) => (
+          <Opt
+            key={c.rounds}
+            on={peak === c.peak}
+            onClick={() => setPeak(c.peak)}
+            title={`${c.rounds}`}
+            sub={`up to ${c.peak} cards`}
+          />
         ))}
       </div>
 
-      <p className="label-caps mt-5 mb-2">scoring</p>
+      <p className="label-caps mt-5 mb-2">Scoring</p>
       <div className="flex gap-2">
-        {(["classic", "x10"] as const).map((sc) => (
-          <button
-            key={sc}
-            onClick={() => setScoring(sc)}
-            className="flex-1 rounded-2xl py-3 text-left px-4"
-            style={{
-              background: scoring === sc ? "var(--blue-deep)" : "var(--bg-surface)",
-              color: scoring === sc ? "var(--on-accent)" : "var(--text-primary)",
-            }}
-          >
-            <span className="block font-bold">{sc === "classic" ? "Classic" : "×10"}</span>
-            <span className="block text-xs opacity-80">
-              {sc === "classic" ? "Make it: 10 + call" : "Make it: 10 × call"}
-            </span>
-          </button>
+        <Opt on={scoring === "classic"} onClick={() => setScoring("classic")} title="Classic" sub="10 + your call" />
+        <Opt on={scoring === "x10"} onClick={() => setScoring("x10")} title="×10" sub="10 × your call" />
+      </div>
+
+      <p className="label-caps mt-5 mb-2">Timer per player</p>
+      <div className="flex gap-2">
+        {TIMER_CHOICES.map((t) => (
+          <Opt key={t} on={timer === t} onClick={() => setTimer(t)} title={t ? `${t}s` : "Off"} />
         ))}
       </div>
 
-      <button
-        onClick={() => setHowTo(true)}
-        className="mt-5 w-full text-sm font-bold text-bronze py-2"
-      >
-        New to Kachuful? See how to play
+      <button onClick={() => setHowTo(true)} className="mt-5 w-full text-sm font-bold text-bronze py-2">
+        New to Judgement? See how to play
       </button>
       {howTo && <HowToPlay onClose={() => setHowTo(false)} />}
 
-      <button
-        onClick={() => onStart(friends, bots, length, scoring)}
-        className="mt-3 w-full btn-primary"
-      >
+      <button onClick={() => onStart(friends, bots, peak, scoring, timer)} className="mt-3 w-full btn-primary">
         {friends.length
           ? `Deal in ${friends.length} friend${friends.length > 1 ? "s" : ""}`
-          : "Deal me in"}
+          : "Deal me in (vs 3 bots)"}
       </button>
     </Sheet>
   );
 }
 
 export { botSeats };
+
+/** Countdown for the current turn (only when the table has a timer). */
+function TurnTimer({ state, mine }: { state: KState; mine: boolean }) {
+  const [now, setNow] = useState(Date.now());
+  const on =
+    !!state.turnSeconds && !!state.turnStartedAt && (state.phase === "bidding" || state.phase === "playing");
+  useEffect(() => {
+    if (!on) return;
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [on, state.turnStartedAt]);
+  if (!on) return null;
+  const total = state.turnSeconds! * 1000;
+  const left = Math.max(0, state.turnStartedAt! + total - now);
+  const pct = (left / total) * 100;
+  const urgent = left < 5000;
+  return (
+    <div className="px-4 pt-[max(0.5rem,env(safe-area-inset-top))]" aria-live="polite">
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${pct}%`,
+            background: urgent ? "var(--pink)" : mine ? "var(--lime)" : "var(--sky)",
+            transition: "width 250ms linear",
+          }}
+        />
+      </div>
+      {mine && (
+        <p className="text-center text-[12px] font-bold mt-1" style={{ color: urgent ? "var(--pink)" : "var(--ink-2)" }}>
+          {Math.ceil(left / 1000)}s to {state.phase === "bidding" ? "call" : "play"}
+        </p>
+      )}
+    </div>
+  );
+}

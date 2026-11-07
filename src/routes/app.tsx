@@ -22,7 +22,41 @@ function AppLayout() {
 
   // Tab change: the page settles in with a short slide (no fade, no remount, so no flash).
   const columnRef = useRef<HTMLDivElement>(null);
+  /** 1 = came from a swipe left (next tab), -1 = swipe right. */
+  const swipeDir = useRef(0);
   const tab = pathname.split("/")[2] ?? "";
+
+  // Swipe between the five tabs (like pages). Left = next tab, right = previous.
+  const swipe = useRef<{ x: number; y: number; t: number } | null>(null);
+  const TAB_ORDER = ["home", "feed", "snap", "chats", "games"];
+  const onSwipeStart = (e: React.TouchEvent) => {
+    swipe.current = null;
+    const onTab = pathname === `/app/${tab}` && TAB_ORDER.includes(tab);
+    if (!onTab || e.touches.length !== 1) return;
+    const el = e.target as HTMLElement;
+    // Not inside overlays, games, text boxes, or anything that scrolls sideways.
+    if (el.closest(".fixed, [role=dialog], [data-noswipe], input, textarea, video, canvas")) return;
+    for (let n: HTMLElement | null = el; n && n !== e.currentTarget; n = n.parentElement) {
+      const ox = getComputedStyle(n).overflowX;
+      if ((ox === "auto" || ox === "scroll") && n.scrollWidth > n.clientWidth) return;
+    }
+    const t = e.touches[0];
+    swipe.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const s0 = swipe.current;
+    swipe.current = null;
+    if (!s0) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s0.x;
+    const dy = t.clientY - s0.y;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2 || Date.now() - s0.t > 700) return;
+    const i = TAB_ORDER.indexOf(tab) + (dx < 0 ? 1 : -1);
+    if (i < 0 || i >= TAB_ORDER.length) return;
+    const to = `/app/${TAB_ORDER[i]}` as const;
+    swipeDir.current = dx < 0 ? 1 : -1;
+    navigate({ to: to as "/app/home", ...(to === "/app/snap" ? { search: { to: undefined } } : {}) } as never);
+  };
   const firstTab = useRef(true);
   useEffect(() => {
     if (firstTab.current) {
@@ -30,8 +64,12 @@ function AppLayout() {
       return;
     }
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const dir = swipeDir.current;
+    swipeDir.current = 0;
     columnRef.current?.animate(
-      [{ transform: "translateY(6px)" }, { transform: "none" }],
+      dir
+        ? [{ transform: `translateX(${dir * 28}px)`, opacity: 0.6 }, { transform: "none", opacity: 1 }]
+        : [{ transform: "translateY(6px)" }, { transform: "none" }],
       { duration: 200, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)" },
     );
   }, [tab]);
@@ -158,7 +196,12 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <div ref={columnRef} className="mx-auto max-w-md pb-32 relative app-column">
+      <div
+        ref={columnRef}
+        className="mx-auto max-w-md pb-32 relative app-column"
+        onTouchStart={onSwipeStart}
+        onTouchEnd={onSwipeEnd}
+      >
         <Outlet />
       </div>
       <BottomNav />

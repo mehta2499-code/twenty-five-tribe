@@ -578,7 +578,7 @@ export function Scoreboard() {
             {[
               ["Trivia", mine.trivia_wins],
               ["Ludo", mine.ludo_wins],
-              ["Kachuful", mine.kachuful_wins],
+              ["Judgement", mine.kachuful_wins],
               ["Word Up", mine.word_wins],
             ].map(([k, v]) => (
               <div key={k as string} className="rounded-xl py-2" style={{ background: "var(--fill)" }}>

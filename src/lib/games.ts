@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
-import { newGame, type KState, type Scoring, type Seat } from "@/lib/kachuful";
+import { newGame, type KState, type Length, type Scoring, type Seat } from "@/lib/kachuful";
 import { newLudo, type LudoState } from "@/lib/ludo";
 
 export type TriviaState = {
@@ -100,8 +100,9 @@ async function invite(friendIds: string[], gameId: string, text: string) {
 export async function startKachuful(
   friends: Person[],
   bots: number,
-  length: "short" | "full",
+  length: Length,
   scoring: Scoring = "classic",
+  turnSeconds = 0,
 ) {
   const s = _get();
   const me = s.me!;
@@ -110,7 +111,7 @@ export async function startKachuful(
     ...friends.map(seatFor),
     ...botSeats(bots),
   ];
-  const state = newGame(seats, length, undefined, scoring);
+  const state = newGame(seats, length, undefined, scoring, turnSeconds);
   const id = uuid();
   const { error } = await supabase.from("games").insert({
     id,
@@ -124,7 +125,7 @@ export async function startKachuful(
   await invite(
     friends.map((f) => f.id),
     id,
-    `Kachuful at my table. ${seats.length} players. Pull up a chair 🃏`,
+    `Judgement at my table. ${seats.length} players. Pull up a chair 🃏`,
   );
   return id;
 }

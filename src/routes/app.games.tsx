@@ -11,6 +11,7 @@ import { LINEUP, TRIES, gameFor, today, useDaily, type DailyId } from "@/lib/dai
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { LocalLudo, LudoLobby } from "@/components/Ludo";
 import type { LudoState } from "@/lib/ludo";
+import type { Length } from "@/lib/kachuful";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
 import { TRIVIA_PACKS, type TriviaPack } from "@/lib/data";
@@ -72,7 +73,7 @@ function YourGames({ meId }: { meId: string }) {
             const k = g.state as KState;
             const turn = k.seats[k.turn];
             yourTurn = turn?.id === meId || (k.phase === "roundEnd" && g.host === meId);
-            title = `Kachuful · round ${k.round + 1}/${k.plan.length}`;
+            title = `Judgement · round ${k.round + 1}/${k.plan.length}`;
             status = yourTurn
               ? "Your turn"
               : turn
@@ -336,7 +337,8 @@ function Games() {
   const [lobby, setLobby] = useState(false);
   const [localTable, setLocalTable] = useState<{
     seats: Seat[];
-    length: "short" | "full";
+    length: Length;
+    turnSeconds?: number;
     scoring: Scoring;
   } | null>(null);
   const [packFor, setPackFor] = useState<TriviaPack | null>(null);
@@ -401,7 +403,7 @@ function Games() {
               Icon={Spade}
               art="kachuful"
               sticker="2–7 PLAYERS"
-              title="Kachuful"
+              title="Judgement"
               line="Call your tricks. Nail them."
               tilt={1.5}
               onClick={() => setLobby(true)}
@@ -538,17 +540,17 @@ function Games() {
       {lobby && (
         <KachufulLobby
           onClose={() => setLobby(false)}
-          onStart={async (friends, bots, length, scoring) => {
+          onStart={async (friends, bots, length, scoring, turnSeconds) => {
             setLobby(false);
             if (live && friends.length) {
               try {
-                const id = await startKachuful(friends, bots, length, scoring);
+                const id = await startKachuful(friends, bots, length, scoring, turnSeconds);
                 navigate({ to: "/app/play/$id", params: { id } });
               } catch (e) {
                 setToast((e as Error).message);
               }
             } else {
-              setLocalTable({ seats: [mySeat(), ...botSeats(bots)], length, scoring });
+              setLocalTable({ seats: [mySeat(), ...botSeats(bots)], length, scoring, turnSeconds });
             }
           }}
         />
@@ -558,6 +560,7 @@ function Games() {
           seats={localTable.seats}
           length={localTable.length}
           scoring={localTable.scoring}
+          turnSeconds={localTable.turnSeconds}
           onClose={() => setLocalTable(null)}
         />
       )}
