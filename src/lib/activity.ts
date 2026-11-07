@@ -12,6 +12,7 @@ import {
   Heart,
   MessageCircle,
   Sparkles,
+  Trophy,
   Type,
   Vote,
   type LucideIcon,
@@ -181,6 +182,14 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
         tone: "var(--sun)",
         text: `${who} got ${a.body} on your quiz. ${a.body?.split("/")[0] === a.body?.split("/")[1] ? "Ride or Die." : "A Real One."}`,
       };
+    case "quiz_try":
+      return { Icon: Eye, tone: "var(--sky)", text: `${who} tried to add you. Got ${a.body} on your quiz.` };
+    case "post":
+      return { Icon: Camera, tone: "var(--pink)", text: `${who} just posted${a.body && !/^New (post|reel)$/.test(a.body) ? `: ${a.body}` : ""}` };
+    case "game_win":
+      return { Icon: Trophy, tone: "var(--sun)", text: `${who} won ${a.body}` };
+    case "daily_top":
+      return { Icon: Crown, tone: "var(--sun)", text: `${who} is #1 in today's game (${a.body})` };
     case "drop":
       return { Icon: Camera, tone: "var(--lime)", text: `${who} posted their Drop` };
     default:
