@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { Camera, Gamepad2, LayoutGrid, MessageCircle, Users } from "lucide-react";
 import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
+import { warmCamera } from "@/lib/camera";
 
 const tabs = [
   { to: "/app/home", label: "Table", Icon: Users },
@@ -49,6 +50,8 @@ export function BottomNav() {
                 aria-label={badge ? `${label}, ${badge} new` : label}
                 aria-current={active ? "page" : undefined}
                 onClick={() => buzz(8)}
+                // Start the camera as soon as a finger lands on Blink.
+                onPointerDown={isSnap ? () => warmCamera() : undefined}
                 className="flex flex-col items-center justify-end gap-0.5 pt-1.5 pb-1 min-h-[56px]"
               >
                 {isSnap ? (

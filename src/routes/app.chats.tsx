@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Camera, MessageCircle, Search, UserPlus, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
@@ -210,13 +210,19 @@ function Chats() {
   const privateUnread = Object.values(s.unread).reduce((a, n) => a + n, 0);
   const groupUnread = gs.groups.reduce((a, g) => a + unreadIn(gs, g.id), 0);
 
-  const rows = everyone
-    .filter((f) => !term || f.name.toLowerCase().includes(term) || f.username?.includes(term))
-    .map((f) => {
-      const msgs = s.chats[f.id] ?? [];
-      return { f, last: msgs[msgs.length - 1] };
-    })
-    .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
+  // Only recompute when the list or messages change (not on every typing ping).
+  const rows = useMemo(
+    () =>
+      everyone
+        .filter((f) => !term || f.name.toLowerCase().includes(term) || f.username?.includes(term))
+        .map((f) => {
+          const msgs = s.chats[f.id] ?? [];
+          return { f, last: msgs[msgs.length - 1] };
+        })
+        .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [s.people, s.chats, term],
+  );
 
   const unopened = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me"));
 

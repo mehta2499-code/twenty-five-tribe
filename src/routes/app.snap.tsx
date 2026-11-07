@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, RefreshCw, Type, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { canvasToUrl, fileToPhoto, openCamera, parkStream } from "@/lib/camera";
 import {
   Confetti,
   FriendPicker,
@@ -13,7 +14,6 @@ import {
   PageBand,
 } from "@/components/SocialUI";
 import {
-  fileToImage,
   friendById,
   mutualFriends,
   social,
@@ -39,35 +39,6 @@ const BACKDROPS = [
 ];
 const TIMERS = [3, 5, 10];
 
-/**
- * Keep the camera open for a minute after leaving the snap screen, so coming
- * back (or snapping again) doesn't make the phone ask for permission again.
- */
-let camCache: {
-  stream: MediaStream;
-  facing: string;
-  stopTimer?: ReturnType<typeof setTimeout>;
-} | null = null;
-function takeCachedStream(facing: string) {
-  if (!camCache) return null;
-  if (camCache.stopTimer) clearTimeout(camCache.stopTimer);
-  const live = camCache.stream.getVideoTracks().some((t) => t.readyState === "live");
-  if (live && camCache.facing === facing) return camCache.stream;
-  camCache.stream.getTracks().forEach((t) => t.stop());
-  camCache = null;
-  return null;
-}
-function parkStream(stream: MediaStream, facing: string) {
-  camCache = {
-    stream,
-    facing,
-    stopTimer: setTimeout(() => {
-      stream.getTracks().forEach((t) => t.stop());
-      camCache = null;
-    }, 60_000),
-  };
-}
-
 /** Draws the caption onto the photo at the height you dragged it to. */
 async function bakeCaption(image: string, text: string, yPct: number): Promise<string> {
   const img = new Image();
@@ -88,7 +59,7 @@ async function bakeCaption(image: string, text: string, yPct: number): Promise<s
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, c.width / 2, y + barH / 2, c.width * 0.92);
-  return c.toDataURL("image/jpeg", 0.85);
+  return canvasToUrl(c, 0.85);
 }
 
 function SnapScreen() {
@@ -112,9 +83,11 @@ function SnapScreen() {
   const [captionY, setCaptionY] = useState(50);
   // iPhone home-screen apps forget camera permission every launch, so there we
   // use the phone's own camera (no permission prompt) unless asked for live.
-  const [liveCam, setLiveCam] = useState(
-    () => typeof navigator === "undefined" || !/iphone|ipad|ipod/i.test(navigator.userAgent),
-  );
+  // Live viewfinder everywhere (like any camera app). If the phone says no,
+  // fall back to the phone's own camera app.
+  const [liveCam, setLiveCam] = useState(true);
+  const [flash, setFlash] = useState(0);
+  const [ready, setReady] = useState(false);
   const drag = useRef<{ startY: number; startPct: number; moved: boolean } | null>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -134,22 +107,19 @@ function SnapScreen() {
       setCamError("Tap to open your camera");
       return;
     }
-    const cached = takeCachedStream(facing);
-    (cached
-      ? Promise.resolve(cached)
-      : navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1920 } },
-          audio: false,
-        })
-    )
+    setReady(false);
+    openCamera(facing)
       .then((ms) => {
-        if (cancelled) return ms.getTracks().forEach((t) => t.stop());
+        if (cancelled) return parkStream(ms, facing);
         live = ms;
         setStream(ms);
         setCamError(null);
         if (videoRef.current) videoRef.current.srcObject = ms;
       })
-      .catch(() => setCamError("Tap to open your camera"));
+      .catch(() => {
+        setLiveCam(false);
+        setCamError("Tap to open your camera");
+      });
     return () => {
       cancelled = true;
       if (live) parkStream(live, facing);
@@ -180,13 +150,17 @@ function SnapScreen() {
       ctx.scale(-1, 1);
     }
     ctx.drawImage(v, sx, sy, sw, sh, 0, 0, c.width, c.height);
-    setImage(c.toDataURL("image/jpeg", 0.82));
+    // Instant feedback: freeze the frame and flash, then encode in the background.
+    v.pause();
+    setFlash((n) => n + 1);
+    buzz(12);
+    void canvasToUrl(c, 0.82).then(setImage, (e) => setToast((e as Error).message));
   };
 
   const onFile = async (file?: File) => {
     if (!file) return;
     try {
-      setImage(await fileToImage(file));
+      setImage(await fileToPhoto(file));
     } catch (e) {
       setToast((e as Error).message);
     }
@@ -226,6 +200,12 @@ function SnapScreen() {
   };
 
   const inbox = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me"));
+  // Download unopened blinks now, so they open instantly when tapped.
+  const inboxKey = inbox.map((x) => x.id).join(",");
+  useEffect(() => {
+    for (const x of inbox) if (x.image) new Image().src = x.image;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inboxKey]);
   const atRisk = mutualFriends().filter((f) => streakStatus(s.streaks[f.id]).atRisk);
 
   return (
@@ -252,8 +232,22 @@ function SnapScreen() {
               autoPlay
               playsInline
               muted
+              onPlaying={() => setReady(true)}
               className="absolute inset-0 w-full h-full object-cover"
-              style={{ transform: facing === "user" ? "scaleX(-1)" : "none" }}
+              style={{
+                transform: facing === "user" ? "scaleX(-1)" : "none",
+                opacity: ready ? 1 : 0,
+                transition: "opacity 160ms ease-out",
+              }}
+            />
+          )}
+          {/* Shutter flash */}
+          {flash > 0 && (
+            <div
+              key={flash}
+              className="absolute inset-0 pointer-events-none shutter-flash"
+              style={{ background: "#fff" }}
+              aria-hidden="true"
             />
           )}
           {!hasShot && camError && (

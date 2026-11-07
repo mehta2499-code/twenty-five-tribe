@@ -1,3 +1,5 @@
+import { KnowsBest, QuizBadge } from "@/components/QuizBadges";
+import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -23,6 +25,7 @@ function LiveSeat() {
   const daily = useDaily();
   const [menu, setMenu] = useState(false);
   const bday = useBirthdays().find((b) => b.id === id);
+  const quiz = useQuizBadges();
   if (!f) {
     return (
       <div className="px-6 pt-24 text-center">
@@ -94,6 +97,22 @@ function LiveSeat() {
                 : "has you in their 25"}
           </span>
         </p>
+        {(badgeOf(quiz.knowsMe[id]) || badgeOf(quiz.iKnow[id])) && (
+          <div className="mt-3 grid gap-1.5 justify-items-start">
+            {badgeOf(quiz.knowsMe[id]) && (
+              <p className="flex items-center gap-2 text-sm text-cool">
+                <QuizBadge badge={badgeOf(quiz.knowsMe[id])} small />
+                knows you {quiz.knowsMe[id].score}/{quiz.knowsMe[id].total}
+              </p>
+            )}
+            {badgeOf(quiz.iKnow[id]) && (
+              <p className="flex items-center gap-2 text-sm text-cool">
+                <QuizBadge badge={badgeOf(quiz.iKnow[id])} small />
+                you know them {quiz.iKnow[id].score}/{quiz.iKnow[id].total}
+              </p>
+            )}
+          </div>
+        )}
         <p className="sub mt-2 text-sm">
           {inMine ? "In your 25 for " : "You've been in theirs for "}
           {f.joinedDaysAgo <= 0
@@ -167,6 +186,7 @@ function LiveSeat() {
           ))}
         </ul>
       </section>
+      {mutual && <KnowsBest userId={id} title={`Knows ${f.name.split(" ")[0]} best`} />}
       {menu && <PersonMenu person={f} onClose={() => setMenu(false)} />}
     </div>
   );

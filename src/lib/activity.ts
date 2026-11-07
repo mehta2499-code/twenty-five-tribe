@@ -6,6 +6,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import {
   Cake,
   Camera,
+  Crown,
   Eye,
   Handshake,
   Heart,
@@ -174,6 +175,12 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       return { Icon: Heart, tone: "var(--hot)", text: `${who} liked your Drop` };
     case "drop_comment":
       return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} commented on your Drop: ${a.body}` };
+    case "quiz_ace":
+      return {
+        Icon: Crown,
+        tone: "var(--sun)",
+        text: `${who} got ${a.body} on your quiz. ${a.body?.split("/")[0] === a.body?.split("/")[1] ? "Ride or Die." : "A Real One."}`,
+      };
     case "drop":
       return { Icon: Camera, tone: "var(--lime)", text: `${who} posted their Drop` };
     default:

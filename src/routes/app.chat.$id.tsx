@@ -4,7 +4,9 @@ import { ArrowLeft, Camera, Check, CheckCheck, Image as ImageIcon, Lock, Papercl
 import { Avatar } from "@/components/Avatar";
 import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
 import {
+  EarlierButton,
   GrowingInput,
+  useRecent,
   useStickToBottom,
   MediaBubble,
   Reactable,
@@ -61,6 +63,7 @@ function ChatThread() {
   useEffect(() => {
     social.markRead(id);
   }, [id, msgs.length]);
+  const recent = useRecent(msgs.length, id);
   const logRef = useStickToBottom<HTMLDivElement>(id, msgs.length, typing);
 
   if (!f || (live && !isMutual(f))) {
@@ -168,8 +171,11 @@ function ChatThread() {
               </p>
             </div>
           ) : (
+            <>
+            {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
             <ol className="space-y-1.5">
-              {msgs.map((m, i) => {
+              {msgs.slice(recent.start).map((m, j) => {
+                const i = recent.start + j;
                 const mine = m.from === "me";
                 const prev = msgs[i - 1];
                 const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
@@ -306,6 +312,7 @@ function ChatThread() {
                 );
               })}
             </ol>
+            </>
           )}
           {typing && (
             <div className="flex justify-start mt-2">

@@ -4,7 +4,9 @@ import { ArrowLeft, Paperclip, Send, Users } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import {
+  EarlierButton,
   GrowingInput,
+  useRecent,
   useStickToBottom,
   MediaBubble,
   Reactable,
@@ -50,6 +52,7 @@ function GroupThread() {
   useEffect(() => {
     markSeen(id);
   }, [id, msgs.length]);
+  const recent = useRecent(msgs.length, id);
   const logRef = useStickToBottom<HTMLDivElement>(id, msgs.length);
 
   if (!g) {
@@ -133,8 +136,11 @@ function GroupThread() {
               <p className="meta mt-1">Say something. Someone has to go first.</p>
             </div>
           ) : (
+            <>
+            {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
             <ol className="space-y-1.5">
-              {msgs.map((m, i) => {
+              {msgs.slice(recent.start).map((m, j) => {
+                const i = recent.start + j;
                 const mine = m.from === "me";
                 const prev = msgs[i - 1];
                 const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
@@ -232,6 +238,7 @@ function GroupThread() {
                 );
               })}
             </ol>
+            </>
           )}
         </div>
 

@@ -1,3 +1,5 @@
+import { QuizBadge } from "@/components/QuizBadges";
+import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -19,6 +21,8 @@ export const Route = createFileRoute("/app/people")({
 const SEATS = 25;
 
 function Row({ p, children, note }: { p: Person; children: React.ReactNode; note?: string }) {
+  const quiz = useQuizBadges();
+  const badge = badgeOf(quiz.knowsMe[p.id]);
   return (
     <li className="flex items-center gap-3 py-3">
       <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={46} />
@@ -35,13 +39,18 @@ function Row({ p, children, note }: { p: Person; children: React.ReactNode; note
           <p
             className="mt-0.5 inline-block text-[12px] font-extrabold px-2 rounded-full"
             style={{
-              background: "rgba(181,219,94,0.12)",
+              background: "rgba(193,239,98,0.12)",
               border: "1px solid var(--gold-line)",
               color: "var(--accent)",
             }}
           >
             {note}
           </p>
+        )}
+        {badge && (
+          <span className="block mt-1">
+            <QuizBadge badge={badge} small />
+          </span>
         )}
       </div>
       <div className="flex items-center gap-2 shrink-0">{children}</div>

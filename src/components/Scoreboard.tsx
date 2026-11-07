@@ -4,7 +4,7 @@ import { Ico, TONE } from "@/components/Ico";
  * ranked rows. Today (best try in today's game) or the week (points).
  */
 import { useEffect, useState } from "react";
-import { Crown, Flag, Flame, RotateCw, Sparkles, Trophy } from "lucide-react";
+import { Crown, Flag, Flame, RotateCw, Sparkles, Trophy, Type, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar } from "@/components/Avatar";
 import { GAMES } from "@/components/ArcadeGames";
@@ -18,13 +18,14 @@ import {
   thisWeek,
   today,
   useDaily,
+  weekDays,
   weekStandings,
 } from "@/lib/daily";
 
 type Row = {
   id: string;
   rank: number;
-  value: number;
+  value: number | string;
   unit: string;
   chips: { k: string; node: React.ReactNode }[];
 };
@@ -62,6 +63,8 @@ type Lifetime = {
   ludo_wins: number;
   kachuful_wins: number;
   word_wins: number;
+  word_points?: number;
+  word_days?: number;
 };
 
 /** All-time scores for you and your mutual 25 (worked out on the server). */
@@ -94,101 +97,369 @@ function playStreak(board: Record<string, Record<string, number[]>>) {
   return n;
 }
 
+type Board = "overall" | "daily" | "word" | "trivia";
+type View = "today" | "week" | "last" | "all";
+const VIEWS: Record<Board, [View, string][]> = {
+  overall: [
+    ["week", "This week"],
+    ["last", "Last week"],
+    ["all", "All-time"],
+  ],
+  daily: [["today", "Today"]],
+  word: [
+    ["today", "Today"],
+    ["week", "This week"],
+    ["all", "All-time"],
+  ],
+  trivia: [["all", "All-time"]],
+};
+const BOARDS: [Board, string][] = [
+  ["overall", "Overall"],
+  ["daily", "Daily game"],
+  ["word", "Word Up"],
+  ["trivia", "Trivia"],
+];
+const RANK_PTS = (rank: number) => [10, 8, 6, 5, 4][rank - 1] ?? 2;
+const rankOf = <T,>(rows: T[], key: (r: T) => number | string) =>
+  rows.map((r, i) => {
+    let k = i;
+    while (k > 0 && key(rows[k - 1]) === key(r)) k--;
+    return k + 1;
+  });
+
+type WordRow = { user_id: string; day: string; guesses: number };
+
+/** Daily Word Up results for you and your mutual 25 (straight from the table). */
+function useWordResults(on: boolean) {
+  const s = useSocial();
+  const [rows, setRows] = useState<WordRow[] | null>(null);
+  useEffect(() => {
+    if (!on || s.mode !== "live") return;
+    let alive = true;
+    void supabase
+      .from("word_results")
+      .select("user_id,day,guesses")
+      .order("day", { ascending: false })
+      .limit(5000)
+      .then(({ data }) => {
+        if (alive) setRows((data as WordRow[] | null) ?? []);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [on, s.mode]);
+  const myId = s.me?.id;
+  return (rows ?? []).map((r) => ({ ...r, user_id: r.user_id === myId ? "me" : r.user_id }));
+}
+
+/** Word Up points per person over some days: fewest guesses ranks first (missed = played). */
+function wordPoints(rows: WordRow[], days: Set<string>) {
+  const out: Record<string, { points: number; days: number; solved: number }> = {};
+  const byDay: Record<string, WordRow[]> = {};
+  for (const r of rows) if (days.has(r.day)) (byDay[r.day] ??= []).push(r);
+  for (const list of Object.values(byDay)) {
+    list.sort((a, b) => a.guesses - b.guesses);
+    const ranks = rankOf(list, (r) => r.guesses);
+    list.forEach((r, i) => {
+      const o = (out[r.user_id] ??= { points: 0, days: 0, solved: 0 });
+      o.points += r.guesses > 6 ? 2 : RANK_PTS(ranks[i]);
+      o.days += 1;
+      if (r.guesses <= 6) o.solved += 1;
+    });
+  }
+  return out;
+}
+
+/** Days in a row someone has played Word Up, ending today or yesterday. */
+function wordStreak(rows: WordRow[], id: string) {
+  const played = new Set(rows.filter((r) => r.user_id === id).map((r) => r.day));
+  let day = today();
+  if (!played.has(day)) day = addDays(day, -1);
+  let n = 0;
+  while (played.has(day)) {
+    n++;
+    day = addDays(day, -1);
+  }
+  return n;
+}
+
+type WeekExtra = { user_id: string; word: number; trivia: number };
+function useWeekExtra(start: string, on: boolean) {
+  const s = useSocial();
+  const [rows, setRows] = useState<Record<string, WeekExtra>>({});
+  useEffect(() => {
+    if (!on || s.mode !== "live") return;
+    let alive = true;
+    void supabase.rpc("week_extra" as never, { p_start: start } as never).then(({ data }) => {
+      if (!alive) return;
+      const map: Record<string, WeekExtra> = {};
+      for (const r of (data as WeekExtra[] | null) ?? [])
+        map[r.user_id === s.me?.id ? "me" : r.user_id] = r;
+      setRows(map);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [start, on, s.mode, s.me?.id]);
+  return rows;
+}
+
+type TriviaRow = {
+  user_id: string;
+  duels: number;
+  wins: number;
+  vs_me: number;
+  vs_me_wins: number;
+  vs_me_losses: number;
+};
+function useTriviaBoard(on: boolean) {
+  const s = useSocial();
+  const [rows, setRows] = useState<TriviaRow[]>([]);
+  useEffect(() => {
+    if (!on || s.mode !== "live") return;
+    let alive = true;
+    void supabase.rpc("trivia_board" as never).then(({ data }) => {
+      if (!alive) return;
+      setRows(
+        ((data as TriviaRow[] | null) ?? [])
+          .filter((r) => r.duels > 0)
+          .map((r) => ({ ...r, user_id: r.user_id === s.me?.id ? "me" : r.user_id })),
+      );
+    });
+    return () => {
+      alive = false;
+    };
+  }, [on, s.mode, s.me?.id]);
+  return rows;
+}
+
+const chip = (k: string, node: React.ReactNode) => ({ k, node });
+
 export function Scoreboard() {
   const d = useDaily();
-  const [view, setView] = useState<"today" | "week" | "last" | "all">("today");
-  const lifetime = useLifetime(view === "all");
+  const [board, setBoard] = useState<Board>("overall");
+  const [views, setViews] = useState<Record<Board, View>>({
+    overall: "week",
+    daily: "today",
+    word: "today",
+    trivia: "all",
+  });
+  const view = views[board];
+  const setView = (v: View) => setViews((x) => ({ ...x, [board]: v }));
   const day = today();
   const g = GAMES[gameFor(day)];
+  const weekStart = view === "last" ? lastWeek() : thisWeek();
 
-  const rows: Row[] =
-    view === "all"
-      ? [...lifetime]
-          .sort((a, b) => b.points - a.points || b.live_wins - a.live_wins)
-          .map((r, i, all) => ({
-            id: r.user_id,
-            rank: i > 0 && all[i - 1].points === r.points ? i : i + 1,
-            value: r.points,
-            unit: "pts",
-            chips: [
-              ...(r.live_wins
-                ? [{ k: "w", node: <><Ico i={Trophy} c={TONE.win} size={12} /> {r.live_wins} win{r.live_wins === 1 ? "" : "s"}</> }]
-                : []),
-              ...(r.daily_crowns
-                ? [{ k: "c", node: <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.daily_crowns}</> }]
-                : []),
-            ],
-          }))
-      : view === "today"
-      ? dayRanking(d, day).map((r) => ({
-          id: r.id,
-          rank: r.rank,
-          value: r.best,
-          unit: g.unit,
-          chips: [
-            { k: "t", node: <><Ico i={RotateCw} size={12} /> {r.tries.length}</> },
-            { k: "p", node: `+${r.points} pts` },
-          ],
-        }))
-      : weekStandings(d, view === "week" ? thisWeek() : lastWeek()).map((r, i, all) => ({
-          id: r.id,
-          rank: i > 0 && all[i - 1].points === r.points ? i : i + 1,
-          value: r.points,
-          unit: "pts",
-          chips: [
-            ...(r.wins ? [{ k: "c", node: <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.wins}</> }] : []),
-            { k: "d", node: `${r.days}d played` },
-          ],
-        }));
+  const lifetime = useLifetime(board === "overall" && view === "all");
+  const extra = useWeekExtra(weekStart, board === "overall" && view !== "all");
+  const words = useWordResults(board === "word");
+  const trivia = useTriviaBoard(board === "trivia");
+
+  const ranked = <T,>(list: T[], value: (r: T) => number | string) =>
+    rankOf(list, value);
+
+  let rows: Row[] = [];
+  if (board === "overall" && view === "all") {
+    const list = [...lifetime].sort((a, b) => b.points - a.points || b.live_wins - a.live_wins);
+    const rk = ranked(list, (r) => r.points);
+    rows = list.map((r, i) => ({
+      id: r.user_id,
+      rank: rk[i],
+      value: r.points,
+      unit: "pts",
+      chips: [
+        ...(r.live_wins
+          ? [chip("w", <><Ico i={Trophy} c={TONE.win} size={12} /> {r.live_wins} win{r.live_wins === 1 ? "" : "s"}</>)]
+          : []),
+        ...(r.daily_crowns ? [chip("c", <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.daily_crowns}</>)] : []),
+      ],
+    }));
+  } else if (board === "overall") {
+    // Daily game + Word Up + Trivia for the week.
+    const arcade = weekStandings(d, weekStart);
+    const ids = new Set([...arcade.map((r) => r.id), ...Object.keys(extra)]);
+    const list = [...ids]
+      .map((id) => {
+        const a = arcade.find((r) => r.id === id);
+        const e = extra[id];
+        return {
+          id,
+          arcade: a?.points ?? 0,
+          crowns: a?.wins ?? 0,
+          word: e?.word ?? 0,
+          trivia: e?.trivia ?? 0,
+          total: (a?.points ?? 0) + (e?.word ?? 0) + (e?.trivia ?? 0),
+        };
+      })
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total || b.crowns - a.crowns);
+    const rk = ranked(list, (r) => r.total);
+    rows = list.map((r, i) => ({
+      id: r.id,
+      rank: rk[i],
+      value: r.total,
+      unit: "pts",
+      chips: [
+        ...(r.crowns ? [chip("c", <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.crowns}</>)] : []),
+        ...(r.word ? [chip("w", `Word ${r.word}`)] : []),
+        ...(r.trivia ? [chip("t", `Trivia ${r.trivia}`)] : []),
+      ],
+    }));
+  } else if (board === "daily") {
+    rows = dayRanking(d, day).map((r) => ({
+      id: r.id,
+      rank: r.rank,
+      value: r.best,
+      unit: g.unit,
+      chips: [chip("t", <><Ico i={RotateCw} size={12} /> {r.tries.length}</>), chip("p", `+${r.points} pts`)],
+    }));
+  } else if (board === "word" && view === "today") {
+    const list = words.filter((r) => r.day === day).sort((a, b) => a.guesses - b.guesses);
+    const rk = ranked(list, (r) => r.guesses);
+    rows = list.map((r, i) => ({
+      id: r.user_id,
+      rank: rk[i],
+      value: r.guesses > 6 ? "X" : r.guesses,
+      unit: "/6",
+      chips: [chip("p", `+${r.guesses > 6 ? 2 : RANK_PTS(rk[i])} pts`)],
+    }));
+  } else if (board === "word" && view === "week") {
+    const pts = wordPoints(words, new Set(weekDays(thisWeek())));
+    const list = Object.entries(pts)
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.points - a.points || b.solved - a.solved);
+    const rk = ranked(list, (r) => r.points);
+    rows = list.map((r, i) => ({
+      id: r.id,
+      rank: rk[i],
+      value: r.points,
+      unit: "pts",
+      chips: [chip("s", `${r.solved}/${r.days} solved`)],
+    }));
+  } else if (board === "word") {
+    const by: Record<string, WordRow[]> = {};
+    for (const r of words) (by[r.user_id] ??= []).push(r);
+    const list = Object.entries(by)
+      .map(([id, rs]) => {
+        const solved = rs.filter((r) => r.guesses <= 6);
+        const avg = solved.length ? solved.reduce((a, r) => a + r.guesses, 0) / solved.length : 9;
+        return { id, avg, days: rs.length, solved: solved.length, streak: wordStreak(words, id) };
+      })
+      .sort((a, b) => a.avg - b.avg || b.solved - a.solved);
+    const rk = ranked(list, (r) => r.avg.toFixed(2));
+    rows = list.map((r, i) => ({
+      id: r.id,
+      rank: rk[i],
+      value: r.solved ? r.avg.toFixed(1) : "–",
+      unit: "avg",
+      chips: [
+        chip("s", `${r.solved}/${r.days} solved`),
+        ...(r.streak > 1 ? [chip("k", <><Ico i={Flame} c={TONE.streak} size={12} /> {r.streak}</>)] : []),
+      ],
+    }));
+  } else {
+    const list = [...trivia].sort((a, b) => b.wins - a.wins || a.duels - b.duels);
+    const rk = ranked(list, (r) => r.wins);
+    rows = list.map((r, i) => ({
+      id: r.user_id,
+      rank: rk[i],
+      value: r.wins,
+      unit: r.wins === 1 ? "win" : "wins",
+      chips: [
+        chip("d", `${Math.round((r.wins / r.duels) * 100)}% of ${r.duels}`),
+        // Head to head against you.
+        ...(r.user_id !== "me" && r.vs_me
+          ? [chip("h", `You ${r.vs_me_losses}–${r.vs_me_wins}`)]
+          : []),
+      ],
+    }));
+  }
 
   const top = rows.slice(0, 3);
   const rest = rows.slice(3);
   const best = rows[0];
   const streak = playStreak(d.board);
   const title =
-    view === "today"
-      ? <><g.Icon size={14} strokeWidth={2.25} aria-hidden="true" /> {g.name}</>
-      : view === "week"
-        ? <><Ico i={Trophy} size={14} /> This week</>
-        : view === "last"
-          ? <><Ico i={Trophy} size={14} /> Last week</>
-          : <><Ico i={Trophy} size={14} /> All-time</>;
+    board === "daily" ? (
+      <><g.Icon size={14} strokeWidth={2.25} aria-hidden="true" /> {g.name}</>
+    ) : board === "word" ? (
+      <><Ico i={Type} size={14} /> Word Up · {VIEWS.word.find(([k]) => k === view)?.[1]}</>
+    ) : board === "trivia" ? (
+      <><Ico i={Zap} size={14} /> Trivia duels</>
+    ) : (
+      <><Ico i={Trophy} size={14} /> {VIEWS.overall.find(([k]) => k === view)?.[1]}</>
+    );
+  const sub =
+    board === "daily"
+      ? `${DAY_NAMES[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · best try counts`
+      : board === "word"
+        ? view === "all"
+          ? "Average guesses when solved. Lower is better."
+          : "Fewest guesses wins the day: 1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2"
+        : board === "trivia"
+          ? "Duels won. The score on the right is you against them."
+          : view === "all"
+            ? "Every point ever: daily game and Word Up, plus live games (win 10, played 2)"
+            : "Daily game + Word Up (1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2) + Trivia (win 10, played 2)";
+  const champ =
+    board === "daily"
+      ? "Best player today"
+      : board === "word"
+        ? view === "today"
+          ? "Sharpest today"
+          : view === "week"
+            ? "Word Up of the week"
+            : "Word Up legend"
+        : board === "trivia"
+          ? "Trivia champ"
+          : view === "all"
+            ? "All-time champ"
+            : view === "last"
+              ? "Last week's champ"
+              : "Player of the week";
   const mine = lifetime.find((r) => r.user_id === "me");
 
   return (
     <section className="px-5 mt-5 pb-4">
-      <div className="segmented w-full" role="group" aria-label="Which scores">
-        {(
-          [
-            ["today", "Today"],
-            ["week", "This week"],
-            ["last", "Last week"],
-            ["all", "All-time"],
-          ] as const
-        ).map(([k, label]) => (
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5" role="group" aria-label="Which game">
+        {BOARDS.map(([k, label]) => (
           <button
             key={k}
-            className="flex-1"
-            style={{ paddingInline: 6, fontSize: 13 }}
-            aria-pressed={view === k}
-            onClick={() => setView(k)}
+            className="chip shrink-0"
+            aria-pressed={board === k}
+            onClick={() => setBoard(k)}
+            style={
+              board === k
+                ? { background: "var(--ink)", color: "var(--on-dark-fill)", borderColor: "var(--ink)" }
+                : undefined
+            }
           >
             {label}
           </button>
         ))}
       </div>
 
+      {VIEWS[board].length > 1 && (
+        <div className="segmented w-full mt-3" role="group" aria-label="Which scores">
+          {VIEWS[board].map(([k, label]) => (
+            <button
+              key={k}
+              className="flex-1"
+              style={{ paddingInline: 6, fontSize: 13 }}
+              aria-pressed={view === k}
+              onClick={() => setView(k)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mt-5 text-center">
         <span className="sticker" style={{ transform: "rotate(-2deg)" }}>
           {title}
         </span>
-        <p className="meta mt-2">
-          {view === "today"
-            ? `${DAY_NAMES[(new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7]} · best try counts`
-            : view === "all"
-              ? "Every daily point ever, plus live games: win 10 · played 2"
-              : "Daily points: 1st 10 · 2nd 8 · 3rd 6 · 4th 5 · 5th 4 · played 2"}
-        </p>
+        <p className="meta mt-2 px-2">{sub}</p>
       </div>
 
       {rows.length === 0 ? (
@@ -249,11 +520,7 @@ export function Scoreboard() {
               <Sparkles size={26} aria-hidden="true" style={{ color: "var(--sun)" }} />
               <div>
                 <p className="meta font-bold">
-                  {view === "today"
-                    ? "Best player today"
-                    : view === "all"
-                      ? "All-time champ"
-                      : "Player of the week"}
+                  {champ}
                 </p>
                 <p className="display uppercase" style={{ fontSize: 30, lineHeight: 1 }}>
                   {person(best.id).name}
@@ -285,13 +552,14 @@ export function Scoreboard() {
         </>
       )}
 
-      {view === "all" && mine && (
+      {board === "overall" && view === "all" && mine && (
         <div className="card mt-8 p-4">
           <p className="font-bold text-cream">Your all-time</p>
           <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
             {[
               ["Daily pts", mine.daily_points],
-              ["Days played", mine.daily_days],
+              ["Word Up pts", mine.word_points ?? 0],
+              ["Days played", mine.daily_days + (mine.word_days ?? 0)],
               ["Daily wins", mine.daily_crowns],
               ["Live games", mine.live_played],
               ["Live wins", mine.live_wins],

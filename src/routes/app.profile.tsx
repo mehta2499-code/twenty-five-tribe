@@ -1,3 +1,4 @@
+import { KnowsBest } from "@/components/QuizBadges";
 import { DeleteAccount } from "@/components/Safety";
 import { PushSetting } from "@/components/PushPrompt";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -166,6 +167,8 @@ function Profile() {
           <ShareCard />
         </div>
       )}
+
+      {live && s.me && <KnowsBest userId={s.me.id} title="Knows you best" />}
 
       {!live && (
         <>

@@ -466,3 +466,6 @@ button, a, [role="button"] { touch-action: manipulation; }
 .avatar-img { animation: fade-in 220ms var(--ease) both; }
 /* Lists settle in gently (no layout shift: transform + opacity only). */
 .rise-in { animation: rise-in 260ms var(--ease) both; }
+/* Blink shutter */
+@keyframes shutter-flash { from { opacity: 0.85; } to { opacity: 0; } }
+.shutter-flash { animation: shutter-flash 220ms ease-out forwards; }

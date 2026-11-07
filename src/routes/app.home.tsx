@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Armchair, Bell, Cake, Camera, ChevronRight, CircleHelp, Dices, Eye, Flame, Gamepad2, Hourglass, ImagePlus, MessageCircle, PartyPopper, Shuffle, Trophy, UserPlus, Vote, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
+import { BADGE_RING } from "@/components/QuizBadges";
+import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
 import {
@@ -95,6 +97,7 @@ function Table({
   onRoll: () => void;
 }) {
   const s = useSocial();
+  const quiz = useQuizBadges();
   const seated = people.slice(0, SEATS);
   const chairs: (Person | null)[] = [
     ...seated,
@@ -179,11 +182,16 @@ function Table({
                 className="rounded-full transition-transform duration-150"
                 style={{
                   border: "var(--bd)",
-                  boxShadow: lit
-                    ? "0 0 0 4px var(--lime), 0 0 28px rgba(181,219,94,0.8)"
-                    : f.postedToday
-                      ? "0 0 0 3px var(--pink)"
-                      : "var(--pop-sm)",
+                  boxShadow: (() => {
+                    if (lit) return "0 0 0 4px var(--lime), 0 0 28px rgba(193,239,98,0.8)";
+                    // Ride or Die / Real One: they aced your quiz.
+                    const b = badgeOf(quiz.knowsMe[f.id]);
+                    const ring = b ? BADGE_RING[b] : null;
+                    if (f.postedToday && ring) return `0 0 0 3px var(--pink), 0 0 0 6px ${ring}`;
+                    if (f.postedToday) return "0 0 0 3px var(--pink)";
+                    if (ring) return `0 0 0 3px ${ring}`;
+                    return "var(--pop-sm)";
+                  })(),
                   transform: lit ? "scale(1.18)" : "scale(1)",
                 }}
               >
@@ -250,6 +258,12 @@ function Table({
         <span className="chip" style={{ minHeight: 28 }}>
           <Ico i={Flame} c={TONE.streak} size={14} /> streak
         </span>
+        {Object.values(quiz.knowsMe).some((b) => badgeOf(b)) && (
+          <span className="chip" style={{ minHeight: 28 }}>
+            <span className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--sun)" }} />
+            knows you best
+          </span>
+        )}
         {s.mode === "live" && (
           <span className="chip" style={{ minHeight: 28 }}>
             <Ico i={Eye} c={TONE.oneWay} size={14} /> one-way

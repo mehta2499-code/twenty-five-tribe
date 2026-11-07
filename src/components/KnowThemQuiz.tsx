@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, buzz } from "@/components/SocialUI";
+import { QuizBadge } from "@/components/QuizBadges";
+import { badgeOf, refreshQuiz } from "@/lib/quiz";
 import type { Person } from "@/lib/social";
 import {
   DEMO_ANSWERS,
@@ -118,6 +120,7 @@ export function KnowThemQuiz({
         await onPassed();
       }
       setPhase({ kind: "result", ...result });
+      void refreshQuiz();
     } catch (e) {
       setPhase({ kind: "error", message: (e as Error).message });
     }
@@ -190,9 +193,15 @@ export function KnowThemQuiz({
             </div>
           ) : phase.kind === "result" ? (
             <div className="text-center animate-soft-in">
-              <span className={`sticker ${phase.passed ? "" : "pink"}`}>
-                {phase.passed ? "certified bestie" : "not quite"}
-              </span>
+              {badgeOf(phase) ? (
+                <span className="inline-block pop">
+                  <QuizBadge badge={badgeOf(phase)} />
+                </span>
+              ) : (
+                <span className={`sticker ${phase.passed ? "" : "pink"}`}>
+                  {phase.passed ? "certified bestie" : "not quite"}
+                </span>
+              )}
               <p
                 className="display mt-4"
                 style={{ fontSize: 84, lineHeight: 1, color: "var(--lime)" }}
@@ -200,8 +209,19 @@ export function KnowThemQuiz({
                 {phase.score}/{phase.total}
               </p>
               <h2 className="title mt-3" style={{ fontSize: 28 }}>
-                {phase.passed ? `You know ${first}.` : `Do you even know ${first}?`}
+                {badgeOf(phase) === "ride"
+                  ? `Perfect. You're ${first}'s Ride or Die.`
+                  : badgeOf(phase) === "real"
+                    ? `One off. A Real One.`
+                    : phase.passed
+                      ? `You know ${first}.`
+                      : `Do you even know ${first}?`}
               </h2>
+              {badgeOf(phase) && !demo && (
+                <p className="meta mt-1">
+                  {first} gets told, and you get a badge on each other's profiles.
+                </p>
+              )}
               <p className="mt-2 text-cool">
                 {phase.passed
                   ? demo
@@ -216,6 +236,8 @@ export function KnowThemQuiz({
                 {phase.passed ? "Yay" : "OK"}
               </button>
               <Confetti fire={phase.passed ? 1 : 0} />
+              {/* Extra bursts for a 6/7 or a perfect score. */}
+              {badgeOf(phase) && <BigConfetti perfect={badgeOf(phase) === "ride"} />}
             </div>
           ) : (
             <Question
@@ -282,4 +304,16 @@ function Question({
       </div>
     </div>
   );
+}
+
+/** A few more confetti bursts, staggered, for a top score. */
+function BigConfetti({ perfect }: { perfect: boolean }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const times = perfect ? [500, 1100, 1700] : [600];
+    const ids = times.map((t, i) => setTimeout(() => setN(i + 2), t));
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.([30, 60, 30]);
+    return () => ids.forEach(clearTimeout);
+  }, [perfect]);
+  return <Confetti fire={n} />;
 }

@@ -619,3 +619,32 @@ export function useStickToBottom<T extends HTMLElement>(key: string, count: numb
 
   return setEl;
 }
+
+/**
+ * Long chats: render only the newest messages (fast to open), with a button
+ * to load earlier ones that keeps your place.
+ */
+export function useRecent(total: number, key: string, page = 60) {
+  const [count, setCount] = useState(page);
+  useEffect(() => setCount(page), [key, page]);
+  const start = Math.max(0, total - count);
+  const showMore = () => {
+    const el = document.querySelector<HTMLElement>("[role=log]");
+    const fromBottom = el ? el.scrollHeight - el.scrollTop : 0;
+    setCount((c) => c + page);
+    requestAnimationFrame(() => {
+      if (el) el.scrollTop = el.scrollHeight - fromBottom;
+    });
+  };
+  return { start, hasMore: start > 0, showMore };
+}
+
+export function EarlierButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="flex justify-center mb-3">
+      <button onClick={onClick} className="chip" style={{ minHeight: 30, fontSize: 12.5 }}>
+        Earlier messages
+      </button>
+    </div>
+  );
+}
