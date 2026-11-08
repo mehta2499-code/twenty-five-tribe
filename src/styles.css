@@ -41,6 +41,8 @@
   --color-tag-thought: var(--tag-thought);
   --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-chalk: "Cabin Sketch", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-hand: "Gochi Hand", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ============================================================
@@ -201,6 +203,43 @@ button:active:not(:disabled), a:active, [role="button"]:active { scale: 0.97; }
 button:disabled { cursor: not-allowed; }
 
 /* ---------- Type ---------- */
+/* Chalk: screen headings hand-written on the dark board. Working UI stays in
+   Plus Jakarta Sans. Cabin Sketch never below 28px, Gochi Hand never below
+   16px; one chalk headline per screen; chalk only on --page / --surface. */
+.chalk-title { font-family: var(--font-chalk); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: 0.01em; color: var(--ink); text-wrap: balance; text-shadow: 0 0 1px rgba(245, 241, 250, 0.35); }
+.chalk-heading { font-family: var(--font-chalk); font-weight: 700; font-size: 28px; line-height: 1.1; letter-spacing: 0.01em; color: var(--ink); text-wrap: balance; text-shadow: 0 0 1px rgba(245, 241, 250, 0.35); }
+.chalk-note { font-family: var(--font-hand); font-size: 22px; line-height: 1.2; text-shadow: 0 0 1px currentColor; }
+.chalk-scribble { font-family: var(--font-hand); font-size: 17px; line-height: 1.2; text-shadow: 0 0 1px currentColor; }
+.chalk-lime { color: var(--lime); }
+.chalk-sun { color: var(--sun); }
+.chalk-pink { color: var(--pink); }
+.chalk-sky { color: var(--sky); }
+.chalk-dim { color: var(--ink-2); }
+.chalk-tilt { display: inline-block; transform: rotate(-3deg); }
+
+/* Hand-drawn marks: SVG masks filled with the text colour (or --chalk-mark). */
+.chalk-underline, .chalk-circle { position: relative; display: inline-block; }
+.chalk-underline::after {
+  content: ""; position: absolute; left: -3%; right: -3%; bottom: -0.22em; height: 0.3em;
+  background: var(--chalk-mark, currentColor);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 200 14%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27M3 9 C 30 4, 52 11, 80 7 S 140 4, 168 8 S 190 6, 197 5%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273.2%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M8 12 C 40 9, 70 13, 104 10 S 160 9, 192 9%27 fill=%27none%27 stroke=%27black%27 stroke-opacity=%270.45%27 stroke-width=%272%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 200 14%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27M3 9 C 30 4, 52 11, 80 7 S 140 4, 168 8 S 190 6, 197 5%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273.2%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M8 12 C 40 9, 70 13, 104 10 S 160 9, 192 9%27 fill=%27none%27 stroke=%27black%27 stroke-opacity=%270.45%27 stroke-width=%272%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.chalk-circle::before {
+  content: ""; position: absolute; left: -16%; right: -14%; top: -28%; bottom: -26%;
+  background: var(--chalk-mark, var(--pink));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 60%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27M22 44 C 4 30, 22 8, 62 6 C 100 4, 118 20, 110 38 C 102 54, 58 58, 30 52 C 16 48, 10 40, 20 30%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 60%27 preserveAspectRatio=%27none%27%3E%3Cpath d=%27M22 44 C 4 30, 22 8, 62 6 C 100 4, 118 20, 110 38 C 102 54, 58 58, 30 52 C 16 48, 10 40, 20 30%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.chalk-arrow {
+  display: inline-block; width: 1.5em; height: 1em; vertical-align: -0.1em;
+  background: var(--chalk-mark, currentColor);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 48 32%27%3E%3Cpath d=%27M4 26 C 14 14, 26 9, 40 8%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M30 3 L 42 8 L 33 17%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 48 32%27%3E%3Cpath d=%27M4 26 C 14 14, 26 9, 40 8%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M30 3 L 42 8 L 33 17%27 fill=%27none%27 stroke=%27black%27 stroke-width=%273%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 .font-display { font-family: var(--font-sans); font-style: normal; }
 .font-display.italic, .font-display em { font-style: normal; font-weight: 600; }
 h1.font-display, h2.font-display, h3.font-display, .display, .title {

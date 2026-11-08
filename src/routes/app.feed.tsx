@@ -73,7 +73,7 @@ function PostCard({
   }
 
   return (
-    <article className="card overflow-hidden mx-4" aria-label={`Post by ${by.name}`}>
+    <article className="py-3" aria-label={`Post by ${by.name}`}>
       <header className="flex items-center gap-3 px-4 py-3">
         <Avatar src={by.avatar} initials={by.initials} color={by.color} size={36} />
         <span className="font-semibold text-cream" style={{ fontSize: 15 }}>
@@ -120,7 +120,7 @@ function PostCard({
             playsInline
             loop
             preload="metadata"
-            className="w-full aspect-square object-cover"
+            className="w-full aspect-[4/5] object-cover"
             style={{ background: "#000" }}
           />
         ) : post.image ? (
@@ -129,11 +129,11 @@ function PostCard({
             alt={post.caption || `Photo from ${by.name}`}
             loading="lazy"
             draggable={false}
-            className="w-full aspect-square object-cover"
+            className="w-full aspect-[4/5] object-cover"
             style={{ background: "var(--fill)" }}
           />
         ) : (
-          <div className="w-full aspect-square skeleton" style={{ borderRadius: 0 }} />
+          <div className="w-full aspect-[4/5] skeleton" style={{ borderRadius: 0 }} />
         )}
         {burst > 0 && (
           <Heart
@@ -227,7 +227,7 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
     <Sheet title="New post" onClose={onClose}>
       <button
         onClick={() => fileRef.current?.click()}
-        className="w-full aspect-square rounded-2xl overflow-hidden flex items-center justify-center"
+        className="w-full aspect-[4/5] rounded-2xl overflow-hidden flex items-center justify-center"
         style={{ border: image ? "none" : "1.5px dashed var(--line-2)", background: "var(--fill)" }}
         aria-label={image || video ? "Change photo or video" : "Choose a photo or video"}
       >
@@ -365,13 +365,14 @@ function Feed() {
       ></PageBand>
 
       {s.loading ? (
-        <div className="mx-4 card overflow-hidden" aria-busy="true" aria-label="Loading posts">
-          <div className="flex items-center gap-3 p-4">
+        <div aria-busy="true" aria-label="Loading posts">
+          {/* Same shape as a post: full-bleed 4:5 media, padded header and text. */}
+          <div className="flex items-center gap-3 px-4 py-3">
             <span className="skeleton w-9 h-9" style={{ borderRadius: 999 }} />
             <span className="skeleton h-3.5 w-1/3" />
           </div>
-          <div className="skeleton w-full aspect-square" style={{ borderRadius: 0 }} />
-          <div className="p-4 grid gap-2">
+          <div className="skeleton w-full aspect-[4/5]" style={{ borderRadius: 0 }} />
+          <div className="px-4 py-3 grid gap-2">
             <span className="skeleton h-3.5 w-1/2" />
             <span className="skeleton h-3 w-4/5" />
           </div>
@@ -389,7 +390,8 @@ function Feed() {
         />
       ) : (
         <>
-          <div className="grid gap-4">
+          {/* Full-bleed posts, separated by space and a hairline (no cards). */}
+          <div className="divide-y" style={{ borderColor: "var(--line)" }}>
             {s.posts.map((p) => (
               <PostCard
                 key={p.id}

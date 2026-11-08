@@ -168,11 +168,15 @@ function Landing() {
             <Logo height={260} color={C.coral} title="25" />
           </h1>
 
-          <p
-            className="mt-8 h-serif font-extrabold text-white"
-            style={{ fontSize: "clamp(1.6rem, 3.4vw, 2.5rem)", letterSpacing: "-0.02em" }}
-          >
-            Everyone else is noise.
+          <p className="mt-8 chalk-title relative">
+            Everyone else is <span className="chalk-lime chalk-underline">noise.</span>
+            <span
+              className="chalk-note chalk-pink chalk-tilt absolute -right-4 -top-9 whitespace-nowrap"
+              aria-hidden="true"
+              style={{ transform: "rotate(-6deg)" }}
+            >
+              one of 25 <span className="chalk-arrow" />
+            </span>
           </p>
           <p className="mt-3 text-white/80" style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)" }}>
             A social app for the only people that matter.

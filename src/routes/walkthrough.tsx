@@ -73,11 +73,10 @@ function Walkthrough() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
         <p className="label-caps mb-6">{card.eyebrow}</p>
-        <h1
-          className="font-display italic text-cream"
-          style={{ fontSize: 34, lineHeight: 1.15, letterSpacing: "-0.015em", maxWidth: "20rem" }}
-        >
-          {card.title}
+        <h1 className="chalk-title" style={{ fontSize: 38, maxWidth: "20rem" }}>
+          {/* Underline the last word, in lime. */}
+          {card.title.split(" ").slice(0, -1).join(" ")}{" "}
+          <span className="chalk-lime chalk-underline">{card.title.split(" ").slice(-1)[0]}</span>
         </h1>
         <p
           className="font-display italic mt-6 mx-auto"

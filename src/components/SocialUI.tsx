@@ -64,7 +64,7 @@ export function PageBand({
               {eyebrow}
             </p>
           )}
-          <h1 className="title mt-0.5 flex items-center gap-2.5">
+          <h1 className="chalk-title mt-0.5 flex items-center gap-2.5" style={{ fontSize: 36 }}>
             {ring && <HeaderRing />}
             {title}
           </h1>
@@ -125,9 +125,7 @@ export function EmptyState({
       >
         <Icon size={22} />
       </span>
-      <p className="mt-4 font-semibold text-cream" style={{ fontSize: 16 }}>
-        {title}
-      </p>
+      <p className="mt-4 chalk-heading">{title}</p>
       {body && (
         <p className="mt-1.5 text-cool max-w-[18rem]" style={{ fontSize: 14, lineHeight: 1.5 }}>
           {body}

@@ -187,8 +187,8 @@ function Login() {
               void submitEmail();
             }}
           >
-            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
-              Claim your seat.
+            <p className="chalk-title" style={{ fontSize: 40 }}>
+              Claim your <span className="chalk-lime chalk-underline">seat.</span>
             </p>
             <p className="text-white/85" style={{ fontSize: 15, lineHeight: 1.5 }}>
               {isSignup ? "A little corner of the internet, just for your people." : "Your people are right where you left them."}
@@ -243,7 +243,7 @@ function Login() {
               });
             }}
           >
-            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
+            <p className="chalk-title" style={{ fontSize: 34 }}>
               Check your email.
             </p>
             <p className="text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
@@ -287,7 +287,7 @@ function Login() {
               void act(() => account.createProfile({ name, username, avatar: avatar ?? undefined, password, confirmPassword }));
             }}
           >
-            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>
+            <p className="chalk-title" style={{ fontSize: 34 }}>
               Who's sitting down?
             </p>
             <div className="flex items-center gap-4">
@@ -385,7 +385,9 @@ function Login() {
 
         {step === "forgot" && (
           <form className="mt-8 flex flex-col gap-4 animate-soft-in" onSubmit={(e) => { e.preventDefault(); void sendReset(); }}>
-            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>A fresh key for your seat.</p>
+            <p className="chalk-title" style={{ fontSize: 34 }}>
+              A fresh key for your seat.
+            </p>
             <p className="text-white/85" style={{ fontSize: 15, lineHeight: 1.5 }}>Enter your email and we’ll send a secure password reset link.</p>
             <Input aria-label="Email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={field} required />
             <button type="submit" disabled={busy || resetSent} className={primary}>{busy ? "Sending…" : resetSent ? "Link sent" : "Send reset link"}</button>
@@ -394,7 +396,9 @@ function Login() {
 
         {step === "reset" && (
           <form className="mt-8 flex flex-col gap-4 animate-soft-in" onSubmit={(e) => { e.preventDefault(); void saveNewPassword(); }}>
-            <p className="display" style={{ fontSize: 26, fontStyle: "italic", fontWeight: 500 }}>Choose a new password.</p>
+            <p className="chalk-title" style={{ fontSize: 34 }}>
+              Choose a new password.
+            </p>
             <Input aria-label="New password" type="password" autoComplete="new-password" placeholder="New password (8+ characters)" value={password} onChange={(e) => setPassword(e.target.value.slice(0, 128))} className={field} minLength={8} required />
             <Input aria-label="Confirm new password" type="password" autoComplete="new-password" placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value.slice(0, 128))} className={field} minLength={8} required />
             <button type="submit" disabled={busy || password.length < 8 || password !== confirmPassword} className={primary}>{busy ? "Saving…" : "Save new password"}</button>
