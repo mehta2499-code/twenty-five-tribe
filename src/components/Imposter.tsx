@@ -1,5 +1,5 @@
 /** Imposter: the party game screen (lobby → clues → vote → reveal). */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Copy, Crown, Eye, Share2, UserPlus, Users, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
@@ -10,7 +10,11 @@ import { friendById, mutualFriends } from "@/lib/social";
 import {
   CATEGORY_NAMES,
   MIN_PLAYERS,
+  POINTS,
+  TURN_SECONDS,
   anotherRound,
+  candidates,
+  cluesOf,
   count,
   giveClue,
   guessWord,
@@ -20,7 +24,10 @@ import {
   playedCategory,
   revealWord,
   roundDone,
+  saysWord,
+  skipTurn,
   start,
+  stoleIt,
   toVote,
   vote,
   whoseTurn,
@@ -83,7 +90,9 @@ export function ImposterGame({
         {st.phase === "clues" && <Clues st={st} meId={meId} host={host} act={act} name={name} />}
         {st.phase === "vote" && <Vote st={st} meId={meId} host={host} act={act} />}
         {st.phase === "guess" && <Guess st={st} meId={meId} act={act} name={name} />}
-        {st.phase === "over" && <Over st={st} meId={meId} host={host} act={act} name={name} onClose={onClose} />}
+        {st.phase === "over" && (
+          <Over st={st} meId={meId} host={host} act={act} name={name} onClose={onClose} />
+        )}
       </div>
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
     </div>
@@ -158,9 +167,7 @@ function Lobby({
         </button>
       </div>
 
-      <p className="label-caps mt-6 mb-2">
-        In the party · {st.players.length}
-      </p>
+      <p className="label-caps mt-6 mb-2">In the party · {st.players.length}</p>
       <ul className="grid grid-cols-4 gap-3">
         {st.players.map((p) => (
           <li key={p.id} className="flex flex-col items-center text-center pop">
@@ -169,7 +176,11 @@ function Lobby({
               {p.id === st.host && (
                 <span
                   className="absolute -top-2 -right-1 w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{ background: "var(--sun)", border: "var(--bd)", color: "var(--on-accent)" }}
+                  style={{
+                    background: "var(--sun)",
+                    border: "var(--bd)",
+                    color: "var(--on-accent)",
+                  }}
                   title="Host"
                 >
                   <Crown size={12} aria-hidden="true" />
@@ -195,7 +206,11 @@ function Lobby({
                 onClick={() => act((s) => ({ ...s, category: c }))}
                 style={
                   st.category === c
-                    ? { background: "var(--lime)", color: "var(--on-accent)", borderColor: "var(--edge)" }
+                    ? {
+                        background: "var(--lime)",
+                        color: "var(--on-accent)",
+                        borderColor: "var(--edge)",
+                      }
                     : undefined
                 }
               >
@@ -219,7 +234,8 @@ function Lobby({
         </>
       ) : (
         <p className="meta text-center mt-8">
-          Waiting for {st.players.find((p) => p.id === st.host)?.name.split(" ")[0] ?? "the host"} to start…
+          Waiting for {st.players.find((p) => p.id === st.host)?.name.split(" ")[0] ?? "the host"}{" "}
+          to start…
         </p>
       )}
 
@@ -250,11 +266,21 @@ function InviteSheet({
   const people = mutualFriends().filter((f) => !already.includes(f.id));
   const [picked, setPicked] = useState<string[]>([]);
   return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl p-5 sheet-in" style={{ background: "var(--surface)", border: "1px solid var(--line)" }} onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center"
+      style={{ background: "rgba(0,0,0,0.55)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl p-5 sheet-in"
+        style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <p className="heading">Invite from your 25</p>
         {people.length === 0 ? (
-          <p className="meta mt-2">Everyone in your 25 is already here. Share the link for others.</p>
+          <p className="meta mt-2">
+            Everyone in your 25 is already here. Share the link for others.
+          </p>
         ) : (
           <div className="grid grid-cols-4 gap-3 mt-4 max-h-[50vh] overflow-y-auto">
             {people.map((p) => {
@@ -262,24 +288,47 @@ function InviteSheet({
               return (
                 <button
                   key={p.id}
-                  onClick={() => setPicked((x) => (on ? x.filter((i) => i !== p.id) : [...x, p.id]))}
+                  onClick={() =>
+                    setPicked((x) => (on ? x.filter((i) => i !== p.id) : [...x, p.id]))
+                  }
                   className="flex flex-col items-center"
                 >
-                  <span className="relative rounded-full p-[2px]" style={{ background: on ? "var(--lime)" : "transparent" }}>
-                    <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={50} />
+                  <span
+                    className="relative rounded-full p-[2px]"
+                    style={{ background: on ? "var(--lime)" : "transparent" }}
+                  >
+                    <Avatar
+                      src={p.avatar || undefined}
+                      initials={p.initials}
+                      color={p.color}
+                      size={50}
+                    />
                     {on && (
-                      <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "var(--lime)", color: "var(--on-accent)", border: "var(--bd)" }}>
+                      <span
+                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{
+                          background: "var(--lime)",
+                          color: "var(--on-accent)",
+                          border: "var(--bd)",
+                        }}
+                      >
                         <Check size={12} />
                       </span>
                     )}
                   </span>
-                  <span className="text-[12px] mt-1 text-cream truncate w-full">{p.name.split(" ")[0]}</span>
+                  <span className="text-[12px] mt-1 text-cream truncate w-full">
+                    {p.name.split(" ")[0]}
+                  </span>
                 </button>
               );
             })}
           </div>
         )}
-        <button disabled={!picked.length} onClick={() => onSend(picked)} className="btn-primary w-full mt-5">
+        <button
+          disabled={!picked.length}
+          onClick={() => onSend(picked)}
+          className="btn-primary w-full mt-5"
+        >
           Send invite{picked.length ? ` to ${picked.length}` : ""}
         </button>
       </div>
@@ -345,6 +394,15 @@ function RoleCard({ st, meId }: { st: ImpState; meId: string }) {
 }
 
 // ---------- Clues ----------
+function useNow(ms = 1000) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+  return now;
+}
+
 function Clues({
   st,
   meId,
@@ -359,24 +417,64 @@ function Clues({
   name: (id?: string | null) => string;
 }) {
   const [text, setText] = useState("");
+  const [warn, setWarn] = useState<string | null>(null);
+  const now = useNow();
   const turn = whoseTurn(st);
   const mine = turn === meId;
   const done = roundDone(st);
+  const imp = isImposter(st, meId);
+  const left = st.turnAt
+    ? Math.max(0, TURN_SECONDS - Math.floor((now - st.turnAt) / 1000))
+    : TURN_SECONDS;
   const send = (t: string) => {
+    // Crew can't just say the word.
+    if (t && !imp && saysWord(t, revealWord(st.hidden))) {
+      buzz(60);
+      setWarn("That gives the word away! Try something sneakier.");
+      return;
+    }
     buzz(12);
+    setWarn(null);
     act((s) => giveClue(s, meId, t));
     setText("");
   };
+  const turnPlayer = st.players.find((p) => p.id === turn);
   return (
     <>
       <div className="mt-6 text-center">
         <span className="sticker">Round {st.round}</span>
-        <p className="title mt-3" style={{ fontSize: 26 }}>
+        {!done && turnPlayer && (
+          <div className="mt-4 flex justify-center">
+            <span className="relative">
+              <span
+                className="block rounded-full"
+                style={{ boxShadow: `0 0 0 4px ${left <= 10 ? "var(--pink)" : "var(--lime)"}` }}
+              >
+                <Face p={turnPlayer} size={64} />
+              </span>
+              <span
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 rounded-full text-[12px] font-extrabold tabular-nums"
+                style={{
+                  background: left <= 10 ? "var(--pink)" : "var(--surface)",
+                  color: left <= 10 ? "var(--on-accent)" : "var(--ink)",
+                  border: "var(--bd)",
+                }}
+              >
+                {left}s
+              </span>
+            </span>
+          </div>
+        )}
+        <p className="title mt-4" style={{ fontSize: 26 }}>
           {done ? "Everyone's given a clue" : mine ? "Your turn" : `${name(turn)}'s turn`}
         </p>
         {!done && (
           <p className="meta mt-1">
-            {mine ? "One word or a short hint. Not too obvious." : "Listen closely. Who sounds off?"}
+            {mine
+              ? imp
+                ? "You don't know the word. Say something vague that fits the category."
+                : "One word or a short hint. Not too obvious, not too vague."
+              : "Listen closely. Who sounds off?"}
           </p>
         )}
       </div>
@@ -386,34 +484,39 @@ function Clues({
           <div className="flex gap-2">
             <input
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                setWarn(null);
+              }}
               maxLength={40}
               placeholder="Your clue"
               className="input flex-1"
               enterKeyHint="send"
+              autoFocus
               onKeyDown={(e) => e.key === "Enter" && text.trim() && send(text)}
             />
             <button disabled={!text.trim()} onClick={() => send(text)} className="btn-primary px-5">
               Send
             </button>
           </div>
+          {warn && (
+            <p className="text-sm font-semibold" style={{ color: "var(--pink)" }}>
+              {warn}
+            </p>
+          )}
           <button onClick={() => send("")} className="btn-secondary">
             I said it out loud
           </button>
         </div>
       )}
 
-      <ol className="mt-5 grid gap-2">
-        {st.clues.map((c, i) => (
-          <li key={i} className="card px-4 py-2.5 flex items-center gap-3 rise-in">
-            <span className="meta w-8 tabular-nums">R{c.round}</span>
-            <span className="font-bold text-cream flex-1 min-w-0 truncate">{name(c.id)}</span>
-            <span className="text-cool truncate" style={{ maxWidth: "55%" }}>
-              {c.text}
-            </span>
-          </li>
-        ))}
-      </ol>
+      {!done && !mine && host && left === 0 && (
+        <button onClick={() => act(skipTurn)} className="btn-secondary w-full mt-4">
+          Skip {name(turn)} (out of time)
+        </button>
+      )}
+
+      <ClueLog st={st} name={name} />
 
       {done &&
         (host ? (
@@ -437,49 +540,139 @@ function Clues({
   );
 }
 
+/** Every clue so far, newest first, with who said it. */
+function ClueLog({
+  st,
+  name,
+  highlight,
+}: {
+  st: ImpState;
+  name: (id?: string | null) => string;
+  highlight?: boolean;
+}) {
+  if (!st.clues.length) return null;
+  return (
+    <ol className="mt-5 grid gap-2">
+      {[...st.clues].reverse().map((c, i) => {
+        const p = st.players.find((x) => x.id === c.id);
+        const imp = highlight && isImposter(st, c.id);
+        return (
+          <li
+            key={st.clues.length - i}
+            className="card px-3 py-2 flex items-center gap-3 rise-in"
+            style={
+              imp ? { borderColor: "var(--pink)", boxShadow: "0 0 0 2px var(--pink)" } : undefined
+            }
+          >
+            {p && <Face p={p} size={30} />}
+            <span className="font-bold text-cream shrink-0">{name(c.id)}</span>
+            <span className="text-cool flex-1 min-w-0 truncate text-right">“{c.text}”</span>
+            <span className="meta tabular-nums text-[11px]">R{c.round}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 // ---------- Vote ----------
 function Vote({ st, meId, host, act }: { st: ImpState; meId: string; host: boolean; act: Act }) {
   const mine = st.votes[meId];
   const n = Object.keys(st.votes).length;
+  const pool = candidates(st).filter((p) => p.id !== meId);
+  const voted = new Set(Object.keys(st.votes));
   return (
     <>
       <div className="mt-6 text-center">
-        <p className="title" style={{ fontSize: 26 }}>
+        {st.runoff && (
+          <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
+            It's a tie! Revote
+          </span>
+        )}
+        <p className="title mt-3" style={{ fontSize: 26 }}>
           Who's the imposter?
+        </p>
+        <p className="meta mt-1 tabular-nums">
+          {st.runoff
+            ? "Only the tied players this time. Another tie and the imposter wins."
+            : "Read everyone's clues, then vote."}
         </p>
         <p className="meta mt-1 tabular-nums">
           {n}/{st.players.length} voted{mine ? " · tap someone else to change" : ""}
         </p>
       </div>
-      <ul className="mt-5 grid grid-cols-3 gap-3">
-        {st.players
-          .filter((p) => p.id !== meId)
-          .map((p) => {
-            const on = mine === p.id;
-            return (
-              <li key={p.id}>
-                <button
-                  onClick={() => {
-                    buzz(15);
-                    act((s) => vote(s, meId, p.id));
-                  }}
-                  className="w-full rounded-2xl p-3 flex flex-col items-center"
-                  style={{
-                    background: on ? "var(--pink)" : "var(--surface)",
-                    color: on ? "var(--on-accent)" : "var(--ink)",
-                    border: on ? "var(--bd)" : "1px solid var(--line)",
-                    boxShadow: on ? "var(--pop)" : "none",
-                  }}
-                >
-                  <Face p={p} size={50} />
-                  <span className="mt-1.5 text-[13px] font-bold truncate w-full text-center">
+
+      <ul className="mt-5 grid gap-2.5">
+        {pool.map((p) => {
+          const on = mine === p.id;
+          const theirs = cluesOf(st, p.id);
+          return (
+            <li key={p.id}>
+              <button
+                onClick={() => {
+                  buzz(15);
+                  act((s) => vote(s, meId, p.id));
+                }}
+                className="w-full rounded-2xl p-3 flex items-start gap-3 text-left"
+                style={{
+                  background: on ? "var(--pink)" : "var(--surface)",
+                  color: on ? "var(--on-accent)" : "var(--ink)",
+                  border: on ? "var(--bd)" : "1px solid var(--line)",
+                  boxShadow: on ? "var(--pop)" : "none",
+                }}
+              >
+                <span className="relative shrink-0">
+                  <Face p={p} size={46} />
+                  {voted.has(p.id) && (
+                    <span
+                      className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{
+                        background: "var(--lime)",
+                        color: "var(--on-accent)",
+                        border: "var(--bd)",
+                      }}
+                      title="Has voted"
+                    >
+                      <Check size={11} />
+                    </span>
+                  )}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-extrabold text-[15px] truncate">
                     {p.name.split(" ")[0]}
                   </span>
-                </button>
-              </li>
-            );
-          })}
+                  {theirs.length ? (
+                    <span className="mt-1 flex flex-wrap gap-1.5">
+                      {theirs.map((c, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded-full text-[13px] font-semibold"
+                          style={{
+                            background: on ? "rgba(0,0,0,0.15)" : "var(--fill)",
+                          }}
+                        >
+                          “{c.text}”
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span
+                      className="block meta mt-0.5"
+                      style={on ? { color: "inherit" } : undefined}
+                    >
+                      No clue given
+                    </span>
+                  )}
+                </span>
+                {on && <span className="text-[12px] font-extrabold self-center">YOUR VOTE</span>}
+              </button>
+            </li>
+          );
+        })}
       </ul>
+      {!pool.length && (
+        <p className="meta text-center mt-6">You're in the revote. Others decide.</p>
+      )}
       {host && n > 0 && n < st.players.length && (
         <button onClick={() => act(count)} className="btn-secondary w-full mt-6">
           Count the votes now
@@ -489,7 +682,7 @@ function Vote({ st, meId, host, act }: { st: ImpState; meId: string; host: boole
   );
 }
 
-// ---------- Caught imposter guesses ----------
+// ---------- Caught imposter types the word ----------
 function Guess({
   st,
   meId,
@@ -502,23 +695,47 @@ function Guess({
   name: (id?: string | null) => string;
 }) {
   const me = st.out === meId;
+  const [text, setText] = useState("");
+  const send = () => {
+    if (!text.trim()) return;
+    buzz(20);
+    act((s) => guessWord(s, meId, text));
+  };
   return (
     <div className="mt-6 text-center">
-      <p className="title" style={{ fontSize: 26 }}>
-        {me ? "Caught. Last chance." : `${name(st.out)} was an imposter!`}
+      <span className="sticker pink">Caught!</span>
+      <p className="title mt-3" style={{ fontSize: 26 }}>
+        {me ? "Last chance." : `${name(st.out)} was an imposter!`}
       </p>
       <p className="meta mt-1">
-        {me ? "Guess the word to steal the win." : `${name(st.out)} gets one guess at the word…`}
+        {me
+          ? `Type the secret word to steal the win (+${POINTS.steal} points). Category: ${playedCategory(st)}.`
+          : `${name(st.out)} gets one guess at the word… sweat.`}
       </p>
       {me && (
-        <div className="mt-5 grid grid-cols-2 gap-2.5">
-          {(st.options ?? []).map((w) => (
-            <button key={w} onClick={() => act((s) => guessWord(s, meId, w))} className="btn-secondary">
-              {w}
-            </button>
-          ))}
+        <div className="mt-5 grid gap-2">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={40}
+            placeholder="The word is…"
+            autoFocus
+            enterKeyHint="send"
+            onKeyDown={(e) => e.key === "Enter" && send()}
+            className="input text-center text-lg font-bold"
+          />
+          <button
+            disabled={!text.trim()}
+            onClick={send}
+            className="btn-primary"
+            style={{ minHeight: 52 }}
+          >
+            Lock it in
+          </button>
+          <p className="meta">Small typos are fine. One guess only.</p>
         </div>
       )}
+      {!me && <ClueLog st={st} name={name} />}
     </div>
   );
 }
@@ -542,14 +759,20 @@ function Over({
   const imp = isImposter(st, meId);
   const won = (st.winner === "imposters") === imp;
   const word = revealWord(st.hidden);
+  const stole = stoleIt(st);
   const why =
     st.winner === "crew"
-      ? `${name(st.out)} got caught${st.guess ? ` and guessed "${st.guess}"` : ""}.`
-      : st.guess
-        ? `${name(st.out)} got caught but guessed the word.`
+      ? `${name(st.out)} got caught${st.guess ? ` and guessed “${st.guess}”. Wrong!` : "."}`
+      : stole
+        ? `${name(st.out)} got caught but typed “${st.guess}”. Stolen!`
         : st.out
           ? `The crew voted out ${name(st.out)}, who was innocent.`
-          : "It was a tie. Nobody got voted out.";
+          : "Tied twice. Nobody got voted out.";
+  // Who voted for whom.
+  const votes = st.finalVotes ?? st.votes;
+  const byTarget: Record<string, string[]> = {};
+  for (const [voter, target] of Object.entries(votes)) (byTarget[target] ??= []).push(voter);
+  const targets = Object.entries(byTarget).sort((a, b) => b[1].length - a[1].length);
   const board = [...st.players].sort((a, b) => (st.tally[b.id] ?? 0) - (st.tally[a.id] ?? 0));
   return (
     <>
@@ -575,19 +798,57 @@ function Over({
         </div>
       </div>
 
-      {st.games > 1 && (
+      {targets.length > 0 && (
         <>
-          <p className="label-caps mt-6 mb-2">Party scores · {st.games} games</p>
+          <p className="label-caps mt-6 mb-2">Who voted for who</p>
+          <ul className="grid gap-2">
+            {targets.map(([target, voters]) => {
+              const p = st.players.find((x) => x.id === target);
+              return (
+                <li key={target} className="card px-3 py-2.5 flex items-center gap-3">
+                  {p && <Face p={p} size={34} />}
+                  <span className="flex-1 min-w-0">
+                    <span
+                      className="block font-bold"
+                      style={{ color: isImposter(st, target) ? "var(--pink)" : "var(--ink)" }}
+                    >
+                      {name(target)}
+                      {isImposter(st, target) ? " · imposter" : ""}
+                    </span>
+                    <span className="block meta truncate">
+                      {voters.map((v) => name(v)).join(", ")}
+                    </span>
+                  </span>
+                  <span className="font-extrabold tabular-nums">{voters.length}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+
+      <p className="label-caps mt-6 mb-0">All the clues</p>
+      <ClueLog st={st} name={name} highlight />
+
+      {st.games > 0 && (
+        <>
+          <p className="label-caps mt-6 mb-2">
+            Party points · {st.games} game{st.games > 1 ? "s" : ""}
+          </p>
           <ol className="grid gap-1.5">
             {board.map((p, i) => (
               <li key={p.id} className="flex items-center gap-3 px-1">
                 <span className="w-5 meta tabular-nums">{i + 1}</span>
                 <Face p={p} size={30} />
                 <span className="flex-1 font-semibold text-cream truncate">{name(p.id)}</span>
-                <span className="font-extrabold tabular-nums">{st.tally[p.id] ?? 0}</span>
+                <span className="font-extrabold tabular-nums">{st.tally[p.id] ?? 0} pts</span>
               </li>
             ))}
           </ol>
+          <p className="meta mt-2">
+            Crew win +{POINTS.crew} · imposter win +{POINTS.imposter} · caught but guessed it +
+            {POINTS.steal}
+          </p>
         </>
       )}
 
@@ -613,4 +874,3 @@ function Over({
     </>
   );
 }
-
