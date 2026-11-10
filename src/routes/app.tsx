@@ -1,7 +1,7 @@
 import { savePendingPath } from "@/lib/pending";
 import { SeatRing } from "@/components/Brand";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { InAppBanner } from "@/components/InAppBanner";
@@ -162,14 +162,21 @@ function AppLayout() {
   }, [navigate, signedIn]);
 
   // The opening logo plays once ever (first open on this phone), not on every sign-in.
-  const [firstEver] = useState(() => {
+  // localStorage only exists in the browser, so the server and the first client render
+  // both start "unknown" (null) and we read it right after mount. A layout effect runs
+  // before the browser paints, so the logo never shows up late.
+  const [firstEver, setFirstEver] = useState<boolean | null>(null);
+  const [intro, setIntro] = useState(false);
+  useLayoutEffect(() => {
+    let first = false;
     try {
-      return localStorage.getItem("tf.intro.seen") !== "1";
+      first = localStorage.getItem("tf.intro.seen") !== "1";
     } catch {
-      return false;
+      // ignore
     }
-  });
-  const [intro, setIntro] = useState(firstEver && !introShown);
+    setFirstEver(first);
+    if (first && !introShown) setIntro(true);
+  }, []);
   useEffect(() => {
     if (!intro) return;
     const t = setTimeout(() => {
@@ -195,7 +202,10 @@ function AppLayout() {
         aria-label="Loading your 25"
       >
         <div className="flex flex-col items-center px-8 text-center">
-          {firstEver ? (
+          {firstEver === null ? (
+            // Not known yet (server render / before mount): keep the slot empty.
+            <span style={{ display: "block", width: 64, height: 64 }} aria-hidden="true" />
+          ) : firstEver ? (
             <>
               <AnimatedLogo height={230} />
               <p className="tagline-in display mt-6" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>
