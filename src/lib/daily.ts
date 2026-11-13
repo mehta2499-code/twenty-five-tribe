@@ -40,6 +40,9 @@ export const addDays = (k: string, n: number) => toKey(new Date(toDate(k).getTim
 /** 0 = Monday … 6 = Sunday */
 export const weekdayOf = (k: string) => (toDate(k).getUTCDay() + 6) % 7;
 export const gameFor = (k: string) => LINEUP[weekdayOf(k)];
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+/** "Thursday's game" — what we call today's daily game before it's revealed. */
+export const dayGameName = (k: string = dayKey()) => `${WEEKDAYS[weekdayOf(k)]}'s game`;
 export const today = () => dayKey();
 export const thisWeek = () => weekKey();
 export const lastWeek = () => addDays(weekKey(), -7);

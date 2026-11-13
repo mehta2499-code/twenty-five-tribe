@@ -3,7 +3,27 @@ import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Armchair, Bell, Cake, Camera, ChevronRight, CircleHelp, Dices, Eye, Flame, Gamepad2, Hourglass, ImagePlus, MessageCircle, PartyPopper, Shuffle, Trophy, UserPlus, Vote, type LucideIcon } from "lucide-react";
+import {
+  Armchair,
+  Bell,
+  Cake,
+  Camera,
+  ChevronRight,
+  CircleHelp,
+  Dices,
+  Eye,
+  Flame,
+  Gamepad2,
+  Hourglass,
+  ImagePlus,
+  MessageCircle,
+  PartyPopper,
+  Shuffle,
+  Trophy,
+  UserPlus,
+  Vote,
+  type LucideIcon,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
 import { BADGE_RING } from "@/components/QuizBadges";
@@ -20,7 +40,16 @@ import {
   type SocialState,
 } from "@/lib/social";
 import { GAMES } from "@/components/ArcadeGames";
-import { TRIES, dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
+import {
+  TRIES,
+  dayRanking,
+  gameFor,
+  thisWeek,
+  today,
+  useDaily,
+  weekStandings,
+  dayGameName,
+} from "@/lib/daily";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { VOICE } from "@/lib/copy";
 import { PushPrompt } from "@/components/PushPrompt";
@@ -124,7 +153,6 @@ function Table({
             style={{ inset: 10, border: "2px dashed rgba(181,219,94,0.35)" }}
           />
           {/* little things on the table */}
-
         </div>
 
         {/* You + the dice */}
@@ -255,7 +283,12 @@ function Table({
       <div className="mt-3 flex justify-center">
         <div
           className="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full whitespace-nowrap text-cool"
-          style={{ background: "var(--fill)", border: "1px solid var(--line)", fontSize: 12, fontWeight: 600 }}
+          style={{
+            background: "var(--fill)",
+            border: "1px solid var(--line)",
+            fontSize: 12,
+            fontWeight: 600,
+          }}
         >
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full" style={{ background: "var(--pink)" }} />
@@ -280,7 +313,9 @@ function Table({
       <div className="flex justify-center mt-3">
         <Link to="/app/people" className="btn-primary px-5 gap-2" style={{ minHeight: 44 }}>
           <UserPlus size={18} aria-hidden="true" />
-          {people.length >= 25 ? `Your 25 is full · manage` : `Add people · ${25 - people.length} seat${25 - people.length === 1 ? "" : "s"} left`}
+          {people.length >= 25
+            ? `Your 25 is full · manage`
+            : `Add people · ${25 - people.length} seat${25 - people.length === 1 ? "" : "s"} left`}
         </Link>
       </div>
     </section>
@@ -312,7 +347,11 @@ const DARES: { text: string; cta: string; to: string }[] = [
     to: "/app/snap",
   },
   { text: "Ask someone 'what's the tea?' and nothing else.", cta: "Open chats", to: "/app/chats" },
-  { text: "Send an ugly selfie. Streaks were built on less.", cta: "Send a blink", to: "/app/snap" },
+  {
+    text: "Send an ugly selfie. Streaks were built on less.",
+    cta: "Send a blink",
+    to: "/app/snap",
+  },
   { text: "Finish all 3 tries of today's game before bed.", cta: "Play", to: "/app/games" },
   {
     text: "Tell someone at your table one thing you never told them.",
@@ -378,9 +417,10 @@ function GameRank() {
   } catch {
     // ignore
   }
-  const g = revealed || (d.board[day]?.me ?? []).length
-    ? real
-    : { ...real, Icon: CircleHelp, name: "Mystery game", tone: "var(--sun)" };
+  const g =
+    revealed || (d.board[day]?.me ?? []).length
+      ? real
+      : { ...real, Icon: CircleHelp, name: dayGameName(day), tone: "var(--sun)" };
   const tries = d.board[day]?.me ?? [];
   const left = TRIES - tries.length;
   const todayRank = dayRanking(d, day).find((r) => r.id === "me");
@@ -391,11 +431,14 @@ function GameRank() {
     <section className="px-5 mt-6">
       <Link to="/app/games" className="card p-4 flex items-center gap-3 hover:bg-[var(--fill)]">
         <span className="shrink-0" aria-hidden="true">
-          <GameArt kind={revealed || (d.board[day]?.me ?? []).length ? gameFor(day) : "mystery"} size={48} />
+          <GameArt
+            kind={revealed || (d.board[day]?.me ?? []).length ? gameFor(day) : "mystery"}
+            size={48}
+          />
         </span>
         <span className="flex-1 min-w-0">
           <span className="block font-bold text-cream text-[15px]">
-            Today: {g.name}
+            {g.name === dayGameName(day) ? g.name : `${dayGameName(day)}: ${g.name}`}
             {left > 0 ? ` · ${left} ${left === 1 ? "try" : "tries"} left` : " · done"}
           </span>
           <span className="block meta">
@@ -453,7 +496,8 @@ function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void })
         </h3>
         {st.count > 0 && (
           <p className="meta mt-1">
-            <Ico i={Flame} c={TONE.streak} size={14} /> {st.count}-day streak{st.atRisk ? ", ends tonight" : ""}
+            <Ico i={Flame} c={TONE.streak} size={14} /> {st.count}-day streak
+            {st.atRisk ? ", ends tonight" : ""}
           </p>
         )}
         <p
@@ -665,7 +709,8 @@ function Birthdays() {
               className="chip shrink-0"
               style={{ minHeight: 34 }}
             >
-              <Ico i={Cake} c={TONE.birthday} size={14} /> {name(b.id)} · {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
+              <Ico i={Cake} c={TONE.birthday} size={14} /> {name(b.id)} ·{" "}
+              {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
             </Link>
           ))}
         </div>
@@ -817,7 +862,9 @@ function Home() {
 
       <Birthdays />
 
-      {s.mode === "live" && people.length < 10 && <SuggestionCards title="Find your people" max={12} />}
+      {s.mode === "live" && people.length < 10 && (
+        <SuggestionCards title="Find your people" max={12} />
+      )}
 
       <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
       <Tour

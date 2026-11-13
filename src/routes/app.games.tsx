@@ -1,14 +1,34 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronRight, CircleHelp, X, Dices, Gamepad2, Spade, Trophy, Type, Users, Zap, type LucideIcon } from "lucide-react";
+import {
+  ChevronRight,
+  CircleHelp,
+  X,
+  Dices,
+  Gamepad2,
+  Spade,
+  Trophy,
+  Type,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt, type ArtKind } from "@/components/GameArt";
-import { Confetti, FriendPicker, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import {
+  Confetti,
+  FriendPicker,
+  PageBand,
+  Sheet,
+  Toast,
+  buzz,
+  clientOnly,
+} from "@/components/SocialUI";
 import { DailyRunner, GAMES } from "@/components/ArcadeGames";
 import { Scoreboard } from "@/components/Scoreboard";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
-import { LINEUP, TRIES, gameFor, today, useDaily, type DailyId } from "@/lib/daily";
+import { LINEUP, TRIES, gameFor, today, useDaily, type DailyId, dayGameName } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { LocalLudo, LudoLobby } from "@/components/Ludo";
 import type { LudoState } from "@/lib/ludo";
@@ -118,7 +138,12 @@ function YourGames({ meId }: { meId: string }) {
               : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6`;
           } else if (g.kind === "imposter") {
             const p = g.state as ImpState;
-            yourTurn = p.phase === "clues" ? p.order?.[p.turn] === meId : p.phase === "vote" ? !p.votes[meId] : false;
+            yourTurn =
+              p.phase === "clues"
+                ? p.order?.[p.turn] === meId
+                : p.phase === "vote"
+                  ? !p.votes[meId]
+                  : false;
             title = `Imposter · ${p.players.length} players`;
             status =
               p.phase === "lobby"
@@ -147,10 +172,18 @@ function YourGames({ meId }: { meId: string }) {
                   {g.kind === "kachuful" ? "A bot takes your seat." : "You can't come back to it."}
                 </p>
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => setConfirm(null)} className="btn-secondary flex-1" style={{ minHeight: 38 }}>
+                  <button
+                    onClick={() => setConfirm(null)}
+                    className="btn-secondary flex-1"
+                    style={{ minHeight: 38 }}
+                  >
                     Keep
                   </button>
-                  <button onClick={() => void remove(g)} className="btn-danger flex-1" style={{ minHeight: 38 }}>
+                  <button
+                    onClick={() => void remove(g)}
+                    className="btn-danger flex-1"
+                    style={{ minHeight: 38 }}
+                  >
                     Quit
                   </button>
                 </div>
@@ -216,7 +249,10 @@ function GameTile({
   wide,
   outline,
   tour,
+  tall,
 }: {
+  /** Bigger tile (today's game). */
+  tall?: boolean;
   wide?: boolean;
   tone: string;
   light?: boolean;
@@ -243,7 +279,7 @@ function GameTile({
         border: outline ? `1.5px solid ${outline}` : "var(--bd)",
         boxShadow: outline ? "0 4px 0 rgba(193, 239, 98, 0.35), var(--soft)" : "var(--pop-lg)",
         transform: `rotate(${tilt}deg)`,
-        minHeight: 178,
+        minHeight: tall ? 250 : 178,
       }}
     >
       <span
@@ -257,7 +293,7 @@ function GameTile({
       </span>
       {art ? (
         <span className="mt-3 -ml-1" aria-hidden="true">
-          <GameArt kind={art} size={60} />
+          <GameArt kind={art} size={tall ? 92 : 60} />
         </span>
       ) : (
         <span
@@ -338,27 +374,27 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
           color: "var(--ink)",
           border: "1.5px solid var(--lime)",
           boxShadow: "0 4px 0 rgba(193, 239, 98, 0.35), var(--soft)",
-          minHeight: 178,
+          minHeight: 250,
         }}
       >
         <span
-          className="self-start text-[10.5px] font-extrabold px-2 py-0.5 rounded-full"
+          className="self-start text-[11px] font-extrabold px-2.5 py-0.5 rounded-full"
           style={{ background: "var(--lime)", color: "var(--on-accent)" }}
         >
-          {spinning ? "SPINNING…" : "TODAY'S GAME · TAP TO REVEAL"}
+          {spinning ? "SPINNING…" : "TODAY · TAP TO REVEAL"}
         </span>
         <span className="flex-1 flex items-center justify-center gap-4 py-2">
           {spinning ? (
             <span key={face} className="shrink-0 slot-tick" aria-hidden="true">
-              <GameArt kind={face} size={68} />
+              <GameArt kind={face} size={100} />
             </span>
           ) : (
             <span className="shrink-0" aria-hidden="true">
-              <GameArt kind="mystery" size={68} />
+              <GameArt kind="mystery" size={100} />
             </span>
           )}
-          <span className="display" style={{ fontSize: 26, lineHeight: 1.05 }}>
-            {spinning ? g.name : "Mystery game"}
+          <span className="display" style={{ fontSize: 32, lineHeight: 1.05 }}>
+            {spinning ? g.name : dayGameName(day)}
           </span>
         </span>
         <span className="text-[12.5px] font-semibold opacity-80">
@@ -376,11 +412,12 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
         tour="daily"
         Icon={game.Icon}
         art={gameFor(day)}
-        sticker={left > 0 ? `TODAY · ${left} ${left === 1 ? "try" : "tries"} left` : "DONE TODAY"}
+        sticker={`${dayGameName(day).toUpperCase()} · ${left > 0 ? `${left} ${left === 1 ? "TRY" : "TRIES"} LEFT` : "DONE"}`}
         title={game.name}
         line={game.blurb}
         tilt={-0.8}
         wide
+        tall
         onClick={onPlay}
       />
       <Confetti fire={party} />
@@ -465,8 +502,7 @@ function Games() {
           },
         ]}
       />
-      <PageBand
-        ring title="Games" sub="Pick one. Your 25 is waiting." />
+      <PageBand ring title="Games" sub="Pick one. Your 25 is waiting." />
 
       <div className="px-5">
         <div className="segmented w-full" role="tablist" aria-label="Games">
@@ -494,10 +530,7 @@ function Games() {
           {live && <YourGames meId={s.me!.id} />}
 
           <section className="px-5 mt-6 grid grid-cols-2 gap-3.5" aria-label="All games">
-            <MysteryTile
-              left={dailyLeft}
-              onPlay={() => setDaily(true)}
-            />
+            <MysteryTile left={dailyLeft} onPlay={() => setDaily(true)} />
             <GameTile
               tone="#2B2736"
               light

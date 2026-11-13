@@ -1,21 +1,11 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import {
-  Heart,
-  ImagePlus,
-  LayoutGrid,
-  MessageCircle,
-  Plus,
-  Send,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react";
+import { ImagePlus, LayoutGrid, Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import {
   AudienceNote,
   EmptyState,
-  FriendPicker,
   PageBand,
   Sheet,
   Toast,
@@ -23,9 +13,9 @@ import {
   clientOnly,
 } from "@/components/SocialUI";
 import { CommentsSheet, personOf } from "@/components/FeedUI";
+import { ThoughtBox } from "@/components/ThoughtBox";
 import { firstFrame } from "@/components/ChatExtras";
-import { fileToImage, friendById, social, timeAgo, useSocial, type Post } from "@/lib/social";
-import { supabase } from "@/integrations/supabase/client";
+import { fileToImage, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
 const MAX_VIDEO_MB = 50;
 
@@ -36,41 +26,24 @@ export const Route = createFileRoute("/app/feed")({
 function PostCard({
   post,
   onComments,
-  onShare,
   onDeleted,
 }: {
   post: Post;
   onComments: () => void;
-  onShare: () => void;
   onDeleted: () => void;
 }) {
   const by = personOf(post.by);
-  const liked = post.likes.includes("me");
-  const [burst, setBurst] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const lastTap = useRef(0);
-  const [showLikers, setShowLikers] = useState(false);
-  const likers = post.likes.filter((x) => x !== "me").map((x) => personOf(x).name.split(" ")[0]);
-
-  const onTap = () => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-      social.like("post", post.id);
-      buzz();
-      setBurst((b) => b + 1);
-    }
-    lastTap.current = now;
+  // No likes, no sharing: real friends just comment.
+  const [text, setText] = useState("");
+  const send = () => {
+    const t = text.trim();
+    if (!t) return;
+    buzz(8);
+    social.comment("post", post.id, t);
+    setText("");
   };
-
-  let likedBy = "";
-  if (post.likes.length) {
-    const first = liked ? "you" : likers[0];
-    const others = post.likes.length - 1;
-    likedBy =
-      others > 0
-        ? `Liked by ${first} and ${others} other${others > 1 ? "s" : ""}`
-        : `Liked by ${first}`;
-  }
+  const latest = post.comments.slice(-2);
 
   return (
     <article className="py-3" aria-label={`Post by ${by.name}`}>
@@ -95,7 +68,7 @@ function PostCard({
       {confirmDelete && (
         <Sheet title="Delete this post?" onClose={() => setConfirmDelete(false)}>
           <p className="text-cool text-sm">
-            It disappears for everyone, along with its likes and comments. This can't be undone.
+            It disappears for everyone, along with its comments. This can't be undone.
           </p>
           <button
             onClick={() => {
@@ -112,7 +85,7 @@ function PostCard({
           </button>
         </Sheet>
       )}
-      <div className="relative select-none" onClick={onTap}>
+      <div className="relative select-none">
         {post.video ? (
           <video
             src={firstFrame(post.video)}
@@ -135,83 +108,56 @@ function PostCard({
         ) : (
           <div className="w-full aspect-[4/5] skeleton" style={{ borderRadius: 0 }} />
         )}
-        {burst > 0 && (
-          <Heart
-            key={burst}
-            size={92}
-            fill="#fff"
-            className="absolute left-1/2 top-1/2 heart-burst"
-            style={{ color: "#fff" }}
-          />
-        )}
       </div>
-      <div className="flex items-center gap-1 px-2 pt-1.5">
-        <button
-          onClick={() => social.toggleLike("post", post.id)}
-          aria-label={liked ? "Unlike" : "Like"}
-          aria-pressed={liked}
-          className={`w-11 h-11 rounded-full flex items-center justify-center ${liked ? "animate-heart-pop" : ""}`}
-        >
-          <Heart
-            size={24}
-            fill={liked ? "var(--coral-deep)" : "none"}
-            style={{ color: liked ? "var(--coral-deep)" : "var(--ink)" }}
-          />
-        </button>
-        <button
-          onClick={onComments}
-          aria-label="Comments"
-          className="w-11 h-11 rounded-full flex items-center justify-center text-cream"
-        >
-          <MessageCircle size={23} />
-        </button>
-        <button
-          onClick={onShare}
-          aria-label="Send to someone in your 25"
-          className="w-11 h-11 rounded-full flex items-center justify-center text-cream"
-        >
-          <Send size={22} />
-        </button>
-      </div>
-      <div className="px-4 pb-4 grid gap-1">
-        {likedBy && (
-          <button
-            onClick={() => setShowLikers(true)}
-            className="text-left text-cream font-semibold"
-            style={{ fontSize: 14 }}
-          >
-            {likedBy}
-          </button>
-        )}
-        {showLikers && (
-          <Sheet title={`Likes · ${post.likes.length}`} onClose={() => setShowLikers(false)}>
-            <ul className="grid gap-3 pb-2">
-              {post.likes.map((id) => {
-                const p = personOf(id);
-                return (
-                  <li key={id} className="flex items-center gap-3">
-                    <Avatar src={p.avatar} initials={p.initials} color={p.color} size={40} />
-                    <span className="flex-1 font-semibold text-cream">{p.name}</span>
-                    <Heart size={16} fill="var(--coral-deep)" style={{ color: "var(--coral-deep)" }} />
-                  </li>
-                );
-              })}
-            </ul>
-          </Sheet>
-        )}
+      <div className="px-4 pt-3 pb-2 grid gap-1.5">
         {post.caption && (
           <p className="text-cream" style={{ fontSize: 15, lineHeight: 1.45 }}>
             <span className="font-semibold mr-1.5">{by.name}</span>
             {post.caption}
           </p>
         )}
-        {post.comments.length > 0 && (
+        {post.comments.length > 2 && (
           <button onClick={onComments} className="text-left meta" style={{ fontSize: 14 }}>
-            {post.comments.length === 1
-              ? "View 1 comment"
-              : `View all ${post.comments.length} comments`}
+            View all {post.comments.length} comments
           </button>
         )}
+        {latest.map((c) => (
+          <button
+            key={c.id}
+            onClick={onComments}
+            className="text-left text-cream"
+            style={{ fontSize: 14.5, lineHeight: 1.4 }}
+          >
+            <span className="font-semibold mr-1.5">{personOf(c.by).name.split(" ")[0]}</span>
+            {c.text}
+          </button>
+        ))}
+        <form
+          className="mt-1 flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            send();
+          }}
+        >
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 500))}
+            placeholder={
+              post.by === "me"
+                ? "Reply to your friends…"
+                : `Say something to ${by.name.split(" ")[0]}…`
+            }
+            aria-label="Write a comment"
+            className="input flex-1"
+            style={{ minHeight: 42, borderRadius: 999, fontSize: 14.5 }}
+            enterKeyHint="send"
+          />
+          {text.trim() && (
+            <button type="submit" className="btn-primary px-4" style={{ minHeight: 42 }}>
+              Post
+            </button>
+          )}
+        </form>
       </div>
     </article>
   );
@@ -316,18 +262,6 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
 function Feed() {
   const s = useSocial();
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
-  const [shareFor, setShareFor] = useState<string | null>(null);
-  const [shareTo, setShareTo] = useState<string[] | undefined>(undefined);
-  const startShare = async (post: Post) => {
-    setShareTo(undefined);
-    if (s.mode === "live" && s.me) {
-      // Only people who can also see this author's posts.
-      const author = post.by === "me" ? s.me.id : post.by;
-      const { data } = await supabase.rpc("share_targets", { p_author: author });
-      setShareTo(((data ?? []) as string[]).filter(Boolean));
-    }
-    setShareFor(post.id);
-  };
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const open = s.posts.find((p) => p.id === commentsFor);
@@ -364,6 +298,8 @@ function Feed() {
         }
       ></PageBand>
 
+      <ThoughtBox />
+
       {s.loading ? (
         <div aria-busy="true" aria-label="Loading posts">
           {/* Same shape as a post: full-bleed 4:5 media, padded header and text. */}
@@ -397,7 +333,6 @@ function Feed() {
                 key={p.id}
                 post={p}
                 onComments={() => setCommentsFor(p.id)}
-                onShare={() => void startShare(p)}
                 onDeleted={() => setToast("Post deleted.")}
               />
             ))}
@@ -412,24 +347,6 @@ function Feed() {
           id={open.id}
           comments={open.comments}
           onClose={() => setCommentsFor(null)}
-        />
-      )}
-      {shareFor && (
-        <FriendPicker
-          title="Send to"
-          cta="Send"
-          note="Only people who can see this post are listed."
-          only={shareTo}
-          onClose={() => setShareFor(null)}
-          onPick={(ids) => {
-            social.share(shareFor, ids, "post");
-            setShareFor(null);
-            setToast(
-              ids.length === 1
-                ? `Sent to ${friendById(ids[0])?.name.split(" ")[0]}`
-                : `Sent to ${ids.length} people`,
-            );
-          }}
         />
       )}
       {creating && (

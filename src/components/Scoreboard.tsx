@@ -113,11 +113,11 @@ const VIEWS: Record<Board, [View, string][]> = {
   ],
   trivia: [["all", "All-time"]],
 };
+// Only the two daily games count: today's game and Word Up.
 const BOARDS: [Board, string][] = [
   ["overall", "Overall"],
-  ["daily", "Daily game"],
+  ["daily", "Today's game"],
   ["word", "Word Up"],
-  ["trivia", "Trivia"],
 ];
 const RANK_PTS = (rank: number) => [10, 8, 6, 5, 4][rank - 1] ?? 2;
 const rankOf = <T,>(rows: T[], key: (r: T) => number | string) =>
@@ -255,27 +255,37 @@ export function Scoreboard() {
   const words = useWordResults(board === "word");
   const trivia = useTriviaBoard(board === "trivia");
 
-  const ranked = <T,>(list: T[], value: (r: T) => number | string) =>
-    rankOf(list, value);
+  const ranked = <T,>(list: T[], value: (r: T) => number | string) => rankOf(list, value);
 
   let rows: Row[] = [];
   if (board === "overall" && view === "all") {
-    const list = [...lifetime].sort((a, b) => b.points - a.points || b.live_wins - a.live_wins);
-    const rk = ranked(list, (r) => r.points);
+    // Today's game + Word Up only (live games like Trivia and Ludo don't count).
+    const list = lifetime
+      .map((r) => ({ ...r, total: (r.daily_points ?? 0) + (r.word_points ?? 0) }))
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total || b.daily_crowns - a.daily_crowns);
+    const rk = ranked(list, (r) => r.total);
     rows = list.map((r, i) => ({
       id: r.user_id,
       rank: rk[i],
-      value: r.points,
+      value: r.total,
       unit: "pts",
       chips: [
-        ...(r.live_wins
-          ? [chip("w", <><Ico i={Trophy} c={TONE.win} size={12} /> {r.live_wins} win{r.live_wins === 1 ? "" : "s"}</>)]
+        ...(r.daily_crowns
+          ? [
+              chip(
+                "c",
+                <>
+                  <Ico i={Crown} c={TONE.win} size={12} /> ×{r.daily_crowns}
+                </>,
+              ),
+            ]
           : []),
-        ...(r.daily_crowns ? [chip("c", <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.daily_crowns}</>)] : []),
+        ...(r.word_points ? [chip("w", `Word ${r.word_points}`)] : []),
       ],
     }));
   } else if (board === "overall") {
-    // Daily game + Word Up + Trivia for the week.
+    // Today's game + Word Up for the week.
     const arcade = weekStandings(d, weekStart);
     const ids = new Set([...arcade.map((r) => r.id), ...Object.keys(extra)]);
     const list = [...ids]
@@ -287,8 +297,7 @@ export function Scoreboard() {
           arcade: a?.points ?? 0,
           crowns: a?.wins ?? 0,
           word: e?.word ?? 0,
-          trivia: e?.trivia ?? 0,
-          total: (a?.points ?? 0) + (e?.word ?? 0) + (e?.trivia ?? 0),
+          total: (a?.points ?? 0) + (e?.word ?? 0),
         };
       })
       .filter((r) => r.total > 0)
@@ -300,9 +309,17 @@ export function Scoreboard() {
       value: r.total,
       unit: "pts",
       chips: [
-        ...(r.crowns ? [chip("c", <><Ico i={Crown} c={TONE.win} size={12} /> ×{r.crowns}</>)] : []),
+        ...(r.crowns
+          ? [
+              chip(
+                "c",
+                <>
+                  <Ico i={Crown} c={TONE.win} size={12} /> ×{r.crowns}
+                </>,
+              ),
+            ]
+          : []),
         ...(r.word ? [chip("w", `Word ${r.word}`)] : []),
-        ...(r.trivia ? [chip("t", `Trivia ${r.trivia}`)] : []),
       ],
     }));
   } else if (board === "daily") {
@@ -311,7 +328,15 @@ export function Scoreboard() {
       rank: r.rank,
       value: r.best,
       unit: g.unit,
-      chips: [chip("t", <><Ico i={RotateCw} size={12} /> {r.tries.length}</>), chip("p", `+${r.points} pts`)],
+      chips: [
+        chip(
+          "t",
+          <>
+            <Ico i={RotateCw} size={12} /> {r.tries.length}
+          </>,
+        ),
+        chip("p", `+${r.points} pts`),
+      ],
     }));
   } else if (board === "word" && view === "today") {
     const list = words.filter((r) => r.day === day).sort((a, b) => a.guesses - b.guesses);
@@ -354,7 +379,16 @@ export function Scoreboard() {
       unit: "avg",
       chips: [
         chip("s", `${r.solved}/${r.days} solved`),
-        ...(r.streak > 1 ? [chip("k", <><Ico i={Flame} c={TONE.streak} size={12} /> {r.streak}</>)] : []),
+        ...(r.streak > 1
+          ? [
+              chip(
+                "k",
+                <>
+                  <Ico i={Flame} c={TONE.streak} size={12} /> {r.streak}
+                </>,
+              ),
+            ]
+          : []),
       ],
     }));
   } else {
@@ -381,13 +415,21 @@ export function Scoreboard() {
   const streak = playStreak(d.board);
   const title =
     board === "daily" ? (
-      <><g.Icon size={14} strokeWidth={2.25} aria-hidden="true" /> {g.name}</>
+      <>
+        <g.Icon size={14} strokeWidth={2.25} aria-hidden="true" /> {g.name}
+      </>
     ) : board === "word" ? (
-      <><Ico i={Type} size={14} /> Word Up · {VIEWS.word.find(([k]) => k === view)?.[1]}</>
+      <>
+        <Ico i={Type} size={14} /> Word Up · {VIEWS.word.find(([k]) => k === view)?.[1]}
+      </>
     ) : board === "trivia" ? (
-      <><Ico i={Zap} size={14} /> Trivia duels</>
+      <>
+        <Ico i={Zap} size={14} /> Trivia duels
+      </>
     ) : (
-      <><Ico i={Trophy} size={14} /> {VIEWS.overall.find(([k]) => k === view)?.[1]}</>
+      <>
+        <Ico i={Trophy} size={14} /> {VIEWS.overall.find(([k]) => k === view)?.[1]}
+      </>
     );
   // Only a short hint where it's needed; no scoring maths on screen.
   const sub =
@@ -416,7 +458,11 @@ export function Scoreboard() {
 
   return (
     <section className="px-5 mt-5 pb-4">
-      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5" role="group" aria-label="Which game">
+      <div
+        className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5"
+        role="group"
+        aria-label="Which game"
+      >
         {BOARDS.map(([k, label]) => (
           <button
             key={k}
@@ -425,7 +471,11 @@ export function Scoreboard() {
             onClick={() => setBoard(k)}
             style={
               board === k
-                ? { background: "var(--ink)", color: "var(--on-dark-fill)", borderColor: "var(--ink)" }
+                ? {
+                    background: "var(--ink)",
+                    color: "var(--on-dark-fill)",
+                    borderColor: "var(--ink)",
+                  }
                 : undefined
             }
           >
@@ -459,7 +509,13 @@ export function Scoreboard() {
 
       {rows.length === 0 ? (
         <div className="card mt-6 p-6 text-center">
-          <Flag size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--lime)" }} />
+          <Flag
+            size={44}
+            strokeWidth={2}
+            aria-hidden="true"
+            className="mx-auto"
+            style={{ color: "var(--lime)" }}
+          />
           <p className="heading mt-3">No scores yet</p>
           <p className="meta mt-1">Play first. Set the bar. Make them sweat.</p>
         </div>
@@ -486,9 +542,7 @@ export function Scoreboard() {
                     className="rounded-full"
                     style={{
                       border: "var(--bd)",
-                      boxShadow: first
-                        ? "0 0 0 4px var(--sun), var(--pop-lg)"
-                        : "var(--pop)",
+                      boxShadow: first ? "0 0 0 4px var(--sun), var(--pop-lg)" : "var(--pop)",
                     }}
                   >
                     <Avatar
@@ -514,9 +568,7 @@ export function Scoreboard() {
             <div className="mt-7 flex items-center justify-center gap-3 text-center">
               <Sparkles size={26} aria-hidden="true" style={{ color: "var(--sun)" }} />
               <div>
-                <p className="meta font-bold">
-                  {champ}
-                </p>
+                <p className="meta font-bold">{champ}</p>
                 <p className="display uppercase" style={{ fontSize: 30, lineHeight: 1 }}>
                   {person(best.id).name}
                 </p>
@@ -524,7 +576,11 @@ export function Scoreboard() {
                   {best.value} {best.unit}
                 </p>
               </div>
-              <Sparkles size={26} aria-hidden="true" style={{ color: "var(--sun)", transform: "scaleX(-1)" }} />
+              <Sparkles
+                size={26}
+                aria-hidden="true"
+                style={{ color: "var(--sun)", transform: "scaleX(-1)" }}
+              />
             </div>
           )}
 
@@ -550,40 +606,22 @@ export function Scoreboard() {
       {board === "overall" && view === "all" && mine && (
         <div className="card mt-8 p-4">
           <p className="font-bold text-cream">Your all-time</p>
-          <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-center">
             {[
-              ["Daily pts", mine.daily_points],
+              ["Today's game pts", mine.daily_points],
               ["Word Up pts", mine.word_points ?? 0],
               ["Days played", mine.daily_days + (mine.word_days ?? 0)],
-              ["Daily wins", mine.daily_crowns],
-              ["Live games", mine.live_played],
-              ["Live wins", mine.live_wins],
-              [
-                "Win rate",
-                mine.live_played ? `${Math.round((mine.live_wins / mine.live_played) * 100)}%` : "–",
-              ],
+              ["Days won", mine.daily_crowns],
             ].map(([k, v]) => (
-              <div key={k as string} className="rounded-xl py-2" style={{ background: "var(--fill)" }}>
+              <div
+                key={k as string}
+                className="rounded-xl py-2"
+                style={{ background: "var(--fill)" }}
+              >
                 <dd className="display tabular-nums" style={{ fontSize: 22 }}>
                   {v}
                 </dd>
                 <dt className="meta" style={{ fontSize: 12 }}>
-                  {k}
-                </dt>
-              </div>
-            ))}
-          </dl>
-          <p className="meta mt-4 mb-2">Wins by game</p>
-          <dl className="grid grid-cols-4 gap-2 text-center">
-            {[
-              ["Trivia", mine.trivia_wins],
-              ["Ludo", mine.ludo_wins],
-              ["Judgement", mine.kachuful_wins],
-              ["Word Up", mine.word_wins],
-            ].map(([k, v]) => (
-              <div key={k as string} className="rounded-xl py-2" style={{ background: "var(--fill)" }}>
-                <dd className="font-extrabold tabular-nums text-cream">{v}</dd>
-                <dt className="meta" style={{ fontSize: 11.5 }}>
                   {k}
                 </dt>
               </div>
