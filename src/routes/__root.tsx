@@ -8,9 +8,11 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { useEffect } from "react";
+import { trackAppOpen } from "@/lib/track";
 import appCss from "../styles.css?url";
 
-function NotFoundComponent() {
+export function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -150,6 +152,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Analytics: one app_open per visit (landing page included) + install listener.
+  useEffect(() => trackAppOpen(), []);
 
   return (
     <QueryClientProvider client={queryClient}>

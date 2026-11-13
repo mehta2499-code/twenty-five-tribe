@@ -21,6 +21,7 @@ import {
   weekDays,
   weekStandings,
 } from "@/lib/daily";
+import { track } from "@/lib/track";
 
 type Row = {
   id: string;
@@ -237,6 +238,7 @@ const chip = (k: string, node: React.ReactNode) => ({ k, node });
 
 export function Scoreboard() {
   const d = useDaily();
+  useEffect(() => track("leaderboard_viewed"), []);
   const [board, setBoard] = useState<Board>("overall");
   const [views, setViews] = useState<Record<Board, View>>({
     overall: "week",

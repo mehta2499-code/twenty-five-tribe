@@ -4,6 +4,7 @@
  * Answers are checked on the server (see supabase/migrations/*_vibe_check.sql).
  */
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/track";
 
 export type Choice = "a" | "b";
 export type VibeQuestion = {
@@ -127,6 +128,7 @@ export type QuizStart = { passed: true } | { passed: false; attempt: string; que
 export async function startQuiz(targetId: string): Promise<QuizStart> {
   const { data, error } = await supabase.rpc("start_vibe_quiz", { p_target: targetId });
   if (error) throw new Error(message(error));
+  if (!(data as QuizStart).passed) track("quiz_started");
   return data as QuizStart;
 }
 
@@ -136,7 +138,10 @@ export async function submitQuiz(attempt: string, guesses: Record<string, string
     p_guesses: guesses,
   });
   if (error) throw new Error(message(error));
-  return data as { score: number; total: number; passed: boolean };
+  const r = data as { score: number; total: number; passed: boolean };
+  // Only the score, never the answers.
+  track("quiz_completed", { score: `${r.score}/${r.total}`, correct: r.score, total: r.total, passed: r.passed });
+  return r;
 }
 
 export type PublicCard = {

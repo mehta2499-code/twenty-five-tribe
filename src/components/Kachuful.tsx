@@ -29,6 +29,7 @@ import {
 } from "@/lib/kachuful";
 import { botSeats } from "@/lib/games";
 import { mutualFriends, useSocial, type Person } from "@/lib/social";
+import { track } from "@/lib/track";
 
 // ---------- Cards ----------
 const RED = "#C8364F";
@@ -921,7 +922,10 @@ export function LocalKachuful({
   turnSeconds?: number;
   onClose: () => void;
 }) {
-  const [state, setState] = useState(() => newGame(seats, length, undefined, scoring, turnSeconds));
+  const [state, setState] = useState(() => {
+    track("game_started", { game: "judgement", solo: true });
+    return newGame(seats, length, undefined, scoring, turnSeconds);
+  });
   const [confirmLeave, setConfirmLeave] = useState(false);
   useBotTurns(state, true, setState);
   // A solo game isn't saved anywhere, so check before throwing it away mid-game.

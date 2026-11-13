@@ -5,6 +5,7 @@ import { Confetti, buzz } from "@/components/SocialUI";
 import { ME, type TriviaPack } from "@/lib/data";
 import { buildRound, markSeen, newSeed } from "@/lib/trivia";
 import { social, useSocial } from "@/lib/social";
+import { track } from "@/lib/track";
 
 const SECONDS = 10;
 
@@ -30,7 +31,11 @@ export function TriviaGame({
 }) {
   const s = useSocial();
   const me = s.me ?? { name: "You", avatar: ME.avatar, initials: ME.initials };
-  const [questions] = useState(() => buildRound(pack.id, seed ?? newSeed(), seed === undefined));
+  const [questions] = useState(() => {
+    // Solo rounds; challenges are logged when they're created.
+    if (seed === undefined) track("game_started", { game: "trivia", solo: true });
+    return buildRound(pack.id, seed ?? newSeed(), seed === undefined);
+  });
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);

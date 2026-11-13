@@ -22,6 +22,7 @@ import {
   type LudoColor,
   type LudoState,
 } from "@/lib/ludo";
+import { track } from "@/lib/track";
 
 export const LUDO_BOT_NAMES = ["Chintu", "Pinky", "Bunty"];
 export const ludoBots = (n: number) =>
@@ -64,7 +65,10 @@ export function LocalLudo({
   onClose: () => void;
 }) {
   const fresh = () => newLudo([me, ...ludoBots(bots)]);
-  const [state, setState] = useState<LudoState>(fresh);
+  const [state, setState] = useState<LudoState>(() => {
+    track("game_started", { game: "ludo", solo: true });
+    return fresh();
+  });
   useLudoBots(state, true, setState);
   return (
     <LudoTable

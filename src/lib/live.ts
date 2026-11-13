@@ -3,6 +3,7 @@
  * Signed out, the app keeps running on demo data (see social.ts).
  */
 import type { RealtimeChannel, Session } from "@supabase/supabase-js";
+import { track } from "@/lib/track";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -890,6 +891,7 @@ export const account = {
       .from("profiles")
       .upsert({ id: myId, username, display_name: displayName, avatar_path }, { onConflict: "id" });
     if (error) throw new Error(friendly(error));
+    track("signup_completed");
 
     const { error: passwordError } = await supabase.auth.updateUser({ password: input.password });
     await loadAll();
@@ -1032,7 +1034,11 @@ export const account = {
   /** Put someone in your 25 (after passing the quiz about them). */
   async request(personId: string) {
     try {
+      // Did they already seat me? Then this makes it mutual.
+      const theySeatedMe = _get().requests.some((r) => r.person.id === personId);
       await run(supabase.from("seats").insert({ owner: myId, guest: personId }).select());
+      track("seat_added");
+      if (theySeatedMe) track("mutual_seat");
       await loadAll();
     } catch (e) {
       throw new Error(friendly(e));
@@ -1099,6 +1105,7 @@ registerLive({
     seconds: number;
   }) {
     if (!myId || !input.to.length) return;
+    track("blink_sent", { recipients: input.to.length, photo: !!input.image });
     const me = myId;
     const id = newId();
     // Show it as sent straight away; the server confirms streaks a moment later.
@@ -1194,6 +1201,7 @@ registerLive({
 
   addPost(image: string, caption: string, video?: Blob) {
     if (!myId) return;
+    track("post_created", { video: !!video });
     const me = myId;
     const id = newId();
     const preview = video ? URL.createObjectURL(video) : undefined;

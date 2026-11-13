@@ -4,6 +4,7 @@
  * so two players can't overwrite each other.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { track } from "@/lib/track";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
@@ -105,6 +106,7 @@ export async function startKachuful(
   scoring: Scoring = "classic",
   turnSeconds = 0,
 ) {
+  track("game_started", { game: "judgement" });
   const s = _get();
   const me = s.me!;
   const seats = [
@@ -132,6 +134,7 @@ export async function startKachuful(
 }
 
 export async function startTriviaChallenge(packId: string, friend: Person) {
+  track("game_started", { game: "trivia" });
   const me = myId();
   const id = uuid();
   const state: TriviaState = {
@@ -148,6 +151,7 @@ export async function startTriviaChallenge(packId: string, friend: Person) {
 }
 
 export async function startLudo(friends: Person[], bots = 0) {
+  track("game_started", { game: "ludo" });
   const me = _get().me!;
   const { ludoBots } = await import("@/components/Ludo");
   const players = [
@@ -180,6 +184,7 @@ export async function startLudo(friends: Person[], bots = 0) {
 }
 
 export async function startWordChallenge(friend: Person, word: string) {
+  track("game_started", { game: "word_challenge" });
   const me = myId();
   const id = uuid();
   const state: WordState = { hidden: hideWord(word), setter: me, guesser: friend.id, guesses: [] };
@@ -241,6 +246,7 @@ export async function quitGame(g: GameRow, meId: string) {
 
 /** Start an Imposter party: you're the host; others join from the link. */
 export async function startParty() {
+  track("game_started", { game: "imposter" });
   const me = _get().me!;
   const state = newParty({ id: me.id, name: me.name, initials: me.initials });
   const id = uuid();

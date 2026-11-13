@@ -8,6 +8,7 @@ import { Avatar } from "@/components/Avatar";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
 import { friendById, meView, social } from "@/lib/social";
 import { addDays, saveWord, today, useDaily } from "@/lib/daily";
+import { track } from "@/lib/track";
 
 export const WORD_LEN = 5;
 export const MAX_GUESSES = 6;
@@ -284,6 +285,7 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
     : "";
 
   const guess = (g: string) => {
+    if (guesses.length === 0) track("game_started", { game: "word_up", daily: true });
     const next = [...guesses, g];
     setGuesses(next);
     try {

@@ -5,6 +5,7 @@
  * Also holds Word Up daily results.
  */
 import { useEffect, useSyncExternalStore } from "react";
+import { track } from "@/lib/track";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, dayKey, mutualFriends, useSocial, weekKey } from "@/lib/social";
 
@@ -223,6 +224,7 @@ export function myTries(day = today()) {
 export async function startTry(): Promise<{ day: string; tryNo: number }> {
   const day = today();
   if (myTries(day).length >= TRIES) throw new Error("No tries left today. New game at midnight.");
+  track("game_started", { game: gameFor(day), daily: true, try: myTries(day).length + 1 });
   if (_get().mode === "live") {
     const { data, error } = await supabase.rpc("start_daily_try");
     if (error) throw new Error(error.message);
