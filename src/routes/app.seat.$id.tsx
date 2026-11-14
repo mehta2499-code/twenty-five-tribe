@@ -79,9 +79,32 @@ function LiveSeat() {
         </h1>
         {f.username && <p className="sub mt-1">@{f.username}</p>}
         {bday && (
-          <Link to="/app/card/$id" params={{ id }} className="sub mt-1 inline-block underline underline-offset-4">
+          <Link
+            to="/app/card/$id"
+            params={{ id }}
+            className="sub mt-1 inline-block underline underline-offset-4"
+          >
             <Ico i={Cake} c={TONE.birthday} size={14} /> {bdayLabel(bday)}
-            {daysUntil(bday) === 0 ? " · today! Sign the card" : daysUntil(bday) <= 7 ? ` · in ${daysUntil(bday)}d` : ""}
+            {daysUntil(bday) === 0
+              ? " · today! Sign the card"
+              : daysUntil(bday) <= 7
+                ? ` · in ${daysUntil(bday)}d`
+                : ""}
+          </Link>
+        )}
+        {bday && daysUntil(bday) <= 7 && (
+          <Link
+            to="/app/card/$id"
+            params={{ id }}
+            className="btn-primary mt-4 px-6 gap-2 mx-auto"
+            style={{ background: "var(--pink)", minHeight: 48 }}
+          >
+            🎂 Wish {f.name.split(" ")[0]}
+            <span className="font-semibold opacity-80 text-[13px]">
+              {daysUntil(bday) === 0
+                ? "· it's today!"
+                : `· in ${daysUntil(bday)} day${daysUntil(bday) === 1 ? "" : "s"}`}
+            </span>
           </Link>
         )}
         <p className="mt-3">
@@ -124,7 +147,16 @@ function LiveSeat() {
 
       <div className="px-5 -mt-5 relative grid grid-cols-3 gap-3">
         {[
-          { n: st.count ? <><Ico i={Flame} c={TONE.streak} size={18} /> {st.count}</> : "–", l: st.atRisk ? "blink today!" : "blink streak" },
+          {
+            n: st.count ? (
+              <>
+                <Ico i={Flame} c={TONE.streak} size={18} /> {st.count}
+              </>
+            ) : (
+              "–"
+            ),
+            l: st.atRisk ? "blink today!" : "blink streak",
+          },
           { n: String((s.chats[id] ?? []).length), l: "messages" },
           { n: String(posts), l: "posts" },
         ].map((x) => (
@@ -134,7 +166,9 @@ function LiveSeat() {
             </p>
             <p
               className="text-xs"
-              style={{ color: x.l === "blink today!" ? "var(--accent-ember)" : "var(--text-muted)" }}
+              style={{
+                color: x.l === "blink today!" ? "var(--accent-ember)" : "var(--text-muted)",
+              }}
             >
               {x.l}
             </p>
@@ -144,9 +178,7 @@ function LiveSeat() {
 
       {!mutual && (
         <div className="mx-5 mt-6 card p-4">
-          <p className="font-bold text-cream">
-            {inMine ? "Waiting on them" : "Your move"}
-          </p>
+          <p className="font-bold text-cream">{inMine ? "Waiting on them" : "Your move"}</p>
           <p className="meta mt-1">
             {inMine
               ? `${f.name.split(" ")[0]} can see your posts. Chats, blinks and games unlock when they seat you back.`

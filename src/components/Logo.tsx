@@ -133,7 +133,7 @@ export function SeatLogo({
             cx={x}
             cy={y}
             r={r}
-            fill={on && !animate ? "var(--lime)" : "var(--fill-2)"}
+            fill={on && !animate ? "var(--lime)" : "rgba(245,241,250,0.9)"}
             style={
               animate
                 ? { animationDelay: `${i * 0.07}s` }

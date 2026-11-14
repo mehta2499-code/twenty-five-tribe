@@ -174,80 +174,97 @@ function Table({
       .filter(([, d]) => d <= 7),
   );
 
-  // A living table: now and then two people interact. Opposite each other →
-  // table tennis; next to each other → cheers.
-  const [scene, setScene] = useState<{
-    kind: "pong" | "cheers";
-    a: number;
-    b: number;
-    key: number;
-  } | null>(null);
-  const ballRef = useRef<HTMLSpanElement>(null);
+  // A living table: every few seconds something small happens between friends.
+  const [scene, setScene] = useState<Scene | null>(null);
+  // Tap the empty table: a Mexican wave runs around it.
+  const [wave, setWave] = useState(0);
+  const spriteRef = useRef<HTMLSpanElement>(null);
   const placesKey = places.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("|");
+  const angle = (i: number) => Math.atan2(places[i].y - 50, places[i].x - 50);
+  const aroundOrder = new Map(
+    places
+      .map((_, i) => i)
+      .sort((a, b) => angle(a) - angle(b))
+      .map((i, k) => [i, k] as const),
+  );
   useEffect(() => {
     if (seated.length < 2) return;
-    if (typeof window !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches)
-      return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let alive = true;
     let t: ReturnType<typeof setTimeout>;
-    const angle = (i: number) => Math.atan2(places[i].y - 50, places[i].x - 50);
-    const pick = () => {
-      // Neighbours: same ring, next to each other by angle.
-      const cheers: [number, number][] = [];
+    const pick = (): Scene | null => {
+      const rnd = <T,>(l: T[]) => l[Math.floor(Math.random() * l.length)];
+      // Neighbours: same ring, next to each other around the table.
+      const near: [number, number][] = [];
       for (const ring of [0, 1, 2]) {
         const ids = places
           .map((p, i) => ({ p, i }))
           .filter((o) => o.p.ring === ring)
-          .sort((a, b) => angle(a.i) - angle(b.i))
+          .sort((x, y) => angle(x.i) - angle(y.i))
           .map((o) => o.i);
-        if (ids.length >= 2)
-          ids.forEach((id, k) => {
-            const next = ids[(k + 1) % ids.length];
-            if (next !== id && !(ids.length === 2 && k === 1)) cheers.push([id, next]);
-          });
+        for (let k = 0; k < ids.length && ids.length >= 2; k++) {
+          const next = ids[(k + 1) % ids.length];
+          if (next !== ids[k] && !(ids.length === 2 && k === 1)) near.push([ids[k], next]);
+        }
       }
       // Opposite: about 180° apart.
-      const pong: [number, number][] = [];
-      for (let a = 0; a < places.length; a++)
-        for (let b = a + 1; b < places.length; b++) {
-          const d = Math.abs(angle(a) - angle(b));
-          if (Math.abs(d - Math.PI) < 0.45) pong.push([a, b]);
+      const across: [number, number][] = [];
+      for (let x = 0; x < places.length; x++)
+        for (let y = x + 1; y < places.length; y++) {
+          const d = Math.abs(angle(x) - angle(y));
+          if (Math.abs(d - Math.PI) < 0.45) across.push([x, y]);
         }
-      const usePong = pong.length > 0 && (cheers.length === 0 || Math.random() < 0.5);
-      const list = usePong ? pong : cheers;
-      if (!list.length) return null;
-      const [a, b] = list[Math.floor(Math.random() * list.length)];
-      return { kind: (usePong ? "pong" : "cheers") as "pong" | "cheers", a, b, key: Date.now() };
+      const anyTwo = (): [number, number] => {
+        const x = Math.floor(Math.random() * places.length);
+        let y = Math.floor(Math.random() * (places.length - 1));
+        if (y >= x) y++;
+        return [x, y];
+      };
+      const bday = seated.map((f, i) => (bdayIn.has(f.id) ? i : -1)).filter((i) => i >= 0);
+      const fire = seated
+        .map((f, i) => ((s.streaks[f.id]?.count ?? 0) > 0 ? i : -1))
+        .filter((i) => i >= 0);
+      const choices: (() => Scene)[] = [];
+      const key = Date.now();
+      if (near.length)
+        for (const kind of ["cheers", "highfive", "chai", "whisper"] as const)
+          choices.push(() => {
+            const [x, y] = rnd(near);
+            return { kind, a: x, b: y, key };
+          });
+      if (across.length)
+        for (const kind of ["pong", "wave"] as const)
+          choices.push(() => {
+            const [x, y] = rnd(across);
+            return { kind, a: x, b: y, key };
+          });
+      choices.push(() => {
+        const [x, y] = anyTwo();
+        return { kind: "plane", a: x, b: y, key };
+      });
+      if (bday.length)
+        choices.push(() => {
+          const x = rnd(bday);
+          const n = near.find((p) => p[0] === x || p[1] === x);
+          return { kind: "bday", a: x, b: n ? (n[0] === x ? n[1] : n[0]) : -1, key };
+        });
+      if (fire.length) choices.push(() => ({ kind: "fire", a: rnd(fire), b: -1, key }));
+      return choices.length ? rnd(choices)() : null;
     };
-    const loop = () => {
-      t = setTimeout(
-        () => {
-          if (!alive) return;
-          if (!rolling && document.visibilityState === "visible") {
-            const sc = pick();
-            if (sc) {
-              setScene(sc);
-              setTimeout(
-                () => alive && setScene((cur) => (cur?.key === sc.key ? null : cur)),
-                3400,
-              );
-            }
-          }
-          loop();
-        },
-        6000 + Math.random() * 3000,
-      );
-    };
-    // First one comes a little sooner.
-    t = setTimeout(() => {
-      if (!alive) return;
+    const play = () => {
+      if (!alive || rolling || document.visibilityState !== "visible") return;
       const sc = pick();
-      if (sc && !rolling) {
-        setScene(sc);
-        setTimeout(() => alive && setScene((cur) => (cur?.key === sc.key ? null : cur)), 3400);
-      }
-      loop();
-    }, 2500);
+      if (!sc) return;
+      setScene(sc);
+      setTimeout(() => alive && setScene((cur) => (cur?.key === sc.key ? null : cur)), 3400);
+    };
+    const loop = (ms: number) => {
+      t = setTimeout(() => {
+        play();
+        loop(5000 + Math.random() * 3000);
+      }, ms);
+    };
+    loop(2200);
     return () => {
       alive = false;
       clearTimeout(t);
@@ -257,36 +274,73 @@ function Table({
   useEffect(() => {
     if (rolling) setScene(null);
   }, [rolling]);
+  useEffect(() => {
+    if (!wave) return;
+    const t = setTimeout(() => setWave(0), 600 + seated.length * 70);
+    return () => clearTimeout(t);
+  }, [wave, seated.length]);
 
   const px = (i: number) => ({ x: (places[i].x / 100) * W, y: (places[i].y / 100) * H });
-  // Table tennis: the ball flies between the two players 4 times.
+  // Things that travel: the pong ball, the paper plane, the chai.
   useEffect(() => {
-    if (scene?.kind !== "pong" || !ballRef.current) return;
+    const el = spriteRef.current;
+    if (!scene || !el || !["pong", "plane", "chai"].includes(scene.kind)) return;
     const A = px(scene.a);
     const B = px(scene.b);
-    const ends = [A, B];
-    const frames: Keyframe[] = [];
-    for (let k = 0; k <= 4; k++) {
-      const p = ends[k % 2];
-      // Ball stops a bit short of the face.
-      const q = ends[(k + 1) % 2];
-      const x = p.x + (q.x - p.x) * 0.18;
-      const y = p.y + (q.y - p.y) * 0.18;
-      frames.push({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`, offset: k / 4 });
-      if (k < 4) {
-        const nx = q.x + (p.x - q.x) * 0.18;
-        const ny = q.y + (p.y - q.y) * 0.18;
-        frames.push({
-          transform: `translate(${(x + nx) / 2}px, ${(y + ny) / 2 - 26}px) translate(-50%, -50%) scale(1.3)`,
-          offset: (k + 0.5) / 4,
-        });
+    const at = (p: { x: number; y: number }, extra = "") =>
+      `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) ${extra}`;
+    let anim: Animation;
+    if (scene.kind === "pong") {
+      const ends = [A, B];
+      const frames: Keyframe[] = [];
+      for (let k = 0; k <= 4; k++) {
+        const p = ends[k % 2];
+        const q = ends[(k + 1) % 2];
+        const from = { x: p.x + (q.x - p.x) * 0.18, y: p.y + (q.y - p.y) * 0.18 };
+        frames.push({ transform: at(from), offset: k / 4 });
+        if (k < 4) {
+          const to = { x: q.x + (p.x - q.x) * 0.18, y: q.y + (p.y - q.y) * 0.18 };
+          frames.push({
+            transform: at({ x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 26 }, "scale(1.3)"),
+            offset: (k + 0.5) / 4,
+          });
+        }
       }
+      anim = el.animate(frames, { duration: 2900, easing: "linear", fill: "forwards" });
+    } else if (scene.kind === "plane") {
+      // A curve: lift off sideways, glide over, land.
+      const mx = (A.x + B.x) / 2;
+      const my = (A.y + B.y) / 2;
+      const nx = -(B.y - A.y);
+      const ny = B.x - A.x;
+      const len = Math.hypot(nx, ny) || 1;
+      const mid = { x: mx + (nx / len) * 45, y: my + (ny / len) * 45 };
+      const deg = (p: { x: number; y: number }, q: { x: number; y: number }) =>
+        (Math.atan2(q.y - p.y, q.x - p.x) * 180) / Math.PI + 45;
+      anim = el.animate(
+        [
+          { transform: at(A, `rotate(${deg(A, mid)}deg) scale(0.6)`), opacity: 0 },
+          { transform: at(A, `rotate(${deg(A, mid)}deg) scale(1)`), opacity: 1, offset: 0.12 },
+          { transform: at(mid, `rotate(${deg(A, B)}deg) scale(1.15)`), offset: 0.55 },
+          { transform: at(B, `rotate(${deg(mid, B)}deg) scale(0.9)`), opacity: 1, offset: 0.92 },
+          { transform: at(B, `rotate(${deg(mid, B)}deg) scale(0.5)`), opacity: 0 },
+        ],
+        { duration: 2600, easing: "ease-in-out", fill: "forwards" },
+      );
+    } else {
+      // Chai slides across the table to the neighbour.
+      anim = el.animate(
+        [
+          { transform: at(A, "scale(0.4)"), opacity: 0 },
+          { transform: at(A, "scale(1)"), opacity: 1, offset: 0.15 },
+          { transform: at(A, "scale(1) rotate(-8deg)"), offset: 0.3 },
+          { transform: at(B, "scale(1) rotate(6deg)"), offset: 0.75 },
+          { transform: at(B, "scale(1.2)"), opacity: 1, offset: 0.88 },
+          { transform: at(B, "scale(0.6)"), opacity: 0 },
+        ],
+        { duration: 2800, easing: "ease-in-out", fill: "forwards" },
+      );
     }
-    const anim = ballRef.current.animate(frames, {
-      duration: 2900,
-      easing: "linear",
-      fill: "forwards",
-    });
     return () => anim.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene?.key]);
@@ -296,40 +350,23 @@ function Table({
       ref={boxRef}
       className="flex-1 min-h-[260px] flex items-center justify-center px-4 py-3"
       aria-label="Your table"
-      onPointerDown={() => setScene(null)}
+      onPointerDown={(e) => {
+        const el = e.target as HTMLElement;
+        if (el.closest("a, button")) return setScene(null);
+        if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setWave(Date.now());
+      }}
     >
       <div className="relative" style={{ width: W, height: H }}>
-        {/* Ring lines */}
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="absolute inset-0 w-full h-full"
-          aria-hidden="true"
-        >
-          {RINGS.map((ring, i) => (
-            <ellipse
-              key={i}
-              cx={50}
-              cy={50}
-              rx={ring.r}
-              ry={ring.r}
-              fill="none"
-              stroke={i === 0 ? "rgba(193,239,98,0.22)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-              strokeDasharray={i === 0 ? "4 4" : undefined}
-            />
-          ))}
-        </svg>
-
-        {/* Table top: just the dice */}
+        {/* The table itself: a big glass oval the closest ring sits around. */}
         <div
           className="absolute rounded-full"
           style={{
-            inset: "39.5%",
+            inset: "31%",
             background:
-              "radial-gradient(circle at 35% 30%, rgba(181,219,94,0.2), transparent 65%), #24212D",
-            border: "1px solid var(--line)",
+              "radial-gradient(circle at 35% 28%, rgba(193,239,98,0.16), transparent 60%), var(--glass-bg), #211E2B",
+            border: "1px solid rgba(193,239,98,0.22)",
+            boxShadow:
+              "0 18px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -10px 30px rgba(0,0,0,0.25)",
           }}
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -371,22 +408,30 @@ function Table({
           const score = scores[f.id];
           const small = ring === 2;
           const bdayDays = bdayIn.get(f.id);
-          // Cheers: lean toward the other person.
-          const inScene = scene?.kind === "cheers" && (scene.a === i || scene.b === i);
+          // Cheers / high five: both lean in. Whisper: the whisperer leans in.
+          const inScene =
+            !!scene &&
+            (((scene.kind === "cheers" || scene.kind === "highfive") &&
+              (scene.a === i || scene.b === i)) ||
+              (scene.kind === "whisper" && scene.a === i));
           const other = inScene ? (scene!.a === i ? scene!.b : scene!.a) : -1;
-          const lean = inScene
-            ? (() => {
-                const dx = places[other].x - x;
-                const dy = places[other].y - y;
-                const len = Math.hypot(dx, dy) || 1;
-                return {
-                  "--dx": `${(dx / len) * 7}px`,
-                  "--dy": `${(dy / len) * 7}px`,
-                  "--rot": `${dx >= 0 ? 10 : -10}deg`,
-                  animation: "lean 3.2s var(--ease, ease) both",
-                } as React.CSSProperties;
-              })()
-            : undefined;
+          const lean = wave
+            ? ({
+                animation: `face-bob 0.55s ease ${(aroundOrder.get(i) ?? 0) * 0.06}s both`,
+              } as React.CSSProperties)
+            : inScene
+              ? (() => {
+                  const dx = places[other].x - x;
+                  const dy = places[other].y - y;
+                  const len = Math.hypot(dx, dy) || 1;
+                  return {
+                    "--dx": `${(dx / len) * 7}px`,
+                    "--dy": `${(dy / len) * 7}px`,
+                    "--rot": `${dx >= 0 ? 10 : -10}deg`,
+                    animation: "lean 3.2s var(--ease, ease) both",
+                  } as React.CSSProperties;
+                })()
+              : undefined;
           return (
             <Link
               key={f.id}
@@ -472,53 +517,114 @@ function Table({
             aria-hidden="true"
             style={{ zIndex: 4 }}
           >
-            {scene.kind === "pong" ? (
-              <>
-                {[scene.a, scene.b].map((i, k) => {
-                  const me = px(i);
-                  const them = px(k === 0 ? scene.b : scene.a);
-                  return (
-                    <span
-                      key={k}
-                      className="absolute text-[20px]"
-                      style={{
-                        left: me.x + (them.x - me.x) * 0.1,
-                        top: me.y + (them.y - me.y) * 0.1,
-                        animation: "paddle-in 3.2s ease both",
-                      }}
-                    >
-                      🏓
-                    </span>
-                  );
-                })}
-                <span
-                  ref={ballRef}
-                  className="absolute left-0 top-0 rounded-full"
-                  style={{
-                    width: 9,
-                    height: 9,
-                    background: "#fff",
-                    boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 4px 6px rgba(0,0,0,0.4)",
-                  }}
-                />
-              </>
-            ) : (
-              <span
-                className="absolute text-[26px]"
-                style={{
-                  left: (px(scene.a).x + px(scene.b).x) / 2,
-                  top: (px(scene.a).y + px(scene.b).y) / 2,
-                  animation: "cheers-pop 3.2s ease both",
-                }}
-              >
-                🥂
-              </span>
-            )}
+            <SceneArt scene={scene} px={px} spriteRef={spriteRef} />
           </div>
         )}
       </div>
     </section>
   );
+}
+
+type Scene = {
+  kind: "pong" | "cheers" | "highfive" | "plane" | "chai" | "whisper" | "wave" | "bday" | "fire";
+  a: number;
+  b: number;
+  key: number;
+};
+
+/** What each little table scene looks like. Positions come from the seats. */
+function SceneArt({
+  scene,
+  px,
+  spriteRef,
+}: {
+  scene: Scene;
+  px: (i: number) => { x: number; y: number };
+  spriteRef: React.RefObject<HTMLSpanElement | null>;
+}) {
+  const A = px(scene.a);
+  const B = scene.b >= 0 ? px(scene.b) : A;
+  const mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+  const pop = (
+    text: string,
+    at: { x: number; y: number },
+    anim: string,
+    size = 24,
+    delay = 0,
+    lift = 0,
+  ) => (
+    <span
+      className="absolute"
+      style={{
+        left: at.x,
+        top: at.y - lift,
+        fontSize: size,
+        lineHeight: 1,
+        animation: `${anim} ${3.2 - delay}s ease ${delay}s both`,
+      }}
+    >
+      {text}
+    </span>
+  );
+  const sprite = (content: React.ReactNode, style?: React.CSSProperties) => (
+    <span ref={spriteRef} className="absolute left-0 top-0" style={{ lineHeight: 1, ...style }}>
+      {content}
+    </span>
+  );
+  switch (scene.kind) {
+    case "pong":
+      return (
+        <>
+          {pop("🏓", { x: A.x + (B.x - A.x) * 0.1, y: A.y + (B.y - A.y) * 0.1 }, "paddle-in", 20)}
+          {pop("🏓", { x: B.x + (A.x - B.x) * 0.1, y: B.y + (A.y - B.y) * 0.1 }, "paddle-in", 20)}
+          {sprite(null, {
+            width: 9,
+            height: 9,
+            borderRadius: 999,
+            background: "#fff",
+            boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 4px 6px rgba(0,0,0,0.4)",
+          })}
+        </>
+      );
+    case "cheers":
+      return pop("🥂", mid, "cheers-pop", 26);
+    case "highfive":
+      return (
+        <>
+          {pop("🙌", mid, "cheers-pop", 26)}
+          {pop("✨", { x: mid.x + 14, y: mid.y - 18 }, "spark", 16, 0.5)}
+        </>
+      );
+    case "plane":
+      return sprite("✈️", { fontSize: 22 });
+    case "chai":
+      return sprite("☕", { fontSize: 22 });
+    case "whisper":
+      return (
+        <>
+          {pop("💬", A, "bubble-in", 20, 0, 30)}
+          {pop("😂", B, "bubble-in", 20, 1.3, 30)}
+        </>
+      );
+    case "wave":
+      return (
+        <>
+          {pop("👋", A, "hand-wave", 24, 0, 30)}
+          {pop("👋", B, "hand-wave", 24, 1.1, 30)}
+        </>
+      );
+    case "bday":
+      return (
+        <>
+          {pop("🎉", A, "confetti-pop", 28, 0, 34)}
+          {pop("✨", { x: A.x - 20, y: A.y }, "spark", 16, 0.3, 20)}
+          {pop("✨", { x: A.x + 22, y: A.y }, "spark", 14, 0.5, 26)}
+          {scene.b >= 0 && pop("🥳", B, "bubble-in", 20, 1.1, 30)}
+        </>
+      );
+    case "fire":
+      return pop("🔥", A, "flare", 30, 0, 28);
+  }
 }
 
 /** A tilted, striped party hat that sits on a face (birthday this week). */
@@ -934,76 +1040,35 @@ function TodayTiles() {
 // ---------- Birthdays ----------
 
 function Birthdays() {
+  // Friends' birthdays now show as party hats at the Table (and a Wish button on
+  // their page). Only your own birthday gets a banner here, to open your card.
   const list = useBirthdays();
   const s = useSocial();
   const mine = list.find((b) => b.id === "me");
-  const soon = upcoming(list, 7);
-  const todayOnes = soon.filter((b) => b.inDays === 0);
-  const later = soon.filter((b) => b.inDays > 0).slice(0, 6);
-  const myDay = mine && daysUntil(mine) === 0;
-  if (!myDay && !soon.length) return null;
-  const name = (id: string) => friendById(id)?.name.split(" ")[0] ?? "Someone";
+  if (!mine || daysUntil(mine) !== 0) return null;
   return (
-    <section className="px-5 mt-6 grid gap-3">
-      {myDay && (
-        <Link
-          to="/app/card/$id"
-          params={{ id: "me" }}
-          className="rounded-[20px] p-4 flex items-center gap-3"
-          style={{
-            background: "var(--pink)",
-            color: "var(--on-accent)",
-            border: "var(--bd)",
-            boxShadow: "var(--pop)",
-          }}
-        >
-          <PartyPopper size={36} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
-          <span className="flex-1">
-            <span className="block display text-[20px]">
-              Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!
-            </span>
-            <span className="block font-bold text-[13px]">
-              Your 25 has been signing your card. Open it →
-            </span>
+    <section className="px-5 mt-2">
+      <Link
+        to="/app/card/$id"
+        params={{ id: "me" }}
+        className="rounded-[20px] p-4 flex items-center gap-3"
+        style={{
+          background: "var(--pink)",
+          color: "var(--on-accent)",
+          border: "var(--bd)",
+          boxShadow: "var(--pop)",
+        }}
+      >
+        <PartyPopper size={36} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
+        <span className="flex-1">
+          <span className="block display text-[20px]">
+            Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!
           </span>
-        </Link>
-      )}
-      {todayOnes.map((b) => (
-        <Link
-          key={b.id}
-          to="/app/card/$id"
-          params={{ id: b.id }}
-          className="rounded-[20px] p-4 flex items-center gap-3"
-          style={{
-            background: "var(--sun)",
-            color: "var(--on-accent)",
-            border: "var(--bd)",
-            boxShadow: "var(--pop)",
-          }}
-        >
-          <Cake size={36} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
-          <span className="flex-1">
-            <span className="block display text-[19px]">It's {name(b.id)}'s birthday!</span>
-            <span className="block font-bold text-[13px]">Sign their card before midnight</span>
+          <span className="block font-bold text-[13px]">
+            Your 25 has been signing your card. Open it →
           </span>
-        </Link>
-      ))}
-      {later.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5">
-          {later.map((b) => (
-            <Link
-              key={b.id}
-              to="/app/card/$id"
-              params={{ id: b.id }}
-              className="chip shrink-0"
-              style={{ minHeight: 34, ...GLASS, borderRadius: 999 }}
-            >
-              <Ico i={Cake} c={TONE.birthday} size={14} /> {name(b.id)} ·{" "}
-              {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
-            </Link>
-          ))}
-        </div>
-      )}
+        </span>
+      </Link>
     </section>
   );
 }
@@ -1017,7 +1082,7 @@ function ActivityBell() {
     <Link
       to="/app/activity"
       aria-label={n ? `Activity, ${n} new` : "Activity"}
-      className="relative w-11 h-11 rounded-full flex items-center justify-center"
+      className="relative w-12 h-12 rounded-full flex items-center justify-center"
       style={{
         background: "var(--fill)",
         border: "var(--bd)",
@@ -1105,17 +1170,17 @@ function Home() {
   const streakCount = people.filter((f) => (s.streaks[f.id]?.count ?? 0) > 0).length;
   return (
     <div className="flex flex-col" style={{ height: "calc(100dvh - 8rem)" }}>
-      <header className="topband px-4 pt-[max(1rem,calc(env(safe-area-inset-top)+0.75rem))] pb-5">
+      <header className="topband px-4 pt-[max(1.1rem,calc(env(safe-area-inset-top)+0.85rem))] pb-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <Link to="/app/home" aria-label="Your Table" className="inline-flex">
-              <SeatLogo filled={people.length} height={48} />
+              <SeatLogo filled={people.length} height={64} />
             </Link>
             <p
               className="hidden min-[340px]:block leading-tight min-w-0 whitespace-nowrap"
-              style={{ fontSize: 12.5, color: "var(--ink-2)" }}
+              style={{ fontSize: 14, color: "var(--ink-2)" }}
             >
-              <span className="block font-bold" style={{ color: "var(--ink)" }}>
+              <span className="block font-bold" style={{ color: "var(--ink)", fontSize: 17 }}>
                 25 seats.
               </span>
               <span className="block">No more, no less.</span>
@@ -1125,7 +1190,7 @@ function Home() {
             <Link
               to="/app/people"
               aria-label="Add people"
-              className="w-11 h-11 rounded-full flex items-center justify-center"
+              className="w-12 h-12 rounded-full flex items-center justify-center"
               style={{
                 background: "var(--lime)",
                 color: "var(--on-accent)",
@@ -1133,7 +1198,7 @@ function Home() {
                 boxShadow: "var(--pop)",
               }}
             >
-              <UserPlus size={20} strokeWidth={2.4} aria-hidden="true" />
+              <UserPlus size={22} strokeWidth={2.4} aria-hidden="true" />
             </Link>
             <ActivityBell />
             <Link
@@ -1145,7 +1210,7 @@ function Home() {
               <Avatar
                 src={s.me ? s.me.avatar : ME.avatar}
                 initials={s.me?.initials ?? ME.initials}
-                size={40}
+                size={44}
               />
             </Link>
           </div>

@@ -68,11 +68,8 @@ export function PageBand({
             {ring && <HeaderRing />}
             {title}
           </h1>
-          {sub && (
-            <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.45 }}>
-              {sub}
-            </p>
-          )}
+          {/* Page descriptions are hidden: titles speak for themselves. */}
+          {sub && <span className="sr-only">{sub}</span>}
         </div>
         {actions && <div className="flex items-center gap-2 shrink-0 pt-1">{actions}</div>}
       </div>
@@ -606,7 +603,7 @@ function HeaderRing() {
   const n = s.people.length;
   return (
     <Link to="/app/home" aria-label="Back to your Table" className="inline-flex">
-      <SeatLogo filled={n} height={40} />
+      <SeatLogo filled={n} height={50} />
     </Link>
   );
 }
