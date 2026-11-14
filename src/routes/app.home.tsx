@@ -184,10 +184,15 @@ function Table({
   // up to 1.4× as tall as it is wide. Faces scale with it, so it fits any screen.
   const boxRef = useRef<HTMLElement>(null);
   const [box, setBox] = useState({ w: 340, h: 420 });
+  // The props wait for the real size, so they don't jump on every open.
+  const [measured, setMeasured] = useState(false);
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
-    const measure = () => setBox({ w: el.clientWidth - 32, h: el.clientHeight - 24 });
+    const measure = () => {
+      setBox({ w: el.clientWidth - 32, h: el.clientHeight - 24 });
+      setMeasured(true);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -495,9 +500,7 @@ function Table({
         </div>
 
         {/* The spread: pizza, wine (one knocked over), beers. Tap one to jiggle it. */}
-        {TABLE_PROPS.map((p) => (
-          <TableProp key={p.id} prop={p} width={W} />
-        ))}
+        {measured && TABLE_PROPS.map((p) => <TableProp key={p.id} prop={p} width={W} />)}
 
         {/* Empty chairs left by people who came onto the table. */}
         {busy.map((i) => (
@@ -1018,6 +1021,7 @@ function TableProp({ prop, width }: { prop: (typeof TABLE_PROPS)[number]; width:
         transform: `translate(-50%, -50%) rotate(${prop.rot ?? 0}deg)`,
         lineHeight: 0,
         filter: "drop-shadow(0 4px 5px rgba(0,0,0,0.45))",
+        animation: "prop-in 0.35s ease-out both",
       }}
     >
       <span key={jig} className={jig ? "prop-jiggle" : undefined} style={{ display: "block" }}>

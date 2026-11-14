@@ -742,6 +742,8 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 @media (prefers-reduced-motion: reduce) { .dance, .badge-bounce { animation: none; } .online-dot { animation: none !important; } }
 
+/* Table props fade in once the table has its real size. */
+@keyframes prop-in { from { opacity: 0; } to { opacity: 1; } }
 /* Table props jiggle when tapped. */
 @keyframes prop-jiggle {
   0% { transform: rotate(0) scale(1); }
