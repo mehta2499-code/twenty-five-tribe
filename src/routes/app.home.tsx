@@ -498,12 +498,6 @@ function Table({
             >
               <Glyph3D name="dice" size={46} animate={rolling} fps={12} />
             </span>
-            <span
-              className="mt-1 font-display font-extrabold text-[11px]"
-              style={{ color: "var(--lime)" }}
-            >
-              {rolling ? "rolling…" : "tap to roll"}
-            </span>
           </button>
         </div>
 
