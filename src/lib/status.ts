@@ -5,10 +5,18 @@
  */
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { _get } from "@/lib/social";
+import { _get, type NowPlaying } from "@/lib/social";
 
 export type Doing = { doing: "game" | "drop"; detail: string; ref?: string };
-export type FriendNow = { doing: Doing["doing"] | null; detail: string | null; ref: string | null };
+export type FriendNow = {
+  /** In the app right now. */
+  here: boolean;
+  doing: Doing["doing"] | null;
+  detail: string | null;
+  ref: string | null;
+  /** The song they're sharing (online or not), fresh every check. */
+  np?: NowPlaying;
+};
 
 // ---------- What I'm doing ----------
 let mine: Doing | null = null;
@@ -54,6 +62,8 @@ export function onMyStatusChange(f: () => void) {
 
 // ---------- What my 25 are doing ----------
 let friends = new Map<string, FriendNow>();
+/** True once the first check has come back (until then, use songs from the profile). */
+export let friendsLoaded = false;
 const subs = new Set<() => void>();
 let timer: ReturnType<typeof setInterval> | null = null;
 let users = 0;
@@ -62,14 +72,37 @@ async function refresh() {
   if (_get().mode !== "live" || document.visibilityState !== "visible") return;
   const { data } = await supabase.rpc("friends_now" as never);
   const next = new Map<string, FriendNow>();
-  for (const r of (data ?? []) as {
+  if (!data) return;
+  for (const r of data as {
     user_id: string;
+    here: boolean;
     doing: FriendNow["doing"];
     detail: string | null;
     ref: string | null;
+    np_track_id: string | null;
+    np_title: string | null;
+    np_artist: string | null;
+    np_image: string | null;
+    np_at: string | null;
   }[])
-    next.set(r.user_id, { doing: r.doing, detail: r.detail, ref: r.ref });
+    next.set(r.user_id, {
+      here: r.here,
+      doing: r.here ? r.doing : null,
+      detail: r.detail,
+      ref: r.ref,
+      np:
+        r.np_track_id && r.np_at
+          ? {
+              id: r.np_track_id,
+              title: r.np_title ?? "",
+              artist: r.np_artist ?? "",
+              image: r.np_image,
+              at: Date.parse(r.np_at),
+            }
+          : undefined,
+    });
   friends = next;
+  friendsLoaded = true;
   subs.forEach((f) => f());
 }
 

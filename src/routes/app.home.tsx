@@ -52,7 +52,7 @@ import {
   dayGameName,
 } from "@/lib/daily";
 import { Confetti, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
-import { useFriendsNow, type FriendNow } from "@/lib/status";
+import { friendsLoaded, useFriendsNow, type FriendNow } from "@/lib/status";
 import { WaffleMenu } from "@/components/WaffleMenu";
 import { ListeningBadge, NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
 import { cleanTitle, isListening, mainArtist } from "@/lib/music";
@@ -148,7 +148,11 @@ function Table({
   // Who at your Table is in the app right now, and doing what.
   const live = useFriendsNow();
   const quiz = useQuizBadges();
-  const seated = people.slice(0, SEATS);
+  // Songs come from the 5-second check, so starting or stopping one moves
+  // someone on or off the table right away.
+  const seated = people
+    .slice(0, SEATS)
+    .map((f) => (friendsLoaded && s.mode === "live" ? { ...f, np: live.get(f.id)?.np } : f));
   const scores = useMemo(
     () => (s.mode === "live" ? quiz.knowsMe : demoScores(seated)),
     [s.mode, quiz.knowsMe, seated],
@@ -159,7 +163,7 @@ function Table({
   const busy = seated
     .map((f, i) => {
       const n = live.get(f.id);
-      return n && (n.doing || isListening(f)) ? i : -1;
+      return (n?.here && n.doing) || isListening(f) ? i : -1;
     })
     .filter((i) => i >= 0)
     .slice(0, 8);
@@ -511,8 +515,10 @@ function Table({
           const score = scores[f.id];
           const small = faceSize < 42;
           const bdayDays = bdayIn.get(f.id);
-          const now = live.get(f.id);
-          const dancing = !!now && isListening(f);
+          const raw = live.get(f.id);
+          const now = raw?.here ? raw : undefined;
+          // Sharing a song: they dance at the table, online or not.
+          const dancing = isListening(f);
           // Cheers / high five: both lean in. Whisper: the whisperer leans in.
           const inScene =
             !!scene &&
@@ -678,7 +684,7 @@ function Table({
                       hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
                       onSelect: () => navigate({ to: "/app/chat/$id", params: { id: menu.f.id } }),
                     },
-                    ...(live.get(menu.f.id)?.doing
+                    ...(live.get(menu.f.id)?.here && live.get(menu.f.id)?.doing
                       ? [
                           {
                             key: "now",
