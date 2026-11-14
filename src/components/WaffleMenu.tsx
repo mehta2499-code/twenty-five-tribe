@@ -60,7 +60,7 @@ export function WaffleMenu({
         ref={ref}
         role="menu"
         aria-label={label}
-        className="liquid absolute p-1.5 rounded-[24px] animate-soft-in"
+        className="lg lg-menu absolute p-1.5 rounded-[24px] animate-soft-in"
         style={{
           width: 260,
           left: pos?.left ?? -9999,

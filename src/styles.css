@@ -652,15 +652,63 @@ button, a, [role="button"] { touch-action: manipulation; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Top bar: a floating panel of black liquid glass under the status bar:
-   near-black fill, plus the glass sheen, bright top edge, border and blur. */
+/* Top bar: a floating panel under the status bar (Apple-style glass, below). */
 .topband {
   margin: calc(env(safe-area-inset-top) + 8px) 10px 12px;
   border-radius: 28px;
   padding-top: 14px !important;
+}
+
+/* ---------------------------------------------------------------------
+   Apple-style liquid glass: title bars, the tab bar and pop-up menus.
+   Smoky, see-through glass over a blurred, brightened, colour-boosted
+   backdrop; a soft highlight inside; and a bright rim that catches the
+   light at the top-left and bottom-right corners. (True refraction at the
+   edges isn't possible in iPhone Safari, so it's left out.)
+   --------------------------------------------------------------------- */
+.topband { position: relative; }
+.lg, .topband {
+  isolation: isolate;
+  background: rgba(10, 10, 14, 0.42);
+  -webkit-backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
+  backdrop-filter: blur(18px) saturate(190%) brightness(1.08);
+  border: 0;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.32),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.07),
+    inset 0 0 22px rgba(255, 255, 255, 0.05),
+    0 12px 32px rgba(0, 0, 0, 0.38);
+}
+.lg-menu { background: rgba(14, 13, 20, 0.62); }
+/* The highlight: light pooling at the top-left, a faint bounce bottom-right. */
+.lg::before, .topband::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0.05)),
-    rgba(0, 0, 0, 0.88);
+    radial-gradient(130% 85% at 12% -25%, rgba(255, 255, 255, 0.2), transparent 55%),
+    radial-gradient(70% 55% at 100% 125%, rgba(255, 255, 255, 0.08), transparent 60%);
+}
+/* The rim: a 1px edge, bright where the light hits. */
+.lg::after, .topband::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.14) 28%, rgba(255, 255, 255, 0.04) 55%,
+    rgba(255, 255, 255, 0.12) 78%, rgba(255, 255, 255, 0.42));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .lg, .topband { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 .band { border-radius: 0 0 28px 28px; }
 

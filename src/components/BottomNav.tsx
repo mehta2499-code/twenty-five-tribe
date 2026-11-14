@@ -23,18 +23,7 @@ export function BottomNav() {
       className="fixed inset-x-0 z-40 px-3 pointer-events-none"
       style={{ bottom: "max(0.75rem, calc(env(safe-area-inset-bottom) - 0.5rem))" }}
     >
-      <ul
-        className="pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]"
-        style={{
-          background:
-            "linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.08)), rgba(33,30,43,0.82)",
-          backdropFilter: "blur(26px) saturate(190%)",
-          WebkitBackdropFilter: "blur(26px) saturate(190%)",
-          border: "1px solid rgba(255,255,255,0.2)",
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(255,255,255,0.06), 0 16px 36px rgba(0, 0, 0, 0.45)",
-        }}
-      >
+      <ul className="lg relative pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]">
         {tabs.map(({ to, label, Icon }) => {
           const active =
             pathname.startsWith(to) ||
