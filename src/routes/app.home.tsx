@@ -132,11 +132,16 @@ function Table({
   spot,
   rolling,
   onRoll,
+  picked,
+  onPickedShown,
 }: {
   people: Person[];
   spot: number | null;
   rolling: boolean;
   onRoll: () => void;
+  /** The friend the dice landed on: their menu opens next to their face. */
+  picked: Person | null;
+  onPickedShown: () => void;
 }) {
   const s = useSocial();
   const quiz = useQuizBadges();
@@ -202,6 +207,14 @@ function Table({
   const [menu, setMenu] = useState<{ f: Person; rect: DOMRect; step?: "challenge" } | null>(null);
   const navigate = useNavigate();
   const [menuErr, setMenuErr] = useState<string | null>(null);
+  // The dice picked someone: open the same menu as tapping their face.
+  useEffect(() => {
+    if (!picked) return;
+    const el = document.querySelector<HTMLElement>(`[data-person="${picked.id}"]`);
+    if (el) setMenu({ f: picked, rect: el.getBoundingClientRect() });
+    onPickedShown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked]);
   const challenge = async (kind: "trivia" | "ludo", f: Person) => {
     setMenu(null);
     try {
@@ -487,6 +500,7 @@ function Table({
             <button
               key={f.id}
               type="button"
+              data-person={f.id}
               aria-haspopup="menu"
               onClick={(e) => {
                 setScene(null);
@@ -1006,73 +1020,6 @@ function GameRank() {
   );
 }
 
-// ---------- Roll result ----------
-
-function RollPanel({ friend, onClose }: { friend: Person; onClose: () => void }) {
-  const s = useSocial();
-  const st = streakStatus(s.streaks[friend.id]);
-  const first = friend.name.split(" ")[0];
-  const lines = [
-    `Send ${first} something with zero context.`,
-    `${first} hasn't heard from you in a bit. Fix that.`,
-    `The dice have spoken. ${first} gets a snap.`,
-    `Tell ${first} one thing that made you laugh today.`,
-  ];
-  const line = lines[friend.id.length % lines.length];
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-28"
-      style={{ background: "rgba(7,6,11,0.6)", backdropFilter: "blur(10px)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md card p-6 pop text-center"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-label={`You rolled ${friend.name}`}
-      >
-        <span className="sticker sun" style={{ transform: "rotate(-5deg)" }}>
-          <Ico i={Dices} size={13} /> the table chose
-        </span>
-        <div className="mt-4 flex justify-center">
-          <span
-            className="rounded-full"
-            style={{ border: "var(--bd)", boxShadow: "0 0 0 4px var(--lime)" }}
-          >
-            <Avatar src={friend.avatar} initials={friend.initials} color={friend.color} size={92} />
-          </span>
-        </div>
-        <h3 className="title mt-4" style={{ fontSize: 30 }}>
-          {friend.name}
-        </h3>
-        {st.count > 0 && (
-          <p className="meta mt-1">
-            <Ico i={Flame} c={TONE.streak} size={14} /> {st.count}-day streak
-            {st.atRisk ? ", ends tonight" : ""}
-          </p>
-        )}
-        <p
-          className="text-cool mt-3 mx-auto max-w-[18rem]"
-          style={{ fontSize: 15, lineHeight: 1.5 }}
-        >
-          {line}
-        </p>
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <Link to="/app/snap" search={{ to: friend.id }} className="btn-primary">
-            <Camera size={18} aria-hidden="true" /> Blink
-          </Link>
-          <Link to="/app/chat/$id" params={{ id: friend.id }} className="btn-secondary">
-            <MessageCircle size={18} aria-hidden="true" /> Message
-          </Link>
-        </div>
-        <button onClick={onClose} className="mt-4 meta font-semibold underline underline-offset-4">
-          nah, maybe later
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ---------- Demo extras ----------
 
 function TodayAtTheTable() {
@@ -1433,7 +1380,14 @@ function Home() {
 
       <Birthdays />
 
-      <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
+      <Table
+        people={people}
+        spot={spot}
+        rolling={rolling}
+        onRoll={onRoll}
+        picked={picked}
+        onPickedShown={() => setPicked(null)}
+      />
 
       <TodayTiles />
 
@@ -1466,7 +1420,6 @@ function Home() {
       />
 
       <Confetti fire={confetti} />
-      {picked && <RollPanel friend={picked} onClose={() => setPicked(null)} />}
       {adding && (
         <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
       )}
