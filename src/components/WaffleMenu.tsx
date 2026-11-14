@@ -100,10 +100,12 @@ export function WaffleMenu({
                 {it.icon}
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-[15px] font-semibold leading-tight">{it.label}</span>
+                <span className="block text-[15px] font-semibold leading-tight truncate">
+                  {it.label}
+                </span>
                 {it.hint && (
                   <span
-                    className="block text-[12px] leading-tight"
+                    className="block text-[12px] leading-tight truncate"
                     style={{ color: "var(--ink-3)" }}
                   >
                     {it.hint}

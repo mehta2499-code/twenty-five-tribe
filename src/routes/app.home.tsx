@@ -56,8 +56,8 @@ import {
 } from "@/lib/daily";
 import { Confetti, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { WaffleMenu } from "@/components/WaffleMenu";
-import { ListeningBadge, NowPlayingPicker, SpotifyPlayer } from "@/components/NowPlaying";
-import { isListening } from "@/lib/music";
+import { ListeningBadge, NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
+import { cleanTitle, isListening, mainArtist } from "@/lib/music";
 import { Glyph3D, preloadSprites } from "@/components/Glyph3D";
 import { TRIVIA_PACKS } from "@/lib/data";
 import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
@@ -653,8 +653,8 @@ function Table({
                           {
                             key: "listen",
                             icon: <Headphones size={20} />,
-                            label: `Listening to “${menu.f.np.title}”`,
-                            hint: menu.f.np.artist || "Tap to play",
+                            label: "Listening now",
+                            hint: `${cleanTitle(menu.f.np.title)}${menu.f.np.artist ? ` · ${mainArtist(menu.f.np.artist)}` : ""}`,
                             onSelect: () => {
                               setListen(menu.f);
                               setMenu(null);
@@ -684,11 +684,11 @@ function Table({
         {menuErr && <Toast text={menuErr} onDone={() => setMenuErr(null)} />}
         {listen?.np && (
           <Sheet
-            title={listen.name.split(" ")[0] + " is listening to"}
+            title={`${listen.name.split(" ")[0]}'s song`}
             onClose={() => setListen(null)}
             center
           >
-            <SpotifyPlayer id={listen.np.id} title={listen.np.title} />
+            <NowPlayingCard np={listen.np} bare />
           </Sheet>
         )}
 

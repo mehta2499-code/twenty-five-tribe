@@ -58,3 +58,20 @@ export const spotifyEmbed = (id: string) =>
 
 export const hoursLeft = (p: Person | { np?: NowPlaying }) =>
   p.np ? Math.max(1, Math.ceil(NP_HOURS - (Date.now() - p.np.at) / 3600_000)) : 0;
+
+/**
+ * Just the song name: drops extras Spotify adds to titles, e.g.
+ * 'Kesariya (From "Brahmastra")' → 'Kesariya', 'Song - Remastered 2011' → 'Song',
+ * 'Song (feat. X)' → 'Song'.
+ */
+export function cleanTitle(t: string) {
+  const out = t
+    .replace(/\s*[([][^)\]]*[)\]]/g, "")
+    .replace(/\s+[-–—]\s+.*$/, "")
+    .replace(/\s+(feat\.?|ft\.?)\s.*$/i, "")
+    .trim();
+  return out || t;
+}
+
+/** First artist only (Spotify lists every featured artist). */
+export const mainArtist = (a: string) => a.split(",")[0]?.trim() ?? a;
