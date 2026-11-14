@@ -88,15 +88,17 @@ function DropScreen() {
   return (
     <div className="pb-8">
       <PageBand
+        ring
         title="The 25 Drop"
         sub="Once a day, at a surprise time. 10 minutes. One real photo. Post yours to see theirs."
         actions={
           <Link
             to="/app/recap"
             search={{ m: undefined }}
-            className="btn-secondary gap-1.5 px-3.5 min-h-[40px]"
+            aria-label="Your monthly recap"
+            className="btn-secondary btn-icon"
           >
-            <CalendarDays size={17} aria-hidden="true" /> Recap
+            <CalendarDays size={19} aria-hidden="true" />
           </Link>
         }
       />

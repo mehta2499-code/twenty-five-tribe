@@ -76,7 +76,7 @@ export function WaffleMenu({
             {header}
           </div>
         )}
-        <div className="grid py-1">
+        <div className="grid grid-cols-[minmax(0,1fr)] py-1 min-w-0">
           {items.map((it) => (
             <button
               key={it.key}
@@ -86,7 +86,7 @@ export function WaffleMenu({
                 if (it.disabled) return;
                 it.onSelect?.();
               }}
-              className="menu-row flex items-center gap-3 rounded-[16px] px-2.5 py-2 text-left disabled:opacity-45"
+              className="menu-row w-full min-w-0 flex items-center gap-3 rounded-[16px] px-2.5 py-2 text-left disabled:opacity-45"
             >
               <span
                 className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center"
@@ -113,7 +113,12 @@ export function WaffleMenu({
                 )}
               </span>
               {!it.disabled && (
-                <ChevronRight size={16} style={{ color: "var(--ink-3)" }} aria-hidden="true" />
+                <ChevronRight
+                  size={16}
+                  className="shrink-0"
+                  style={{ color: "var(--ink-3)" }}
+                  aria-hidden="true"
+                />
               )}
             </button>
           ))}

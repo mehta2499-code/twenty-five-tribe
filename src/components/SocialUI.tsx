@@ -48,28 +48,30 @@ export function PageBand({
   const router = useRouter();
   return (
     <header className="topband px-5 pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))] pb-6">
-      {back && (
-        <button
-          onClick={() => router.history.back()}
-          aria-label="Back"
-          className="-ml-2 mb-2 w-10 h-10 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
-        >
-          <ArrowLeft size={20} />
-        </button>
-      )}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {eyebrow && (
-            <p className="label-caps" style={{ color: "var(--blue-deep)" }}>
-              {eyebrow}
-            </p>
+        <div className="min-w-0 flex items-center gap-1.5">
+          {back && (
+            <button
+              onClick={() => router.history.back()}
+              aria-label="Back"
+              className="-ml-2 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
+            >
+              <ArrowLeft size={22} />
+            </button>
           )}
-          <h1 className="chalk-title mt-0.5 flex items-center gap-2.5" style={{ fontSize: 36 }}>
-            {ring && <HeaderRing />}
-            {title}
-          </h1>
-          {/* Page descriptions are hidden: titles speak for themselves. */}
-          {sub && <span className="sr-only">{sub}</span>}
+          <div className="min-w-0">
+            {eyebrow && (
+              <p className="label-caps" style={{ color: "var(--blue-deep)" }}>
+                {eyebrow}
+              </p>
+            )}
+            <h1 className="chalk-title mt-0.5 flex items-center gap-2.5" style={{ fontSize: 36 }}>
+              {ring && <HeaderRing />}
+              {title}
+            </h1>
+            {/* Page descriptions are hidden: titles speak for themselves. */}
+            {sub && <span className="sr-only">{sub}</span>}
+          </div>
         </div>
         {actions && <div className="flex items-center gap-2 shrink-0 pt-1">{actions}</div>}
       </div>
