@@ -55,6 +55,7 @@ import {
   dayGameName,
 } from "@/lib/daily";
 import { Confetti, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import { useFriendsNow, type FriendNow } from "@/lib/status";
 import { WaffleMenu } from "@/components/WaffleMenu";
 import { ListeningBadge, NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
 import { cleanTitle, isListening, mainArtist } from "@/lib/music";
@@ -147,6 +148,8 @@ function Table({
   onPickedShown: () => void;
 }) {
   const s = useSocial();
+  // Who at your Table is in the app right now, and doing what.
+  const live = useFriendsNow();
   const quiz = useQuizBadges();
   const seated = people.slice(0, SEATS);
   const scores = useMemo(
@@ -478,6 +481,8 @@ function Table({
           const score = scores[f.id];
           const small = faceSize < 42;
           const bdayDays = bdayIn.get(f.id);
+          const now = live.get(f.id);
+          const dancing = !!now && isListening(f);
           // Cheers / high five: both lean in. Whisper: the whisperer leans in.
           const inScene =
             !!scene &&
@@ -519,7 +524,7 @@ function Table({
                 transform: "translate(-50%, -50%)",
                 zIndex: lit ? 3 : 1,
               }}
-              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${st.count ? `, ${st.count}-day streak` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}`}
+              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${st.count ? `, ${st.count}-day streak` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
             >
               <span className="flex flex-col items-center" style={lean}>
                 {!isListening(f) && bdayDays !== undefined && <PartyHat size={size} />}
@@ -533,9 +538,13 @@ function Table({
                   }}
                 >
                   {isListening(f) && <ListeningBadge size={size} />}
-                  <span style={{ display: "block", opacity: oneWay ? 0.55 : 1 }}>
+                  <span
+                    className={dancing && !lean ? "dance" : undefined}
+                    style={{ display: "block", opacity: oneWay ? 0.55 : 1 }}
+                  >
                     <Avatar src={f.avatar} initials={f.initials} color={f.color} size={size} />
                   </span>
+                  {now && <LiveBadge now={now} small={small} />}
                   {f.postedToday && (
                     <span
                       className="absolute rounded-full flex items-center justify-center"
@@ -648,6 +657,34 @@ function Table({
                       hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
                       onSelect: () => navigate({ to: "/app/chat/$id", params: { id: menu.f.id } }),
                     },
+                    ...(live.get(menu.f.id)?.doing
+                      ? [
+                          {
+                            key: "now",
+                            icon:
+                              live.get(menu.f.id)!.doing === "game" ? (
+                                <Gamepad2 size={20} />
+                              ) : (
+                                <Camera size={20} />
+                              ),
+                            label:
+                              live.get(menu.f.id)!.doing === "game"
+                                ? `Playing ${live.get(menu.f.id)!.detail ?? "a game"}`
+                                : "Taking their Drop",
+                            hint:
+                              live.get(menu.f.id)!.doing === "game"
+                                ? "Right now · play too"
+                                : "Right now · take yours",
+                            onSelect: () =>
+                              navigate({
+                                to:
+                                  live.get(menu.f.id)!.doing === "game"
+                                    ? "/app/games"
+                                    : "/app/drop",
+                              }),
+                          },
+                        ]
+                      : []),
                     ...(isListening(menu.f) && menu.f.np
                       ? [
                           {
@@ -897,6 +934,51 @@ function Confetti3D({ at }: { at: { x: number; y: number } }) {
 }
 
 /** A tilted 3D party hat that sits on a face (birthday this week). */
+/** What someone at your Table is doing right now, in words. */
+function nowText(n: FriendNow) {
+  if (n.doing === "game") return `playing ${n.detail ?? "a game"}`;
+  if (n.doing === "drop") return "taking their Drop";
+  return "in 25 now";
+}
+
+/** Bottom-right of a face: a lime dot (in the app), a controller (playing) or a camera (Drop). */
+function LiveBadge({ now, small }: { now: FriendNow; small: boolean }) {
+  if (!now.doing) {
+    const d = small ? 11 : 13;
+    return (
+      <span
+        aria-hidden="true"
+        className="online-dot absolute rounded-full"
+        style={{
+          right: 0,
+          bottom: 0,
+          width: d,
+          height: d,
+          background: "var(--lime)",
+          border: "2px solid var(--bg, #14121A)",
+          animation: "online-pulse 2s ease-in-out infinite",
+        }}
+      />
+    );
+  }
+  const g = small ? 20 : 24;
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute badge-bounce"
+      style={{
+        right: -g * 0.35,
+        bottom: -g * 0.3,
+        lineHeight: 0,
+        zIndex: 3,
+        filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.55))",
+      }}
+    >
+      {now.doing === "game" ? <Glyph3D emoji="🎮" size={g} /> : <Glyph3D name="camera" size={g} />}
+    </span>
+  );
+}
+
 function PartyHat({ size }: { size: number }) {
   const w = Math.round(size * 0.62);
   return (

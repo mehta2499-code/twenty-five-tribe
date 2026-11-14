@@ -1,3 +1,4 @@
+import { useDoing } from "@/lib/status";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -54,6 +55,7 @@ function useNow(ms = 1000) {
 }
 
 function DropScreen() {
+  useDoing({ doing: "drop", detail: "Drop" });
   useEffect(() => {
     try {
       localStorage.setItem("tf.seen.drop", "1");

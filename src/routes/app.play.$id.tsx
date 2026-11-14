@@ -1,3 +1,4 @@
+import { gameLabel, useDoing } from "@/lib/status";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { KachufulBoard, useBotTurns } from "@/components/Kachuful";
@@ -74,6 +75,8 @@ type Live<S> = ReturnType<typeof useGame<S>>;
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
   const live = useGame<KState | TriviaState | WordState | LudoState | ImpState>(id);
   const { game, error } = live;
+  // Your 25 see you playing at the Table.
+  useDoing(game ? { doing: "game", detail: gameLabel(game.kind), ref: `game:${id}` } : null);
   const [leaving, setLeaving] = useState(false);
   // Opened a party link you're not in yet: join it, then load.
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -122,10 +125,14 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   } else if (game.status === "playing" && game.kind === "word") {
     const st = game.state as WordState;
     quit = () =>
-      void changeLatest<WordState>(id, (cur) => ({ state: { ...cur, gaveUp: meId }, status: "done" })).then(
-        () => leaveGame(id),
-      );
-    quitNote = st.guesser === meId ? "You give up and the word is revealed." : "The challenge is called off.";
+      void changeLatest<WordState>(id, (cur) => ({
+        state: { ...cur, gaveUp: meId },
+        status: "done",
+      })).then(() => leaveGame(id));
+    quitNote =
+      st.guesser === meId
+        ? "You give up and the word is revealed."
+        : "The challenge is called off.";
   } else if (game.status === "playing" && game.kind === "trivia") {
     const st = game.state as TriviaState;
     if (!st.results[meId]) {
@@ -399,16 +406,16 @@ function OnlineWord({
   const headline = quitter
     ? `${quitter} quit. The word was ${answer.toUpperCase()}`
     : over
-    ? guessing
-      ? solved
-        ? `Got it in ${st.guesses.length}/6`
-        : `It was ${answer.toUpperCase()}`
-      : solved
-        ? `${first} cracked it in ${st.guesses.length}/6`
-        : `${first} couldn't get it`
-    : guessing
-      ? `${first} set you a word`
-      : `Watching ${first} guess ${answer.toUpperCase()}`;
+      ? guessing
+        ? solved
+          ? `Got it in ${st.guesses.length}/6`
+          : `It was ${answer.toUpperCase()}`
+        : solved
+          ? `${first} cracked it in ${st.guesses.length}/6`
+          : `${first} couldn't get it`
+      : guessing
+        ? `${first} set you a word`
+        : `Watching ${first} guess ${answer.toUpperCase()}`;
 
   return (
     <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
@@ -482,7 +489,13 @@ function OnlineLudo({
   if (inLobby && game.status === "done")
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
-        <Dices size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--lime)" }} />
+        <Dices
+          size={44}
+          strokeWidth={2}
+          aria-hidden="true"
+          className="mx-auto"
+          style={{ color: "var(--lime)" }}
+        />
         <h2 className="font-display mt-3" style={{ fontSize: 28 }}>
           Game called off
         </h2>

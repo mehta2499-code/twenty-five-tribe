@@ -1,3 +1,4 @@
+import { onMyStatusChange, sendStatus } from "@/lib/status";
 import { savePendingPath } from "@/lib/pending";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -118,16 +119,19 @@ function AppLayout() {
   // back push notifications (the in-app banner covers it).
   useEffect(() => {
     if (s.mode !== "live" || !s.me) return;
+    // Also tells your 25 what you're doing (playing, on the Drop) for the Table.
     const ping = (active: boolean) =>
       void supabase.rpc("set_active", { p_active: active }).then(() => undefined);
-    const beat = () => document.visibilityState === "visible" && ping(true);
+    const beat = () => sendStatus();
     beat();
     const t = setInterval(beat, 30_000);
-    const onVis = () => ping(document.visibilityState === "visible");
+    const off = onMyStatusChange(beat);
+    const onVis = () => (document.visibilityState === "visible" ? sendStatus() : ping(false));
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", () => ping(false));
     return () => {
       clearInterval(t);
+      off();
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [s.mode, s.me?.id]);

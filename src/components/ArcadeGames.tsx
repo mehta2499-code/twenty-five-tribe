@@ -1,3 +1,4 @@
+import { useDoing } from "@/lib/status";
 import { Glyph3D } from "@/components/Glyph3D";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -789,6 +790,7 @@ function Reflex({ onFinish, onClose }: RoundProps) {
 export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => void }) {
   const d = useDaily();
   const g = GAMES[game];
+  useDoing({ doing: "game", detail: g.name, ref: `daily:${game}` });
   const day = today();
   const tries = d.board[day]?.me ?? [];
   const left = TRIES - tries.length;
