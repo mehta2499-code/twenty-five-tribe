@@ -1,6 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ImagePlus, Megaphone, Paperclip, Send, Sticker, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  ImagePlus,
+  Megaphone,
+  Paperclip,
+  Send,
+  Sticker,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
 import { GroupFace } from "@/components/GroupFace";
 import { Avatar } from "@/components/Avatar";
@@ -20,6 +29,7 @@ import {
 import { dayKey, mutualFriends } from "@/lib/social";
 import {
   addMembers,
+  deleteGroup,
   leaveGroup,
   markSeen,
   member,
@@ -40,7 +50,13 @@ export const Route = createFileRoute("/app/group/$id")({
 
 const clock = (at: number) =>
   new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-const NAME_TONES = ["var(--lime)", "var(--pink)", "var(--sky)", "var(--sun)"];
+// 25 different name colours, one per person in a group (groups max out at 25).
+// Hues are spread around the colour wheel, jumping so neighbours look different,
+// and kept light enough to read on the dark bubbles.
+const NAME_TONES = Array.from({ length: 25 }, (_, k) => {
+  const hue = Math.round(((k * 7) % 25) * (360 / 25) + 78) % 360;
+  return `hsl(${hue} ${k % 2 ? 70 : 85}% ${k % 3 === 2 ? 80 : 70}%)`;
+});
 
 function GroupThread() {
   const { id } = Route.useParams();
@@ -50,6 +66,7 @@ function GroupThread() {
   const msgs = st.msgs[id] ?? [];
   const [text, setText] = useState("");
   const [info, setInfo] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // "Seen by": who has read one of my messages.
   const [seenFor, setSeenFor] = useState<(typeof msgs)[number] | null>(null);
   const [adding, setAdding] = useState(false);
@@ -93,7 +110,8 @@ function GroupThread() {
     return `Seen by ${names.slice(0, 2).join(", ")}${names.length > 2 ? ` +${names.length - 2}` : ""}`;
   };
   const tone = (who: string) =>
-    NAME_TONES[g.members.indexOf(who) % NAME_TONES.length] ?? "var(--ink-2)";
+    NAME_TONES[g.members.filter((m) => m !== "me").indexOf(who) % NAME_TONES.length] ??
+    "var(--ink-2)";
   const canAdd = mutualFriends().filter((f) => !g.members.includes(f.id));
 
   // @mentions
@@ -197,16 +215,15 @@ function GroupThread() {
                       >
                         {!mine && (
                           <span className="w-7 shrink-0">
-                            {!grouped && (
-                              <PersonLink id={m.from} username={who.username} label={who.name}>
-                                <Avatar
-                                  src={who.avatar}
-                                  initials={who.initials}
-                                  color={who.color}
-                                  size={28}
-                                />
-                              </PersonLink>
-                            )}
+                            {/* Their photo on every message. */}
+                            <PersonLink id={m.from} username={who.username} label={who.name}>
+                              <Avatar
+                                src={who.avatar}
+                                initials={who.initials}
+                                color={who.color}
+                                size={28}
+                              />
+                            </PersonLink>
                           </span>
                         )}
                         <Reactable id={m.id} mine={mine}>
@@ -226,7 +243,8 @@ function GroupThread() {
                               borderBottomLeftRadius: mine ? 18 : 6,
                             }}
                           >
-                            {!mine && !grouped && (
+                            {/* Sender's name on every message, in their own colour. */}
+                            {!mine && (
                               <p
                                 className="text-[12px] font-extrabold mb-0.5"
                                 style={{ color: tone(m.from) }}
@@ -443,7 +461,13 @@ function GroupThread() {
         </Sheet>
       )}
       {info && (
-        <Sheet title={g.name} onClose={() => setInfo(false)}>
+        <Sheet
+          title={g.name}
+          onClose={() => {
+            setInfo(false);
+            setConfirmDelete(false);
+          }}
+        >
           <div className="flex items-center gap-3">
             <GroupFace avatar={g.avatar} emoji={g.emoji} size={56} />
             <label className="btn-secondary px-4 min-h-[40px] cursor-pointer">
@@ -508,6 +532,26 @@ function GroupThread() {
             >
               Leave group
             </button>
+            {/* Whoever made the group can delete it for everyone. */}
+            {g.createdBy === "me" && (
+              <button
+                onClick={() => {
+                  if (!confirmDelete) return setConfirmDelete(true);
+                  deleteGroup(id).then(
+                    () => navigate({ to: "/app/chats" }),
+                    (e) => {
+                      setConfirmDelete(false);
+                      setToast((e as Error).message);
+                    },
+                  );
+                }}
+                className="btn-danger"
+                style={confirmDelete ? { background: "#E5484D", color: "#fff" } : undefined}
+              >
+                <Trash2 size={18} aria-hidden="true" />
+                {confirmDelete ? "Tap again to delete for everyone" : "Delete group"}
+              </button>
+            )}
           </div>
         </Sheet>
       )}

@@ -438,6 +438,19 @@ export async function leaveGroup(groupId: string) {
     .eq("user_id", _get().me!.id);
 }
 
+/** Delete a group for everyone (only the person who made it can). */
+export async function deleteGroup(groupId: string) {
+  if (mine()) {
+    const { error } = await supabase.rpc("delete_group" as never, { p_group: groupId } as never);
+    if (error) throw new Error(error.message);
+  }
+  set((s) => {
+    const msgs = { ...s.msgs };
+    delete msgs[groupId];
+    return { ...s, groups: s.groups.filter((g) => g.id !== groupId), msgs };
+  });
+}
+
 /** Send a photo or video to a group. */
 export async function sendGroupMedia(groupId: string, file: File) {
   const { prepareMedia } = await import("@/components/ChatExtras");
