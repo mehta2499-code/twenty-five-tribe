@@ -67,8 +67,19 @@ export type GameId = "tap-rush" | "quick-math" | "trivia" | "colour-clash" | "pa
 export type ScoreBoard = Record<GameId, Record<string, number>>; // game -> personId -> best this week
 
 /** Someone in your 25, as the screens see them. */
+/** A Spotify song someone shared ("Listening now"), shown for 24 hours. */
+export type NowPlaying = {
+  id: string;
+  title: string;
+  artist: string;
+  image: string | null;
+  at: number;
+};
+
 export type Person = Friend & {
   username?: string;
+  /** What they're listening to (set within the last 24h). */
+  np?: NowPlaying;
   /** They put you in their 25 too. Chats, snaps, streaks and games need this. */
   mutual?: boolean;
 };
@@ -90,6 +101,7 @@ export type Me = {
   avatar?: string;
   /** Has answered the vibe check (needed before quizzing or being quizzed). */
   vibeDone: boolean;
+  np?: NowPlaying;
 };
 
 export type SocialState = {

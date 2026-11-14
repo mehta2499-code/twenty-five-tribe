@@ -707,3 +707,10 @@ button, a, [role="button"] { touch-action: manipulation; }
   70% { opacity: 1; }
   100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty) + 22px)) rotate(var(--rot)); opacity: 0; }
 }
+/* "Listening now": little notes drift up and out from a face. */
+@keyframes note-float {
+  0% { transform: translate(0, 0) scale(0.5) rotate(-10deg); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(14px, -26px) scale(1) rotate(12deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { [style*="note-float"] { animation: none !important; opacity: 0.9; } }

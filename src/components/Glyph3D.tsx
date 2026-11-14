@@ -19,8 +19,10 @@ export const SPRITES = {
   cheers: 4,
   dice: 6,
   flame: 4,
+  headphones: 2,
   highfive: 4,
   laugh: 2,
+  notes: 3,
   paddle: 3,
   partyhat: 2,
   plane: 3,
@@ -111,7 +113,14 @@ export function Glyph3D({
       draggable={false}
       onError={() => setBroken(true)}
       className={`inline-block select-none ${className}`}
-      style={{ width: size, height: size, objectFit: "contain", verticalAlign: "-0.2em", ...style }}
+      style={{
+        width: size,
+        height: size,
+        maxWidth: "none",
+        objectFit: "contain",
+        verticalAlign: "-0.2em",
+        ...style,
+      }}
       {...a11y}
     />
   );

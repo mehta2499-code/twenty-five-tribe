@@ -1,3 +1,5 @@
+import { NowPlayingCard } from "@/components/NowPlaying";
+import { isListening } from "@/lib/music";
 import { KnowsBest, QuizBadge } from "@/components/QuizBadges";
 import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
@@ -103,6 +105,11 @@ function LiveSeat() {
                   : `· in ${daysUntil(bday)} day${daysUntil(bday) === 1 ? "" : "s"}`}
               </span>
             </Link>
+          </div>
+        )}
+        {isListening(f) && f.np && (
+          <div className="mt-4 max-w-sm mx-auto">
+            <NowPlayingCard np={f.np} who={f.name.split(" ")[0]} />
           </div>
         )}
         <p className="mt-3">

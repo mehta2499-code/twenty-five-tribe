@@ -14,6 +14,7 @@ import {
   Eye,
   Flame,
   Gamepad2,
+  Headphones,
   Hourglass,
   ImagePlus,
   MessageCircle,
@@ -53,8 +54,10 @@ import {
   weekStandings,
   dayGameName,
 } from "@/lib/daily";
-import { Confetti, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import { Confetti, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { WaffleMenu } from "@/components/WaffleMenu";
+import { ListeningBadge, NowPlayingPicker, SpotifyPlayer } from "@/components/NowPlaying";
+import { isListening } from "@/lib/music";
 import { Glyph3D, preloadSprites } from "@/components/Glyph3D";
 import { TRIVIA_PACKS } from "@/lib/data";
 import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
@@ -201,12 +204,15 @@ function Table({
       "flame",
       "partyhat",
       "dice",
+      "headphones",
+      "notes",
     ]);
   }, []);
   // Tap a face → a menu: view, challenge, message, wish.
   const [menu, setMenu] = useState<{ f: Person; rect: DOMRect; step?: "challenge" } | null>(null);
   const navigate = useNavigate();
   const [menuErr, setMenuErr] = useState<string | null>(null);
+  const [listen, setListen] = useState<Person | null>(null);
   // The dice picked someone: open the same menu as tapping their face.
   useEffect(() => {
     if (!picked) return;
@@ -516,7 +522,7 @@ function Table({
               aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${st.count ? `, ${st.count}-day streak` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}`}
             >
               <span className="flex flex-col items-center" style={lean}>
-                {bdayDays !== undefined && <PartyHat size={size} />}
+                {!isListening(f) && bdayDays !== undefined && <PartyHat size={size} />}
                 <span
                   className="relative rounded-full transition-transform duration-150"
                   style={{
@@ -526,6 +532,7 @@ function Table({
                     transform: lit ? "scale(1.18)" : "scale(1)",
                   }}
                 >
+                  {isListening(f) && <ListeningBadge size={size} />}
                   <span style={{ display: "block", opacity: oneWay ? 0.55 : 1 }}>
                     <Avatar src={f.avatar} initials={f.initials} color={f.color} size={size} />
                   </span>
@@ -641,6 +648,20 @@ function Table({
                       hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
                       onSelect: () => navigate({ to: "/app/chat/$id", params: { id: menu.f.id } }),
                     },
+                    ...(isListening(menu.f) && menu.f.np
+                      ? [
+                          {
+                            key: "listen",
+                            icon: <Headphones size={20} />,
+                            label: `Listening to “${menu.f.np.title}”`,
+                            hint: menu.f.np.artist || "Tap to play",
+                            onSelect: () => {
+                              setListen(menu.f);
+                              setMenu(null);
+                            },
+                          },
+                        ]
+                      : []),
                     ...(bdayIn.has(menu.f.id)
                       ? [
                           {
@@ -661,6 +682,14 @@ function Table({
           />
         )}
         {menuErr && <Toast text={menuErr} onDone={() => setMenuErr(null)} />}
+        {listen?.np && (
+          <Sheet
+            title={listen.name.split(" ")[0] + " is listening to"}
+            onClose={() => setListen(null)}
+          >
+            <SpotifyPlayer id={listen.np.id} title={listen.np.title} />
+          </Sheet>
+        )}
 
         {/* Little scenes between friends (decorative). */}
         {scene && (
@@ -1241,7 +1270,7 @@ function ActivityBell() {
     <Link
       to="/app/activity"
       aria-label={n ? `Activity, ${n} new` : "Activity"}
-      className="relative w-12 h-12 rounded-full flex items-center justify-center"
+      className="relative w-10 h-10 rounded-full flex items-center justify-center"
       style={{
         background: "var(--fill)",
         border: "var(--bd)",
@@ -1273,6 +1302,7 @@ function Home() {
   const [adding, setAdding] = useState(false);
   const [spot, setSpot] = useState<number | null>(null);
   const [picked, setPicked] = useState<Person | null>(null);
+  const [pickSong, setPickSong] = useState(false);
   const [confetti, setConfetti] = useState(0);
   const [rolling, setRolling] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -1333,23 +1363,23 @@ function Home() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <Link to="/app/home" aria-label="Your Table" className="inline-flex">
-              <SeatLogo filled={people.length} height={64} />
+              <SeatLogo filled={people.length} height={56} />
             </Link>
             <p
-              className="hidden min-[340px]:block leading-tight min-w-0 whitespace-nowrap"
-              style={{ fontSize: 14, color: "var(--ink-2)" }}
+              className="hidden min-[386px]:block leading-tight min-w-0 whitespace-nowrap"
+              style={{ fontSize: 12.5, color: "var(--ink-2)" }}
             >
-              <span className="block font-bold" style={{ color: "var(--ink)", fontSize: 17 }}>
+              <span className="block font-bold" style={{ color: "var(--ink)", fontSize: 15.5 }}>
                 25 seats.
               </span>
               <span className="block">No more, no less.</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <Link
               to="/app/people"
               aria-label="Add people"
-              className="w-12 h-12 rounded-full flex items-center justify-center"
+              className="w-10 h-10 rounded-full flex items-center justify-center"
               style={{
                 background: "var(--lime)",
                 color: "var(--on-accent)",
@@ -1359,6 +1389,23 @@ function Home() {
             >
               <UserPlus size={22} strokeWidth={2.4} aria-hidden="true" />
             </Link>
+            <button
+              onClick={() => setPickSong(true)}
+              aria-label={
+                s.me?.np
+                  ? `Listening to ${s.me.np.title}. Change song`
+                  : "Share what you're listening to"
+              }
+              className="w-10 h-10 rounded-full flex items-center justify-center relative"
+              style={{
+                background: s.me?.np ? "rgba(193,239,98,0.16)" : "var(--fill)",
+                border: s.me?.np ? "1px solid rgba(193,239,98,0.5)" : "var(--bd)",
+                boxShadow: "var(--pop)",
+                color: s.me?.np ? "var(--lime)" : "var(--ink)",
+              }}
+            >
+              <Headphones size={21} aria-hidden="true" />
+            </button>
             <ActivityBell />
             <Link
               to="/app/profile"
@@ -1369,7 +1416,7 @@ function Home() {
               <Avatar
                 src={s.me ? s.me.avatar : ME.avatar}
                 initials={s.me?.initials ?? ME.initials}
-                size={44}
+                size={40}
               />
             </Link>
           </div>
@@ -1420,6 +1467,7 @@ function Home() {
       />
 
       <Confetti fire={confetti} />
+      {pickSong && <NowPlayingPicker onClose={() => setPickSong(false)} />}
       {adding && (
         <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
       )}

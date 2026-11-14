@@ -21,6 +21,7 @@ import {
   type GameId,
   type Me,
   type MsgStatus,
+  type NowPlaying,
   type Person,
   type Post,
   type Reel,
@@ -39,7 +40,26 @@ type ProfileRow = {
   display_name: string;
   avatar_path: string | null;
   created_at: string;
+  np_track_id?: string | null;
+  np_title?: string | null;
+  np_artist?: string | null;
+  np_image?: string | null;
+  np_at?: string | null;
 };
+
+/** "Listening now" from a profile row, if it was shared in the last 24 hours. */
+function npOf(p: ProfileRow): NowPlaying | undefined {
+  if (!p.np_track_id || !p.np_at) return undefined;
+  const at = Date.parse(p.np_at);
+  if (!(Date.now() - at < 24 * 3600_000)) return undefined;
+  return {
+    id: p.np_track_id,
+    title: p.np_title ?? "A song",
+    artist: p.np_artist ?? "",
+    image: p.np_image ?? null,
+    at,
+  };
+}
 type SeatRow = {
   owner: string;
   guest: string;
@@ -293,6 +313,7 @@ async function loadAll() {
       postedToday: false,
       joinedDaysAgo: Math.floor((Date.now() - ts(since ?? p.created_at)) / 86_400_000),
       daysQuiet: 0,
+      np: npOf(p),
     });
 
     const [{ data: myVibeRow }, { data: attempts }] = await Promise.all([
@@ -563,6 +584,7 @@ async function loadAll() {
       initials: initialsOf(profile.display_name),
       avatar: profile.avatar_path ? avatarUrls[profile.avatar_path] : undefined,
       vibeDone: !!myVibeRow,
+      np: npOf(profile),
     };
 
     _set((s) => ({

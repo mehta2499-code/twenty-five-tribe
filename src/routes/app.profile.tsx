@@ -1,8 +1,10 @@
+import { NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
+import { Glyph3D } from "@/components/Glyph3D";
 import { KnowsBest } from "@/components/QuizBadges";
 import { DeleteAccount } from "@/components/Safety";
 import { PushSetting } from "@/components/PushPrompt";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Headphones } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { ME, SEATS_TOTAL, ME_DESCRIPTIONS, QUIETLY } from "@/lib/data";
 import { fileToImage, seatedFriends, useSocial } from "@/lib/social";
@@ -120,6 +122,7 @@ function Profile() {
       setPhotoState((e as Error).message);
     }
   };
+  const [pickSong, setPickSong] = useState(false);
   return (
     <div className="pb-6">
       <PageBand title="You" back />
@@ -155,6 +158,31 @@ function Profile() {
             </>
           )}
         </div>
+      </section>
+      <section className="px-5 mt-4">
+        {s.me?.np ? (
+          <div className="grid gap-2">
+            <NowPlayingCard np={s.me.np} />
+            <button
+              onClick={() => setPickSong(true)}
+              className="btn-secondary min-h-[40px] text-[14px]"
+            >
+              <Headphones size={16} aria-hidden="true" /> Change song
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setPickSong(true)}
+            className="card w-full p-3.5 flex items-center gap-3 text-left"
+          >
+            <Glyph3D name="headphones" size={34} />
+            <span className="flex-1">
+              <span className="block font-semibold">Share what you're listening to</span>
+              <span className="block meta">Pick a song on Spotify. Your 25 see it for 24h.</span>
+            </span>
+          </button>
+        )}
+        {pickSong && <NowPlayingPicker onClose={() => setPickSong(false)} />}
       </section>
       {photoState && (
         <p className="px-5 mt-2 text-sm text-cool" role="status">

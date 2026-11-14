@@ -30,6 +30,7 @@ import { Route as AppFeedRouteImport } from './routes/app.feed'
 import { Route as AppDropRouteImport } from './routes/app.drop'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
+import { Route as ApiSpotifyRouteImport } from './routes/api.spotify'
 import { Route as ApiPushRouteImport } from './routes/api.push'
 import { Route as ApiGifRouteImport } from './routes/api.gif'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
@@ -143,6 +144,11 @@ const AppActivityRoute = AppActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiSpotifyRoute = ApiSpotifyRouteImport.update({
+  id: '/api/spotify',
+  path: '/api/spotify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushRoute = ApiPushRouteImport.update({
   id: '/api/push',
   path: '/api/push',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
+  '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
+  '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
+  '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/walkthrough'
     | '/api/gif'
     | '/api/push'
+    | '/api/spotify'
     | '/app/activity'
     | '/app/chats'
     | '/app/drop'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/walkthrough'
     | '/api/gif'
     | '/api/push'
+    | '/api/spotify'
     | '/app/activity'
     | '/app/chats'
     | '/app/drop'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/walkthrough'
     | '/api/gif'
     | '/api/push'
+    | '/api/spotify'
     | '/app/activity'
     | '/app/chats'
     | '/app/drop'
@@ -371,6 +383,7 @@ export interface RootRouteChildren {
   WalkthroughRoute: typeof WalkthroughRoute
   ApiGifRoute: typeof ApiGifRoute
   ApiPushRoute: typeof ApiPushRoute
+  ApiSpotifyRoute: typeof ApiSpotifyRoute
   InUsernameRoute: typeof InUsernameRoute
 }
 
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/spotify': {
+      id: '/api/spotify'
+      path: '/api/spotify'
+      fullPath: '/api/spotify'
+      preLoaderRoute: typeof ApiSpotifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push': {
       id: '/api/push'
       path: '/api/push'
@@ -629,6 +649,7 @@ const rootRouteChildren: RootRouteChildren = {
   WalkthroughRoute: WalkthroughRoute,
   ApiGifRoute: ApiGifRoute,
   ApiPushRoute: ApiPushRoute,
+  ApiSpotifyRoute: ApiSpotifyRoute,
   InUsernameRoute: InUsernameRoute,
 }
 export const routeTree = rootRouteImport

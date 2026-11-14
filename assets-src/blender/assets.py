@@ -183,19 +183,20 @@ def cone(name, r1, r2, depth, loc=(0, 0, 0), verts=64):
     return o
 
 
-def tube(name, pts, radius, m):
-    """A soft round tube along points (steam, eyes, streamers)."""
+def tube(name, pts, radius, m, straight=False):
+    """A soft round tube along points (steam, eyes, streamers). straight=True: exact corners."""
     cu = bpy.data.curves.new(name, "CURVE")
     cu.dimensions = "3D"
     cu.bevel_depth = radius
     cu.bevel_resolution = 6
     cu.use_fill_caps = True
-    sp = cu.splines.new("NURBS")
+    sp = cu.splines.new("POLY" if straight else "NURBS")
     sp.points.add(len(pts) - 1)
     for p, c in zip(sp.points, pts):
         p.co = (*c, 1)
-    sp.order_u = min(4, len(pts))
-    sp.use_endpoint_u = True
+    if not straight:
+        sp.order_u = min(4, len(pts))
+        sp.use_endpoint_u = True
     o = bpy.data.objects.new(name, cu)
     link(o)
     o.data.materials.append(m)
@@ -586,6 +587,77 @@ BUILDERS.update({
     "cake": cake, "camera": camera_prop, "ballot": ballot,
 })
 
+
+
+# ---------------------------------------------------------------- headphones
+def headphones():
+    reset()
+    band = mat("band", LIME, rough=0.3, coat=0.6)
+    cup = mat("cup", INK, rough=0.35, coat=0.5)
+    pad = mat("pad", hexc("#3A3446"), rough=0.75)
+    cam = camera(elev=84, azim=0)
+    for i, bob in enumerate([0.0, 0.06]):
+        clear_meshes()
+        # Headband: a thick arc over the top.
+        pts = []
+        for k in range(13):
+            a = math.pi * k / 12
+            pts.append((math.cos(a) * 1.25, 0, 0.35 + math.sin(a) * 1.25 + bob))
+        tube("band", pts, 0.16, band)
+        parts = []
+        for side in (-1, 1):
+            c = cyl("cup", 0.48, 0.42, loc=(side * 1.32, 0, 0.12 + bob))
+            c.rotation_euler = (0, math.radians(90), 0)
+            smooth(c, bevel=0.14, seg=5)
+            assign(c, cup)
+            pd = cyl("pad", 0.42, 0.14, loc=(side * 1.08, 0, 0.12 + bob))
+            pd.rotation_euler = (0, math.radians(90), 0)
+            smooth(pd, bevel=0.06, seg=4)
+            assign(pd, pad)
+            dot = cyl("dot", 0.16, 0.06, loc=(side * 1.55, 0, 0.12 + bob))
+            dot.rotation_euler = (0, math.radians(90), 0)
+            smooth(dot, bevel=0.02)
+            assign(dot, band)
+            parts += [c, pd]
+        if i == 0:
+            frame_to(cam, [o for o in bpy.context.scene.objects if o.type in ("MESH", "CURVE")], margin=1.15)
+        render("headphones", i)
+
+
+# ---------------------------------------------------------------- music notes
+def notes():
+    reset()
+    body = mat("note", CREAM, rough=0.25, coat=0.7)
+    gloss = mat("gloss", LIME, rough=0.25, coat=0.7)
+    cam = camera(elev=88, azim=0)
+    for i, rot in enumerate([-10, 0, 10]):
+        clear_meshes()
+        objs = []
+        # A single eighth note: head + one continuous stem-and-flag stroke.
+        h1 = sphere("head", 0.4, loc=(-0.95, 0, -0.62))
+        h1.scale = (1.3, 0.7, 0.95)
+        h1.rotation_euler = (0, math.radians(-22), 0)
+        assign(h1, body)
+        tube("stem1", [(-0.5, 0, -0.55), (-0.5, 0, 1.05)], 0.065, body, straight=True)
+        tube("flag", [(-0.5, 0, 1.05), (-0.2, 0, 0.85), (-0.05, 0, 0.55), (-0.1, 0, 0.3)], 0.075, gloss)
+        # A beamed pair: both stems and the beam are one stroke, so they always meet.
+        h2 = sphere("head", 0.36, loc=(0.55, 0, -0.78))
+        h3 = sphere("head", 0.36, loc=(1.35, 0, -0.58))
+        for h in (h2, h3):
+            h.scale = (1.3, 0.7, 0.95)
+            h.rotation_euler = (0, math.radians(-22), 0)
+            assign(h, body)
+        tube("stem2", [(0.95, 0, -0.72), (0.95, 0, 0.66)], 0.06, body, straight=True)
+        tube("stem3", [(1.75, 0, -0.52), (1.75, 0, 0.86)], 0.06, body, straight=True)
+        tube("beam", [(0.92, 0, 0.66), (1.78, 0, 0.86)], 0.11, gloss, straight=True)
+        root = group([o for o in bpy.context.scene.objects if o.type in ("MESH", "CURVE")], "notes")
+        root.rotation_euler = (0, math.radians(rot), 0)
+        if i == 0:
+            frame_to(cam, [o for o in bpy.context.scene.objects if o.type in ("MESH", "CURVE")], margin=1.2)
+        render("notes", i)
+
+
+BUILDERS.update({"headphones": headphones, "notes": notes})
 
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else list(BUILDERS)
