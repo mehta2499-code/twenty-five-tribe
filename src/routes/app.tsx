@@ -1,11 +1,10 @@
 import { savePendingPath } from "@/lib/pending";
-import { SeatRing } from "@/components/Brand";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { InAppBanner } from "@/components/InAppBanner";
-import { AnimatedLogo } from "@/components/Logo";
+import { AnimatedLogo, SeatLogo } from "@/components/Logo";
 import { Toast } from "@/components/SocialUI";
 import { initLive } from "@/lib/live";
 import { syncPush } from "@/lib/push";
@@ -210,9 +209,7 @@ function AppLayout() {
             </>
           ) : (
             // Returning: just a quiet loader while your 25 loads.
-            <span className="breathe-ring" aria-hidden="true">
-              <SeatRing filled={25} size={64} />
-            </span>
+            <SeatLogo animate height={120} label="Loading your 25" />
           )}
           {!s.loading && s.error && (
             <>

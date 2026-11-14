@@ -1,7 +1,7 @@
 import { Tour } from "@/components/Tour";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Logo } from "@/components/Logo";
+import { SeatLogo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Armchair,
@@ -50,7 +50,6 @@ import {
   dayGameName,
 } from "@/lib/daily";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
-import { VOICE } from "@/lib/copy";
 import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
@@ -580,12 +579,11 @@ function ModeBanner() {
 
 // ---------- Drop + Polls ----------
 
-/** Frosted-glass surface (Table page look). */
+/** Frosted-glass surface: the shared look from styles.css (--glass-*). */
 const GLASS = {
-  background:
-    "linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.035) 60%, rgba(255,255,255,0.02))",
-  border: "1px solid rgba(255,255,255,0.13)",
-  boxShadow: "0 12px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+  background: "var(--glass-bg)",
+  border: "1px solid var(--glass-line)",
+  boxShadow: "var(--glass-shadow)",
   backdropFilter: "blur(18px)",
   WebkitBackdropFilter: "blur(18px)",
 } as const;
@@ -811,29 +809,6 @@ function ActivityBell() {
 
 // ---------- Screen ----------
 
-/** A big number with a small label, for the top of the Table page. */
-function Stat({ label, value, of }: { label: string; value: number; of?: number }) {
-  return (
-    <div>
-      <p
-        className="font-bold uppercase"
-        style={{ fontSize: 10.5, letterSpacing: "0.12em", color: "var(--lime)" }}
-      >
-        {label}
-      </p>
-      <p
-        className="tabular-nums font-bold"
-        style={{ fontSize: 26, lineHeight: 1.1, letterSpacing: "-0.02em" }}
-      >
-        {value}
-        {of !== undefined && (
-          <span style={{ fontSize: 14, color: "var(--ink-3)", fontWeight: 600 }}>/{of}</span>
-        )}
-      </p>
-    </div>
-  );
-}
-
 function Home() {
   const s = useSocial();
   const people = tableOrder(s);
@@ -899,7 +874,7 @@ function Home() {
       <header className="topband px-4 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] pb-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Logo height={40} title={VOICE.brand} />
+            <SeatLogo filled={people.length} height={48} />
             <p
               className="hidden min-[340px]:block leading-tight min-w-0 whitespace-nowrap"
               style={{ fontSize: 12.5, color: "var(--ink-2)" }}
@@ -938,11 +913,6 @@ function Home() {
               />
             </Link>
           </div>
-        </div>
-        <div className="mt-3 grid grid-cols-3 text-center" aria-label="Your numbers">
-          <Stat label="Seats" value={people.length} of={SEATS} />
-          <Stat label="Streaks" value={streakCount} />
-          <Stat label="In their 25" value={s.seatedByCount} />
         </div>
       </header>
 

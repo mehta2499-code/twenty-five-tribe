@@ -37,6 +37,11 @@ export function Avatar({
           : `linear-gradient(145deg, color-mix(in oklab, ${color} 88%, #fff), color-mix(in oklab, ${color} 78%, #000))`,
         color: showImg ? undefined : "var(--on-dark-fill)",
         fontSize: size * 0.36,
+        // Soft white rim + depth (the Table look); just a hairline when tiny.
+        boxShadow:
+          size >= 28
+            ? "0 0 0 1.5px rgba(255,255,255,0.18), 0 6px 14px rgba(0,0,0,0.45)"
+            : "0 0 0 1px rgba(255,255,255,0.14)",
         transition: "opacity 200ms var(--ease)",
       }}
     >

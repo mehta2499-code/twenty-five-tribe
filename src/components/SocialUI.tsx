@@ -1,4 +1,4 @@
-import { SeatRing } from "@/components/Brand";
+import { SeatLogo } from "@/components/Logo";
 import {
   useEffect,
   useRef,
@@ -604,5 +604,5 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
 function HeaderRing() {
   const s = useSocial();
   const n = s.people.length;
-  return <SeatRing filled={n} size={30} label={`${n} of 25 seats filled`} />;
+  return <SeatLogo filled={n} height={40} />;
 }

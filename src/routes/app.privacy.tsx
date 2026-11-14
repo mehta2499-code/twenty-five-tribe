@@ -26,7 +26,7 @@ function Privacy() {
 
   return (
     <div className="pb-16">
-      <header className="px-5 pt-6">
+      <header className="px-5 pt-[max(1.5rem,calc(env(safe-area-inset-top)+0.75rem))]">
         <Link to="/app/profile" className="text-cool" aria-label="Back">
           <ArrowLeft size={18} />
         </Link>

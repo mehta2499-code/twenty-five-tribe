@@ -51,7 +51,7 @@ function Walkthrough() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex justify-between items-center px-6 pt-6">
+      <div className="flex justify-between items-center px-6 pt-[max(1.5rem,calc(env(safe-area-inset-top)+0.75rem))]">
         <div className="flex gap-1.5">
           {CARDS.map((_, idx) => (
             <span

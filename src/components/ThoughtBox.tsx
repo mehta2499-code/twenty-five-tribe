@@ -1,5 +1,5 @@
 /** Top of the Feed: today's thought from you and your 25. */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
@@ -14,7 +14,8 @@ const PROMPTS = [
   "Say it. Only your 25 will see.",
 ];
 
-export function ThoughtBox() {
+/** `focusKey`: bump it to jump into writing (the Feed's "+ Thought" button). */
+export function ThoughtBox({ focusKey = 0 }: { focusKey?: number }) {
   const { list, save, remove } = useThoughts();
   const mine = list?.find((t) => t.id === "me");
   const others = (list ?? []).filter((t) => t.id !== "me");
@@ -24,6 +25,16 @@ export function ThoughtBox() {
   const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
   const writing = !mine || editing;
   const me = personOf("me");
+  const boxRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!focusKey) return;
+    if (mine) {
+      setText(mine.body);
+      setEditing(true);
+    }
+    setTimeout(() => boxRef.current?.focus(), 50);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey]);
 
   const submit = async () => {
     if (!text.trim()) return;
@@ -59,6 +70,7 @@ export function ThoughtBox() {
             <Avatar src={me.avatar} initials={me.initials} size={38} />
             <div className="flex-1 min-w-0">
               <textarea
+                ref={boxRef}
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, 200))}
                 placeholder={prompt}
@@ -128,6 +140,11 @@ export function ThoughtBox() {
           </div>
         )}
 
+        {others.length === 0 && (
+          <p className="meta mt-4 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
+            No thoughts from your 25 yet today. Go first.
+          </p>
+        )}
         {others.length > 0 && (
           <ul className="mt-4 grid gap-3 pt-3" style={{ borderTop: "1px solid var(--line)" }}>
             {others.map((t) => {

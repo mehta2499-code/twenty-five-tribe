@@ -273,6 +273,23 @@ function Feed() {
   const s = useSocial();
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  // Posts | Thoughts tabs (remembered for this visit).
+  const [tab, setTab] = useState<"posts" | "thoughts">(() => {
+    try {
+      return sessionStorage.getItem("tf.feed.tab") === "thoughts" ? "thoughts" : "posts";
+    } catch {
+      return "posts";
+    }
+  });
+  const pickTab = (t: "posts" | "thoughts") => {
+    setTab(t);
+    try {
+      sessionStorage.setItem("tf.feed.tab", t);
+    } catch {
+      // ignore
+    }
+  };
+  const [thinkKey, setThinkKey] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const open = s.posts.find((p) => p.id === commentsFor);
 
@@ -289,7 +306,7 @@ function Feed() {
           {
             at: 'nav[aria-label="Main"]',
             title: "Swipe or tap",
-            body: "Swipe left and right to move between Table, Feed, Blink, Chats and Games.",
+            body: "Swipe left and right to move between Table, Feed, the Drop, Chats and Games.",
           },
         ]}
       />
@@ -298,19 +315,49 @@ function Feed() {
         title="Feed"
         sub="Posts from your 25. Nobody else sees them."
         actions={
-          <button
-            onClick={() => setCreating(true)}
-            className="btn-primary px-4"
-            aria-label="New post"
-          >
-            <Plus size={18} /> Post
-          </button>
+          <div className="flex flex-col items-stretch gap-1.5">
+            <button
+              onClick={() => setCreating(true)}
+              className="btn-primary px-4"
+              aria-label="New post"
+            >
+              <Plus size={18} /> Post
+            </button>
+            <button
+              onClick={() => {
+                pickTab("thoughts");
+                setThinkKey((k) => k + 1);
+              }}
+              className="btn-secondary px-3 min-h-[34px] text-[13px]"
+              aria-label="New thought"
+            >
+              <Plus size={15} /> Thought
+            </button>
+          </div>
         }
-      ></PageBand>
+      >
+        <div className="segmented w-full mt-4" role="tablist" aria-label="Feed">
+          <button
+            className="flex-1"
+            role="tab"
+            aria-pressed={tab === "posts"}
+            onClick={() => pickTab("posts")}
+          >
+            Posts
+          </button>
+          <button
+            className="flex-1"
+            role="tab"
+            aria-pressed={tab === "thoughts"}
+            onClick={() => pickTab("thoughts")}
+          >
+            Thoughts
+          </button>
+        </div>
+      </PageBand>
 
-      <ThoughtBox />
-
-      {s.loading ? (
+      {tab === "thoughts" ? <ThoughtBox focusKey={thinkKey} /> : null}
+      {tab === "thoughts" ? null : s.loading ? (
         <div aria-busy="true" aria-label="Loading posts">
           {/* Same shape as a post: full-bleed 4:5 media, padded header and text. */}
           <div className="flex items-center gap-3 px-4 py-3">

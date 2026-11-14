@@ -26,10 +26,11 @@ export function BottomNav() {
       <ul
         className="pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]"
         style={{
-          background: "color-mix(in srgb, var(--surface) 94%, transparent)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: "1px solid var(--line)",
+          background:
+            "linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)), color-mix(in srgb, var(--surface) 72%, transparent)",
+          backdropFilter: "blur(22px) saturate(140%)",
+          WebkitBackdropFilter: "blur(22px) saturate(140%)",
+          border: "1px solid rgba(255,255,255,0.13)",
           boxShadow: "0 16px 36px rgba(0, 0, 0, 0.45)",
         }}
       >

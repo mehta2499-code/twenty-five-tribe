@@ -80,7 +80,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "25" },
       // Solid status bar: with "translucent", newer iOS blurs whatever scrolls under it.
-      { name: "apple-mobile-web-app-status-bar-style", content: "black" },
+      // Translucent so our top bar's colour runs up behind the clock. A fixed strip
+      // (StatusBarStrip) covers that area, so nothing ever scrolls under it blurred.
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { title: "25 — Everyone else is noise." },
       {
         name: "description",
@@ -99,13 +101,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         property: "og:image",
-        content:
-          "https://the25.world/og.png",
+        content: "https://the25.world/og.png",
       },
       {
         name: "twitter:image",
-        content:
-          "https://the25.world/og.png",
+        content: "https://the25.world/og.png",
       },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -158,6 +158,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <div
+        aria-hidden="true"
+        className="fixed inset-x-0 top-0 pointer-events-none"
+        style={{ height: "env(safe-area-inset-top)", background: "var(--band-top)", zIndex: 200 }}
+      />
     </QueryClientProvider>
   );
 }

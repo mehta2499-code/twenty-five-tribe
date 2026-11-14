@@ -70,3 +70,80 @@ export function AnimatedLogo({
     </svg>
   );
 }
+
+/** 25 points spaced evenly along the 25 mark: one dot per seat. */
+const SEAT_DOTS: [number, number][] = [
+  [19, 31],
+  [25.4, 16.7],
+  [39, 8.8],
+  [54.8, 9.4],
+  [66.6, 19.4],
+  [68.5, 35],
+  [60.4, 48.5],
+  [48, 58.4],
+  [34.9, 67.5],
+  [21.8, 76.7],
+  [27.1, 80],
+  [43.1, 80],
+  [59.1, 80],
+  [75, 80],
+  [91, 80],
+  [54.3, 86.9],
+  [53, 100.8],
+  [65.1, 94.7],
+  [78.9, 95.2],
+  [89.9, 103.3],
+  [94, 116.4],
+  [89.5, 129.3],
+  [78.1, 137.1],
+  [64.4, 139],
+  [50.9, 135.7],
+];
+
+/**
+ * The 25 mark drawn as 25 dots, one per seat. `filled` dots light up lime
+ * (your seats so far). `animate` lights them one by one, on a loop (loader).
+ */
+export function SeatLogo({
+  filled = 25,
+  height = 40,
+  animate = false,
+  label,
+}: {
+  filled?: number;
+  height?: number;
+  animate?: boolean;
+  label?: string;
+}) {
+  const r = height < 50 ? 6.2 : 4.8;
+  return (
+    <svg
+      height={height}
+      width={(height * 104) / 146}
+      viewBox="4.5 0 104 146"
+      className={animate ? "seatlogo-anim" : undefined}
+      role="img"
+      aria-label={label ?? `${Math.min(filled, 25)} of 25 seats filled`}
+    >
+      {SEAT_DOTS.map(([x, y], i) => {
+        const on = animate || i < filled;
+        return (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={r}
+            fill={on && !animate ? "var(--lime)" : "var(--fill-2)"}
+            style={
+              animate
+                ? { animationDelay: `${i * 0.07}s` }
+                : on
+                  ? { filter: "drop-shadow(0 0 3px rgba(193,239,98,0.55))" }
+                  : undefined
+            }
+          />
+        );
+      })}
+    </svg>
+  );
+}
