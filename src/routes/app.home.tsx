@@ -12,10 +12,8 @@ import {
   CircleHelp,
   Dices,
   Eye,
-  Flame,
   Gamepad2,
   Headphones,
-  Hourglass,
   ImagePlus,
   MessageCircle,
   PartyPopper,
@@ -37,7 +35,6 @@ import {
   friendById,
   mutualFriends,
   seatedFriends,
-  streakStatus,
   useSocial,
   type Person,
   type SocialState,
@@ -156,7 +153,23 @@ function Table({
     () => (s.mode === "live" ? quiz.knowsMe : demoScores(seated)),
     [s.mode, quiz.knowsMe, seated],
   );
-  const places = layout(seated, scores);
+  const seats = layout(seated, scores);
+  // Anyone doing something right now (playing, on the Drop, dancing to a song)
+  // gets up from their seat and comes onto the table, in a ring around the dice.
+  const busy = seated
+    .map((f, i) => {
+      const n = live.get(f.id);
+      return n && (n.doing || isListening(f)) ? i : -1;
+    })
+    .filter((i) => i >= 0)
+    .slice(0, 8);
+  const places = seats.map((p, i) => {
+    const k = busy.indexOf(i);
+    if (k < 0) return p;
+    const a =
+      -Math.PI / 2 + (k * 2 * Math.PI) / busy.length + (busy.length === 2 ? Math.PI / 2 : 0);
+    return { ...p, x: 50 + Math.cos(a) * 19, y: 50 + Math.sin(a) * 23 };
+  });
 
   // An oval that fills the space it's given: as wide as it can be (up to 440px),
   // up to 1.4× as tall as it is wide. Faces scale with it, so it fits any screen.
@@ -471,11 +484,28 @@ function Table({
           </button>
         </div>
 
+        {/* Empty chairs left by people who came onto the table. */}
+        {busy.map((i) => (
+          <span
+            key={`chair-${seated[i].id}`}
+            aria-hidden="true"
+            className="absolute rounded-full"
+            style={{
+              left: `${seats[i].x}%`,
+              top: `${seats[i].y}%`,
+              width: faceSize * 0.8,
+              height: faceSize * 0.8,
+              transform: "translate(-50%, -50%)",
+              border: "2px dashed rgba(255,255,255,0.18)",
+              background: "rgba(255,255,255,0.03)",
+            }}
+          />
+        ))}
+
         {/* Friends */}
         {seated.map((f, i) => {
           const { x, y } = places[i];
           const size = faceSize;
-          const st = streakStatus(s.streaks[f.id]);
           const lit = spot === i;
           const oneWay = f.mutual === false;
           const score = scores[f.id];
@@ -522,9 +552,10 @@ function Table({
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: "translate(-50%, -50%)",
-                zIndex: lit ? 3 : 1,
+                zIndex: lit ? 3 : busy.includes(i) ? 2 : 1,
+                transition: "left 0.9s cubic-bezier(.2,.8,.2,1), top 0.9s cubic-bezier(.2,.8,.2,1)",
               }}
-              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${st.count ? `, ${st.count}-day streak` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
+              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
             >
               <span className="flex flex-col items-center" style={lean}>
                 {!isListening(f) && bdayDays !== undefined && <PartyHat size={size} />}
@@ -580,16 +611,6 @@ function Table({
                     </span>
                   )}
                 </span>
-                {st.count > 0 ? (
-                  <span
-                    className={`sticker relative z-[1] whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2 !px-1.5 !py-0`}
-                    style={{ fontSize: small ? 10 : 11 }}
-                  >
-                    <Ico i={Flame} size={small ? 10 : 11} />
-                    {st.count}
-                    {st.atRisk && <Ico i={Hourglass} size={small ? 10 : 11} />}
-                  </span>
-                ) : null}
               </span>
             </button>
           );
