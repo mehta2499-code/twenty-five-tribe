@@ -1,8 +1,9 @@
 /**
- * A small liquid-glass menu of icon tiles that pops up next to what you tapped
- * (a face at the Table, the Feed's "+"). Closes on outside tap or Escape.
+ * A small liquid-glass menu that pops up next to what you tapped (a face at the
+ * Table, the Feed's "+"): a list of actions with icons. Closes on outside tap or Escape.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 
 export type WaffleItem = {
   key: string;
@@ -59,16 +60,23 @@ export function WaffleMenu({
         ref={ref}
         role="menu"
         aria-label={label}
-        className="liquid absolute p-2.5 rounded-[26px] animate-soft-in"
+        className="liquid absolute p-1.5 rounded-[24px] animate-soft-in"
         style={{
-          width: 236,
+          width: 260,
           left: pos?.left ?? -9999,
           top: pos?.top ?? -9999,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {header && <div className="px-1.5 pt-1 pb-2.5">{header}</div>}
-        <div className="grid grid-cols-2 gap-2">
+        {header && (
+          <div
+            className="px-2.5 pt-2 pb-2"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+          >
+            {header}
+          </div>
+        )}
+        <div className="grid py-1">
           {items.map((it) => (
             <button
               key={it.key}
@@ -78,13 +86,33 @@ export function WaffleMenu({
                 if (it.disabled) return;
                 it.onSelect?.();
               }}
-              className="liquid-tile flex flex-col items-center justify-center gap-1 rounded-[18px] py-3 px-1 text-center disabled:opacity-45"
+              className="menu-row flex items-center gap-3 rounded-[16px] px-2.5 py-2 text-left disabled:opacity-45"
             >
-              <span className="text-[24px] leading-none" aria-hidden="true">
+              <span
+                className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "var(--lime)",
+                }}
+                aria-hidden="true"
+              >
                 {it.icon}
               </span>
-              <span className="text-[13px] font-bold leading-tight">{it.label}</span>
-              {it.hint && <span className="text-[10.5px] opacity-70 leading-tight">{it.hint}</span>}
+              <span className="flex-1 min-w-0">
+                <span className="block text-[15px] font-semibold leading-tight">{it.label}</span>
+                {it.hint && (
+                  <span
+                    className="block text-[12px] leading-tight"
+                    style={{ color: "var(--ink-3)" }}
+                  >
+                    {it.hint}
+                  </span>
+                )}
+              </span>
+              {!it.disabled && (
+                <ChevronRight size={16} style={{ color: "var(--ink-3)" }} aria-hidden="true" />
+              )}
             </button>
           ))}
         </div>

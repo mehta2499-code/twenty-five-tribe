@@ -27,7 +27,7 @@ export function BottomNav() {
         className="pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]"
         style={{
           background:
-            "linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.08)), rgba(33,30,43,0.45)",
+            "linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.08)), rgba(33,30,43,0.82)",
           backdropFilter: "blur(26px) saturate(190%)",
           WebkitBackdropFilter: "blur(26px) saturate(190%)",
           border: "1px solid rgba(255,255,255,0.2)",

@@ -96,7 +96,7 @@ function LiveSeat() {
               className="btn-primary btn-pink px-4 gap-1.5"
               style={{ minHeight: 34, fontSize: 13.5 }}
             >
-              🎂 Wish {f.name.split(" ")[0]}
+              <Cake size={15} aria-hidden="true" /> Wish {f.name.split(" ")[0]}
               <span className="font-semibold opacity-80 text-[12px]">
                 {daysUntil(bday) === 0
                   ? "· it's today!"

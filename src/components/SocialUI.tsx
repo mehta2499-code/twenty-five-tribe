@@ -187,7 +187,7 @@ export function Sheet({
         className="w-full max-w-md sheet-in"
         style={{
           background:
-            "linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 45%), rgba(33,30,43,0.82)",
+            "linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 45%), rgba(33,30,43,0.94)",
           backdropFilter: "blur(28px) saturate(180%)",
           WebkitBackdropFilter: "blur(28px) saturate(180%)",
           border: "1px solid rgba(255,255,255,0.16)",

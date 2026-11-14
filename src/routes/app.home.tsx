@@ -19,9 +19,12 @@ import {
   MessageCircle,
   PartyPopper,
   Shuffle,
+  Swords,
   Trophy,
   UserPlus,
+  UserRound,
   Vote,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -562,14 +565,14 @@ function Table({
                 ? [
                     {
                       key: "trivia",
-                      icon: "⚡",
+                      icon: <Zap size={20} />,
                       label: "Trivia duel",
                       hint: "Live, 1 vs 1",
                       onSelect: () => void challenge("trivia", menu.f),
                     },
                     {
                       key: "ludo",
-                      icon: "🎲",
+                      icon: <Dices size={20} />,
                       label: "Ludo",
                       hint: "Race home",
                       onSelect: () => void challenge("ludo", menu.f),
@@ -578,13 +581,13 @@ function Table({
                 : [
                     {
                       key: "view",
-                      icon: "👤",
+                      icon: <UserRound size={20} />,
                       label: "View profile",
                       onSelect: () => navigate({ to: "/app/seat/$id", params: { id: menu.f.id } }),
                     },
                     {
                       key: "challenge",
-                      icon: "🎮",
+                      icon: <Swords size={20} />,
                       label: "Challenge",
                       disabled: menu.f.mutual === false,
                       hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
@@ -592,7 +595,7 @@ function Table({
                     },
                     {
                       key: "msg",
-                      icon: "💬",
+                      icon: <MessageCircle size={20} />,
                       label: "Message",
                       disabled: menu.f.mutual === false,
                       hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
@@ -602,7 +605,7 @@ function Table({
                       ? [
                           {
                             key: "wish",
-                            icon: "🎂",
+                            icon: <Cake size={20} />,
                             label: "Birthday wish",
                             hint:
                               bdayIn.get(menu.f.id) === 0

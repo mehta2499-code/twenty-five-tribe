@@ -1,7 +1,15 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { ImagePlus, LayoutGrid, Plus, MoreHorizontal, Trash2 } from "lucide-react";
+import {
+  Camera,
+  ImagePlus,
+  LayoutGrid,
+  MessageSquareQuote,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
 import {
@@ -405,7 +413,7 @@ function Feed() {
           items={[
             {
               key: "post",
-              icon: "📸",
+              icon: <Camera size={20} />,
               label: "Post",
               hint: "Photo or video",
               onSelect: () => {
@@ -415,7 +423,7 @@ function Feed() {
             },
             {
               key: "thought",
-              icon: "💭",
+              icon: <MessageSquareQuote size={20} />,
               label: "Thought",
               hint: "Gone at midnight",
               onSelect: () => {
