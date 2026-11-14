@@ -284,7 +284,12 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
 /* Brand band (Table header, game headers): deep violet, light text */
 /* Top section of every page: a soft lime-to-surface gradient with a rounded
    bottom edge and shadow, so it reads as its own bar, not part of the page. */
-:root { --band-bg: linear-gradient(180deg, rgba(193, 239, 98, 0.16) 0%, rgba(193, 239, 98, 0.05) 60%, rgba(193, 239, 98, 0.02) 100%), var(--surface); }
+:root {
+  /* Starts at #3B3F34 (16% lime over --surface), the same colour as the
+     iPhone status bar (theme-color), so the bar runs to the top edge. */
+  --band-top: #3B3F34;
+  --band-bg: linear-gradient(180deg, var(--band-top) 0%, #2A2B2E 60%, #24212D 100%);
+}
 .topband, .band {
   background: var(--band-bg);
   color: var(--ink);

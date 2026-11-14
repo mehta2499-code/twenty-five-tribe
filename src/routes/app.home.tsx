@@ -162,7 +162,8 @@ function Table({
   }, []);
   const W = Math.max(200, Math.min(box.w, 440, box.h));
   const H = Math.max(W, Math.min(box.h, W * 1.4));
-  const scale = Math.min(1.25, Math.max(0.7, W / 350));
+  // Faces stay smaller than the gap between rings, so neighbours never overlap.
+  const scale = Math.min(1.1, Math.max(0.7, (W / 350) * 0.95));
 
   return (
     <section
@@ -805,6 +806,21 @@ function Home() {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  // The Table page fits the screen: no scrolling and no iPhone rubber-band bounce.
+  useEffect(() => {
+    const els = [document.documentElement, document.body];
+    const prev = els.map((e) => [e.style.overflow, e.style.overscrollBehavior] as const);
+    els.forEach((e) => {
+      e.style.overflow = "hidden";
+      e.style.overscrollBehavior = "none";
+    });
+    return () =>
+      els.forEach((e, i) => {
+        e.style.overflow = prev[i][0];
+        e.style.overscrollBehavior = prev[i][1];
+      });
+  }, []);
 
   // Spotlight hops around the table, slows down, lands on someone.
   const onRoll = () => {
