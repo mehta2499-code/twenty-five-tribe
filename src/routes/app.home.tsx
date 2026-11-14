@@ -1,6 +1,6 @@
 import { Tour } from "@/components/Tour";
 import { Ico, TONE } from "@/components/Ico";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SeatLogo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -50,7 +50,10 @@ import {
   weekStandings,
   dayGameName,
 } from "@/lib/daily";
-import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
+import { Confetti, Toast, buzz, clientOnly } from "@/components/SocialUI";
+import { WaffleMenu } from "@/components/WaffleMenu";
+import { TRIVIA_PACKS } from "@/lib/data";
+import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
 import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
@@ -61,17 +64,10 @@ export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
 });
 
-/**
- * The table has three rings, set by how well each friend did on YOUR quiz:
- * inner = 7/7, middle = 5–6 of 7, outer = everyone else (or no quiz yet).
- * A ring that's full spills over into the next one out.
- */
+/** Up to 25 people at the table; the quiz decides who sits at its head. */
 const SEATS = 25;
-const RINGS = [
-  { r: 23.5, cap: 6, size: 50 },
-  { r: 36, cap: 11, size: 42 },
-  { r: 46.5, cap: SEATS, size: 34 },
-] as const;
+/** Where faces sit around the table (% of the table area from the centre). */
+const SEAT_R = 41;
 
 function ringFor(b?: Best): 0 | 1 | 2 {
   if (!b || !b.total) return 2;
@@ -89,26 +85,26 @@ function demoScores(people: Person[]): Record<string, Best> {
   return out;
 }
 
-/** Where each person sits: ring + position, in the same order as `people`. */
+/**
+ * Everyone sits in one neat ring around the table. The best-knowing friends
+ * (7/7, then 5–6/7) take the head of the table at the top; then seats fill
+ * alternately right and left of it. `ring` is the quiz tier (0 best, 2 rest).
+ */
 function layout(people: Person[], knowsMe: Record<string, Best>) {
-  const rings: number[][] = [[], [], []];
-  people.forEach((p, i) => {
-    let r = ringFor(knowsMe[p.id]);
-    while (r < 2 && rings[r].length >= RINGS[r].cap) r++;
-    rings[r].push(i);
-  });
+  const n = people.length;
+  const ranked = people
+    .map((p, i) => ({ i, tier: ringFor(knowsMe[p.id]) }))
+    .sort((a, b) => a.tier - b.tier || a.i - b.i);
+  // Slot order: top centre, then right, left, right, left…
+  const slots: number[] = [0];
+  for (let k = 1; slots.length < n; k++) {
+    slots.push(k);
+    if (slots.length < n) slots.push(n - k);
+  }
   const out: { x: number; y: number; ring: 0 | 1 | 2 }[] = [];
-  rings.forEach((list, ri) => {
-    const { r } = RINGS[ri];
-    const offset = ri === 1 ? Math.PI / Math.max(list.length, 1) : 0;
-    list.forEach((idx, k) => {
-      const angle = (k / list.length) * Math.PI * 2 - Math.PI / 2 + offset;
-      out[idx] = {
-        x: 50 + r * Math.cos(angle),
-        y: 50 + r * Math.sin(angle),
-        ring: ri as 0 | 1 | 2,
-      };
-    });
+  ranked.forEach(({ i, tier }, r) => {
+    const angle = (slots[r] / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
+    out[i] = { x: 50 + SEAT_R * Math.cos(angle), y: 50 + SEAT_R * Math.sin(angle), ring: tier };
   });
   return out;
 }
@@ -162,8 +158,13 @@ function Table({
   }, []);
   const W = Math.max(200, Math.min(box.w, 440, box.h));
   const H = Math.max(W, Math.min(box.h, W * 1.4));
-  // Faces stay smaller than the gap between rings, so neighbours never overlap.
-  const scale = Math.min(1.1, Math.max(0.7, (W / 350) * 0.95));
+  // Everyone gets the same size face; smaller only when the table gets full.
+  const ra = (W * SEAT_R) / 100;
+  const rb = (H * SEAT_R) / 100;
+  const perimeter = Math.PI * (3 * (ra + rb) - Math.sqrt((3 * ra + rb) * (ra + 3 * rb)));
+  const faceSize = Math.round(
+    Math.min(46, Math.max(30, (perimeter / Math.max(seated.length, 1)) * 0.8)),
+  );
 
   // Birthdays in the next 7 days get a party hat.
   const bdays = useBirthdays();
@@ -173,6 +174,27 @@ function Table({
       .map((b) => [b.id, daysUntil(b)] as const)
       .filter(([, d]) => d <= 7),
   );
+
+  // Tap a face → a menu: view, challenge, message, wish.
+  const [menu, setMenu] = useState<{ f: Person; rect: DOMRect; step?: "challenge" } | null>(null);
+  const navigate = useNavigate();
+  const [menuErr, setMenuErr] = useState<string | null>(null);
+  const challenge = async (kind: "trivia" | "ludo", f: Person) => {
+    setMenu(null);
+    try {
+      if (kind === "trivia") {
+        const pack = TRIVIA_PACKS[Math.floor(Math.random() * TRIVIA_PACKS.length)];
+        const id = await startTriviaChallenge(pack.id, f);
+        void inviteToDuel(id, f.id, pack.name);
+        navigate({ to: "/app/play/$id", params: { id } });
+      } else {
+        const id = await startLudo([f]);
+        navigate({ to: "/app/play/$id", params: { id } });
+      }
+    } catch (e) {
+      setMenuErr((e as Error).message);
+    }
+  };
 
   // A living table: every few seconds something small happens between friends.
   const [scene, setScene] = useState<Scene | null>(null);
@@ -196,10 +218,9 @@ function Table({
       const rnd = <T,>(l: T[]) => l[Math.floor(Math.random() * l.length)];
       // Neighbours: same ring, next to each other around the table.
       const near: [number, number][] = [];
-      for (const ring of [0, 1, 2]) {
+      {
         const ids = places
           .map((p, i) => ({ p, i }))
-          .filter((o) => o.p.ring === ring)
           .sort((x, y) => angle(x.i) - angle(y.i))
           .map((o) => o.i);
         for (let k = 0; k < ids.length && ids.length >= 2; k++) {
@@ -352,6 +373,7 @@ function Table({
       aria-label="Your table"
       onPointerDown={(e) => {
         const el = e.target as HTMLElement;
+        if (el.closest(".fixed")) return; // the face menu
         if (el.closest("a, button")) return setScene(null);
         if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setWave(Date.now());
       }}
@@ -361,7 +383,7 @@ function Table({
         <div
           className="absolute rounded-full"
           style={{
-            inset: "31%",
+            inset: "18%",
             background:
               "radial-gradient(circle at 35% 28%, rgba(193,239,98,0.16), transparent 60%), var(--glass-bg), #211E2B",
             border: "1px solid rgba(193,239,98,0.22)",
@@ -400,13 +422,13 @@ function Table({
 
         {/* Friends */}
         {seated.map((f, i) => {
-          const { x, y, ring } = places[i];
-          const size = Math.round(RINGS[ring].size * scale);
+          const { x, y } = places[i];
+          const size = faceSize;
           const st = streakStatus(s.streaks[f.id]);
           const lit = spot === i;
           const oneWay = f.mutual === false;
           const score = scores[f.id];
-          const small = ring === 2;
+          const small = faceSize < 42;
           const bdayDays = bdayIn.get(f.id);
           // Cheers / high five: both lean in. Whisper: the whisperer leans in.
           const inScene =
@@ -433,10 +455,14 @@ function Table({
                 })()
               : undefined;
           return (
-            <Link
+            <button
               key={f.id}
-              to="/app/seat/$id"
-              params={{ id: f.id }}
+              type="button"
+              aria-haspopup="menu"
+              onClick={(e) => {
+                setScene(null);
+                setMenu({ f, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+              }}
               className="absolute flex flex-col items-center"
               style={{
                 left: `${x}%`,
@@ -506,9 +532,92 @@ function Table({
                   </span>
                 ) : null}
               </span>
-            </Link>
+            </button>
           );
         })}
+
+        {menu && (
+          <WaffleMenu
+            anchor={menu.rect}
+            label={`Options for ${menu.f.name}`}
+            onClose={() => setMenu(null)}
+            header={
+              <div className="flex items-center gap-2.5">
+                <Avatar
+                  src={menu.f.avatar}
+                  initials={menu.f.initials}
+                  color={menu.f.color}
+                  size={36}
+                />
+                <span className="min-w-0">
+                  <span className="block font-bold truncate">{menu.f.name}</span>
+                  {menu.step === "challenge" && (
+                    <span className="block meta text-[12px]">Pick a game</span>
+                  )}
+                </span>
+              </div>
+            }
+            items={
+              menu.step === "challenge"
+                ? [
+                    {
+                      key: "trivia",
+                      icon: "⚡",
+                      label: "Trivia duel",
+                      hint: "Live, 1 vs 1",
+                      onSelect: () => void challenge("trivia", menu.f),
+                    },
+                    {
+                      key: "ludo",
+                      icon: "🎲",
+                      label: "Ludo",
+                      hint: "Race home",
+                      onSelect: () => void challenge("ludo", menu.f),
+                    },
+                  ]
+                : [
+                    {
+                      key: "view",
+                      icon: "👤",
+                      label: "View profile",
+                      onSelect: () => navigate({ to: "/app/seat/$id", params: { id: menu.f.id } }),
+                    },
+                    {
+                      key: "challenge",
+                      icon: "🎮",
+                      label: "Challenge",
+                      disabled: menu.f.mutual === false,
+                      hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
+                      onSelect: () => setMenu({ ...menu, step: "challenge" }),
+                    },
+                    {
+                      key: "msg",
+                      icon: "💬",
+                      label: "Message",
+                      disabled: menu.f.mutual === false,
+                      hint: menu.f.mutual === false ? "Not mutual yet" : undefined,
+                      onSelect: () => navigate({ to: "/app/chat/$id", params: { id: menu.f.id } }),
+                    },
+                    ...(bdayIn.has(menu.f.id)
+                      ? [
+                          {
+                            key: "wish",
+                            icon: "🎂",
+                            label: "Birthday wish",
+                            hint:
+                              bdayIn.get(menu.f.id) === 0
+                                ? "Today!"
+                                : `In ${bdayIn.get(menu.f.id)}d`,
+                            onSelect: () =>
+                              navigate({ to: "/app/card/$id", params: { id: menu.f.id } }),
+                          },
+                        ]
+                      : []),
+                  ]
+            }
+          />
+        )}
+        {menuErr && <Toast text={menuErr} onDone={() => setMenuErr(null)} />}
 
         {/* Little scenes between friends (decorative). */}
         {scene && (
@@ -993,7 +1102,7 @@ function TodayTiles() {
     <section className="px-5 mt-4 grid grid-cols-2 gap-3" aria-label="Today">
       <Link
         to="/app/drop"
-        className={`rounded-[22px] px-3 py-3 flex items-center gap-2.5 ${live ? "wiggle" : ""}`}
+        className={`rounded-[22px] px-3 py-3 flex items-center gap-2.5 ${live ? "wiggle" : ""} ${dropped === false ? "pulse-lime" : ""}`}
         style={card(live, "var(--lime)")}
       >
         <span
@@ -1014,7 +1123,7 @@ function TodayTiles() {
       </Link>
       <Link
         to="/app/polls"
-        className="rounded-[22px] px-3 py-3 flex items-center gap-2.5"
+        className={`rounded-[22px] px-3 py-3 flex items-center gap-2.5 ${pollsHot ? "pulse-pink" : ""}`}
         style={card(pollsHot, "var(--pink)")}
       >
         <span
@@ -1233,7 +1342,7 @@ function Home() {
           {
             at: 'section[aria-label="Your table"]',
             title: "This is your Table",
-            body: "Closest ring: people who got 7/7 on your quiz. Middle: 5 or 6. Outer: everyone else. Tap a face to open them, or the dice to pick someone.",
+            body: "Everyone at your table. People who got 7/7 on your quiz sit at the head (top). Tap a face for options, or the dice to pick someone.",
           },
           {
             at: 'a[aria-label="Add people"]',

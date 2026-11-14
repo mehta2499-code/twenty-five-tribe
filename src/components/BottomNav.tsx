@@ -27,11 +27,12 @@ export function BottomNav() {
         className="pointer-events-auto mx-auto max-w-[420px] grid grid-cols-5 items-end px-1 pb-0.5 rounded-[26px]"
         style={{
           background:
-            "linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)), color-mix(in srgb, var(--surface) 72%, transparent)",
-          backdropFilter: "blur(22px) saturate(140%)",
-          WebkitBackdropFilter: "blur(22px) saturate(140%)",
-          border: "1px solid rgba(255,255,255,0.13)",
-          boxShadow: "0 16px 36px rgba(0, 0, 0, 0.45)",
+            "linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.08)), rgba(33,30,43,0.45)",
+          backdropFilter: "blur(26px) saturate(190%)",
+          WebkitBackdropFilter: "blur(26px) saturate(190%)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(255,255,255,0.06), 0 16px 36px rgba(0, 0, 0, 0.45)",
         }}
       >
         {tabs.map(({ to, label, Icon }) => {
@@ -56,13 +57,14 @@ export function BottomNav() {
                   <span
                     className="relative -mt-6 w-[58px] h-[58px] rounded-[20px] flex items-center justify-center"
                     style={{
-                      background: "var(--lime)",
+                      background:
+                        "linear-gradient(180deg, rgba(222,255,160,0.96), rgba(193,239,98,0.9) 55%, rgba(170,220,70,0.92))",
                       color: "var(--on-dark-fill)",
-                      border: "var(--bd)",
-                      boxShadow: active
-                        ? "0 0 0 3px rgba(193, 239, 98, 0.28), var(--pop)"
-                        : "var(--pop)",
-                      transform: "rotate(-4deg)",
+                      border: "1px solid rgba(255,255,255,0.45)",
+                      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -2px 6px rgba(70,100,10,0.25), 0 10px 24px rgba(193,239,98,${active ? 0.4 : 0.25})`,
+                      backdropFilter: "blur(16px) saturate(180%)",
+                      WebkitBackdropFilter: "blur(16px) saturate(180%)",
+                      borderRadius: 22,
                     }}
                   >
                     <TableGlyph size={28} active />

@@ -100,11 +100,19 @@ function AppLayout() {
     };
   }, [navigate]);
 
-  // Service worker: caches the app's built files on the phone for a fast start.
+  // Service worker: caches the app's built files on the phone for a fast start,
+  // and tells us where to go when a notification is tapped.
   useEffect(() => {
-    if ("serviceWorker" in navigator)
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  }, []);
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { type?: string; url?: string } | null;
+      if (d?.type === "open" && typeof d.url === "string" && d.url.startsWith("/"))
+        navigate({ to: d.url as "/app/home" });
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [navigate]);
 
   // While the app is open and visible, tell the server we're here so it holds
   // back push notifications (the in-app banner covers it).
@@ -225,6 +233,8 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background relative">
+      {/* Soft colour behind everything, so the glass has something to show. */}
+      <div aria-hidden="true" className="ambient" />
       <div
         ref={columnRef}
         className="mx-auto max-w-md pb-32 relative app-column"

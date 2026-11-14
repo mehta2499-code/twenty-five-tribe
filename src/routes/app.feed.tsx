@@ -15,6 +15,7 @@ import {
 } from "@/components/SocialUI";
 import { CommentsSheet, personOf } from "@/components/FeedUI";
 import { ThoughtBox } from "@/components/ThoughtBox";
+import { WaffleMenu } from "@/components/WaffleMenu";
 import { firstFrame } from "@/components/ChatExtras";
 import { fileToImage, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
@@ -290,6 +291,7 @@ function Feed() {
     }
   };
   const [thinkKey, setThinkKey] = useState(0);
+  const [plus, setPlus] = useState<DOMRect | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const open = s.posts.find((p) => p.id === commentsFor);
 
@@ -299,7 +301,7 @@ function Feed() {
         id="feed"
         steps={[
           {
-            at: 'button[aria-label="New post"]',
+            at: 'button[aria-label="New post or thought"]',
             title: "Post to your 25 only",
             body: "Photos and videos go to the people at your Table, nobody else. The feed ends when you're caught up.",
           },
@@ -315,25 +317,14 @@ function Feed() {
         title="Feed"
         sub="Posts from your 25. Nobody else sees them."
         actions={
-          <div className="flex flex-col items-stretch gap-1.5">
-            <button
-              onClick={() => setCreating(true)}
-              className="btn-primary px-4"
-              aria-label="New post"
-            >
-              <Plus size={18} /> Post
-            </button>
-            <button
-              onClick={() => {
-                pickTab("thoughts");
-                setThinkKey((k) => k + 1);
-              }}
-              className="btn-secondary px-3 min-h-[34px] text-[13px]"
-              aria-label="New thought"
-            >
-              <Plus size={15} /> Thought
-            </button>
-          </div>
+          <button
+            onClick={(e) => setPlus((e.currentTarget as HTMLElement).getBoundingClientRect())}
+            className="btn-primary w-12 h-12 !p-0 rounded-full"
+            aria-label="New post or thought"
+            aria-haspopup="menu"
+          >
+            <Plus size={24} strokeWidth={2.6} />
+          </button>
         }
       >
         <div className="segmented w-full mt-4" role="tablist" aria-label="Feed">
@@ -404,6 +395,36 @@ function Feed() {
           id={open.id}
           comments={open.comments}
           onClose={() => setCommentsFor(null)}
+        />
+      )}
+      {plus && (
+        <WaffleMenu
+          anchor={plus}
+          label="Create"
+          onClose={() => setPlus(null)}
+          items={[
+            {
+              key: "post",
+              icon: "📸",
+              label: "Post",
+              hint: "Photo or video",
+              onSelect: () => {
+                setPlus(null);
+                setCreating(true);
+              },
+            },
+            {
+              key: "thought",
+              icon: "💭",
+              label: "Thought",
+              hint: "Gone at midnight",
+              onSelect: () => {
+                setPlus(null);
+                pickTab("thoughts");
+                setThinkKey((k) => k + 1);
+              },
+            },
+          ]}
         />
       )}
       {creating && (

@@ -602,3 +602,100 @@ button, a, [role="button"] { touch-action: manipulation; }
   0%, 100% { transform: none; }
   45% { transform: translateY(-12px) scale(1.08); }
 }
+
+/* Not done yet? The Drop / Polls cards pulse gently until you do them. */
+.pulse-lime, .pulse-pink { position: relative; }
+.pulse-lime::after, .pulse-pink::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+.pulse-lime::after { --pulse: 193, 239, 98; }
+.pulse-pink::after { --pulse: 242, 125, 166; }
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(var(--pulse), 0.55); }
+  70% { box-shadow: 0 0 0 12px rgba(var(--pulse), 0); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--pulse), 0); }
+}
+@media (prefers-reduced-motion: reduce) { .pulse-lime::after, .pulse-pink::after { animation: none; box-shadow: 0 0 0 2px rgba(var(--pulse), 0.6); } }
+
+/* =====================================================================
+   Liquid glass (Apple-style): translucent, blurred and saturated, with a
+   bright top edge, a thin light border and a soft sheen. Our lime and pink
+   stay as tinted glass on buttons. Overrides the earlier surface styles.
+   ===================================================================== */
+:root {
+  --lg-tint: linear-gradient(160deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.07));
+  --lg-bg: rgba(33, 30, 43, 0.38);
+  --lg-line: rgba(255, 255, 255, 0.17);
+  --lg-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.03), 0 10px 30px rgba(0, 0, 0, 0.4);
+  --lg-blur: blur(24px) saturate(180%);
+  --band-top: #17151F;
+}
+.liquid, .liquid-tile,
+.card, .card-editorial, .card-premium, .glass, .glass-strong, .glass-soft, .glass-row,
+.topband, .band, .chip, .field, .segmented,
+.btn-secondary, .btn-cream, .btn-quiet {
+  background: var(--lg-tint), var(--lg-bg);
+  border: 1px solid var(--lg-line);
+  box-shadow: var(--lg-shadow);
+  -webkit-backdrop-filter: var(--lg-blur);
+  backdrop-filter: var(--lg-blur);
+}
+.liquid-tile { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22); color: var(--ink); }
+.liquid-tile:hover:not(:disabled) { background: var(--lg-tint), rgba(255, 255, 255, 0.1); }
+.segmented > [aria-current="page"], .segmented > [aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Top bar: a floating glass panel under the status bar. */
+.topband {
+  margin: calc(env(safe-area-inset-top) + 8px) 10px 12px;
+  border-radius: 28px;
+  padding-top: 14px !important;
+}
+.band { border-radius: 0 0 28px 28px; }
+
+/* Buttons: tinted glass in our colours. */
+.btn, .btn-primary, .btn-bronze, .btn-gold, .btn-capsule, .fab-gradient, .btn-fun, .btn-pink, .btn-danger, .btn-coral, .btn-oxblood {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+.btn-primary, .btn-bronze, .btn-gold, .btn-capsule, .fab-gradient {
+  background: linear-gradient(180deg, rgba(222, 255, 160, 0.96), rgba(193, 239, 98, 0.9) 55%, rgba(170, 220, 70, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), inset 0 -2px 6px rgba(70, 100, 10, 0.25), 0 8px 22px rgba(193, 239, 98, 0.25);
+}
+.btn-primary:hover, .btn-bronze:hover, .btn-gold:hover, .btn-capsule:hover, .fab-gradient:hover {
+  background: linear-gradient(180deg, rgba(232, 255, 180, 0.98), rgba(205, 244, 126, 0.94));
+}
+.btn-fun, .btn-pink {
+  background: linear-gradient(180deg, rgba(255, 170, 200, 0.95), rgba(242, 125, 166, 0.9) 55%, rgba(220, 95, 140, 0.92));
+  color: var(--on-dark-fill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 6px rgba(120, 20, 60, 0.25), 0 8px 22px rgba(242, 125, 166, 0.25);
+}
+.btn-danger, .btn-coral, .btn-oxblood {
+  background: linear-gradient(180deg, rgba(255, 130, 120, 0.95), rgba(230, 80, 70, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 22px rgba(230, 80, 70, 0.25);
+}
+.btn-secondary, .btn-cream, .btn-quiet { color: var(--ink); }
+.btn:active:not(:disabled), [class*="btn-"]:active:not(:disabled) { transform: scale(0.97); }
+
+/* Soft colour behind every page so the glass reads as glass. */
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(42% 30% at 12% 18%, rgba(193, 239, 98, 0.11), transparent 70%),
+    radial-gradient(38% 28% at 90% 38%, rgba(242, 125, 166, 0.10), transparent 70%),
+    radial-gradient(48% 32% at 28% 88%, rgba(120, 180, 255, 0.09), transparent 70%);
+}
+.app-column { position: relative; z-index: 1; }
+
+/* People who turn off transparency / want more contrast get solid surfaces. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .liquid, .liquid-tile, .card, .card-editorial, .card-premium, .glass, .glass-strong, .glass-soft, .glass-row,
+  .topband, .band, .chip, .field, .segmented, .btn-secondary, .btn-cream, .btn-quiet {
+    background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}

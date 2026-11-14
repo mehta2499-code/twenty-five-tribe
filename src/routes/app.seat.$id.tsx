@@ -79,11 +79,7 @@ function LiveSeat() {
         </h1>
         {f.username && <p className="sub mt-1">@{f.username}</p>}
         {bday && (
-          <Link
-            to="/app/card/$id"
-            params={{ id }}
-            className="sub mt-1 inline-block underline underline-offset-4"
-          >
+          <Link to="/app/card/$id" params={{ id }} className="sub mt-1 inline-block">
             <Ico i={Cake} c={TONE.birthday} size={14} /> {bdayLabel(bday)}
             {daysUntil(bday) === 0
               ? " · today! Sign the card"
@@ -93,19 +89,21 @@ function LiveSeat() {
           </Link>
         )}
         {bday && daysUntil(bday) <= 7 && (
-          <Link
-            to="/app/card/$id"
-            params={{ id }}
-            className="btn-primary mt-4 px-6 gap-2 mx-auto"
-            style={{ background: "var(--pink)", minHeight: 48 }}
-          >
-            🎂 Wish {f.name.split(" ")[0]}
-            <span className="font-semibold opacity-80 text-[13px]">
-              {daysUntil(bday) === 0
-                ? "· it's today!"
-                : `· in ${daysUntil(bday)} day${daysUntil(bday) === 1 ? "" : "s"}`}
-            </span>
-          </Link>
+          <div className="mt-2 flex justify-center">
+            <Link
+              to="/app/card/$id"
+              params={{ id }}
+              className="btn-primary btn-pink px-4 gap-1.5"
+              style={{ minHeight: 34, fontSize: 13.5 }}
+            >
+              🎂 Wish {f.name.split(" ")[0]}
+              <span className="font-semibold opacity-80 text-[12px]">
+                {daysUntil(bday) === 0
+                  ? "· it's today!"
+                  : `· in ${daysUntil(bday)} day${daysUntil(bday) === 1 ? "" : "s"}`}
+              </span>
+            </Link>
+          </div>
         )}
         <p className="mt-3">
           <span

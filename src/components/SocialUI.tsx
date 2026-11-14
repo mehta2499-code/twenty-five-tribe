@@ -186,8 +186,13 @@ export function Sheet({
       <div
         className="w-full max-w-md sheet-in"
         style={{
-          background: "var(--surface)",
-          borderRadius: "24px 24px 0 0",
+          background:
+            "linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 45%), rgba(33,30,43,0.82)",
+          backdropFilter: "blur(28px) saturate(180%)",
+          WebkitBackdropFilter: "blur(28px) saturate(180%)",
+          border: "1px solid rgba(255,255,255,0.16)",
+          borderBottom: "none",
+          borderRadius: "28px 28px 0 0",
           maxHeight: "88vh",
           overflowY: "auto",
           boxShadow: "var(--shadow-float)",

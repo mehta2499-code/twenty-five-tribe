@@ -1,5 +1,5 @@
 /* 25 — service worker: shows push notifications and opens the right screen. */
-const ASSETS = "25-assets-v2";
+const ASSETS = "25-assets-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) =>
@@ -58,16 +58,23 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = new URL(event.notification.data?.url || "/app/home", self.location.origin).href;
+  const path = event.notification.data?.url || "/app/home";
+  const url = new URL(path, self.location.origin).href;
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
-      for (const w of wins) {
-        if ("focus" in w) {
-          w.navigate(url);
-          return w.focus();
+    (async () => {
+      const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const w = wins.find((c) => "focus" in c);
+      if (w) {
+        // iPhone home-screen apps can't navigate() from here: ask the open app to go there.
+        w.postMessage({ type: "open", url: path });
+        try {
+          await w.focus();
+        } catch {
+          // ignore
         }
+        return;
       }
-      return self.clients.openWindow(url);
-    }),
+      await self.clients.openWindow(url);
+    })(),
   );
 });
