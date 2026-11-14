@@ -499,7 +499,7 @@ function Table({
           </button>
         </div>
 
-        {/* The spread: pizza, wine (one knocked over), beers. Tap one to jiggle it. */}
+        {/* The spread: pizza slices, red cups, wine (one knocked over). Tap one to jiggle it. */}
         {measured && TABLE_PROPS.map((p) => <TableProp key={p.id} prop={p} width={W} />)}
 
         {/* Empty chairs left by people who came onto the table. */}
@@ -973,10 +973,10 @@ function Confetti3D({ at }: { at: { x: number; y: number } }) {
 }
 
 /** A tilted 3D party hat that sits on a face (birthday this week). */
-/** Food and drinks on the table (our Blender renders). x/y are % of the table box. */
+/** Snacks and drinks on the table (our Blender renders). x/y are % of the table box. */
 const TABLE_PROPS: {
   id: string;
-  sprite: "pizza" | "wine" | "winefallen" | "beer" | "redcup";
+  sprite: "pizzaslice" | "wine" | "winefallen" | "redcup";
   label: string;
   x: number;
   y: number;
@@ -984,12 +984,13 @@ const TABLE_PROPS: {
   w: number;
   rot?: number;
 }[] = [
-  { id: "pizza", sprite: "pizza", label: "Pizza", x: 37, y: 64, w: 0.25 },
+  { id: "slice1", sprite: "pizzaslice", label: "Slice of pizza", x: 37, y: 65, w: 0.15, rot: -18 },
+  { id: "slice2", sprite: "pizzaslice", label: "Slice of pizza", x: 31, y: 47, w: 0.13, rot: 32 },
   { id: "cup1", sprite: "redcup", label: "Red cup", x: 50, y: 77, w: 0.1, rot: 3 },
   { id: "cup2", sprite: "redcup", label: "Red cup", x: 47, y: 25, w: 0.09, rot: -4 },
   { id: "cup3", sprite: "redcup", label: "Red cup", x: 75, y: 40, w: 0.09 },
   { id: "wine1", sprite: "wine", label: "Glass of red wine", x: 63, y: 32, w: 0.17 },
-  { id: "wine2", sprite: "wine", label: "Glass of red wine", x: 70, y: 52, w: 0.15, rot: 4 },
+  { id: "wine2", sprite: "wine", label: "Glass of red wine", x: 70, y: 56, w: 0.15, rot: 4 },
   {
     id: "spill",
     sprite: "winefallen",
@@ -999,8 +1000,6 @@ const TABLE_PROPS: {
     w: 0.21,
     rot: -6,
   },
-  { id: "beer1", sprite: "beer", label: "Beer bottle", x: 63, y: 69, w: 0.16 },
-  { id: "beer2", sprite: "beer", label: "Beer bottle", x: 30, y: 47, w: 0.14, rot: -5 },
 ];
 
 function TableProp({ prop, width }: { prop: (typeof TABLE_PROPS)[number]; width: number }) {

@@ -13,7 +13,6 @@ import { EMOJI3D } from "@/lib/emoji3d";
 export const SPRITES = {
   ball: 1,
   ballot: 1,
-  beer: 1,
   cake: 2,
   camera: 1,
   chai: 4,
@@ -26,7 +25,7 @@ export const SPRITES = {
   notes: 3,
   paddle: 3,
   partyhat: 2,
-  pizza: 1,
+  pizzaslice: 1,
   plane: 3,
   redcup: 1,
   popper: 2,

@@ -825,6 +825,37 @@ def redcup():
 
 BUILDERS.update({"redcup": redcup})
 
+
+def pizzaslice():
+    """One slice of pizza."""
+    reset()
+    crust = mat("crust", hexc("#D99A4E"), rough=0.7, coat=0.05)
+    sauce = mat("sauce", hexc("#C8412F"), rough=0.5)
+    cheese = mat("cheese", hexc("#F6CF62"), rough=0.4, coat=0.35, sss=0.2)
+    pep = mat("pep", hexc("#C23426"), rough=0.6, coat=0.0)
+    basil = mat("basil", hexc("#4E9A3A"), rough=0.5, coat=0.2)
+    cam = camera(elev=58, azim=20)
+    a0, a1 = math.radians(-22), math.radians(22)
+    base = wedge("base", 1.0, a0, a1, 0.0, 0.1)
+    assign(base, crust)
+    sc = wedge("sauce", 0.9, a0 + 0.01, a1 - 0.01, 0.1, 0.13)
+    assign(sc, sauce)
+    ch = wedge("cheese", 0.86, a0 + 0.02, a1 - 0.02, 0.13, 0.17)
+    smooth(ch, bevel=0.015)
+    assign(ch, cheese)
+    rim = tube("rim", [(0.95 * math.cos(a0 + (a1 - a0) * t / 6), 0.95 * math.sin(a0 + (a1 - a0) * t / 6), 0.13) for t in range(7)], 0.085, crust)
+    for x, y in ((0.55, 0.08), (0.75, -0.12), (0.35, -0.03)):
+        p = cyl("pep", 0.1, 0.03, loc=(x, y, 0.185))
+        assign(p, pep)
+    b = sphere("basil", 0.07, loc=(0.6, -0.16, 0.19))
+    b.scale = (1.4, 0.8, 0.25)
+    assign(b, basil)
+    frame_to(cam, [base, ch, rim], margin=1.15)
+    render("pizzaslice", 0)
+
+
+BUILDERS.update({"pizzaslice": pizzaslice})
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else list(BUILDERS)
     for name in args:
