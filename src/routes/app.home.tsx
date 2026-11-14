@@ -135,7 +135,12 @@ function Table({
   onRoll,
   picked,
   onPickedShown,
+  topLeft,
+  topRight,
 }: {
+  /** Buttons pinned to the top corners of the table area (music, add people). */
+  topLeft?: React.ReactNode;
+  topRight?: React.ReactNode;
   people: Person[];
   spot: number | null;
   rolling: boolean;
@@ -439,7 +444,7 @@ function Table({
   return (
     <section
       ref={boxRef}
-      className="flex-1 min-h-[260px] flex items-center justify-center px-4 py-3"
+      className="relative flex-1 min-h-[260px] flex items-center justify-center px-4 py-3"
       aria-label="Your table"
       onPointerDown={(e) => {
         const el = e.target as HTMLElement;
@@ -448,6 +453,8 @@ function Table({
         if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setWave(Date.now());
       }}
     >
+      {topLeft && <div className="absolute left-4 top-2 z-[5]">{topLeft}</div>}
+      {topRight && <div className="absolute right-4 top-2 z-[5]">{topRight}</div>}
       <div className="relative" style={{ width: W, height: H }}>
         {/* The table itself: a big glass oval the closest ring sits around. */}
         <div
@@ -1498,36 +1505,6 @@ function Home() {
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <Link
-              to="/app/people"
-              aria-label="Add people"
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{
-                background: "var(--lime)",
-                color: "var(--on-accent)",
-                border: "var(--bd)",
-                boxShadow: "var(--pop)",
-              }}
-            >
-              <UserPlus size={22} strokeWidth={2.4} aria-hidden="true" />
-            </Link>
-            <button
-              onClick={() => setPickSong(true)}
-              aria-label={
-                s.me?.np
-                  ? `Listening to ${s.me.np.title}. Change song`
-                  : "Share what you're listening to"
-              }
-              className="w-10 h-10 rounded-full flex items-center justify-center relative"
-              style={{
-                background: s.me?.np ? "rgba(193,239,98,0.16)" : "var(--fill)",
-                border: s.me?.np ? "1px solid rgba(193,239,98,0.5)" : "var(--bd)",
-                boxShadow: "var(--pop)",
-                color: s.me?.np ? "var(--lime)" : "var(--ink)",
-              }}
-            >
-              <Headphones size={21} aria-hidden="true" />
-            </button>
             <ActivityBell />
             <Link
               to="/app/profile"
@@ -1556,6 +1533,40 @@ function Home() {
         onRoll={onRoll}
         picked={picked}
         onPickedShown={() => setPicked(null)}
+        topLeft={
+          <button
+            onClick={() => setPickSong(true)}
+            aria-label={
+              s.me?.np
+                ? `Listening to ${s.me.np.title}. Change song`
+                : "Share what you're listening to"
+            }
+            className="w-10 h-10 rounded-full flex items-center justify-center relative"
+            style={{
+              background: s.me?.np ? "rgba(193,239,98,0.16)" : "var(--fill)",
+              border: s.me?.np ? "1px solid rgba(193,239,98,0.5)" : "var(--bd)",
+              boxShadow: "var(--pop)",
+              color: s.me?.np ? "var(--lime)" : "var(--ink)",
+            }}
+          >
+            <Headphones size={21} aria-hidden="true" />
+          </button>
+        }
+        topRight={
+          <Link
+            to="/app/people"
+            aria-label="Add people"
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--lime)",
+              color: "var(--on-accent)",
+              border: "var(--bd)",
+              boxShadow: "var(--pop)",
+            }}
+          >
+            <UserPlus size={22} strokeWidth={2.4} aria-hidden="true" />
+          </Link>
+        }
       />
 
       <TodayTiles />
