@@ -282,7 +282,18 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
 .hr-thin, .hairline { border: 0; height: 1px; background: var(--line); }
 
 /* Brand band (Table header, game headers): deep violet, light text */
-.band { background: var(--surface); color: var(--ink); position: relative; border-bottom: 1px solid var(--line); }
+/* Top section of every page: a soft lime-to-surface gradient with a rounded
+   bottom edge and shadow, so it reads as its own bar, not part of the page. */
+:root { --band-bg: linear-gradient(180deg, rgba(193, 239, 98, 0.16) 0%, rgba(193, 239, 98, 0.05) 60%, rgba(193, 239, 98, 0.02) 100%), var(--surface); }
+.topband, .band {
+  background: var(--band-bg);
+  color: var(--ink);
+  position: relative;
+  border-bottom: 1px solid var(--line-2, var(--line));
+  border-radius: 0 0 26px 26px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+.topband { margin-bottom: 0.75rem; }
 .band .label-caps { color: var(--lime); }
 .band h1, .band h2, .band h3 { color: var(--ink); }
 .band .sub { color: var(--ink-2); }

@@ -52,7 +52,6 @@ import {
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { VOICE } from "@/lib/copy";
 import { PushPrompt } from "@/components/PushPrompt";
-import { SuggestionCards } from "@/components/Suggestions";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
@@ -148,21 +147,49 @@ function Table({
   );
   const places = layout(seated, scores);
 
+  // An oval that fills the space it's given: as wide as it can be (up to 440px),
+  // up to 1.4× as tall as it is wide. Faces scale with it, so it fits any screen.
+  const boxRef = useRef<HTMLElement>(null);
+  const [box, setBox] = useState({ w: 340, h: 420 });
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const measure = () => setBox({ w: el.clientWidth - 32, h: el.clientHeight - 24 });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const W = Math.max(200, Math.min(box.w, 440, box.h));
+  const H = Math.max(W, Math.min(box.h, W * 1.4));
+  const scale = Math.min(1.25, Math.max(0.7, W / 350));
+
   return (
-    <section className="px-5 pt-8" aria-label="Your table">
-      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 400, aspectRatio: "1" }}>
+    <section
+      ref={boxRef}
+      className="flex-1 min-h-[260px] flex items-center justify-center px-4 py-3"
+      aria-label="Your table"
+    >
+      <div className="relative" style={{ width: W, height: H }}>
         {/* Ring lines */}
-        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" aria-hidden="true">
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full"
+          aria-hidden="true"
+        >
           {RINGS.map((ring, i) => (
-            <circle
+            <ellipse
               key={i}
               cx={50}
               cy={50}
-              r={ring.r}
+              rx={ring.r}
+              ry={ring.r}
               fill="none"
               stroke={i === 0 ? "rgba(193,239,98,0.22)" : "rgba(255,255,255,0.08)"}
-              strokeWidth={0.35}
-              strokeDasharray={i === 0 ? "1.2 1.2" : undefined}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+              strokeDasharray={i === 0 ? "4 4" : undefined}
             />
           ))}
         </svg>
@@ -209,7 +236,7 @@ function Table({
         {/* Friends */}
         {seated.map((f, i) => {
           const { x, y, ring } = places[i];
-          const size = RINGS[ring].size;
+          const size = Math.round(RINGS[ring].size * scale);
           const st = streakStatus(s.streaks[f.id]);
           const lit = spot === i;
           const oneWay = f.mutual === false;
@@ -812,11 +839,19 @@ function Home() {
   };
 
   return (
-    <>
-      <header className="px-5 pt-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] pb-1">
-        <div className="flex items-center justify-between">
-          <Logo height={44} title={VOICE.brand} />
-          <div className="flex items-center gap-2.5">
+    <div className="flex flex-col" style={{ height: "calc(100dvh - 8rem)" }}>
+      <header className="topband px-4 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Logo height={40} title={VOICE.brand} />
+            <p
+              className="hidden min-[350px]:block meta leading-tight min-w-0"
+              style={{ fontSize: 12, maxWidth: 120 }}
+            >
+              {VOICE.brandLine}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/app/people"
               aria-label="Add people"
@@ -856,10 +891,6 @@ function Home() {
       <TodayTiles />
 
       <PushPrompt />
-
-      {s.mode === "live" && people.length < 10 && (
-        <SuggestionCards title="Find your people" max={12} />
-      )}
       <Tour
         id="table"
         delay={1200}
@@ -887,13 +918,11 @@ function Home() {
         ]}
       />
 
-      <p className="text-center meta mt-10 mb-2 px-8">{VOICE.brandLine}</p>
-
       <Confetti fire={confetti} />
       {picked && <RollPanel friend={picked} onClose={() => setPicked(null)} />}
       {adding && (
         <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
       )}
-    </>
+    </div>
   );
 }

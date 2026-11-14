@@ -47,7 +47,7 @@ export function PageBand({
 }) {
   const router = useRouter();
   return (
-    <header className="px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-4">
+    <header className="topband px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-4">
       {back && (
         <button
           onClick={() => router.history.back()}
@@ -419,14 +419,22 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
         {snap.image && (
           <>
             {/* Whole photo, never cropped; a blurred copy fills the rest of the screen. */}
-            <img loading="lazy" decoding="async"
+            <img
+              loading="lazy"
+              decoding="async"
               src={snap.image}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover scale-110"
               style={{ filter: "blur(28px) brightness(0.6)" }}
             />
-            <img loading="lazy" decoding="async" src={snap.image} alt="" className="absolute inset-0 w-full h-full object-contain" />
+            <img
+              loading="lazy"
+              decoding="async"
+              src={snap.image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-contain"
+            />
           </>
         )}
         {snap.caption && (
@@ -458,7 +466,9 @@ export function StreakBadge({ friendId, size = 13 }: { friendId: string; size?: 
     <span
       className="inline-flex items-center gap-0.5 tabular-nums font-semibold whitespace-nowrap"
       style={{ fontSize: size, color }}
-      title={st.atRisk ? "Send them a blink today to keep your streak" : `${st.count}-day blink streak`}
+      title={
+        st.atRisk ? "Send them a blink today to keep your streak" : `${st.count}-day blink streak`
+      }
       aria-label={st.atRisk ? `${st.count}-day streak, ends today` : `${st.count}-day streak`}
     >
       <Flame

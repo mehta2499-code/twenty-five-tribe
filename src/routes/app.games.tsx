@@ -386,14 +386,17 @@ function MysteryTile({ left, onPlay }: { left: number; onPlay: () => void }) {
         <span className="flex-1 flex items-center justify-center gap-4 py-2">
           {spinning ? (
             <span key={face} className="shrink-0 slot-tick" aria-hidden="true">
-              <GameArt kind={face} size={100} />
+              <GameArt kind={face} size={76} />
             </span>
           ) : (
             <span className="shrink-0" aria-hidden="true">
-              <GameArt kind="mystery" size={100} />
+              <GameArt kind="mystery" size={76} />
             </span>
           )}
-          <span className="display" style={{ fontSize: 32, lineHeight: 1.05 }}>
+          <span
+            className="display min-w-0"
+            style={{ fontSize: "clamp(19px, 6.8vw, 32px)", lineHeight: 1.05 }}
+          >
             {spinning ? g.name : dayGameName(day)}
           </span>
         </span>
