@@ -47,7 +47,7 @@ export function PageBand({
 }) {
   const router = useRouter();
   return (
-    <header className="topband px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-4">
+    <header className="topband px-5 pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))] pb-6">
       {back && (
         <button
           onClick={() => router.history.back()}
@@ -604,5 +604,9 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
 function HeaderRing() {
   const s = useSocial();
   const n = s.people.length;
-  return <SeatLogo filled={n} height={40} />;
+  return (
+    <Link to="/app/home" aria-label="Back to your Table" className="inline-flex">
+      <SeatLogo filled={n} height={40} />
+    </Link>
+  );
 }

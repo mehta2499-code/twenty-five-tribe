@@ -295,8 +295,8 @@ h1.font-display, h2.font-display, h3.font-display, .display, .title {
 :root {
   /* Starts at #3B3F34 (16% lime over --surface), the same colour as the
      iPhone status bar (theme-color), so the bar runs to the top edge. */
-  --band-top: #3B3F34;
-  --band-bg: linear-gradient(180deg, var(--band-top) 0%, #2A2B2E 60%, #24212D 100%);
+  --band-top: #24212D;
+  --band-bg: linear-gradient(180deg, var(--band-top) 0%, #2A2B2E 40%, #3B3F34 100%);
 }
 .topband, .band {
   background: var(--band-bg);
@@ -546,3 +546,22 @@ button, a, [role="button"] { touch-action: manipulation; }
   85%, 100% { fill: var(--fill-2); filter: none; }
 }
 @media (prefers-reduced-motion: reduce) { .seatlogo-anim circle { animation: none; fill: var(--lime); } }
+
+/* Living table: cheers lean, the 🥂 pop and the 🏓 paddles. */
+@keyframes lean {
+  0%, 100% { transform: none; }
+  25%, 70% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+}
+@keyframes cheers-pop {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
+  20% { transform: translate(-50%, -65%) scale(1.3); opacity: 1; }
+  32% { transform: translate(-50%, -65%) scale(1) rotate(-12deg); }
+  44% { transform: translate(-50%, -65%) scale(1.15) rotate(10deg); }
+  56% { transform: translate(-50%, -65%) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -110%) scale(0.9); opacity: 0; }
+}
+@keyframes paddle-in {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  12%, 88% { transform: translate(-50%, -50%) scale(1); }
+  100% { transform: translate(-50%, -50%) scale(0); }
+}

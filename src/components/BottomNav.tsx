@@ -4,9 +4,9 @@ import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
 
 const tabs = [
-  { to: "/app/home", label: "Table", Icon: TableGlyph },
-  { to: "/app/feed", label: "Feed", Icon: FeedGlyph },
   { to: "/app/drop", label: "Drop", Icon: DropGlyph },
+  { to: "/app/feed", label: "Feed", Icon: FeedGlyph },
+  { to: "/app/home", label: "Table", Icon: TableGlyph },
   { to: "/app/chats", label: "Chats", Icon: ChatsGlyph },
   { to: "/app/games", label: "Games", Icon: GamesGlyph },
 ] as const;
@@ -42,7 +42,7 @@ export function BottomNav() {
           // Blinks live under Chats now, so new ones count there.
           const badge = to === "/app/chats" ? unread + newSnaps : 0;
           const color = active ? "var(--lime)" : "var(--ink-2)";
-          const isCenter = to === "/app/drop";
+          const isCenter = to === "/app/home";
           return (
             <li key={to}>
               <Link
@@ -65,7 +65,7 @@ export function BottomNav() {
                       transform: "rotate(-4deg)",
                     }}
                   >
-                    <DropGlyph size={28} />
+                    <TableGlyph size={28} active />
                   </span>
                 ) : (
                   <span

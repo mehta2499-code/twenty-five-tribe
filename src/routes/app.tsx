@@ -29,7 +29,7 @@ function AppLayout() {
 
   // Swipe between the five tabs (like pages). Left = next tab, right = previous.
   const swipe = useRef<{ x: number; y: number; t: number } | null>(null);
-  const TAB_ORDER = ["home", "feed", "drop", "chats", "games"];
+  const TAB_ORDER = ["drop", "feed", "home", "chats", "games"];
   const onSwipeStart = (e: React.TouchEvent) => {
     swipe.current = null;
     const onTab = pathname === `/app/${tab}` && TAB_ORDER.includes(tab);
