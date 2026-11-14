@@ -1,3 +1,4 @@
+import { EmojiText } from "@/components/Glyph3D";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -140,7 +141,7 @@ function Polls() {
                   Question {qs.indexOf(current) + 1} of {PER_DAY}
                 </p>
                 <h2 className="display mt-2" style={{ fontSize: 28, lineHeight: 1.1 }}>
-                  {current}
+                  <EmojiText text={current} />
                 </h2>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3">
@@ -236,7 +237,9 @@ function Polls() {
                     boxShadow: "var(--pop)",
                   }}
                 >
-                  <span className="flex-1 font-bold text-[15px] leading-snug">{p.question}</span>
+                  <span className="flex-1 font-bold text-[15px] leading-snug">
+                    <EmojiText text={p.question} />
+                  </span>
                   <span className="text-right">
                     <span className="block display text-[20px]">{p.picks}×</span>
                     <span className="block text-[11px] font-bold opacity-75">{timeAgo(p.at)}</span>

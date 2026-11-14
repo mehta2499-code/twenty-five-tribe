@@ -55,6 +55,7 @@ import {
 } from "@/lib/daily";
 import { Confetti, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { WaffleMenu } from "@/components/WaffleMenu";
+import { Glyph3D, preloadSprites } from "@/components/Glyph3D";
 import { TRIVIA_PACKS } from "@/lib/data";
 import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
 import { PushPrompt } from "@/components/PushPrompt";
@@ -178,6 +179,25 @@ function Table({
       .filter(([, d]) => d <= 7),
   );
 
+  useEffect(() => {
+    preloadSprites([
+      "paddle",
+      "ball",
+      "cheers",
+      "highfive",
+      "plane",
+      "chai",
+      "whisper",
+      "laugh",
+      "wave",
+      "popper",
+      "sparkle",
+      "cake",
+      "flame",
+      "partyhat",
+      "dice",
+    ]);
+  }, []);
   // Tap a face → a menu: view, challenge, message, wish.
   const [menu, setMenu] = useState<{ f: Person; rect: DOMRect; step?: "challenge" } | null>(null);
   const navigate = useNavigate();
@@ -331,6 +351,19 @@ function Table({
         }
       }
       anim = el.animate(frames, { duration: 2900, easing: "linear", fill: "forwards" });
+      // The streak: each ghost replays the path a few milliseconds later.
+      const ghosts = Array.from(
+        el.parentElement?.querySelectorAll<HTMLElement>("[data-trail]") ?? [],
+      ).map((g) =>
+        g.animate(frames, {
+          duration: 2900,
+          easing: "linear",
+          fill: "forwards",
+          delay: Number(g.dataset.trail) * 22,
+        }),
+      );
+      const main = anim;
+      anim = { cancel: () => (main.cancel(), ghosts.forEach((g) => g.cancel())) } as Animation;
     } else if (scene.kind === "plane") {
       // A curve: lift off sideways, glide over, land.
       const mx = (A.x + B.x) / 2;
@@ -402,17 +435,10 @@ function Table({
             className="relative flex flex-col items-center"
           >
             <span
-              className={`flex items-center justify-center rounded-xl ${rolling ? "die-rolling" : "wiggle-idle"}`}
-              style={{
-                width: 36,
-                height: 36,
-                background: "var(--lime)",
-                color: "var(--on-accent)",
-                border: "var(--bd)",
-                boxShadow: "var(--pop-sm)",
-              }}
+              className={`flex items-center justify-center ${rolling ? "die-rolling" : "wiggle-idle"}`}
+              style={{ lineHeight: 0, filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.5))" }}
             >
-              <Dices size={21} strokeWidth={2.2} aria-hidden="true" />
+              <Glyph3D name="dice" size={46} animate={rolling} fps={12} />
             </span>
             <span
               className="mt-1 font-display font-extrabold text-[11px]"
@@ -644,7 +670,7 @@ type Scene = {
   key: number;
 };
 
-/** What each little table scene looks like. Positions come from the seats. */
+/** What each little table scene looks like (our Blender renders). Positions come from the seats. */
 function SceneArt({
   scene,
   px,
@@ -657,11 +683,12 @@ function SceneArt({
   const A = px(scene.a);
   const B = scene.b >= 0 ? px(scene.b) : A;
   const mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+  const soft = "drop-shadow(0 4px 6px rgba(0,0,0,0.45))";
+  /** A sprite that pops in at a spot, holds, and fades. */
   const pop = (
-    text: string,
+    node: React.ReactNode,
     at: { x: number; y: number },
     anim: string,
-    size = 24,
     delay = 0,
     lift = 0,
   ) => (
@@ -670,106 +697,179 @@ function SceneArt({
       style={{
         left: at.x,
         top: at.y - lift,
-        fontSize: size,
-        lineHeight: 1,
+        lineHeight: 0,
+        filter: soft,
         animation: `${anim} ${3.2 - delay}s ease ${delay}s both`,
       }}
     >
-      {text}
-    </span>
-  );
-  const sprite = (content: React.ReactNode, style?: React.CSSProperties) => (
-    <span ref={spriteRef} className="absolute left-0 top-0" style={{ lineHeight: 1, ...style }}>
-      {content}
+      {node}
     </span>
   );
   switch (scene.kind) {
     case "pong":
       return (
         <>
-          {pop("🏓", { x: A.x + (B.x - A.x) * 0.1, y: A.y + (B.y - A.y) * 0.1 }, "paddle-in", 20)}
-          {pop("🏓", { x: B.x + (A.x - B.x) * 0.1, y: B.y + (A.y - B.y) * 0.1 }, "paddle-in", 20)}
-          {sprite(null, {
-            width: 9,
-            height: 9,
-            borderRadius: 999,
-            background: "#fff",
-            boxShadow: "0 0 8px rgba(255,255,255,0.8), 0 4px 6px rgba(0,0,0,0.4)",
-          })}
+          {pop(
+            <Glyph3D name="paddle" size={26} animate fps={6} />,
+            { x: A.x + (B.x - A.x) * 0.1, y: A.y + (B.y - A.y) * 0.1 },
+            "paddle-in",
+          )}
+          {pop(
+            <Glyph3D name="paddle" size={26} animate fps={6} style={{ transform: "scaleX(-1)" }} />,
+            { x: B.x + (A.x - B.x) * 0.1, y: B.y + (A.y - B.y) * 0.1 },
+            "paddle-in",
+          )}
+          {/* The ball's comet streak: fading copies that follow a beat behind. */}
+          {Array.from({ length: 7 }, (_, k) => (
+            <span
+              key={k}
+              data-trail={k + 1}
+              className="absolute left-0 top-0 rounded-full"
+              style={{
+                width: 10 - k,
+                height: 10 - k,
+                background: "rgba(236,255,190,0.9)",
+                opacity: 0.55 - k * 0.07,
+                filter: `blur(${0.6 + k * 0.35}px)`,
+              }}
+            />
+          ))}
+          <span
+            ref={spriteRef}
+            className="absolute left-0 top-0"
+            style={{ lineHeight: 0, filter: soft }}
+          >
+            <Glyph3D name="ball" size={12} />
+          </span>
         </>
       );
     case "cheers":
-      return pop("🥂", mid, "cheers-pop", 26);
+      return pop(
+        <Glyph3D name="cheers" size={34} animate fps={4} loop={false} />,
+        mid,
+        "cheers-pop",
+        0,
+        6,
+      );
     case "highfive":
-      return (
-        <>
-          {pop("🙌", mid, "cheers-pop", 26)}
-          {pop("✨", { x: mid.x + 14, y: mid.y - 18 }, "spark", 16, 0.5)}
-        </>
+      return pop(
+        <Glyph3D name="highfive" size={34} animate fps={5} loop={false} />,
+        mid,
+        "cheers-pop",
+        0,
+        6,
       );
     case "plane":
-      return sprite("✈️", { fontSize: 22 });
+      return (
+        <span
+          ref={spriteRef}
+          className="absolute left-0 top-0"
+          style={{ lineHeight: 0, filter: soft }}
+        >
+          <Glyph3D name="plane" size={26} animate fps={4} />
+        </span>
+      );
     case "chai":
-      return sprite("☕", { fontSize: 22 });
+      return (
+        <span
+          ref={spriteRef}
+          className="absolute left-0 top-0"
+          style={{ lineHeight: 0, filter: soft }}
+        >
+          <Glyph3D name="chai" size={26} animate fps={4} />
+        </span>
+      );
     case "whisper":
       return (
         <>
-          {pop("💬", A, "bubble-in", 20, 0, 30)}
-          {pop("😂", B, "bubble-in", 20, 1.3, 30)}
+          {pop(<Glyph3D name="whisper" size={26} animate fps={3} />, A, "bubble-in", 0, 30)}
+          {pop(<Glyph3D name="laugh" size={22} animate fps={4} />, B, "bubble-in", 1.3, 30)}
         </>
       );
     case "wave":
       return (
         <>
-          {pop("👋", A, "hand-wave", 24, 0, 30)}
-          {pop("👋", B, "hand-wave", 24, 1.1, 30)}
+          {pop(<Glyph3D name="wave" size={26} animate fps={8} />, A, "bubble-in", 0, 32)}
+          {pop(
+            <Glyph3D name="wave" size={26} animate fps={8} style={{ transform: "scaleX(-1)" }} />,
+            B,
+            "bubble-in",
+            1.1,
+            32,
+          )}
         </>
       );
     case "bday":
       return (
         <>
-          {pop("🎉", A, "confetti-pop", 28, 0, 34)}
-          {pop("✨", { x: A.x - 20, y: A.y }, "spark", 16, 0.3, 20)}
-          {pop("✨", { x: A.x + 22, y: A.y }, "spark", 14, 0.5, 26)}
-          {scene.b >= 0 && pop("🥳", B, "bubble-in", 20, 1.1, 30)}
+          {pop(<Glyph3D name="popper" size={28} animate fps={3} />, A, "bubble-in", 0, 34)}
+          <Confetti3D at={{ x: A.x + 6, y: A.y - 44 }} />
+          {pop(
+            <Glyph3D name="sparkle" size={18} animate fps={5} />,
+            { x: A.x - 22, y: A.y },
+            "spark",
+            0.3,
+            20,
+          )}
+          {scene.b >= 0 &&
+            pop(<Glyph3D name="cake" size={22} animate fps={3} />, B, "bubble-in", 1.1, 30)}
         </>
       );
     case "fire":
-      return pop("🔥", A, "flare", 30, 0, 28);
+      return pop(<Glyph3D name="flame" size={26} animate fps={7} />, A, "flare", 0, 30);
   }
 }
 
-/** A tilted, striped party hat that sits on a face (birthday this week). */
-function PartyHat({ size }: { size: number }) {
-  const w = Math.round(size * 0.46);
+/** A small code-drawn confetti burst (crisp at any size, brand colours). */
+function Confetti3D({ at }: { at: { x: number; y: number } }) {
+  const colours = ["#C1EF62", "#F27DA6", "#7EB8F0", "#F5C451", "#F5F1FA"];
   return (
-    <svg
-      width={w}
-      height={w * 1.15}
-      viewBox="0 0 40 46"
-      aria-hidden="true"
+    <>
+      {Array.from({ length: 14 }, (_, k) => {
+        const a = (-150 + (k / 13) * 120) * (Math.PI / 180);
+        const d = 26 + (k % 4) * 9;
+        return (
+          <span
+            key={k}
+            className="absolute rounded-[1px]"
+            style={
+              {
+                left: at.x,
+                top: at.y,
+                width: 4,
+                height: 7,
+                background: colours[k % colours.length],
+                "--tx": `${Math.cos(a) * d}px`,
+                "--ty": `${Math.sin(a) * d}px`,
+                "--rot": `${(k % 2 ? 1 : -1) * (180 + k * 25)}deg`,
+                animation: `confetti-fly 1.6s cubic-bezier(.2,.7,.3,1) ${0.25 + (k % 3) * 0.05}s both`,
+              } as React.CSSProperties
+            }
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/** A tilted 3D party hat that sits on a face (birthday this week). */
+function PartyHat({ size }: { size: number }) {
+  const w = Math.round(size * 0.62);
+  return (
+    <span
       className="absolute"
+      aria-hidden="true"
       style={{
-        top: -w * 0.82,
-        left: size * 0.08,
-        transform: "rotate(-20deg)",
+        top: -w * 0.78,
+        left: size * 0.02,
+        transform: "rotate(-18deg)",
         zIndex: 2,
+        lineHeight: 0,
         filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.5))",
       }}
     >
-      <defs>
-        <clipPath id="hat">
-          <path d="M20 6 L36 42 Q20 46 4 42 Z" />
-        </clipPath>
-      </defs>
-      <path d="M20 6 L36 42 Q20 46 4 42 Z" fill="#F27DA6" />
-      <g clipPath="url(#hat)" stroke="#C1EF62" strokeWidth="5">
-        <path d="M0 24 L40 14" />
-        <path d="M0 36 L40 26" />
-        <path d="M0 48 L40 38" />
-      </g>
-      <circle cx="20" cy="6" r="5" fill="#F5C451" stroke="#0d0b10" strokeWidth="1.5" />
-    </svg>
+      <Glyph3D name="partyhat" size={w} animate fps={2} />
+    </span>
   );
 }
 

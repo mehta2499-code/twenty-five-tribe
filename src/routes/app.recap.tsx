@@ -1,6 +1,7 @@
 /**
  * Monthly Drop recap: your month in Drops, a few stats, and a card to share.
  */
+import { Glyph3D } from "@/components/Glyph3D";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Flame, Heart, Share2, Timer, Camera } from "lucide-react";
@@ -133,8 +134,9 @@ function RecapScreen() {
                     month: "short",
                     timeZone: "UTC",
                   })}
-                  {recap.best.caption ? ` · ${recap.best.caption}` : ""} · ❤️ {recap.best.likes} ·
-                  💬 {recap.best.comments}
+                  {recap.best.caption ? ` · ${recap.best.caption}` : ""} ·{" "}
+                  <Glyph3D emoji="❤️" size={15} /> {recap.best.likes} ·{" "}
+                  <Glyph3D emoji="💬" size={15} /> {recap.best.comments}
                 </p>
               </div>
             </section>

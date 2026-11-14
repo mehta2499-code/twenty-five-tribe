@@ -15,6 +15,7 @@ import {
   startQuiz,
   submitQuiz,
 } from "@/lib/vibes";
+import { EmojiText, Glyph3D } from "@/components/Glyph3D";
 
 type Phase =
   | { kind: "loading" }
@@ -261,11 +262,17 @@ export function KnowThemQuiz({
                 </p>
               )}
               <p className="mt-2 text-cool">
-                {phase.passed
-                  ? demo
-                    ? "That's how it works. In the real app, this unlocks their seat."
-                    : `${actionLabel === "Seat them back" ? "Mutual. Chats, blinks and games unlocked." : "They're in your 25 now. They'll get pinged 👀"}`
-                  : `You need ${PASS_MARK} right. Try again in 30 minutes, or ask ${first} something IRL.`}
+                {phase.passed ? (
+                  demo ? (
+                    "That's how it works. In the real app, this unlocks their seat."
+                  ) : actionLabel === "Seat them back" ? (
+                    "Mutual. Chats, blinks and games unlocked."
+                  ) : (
+                    <EmojiText text="They're in your 25 now. They'll get pinged 👀" />
+                  )
+                ) : (
+                  `You need ${PASS_MARK} right. Try again in 30 minutes, or ask ${first} something IRL.`
+                )}
               </p>
               <button
                 onClick={onClose}
@@ -337,9 +344,7 @@ function Question({
       <div className="mt-7 grid grid-cols-2 gap-4">
         {(["a", "b"] as const).map((c, i) => (
           <button key={c} onClick={() => pick(c)} className="choice">
-            <span style={{ fontSize: 50, lineHeight: 1 }} aria-hidden="true">
-              {q[c].emoji}
-            </span>
+            <Glyph3D emoji={q[c].emoji} size={60} />
             <span className="font-extrabold" style={{ fontSize: 18 }}>
               {q[c].label}
             </span>

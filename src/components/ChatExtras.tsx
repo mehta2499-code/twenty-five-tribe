@@ -6,6 +6,7 @@ import { _get, _set, fileToImage, useSocial } from "@/lib/social";
 import { signedMedia, uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 import { buzz } from "@/components/SocialUI";
+import { Glyph3D } from "@/components/Glyph3D";
 
 export const REACTIONS = ["❤️", "😂", "😮", "😭", "🔥", "👍"];
 
@@ -137,7 +138,7 @@ export function Reactable({
               className="w-9 h-9 rounded-full text-xl flex items-center justify-center active:scale-90"
               style={{ background: myEmoji === e ? "var(--fill-2)" : "transparent" }}
             >
-              {e}
+              <Glyph3D emoji={e} size={26} />
             </button>
           ))}
         </div>
@@ -177,8 +178,8 @@ export function Reactable({
           aria-label="Reactions"
         >
           {Object.entries(counts).map(([e, n]) => (
-            <span key={e}>
-              {e}
+            <span key={e} className="inline-flex items-center">
+              <Glyph3D emoji={e} size={16} />
               {n > 1 && <span className="text-[11px] font-bold ml-0.5">{n}</span>}
             </span>
           ))}
@@ -448,7 +449,13 @@ export function MediaBubble({ value }: { value: string }) {
   ) : (
     <>
       <button onClick={() => setOpen(true)} className="block" aria-label="Open photo">
-        <img loading="lazy" decoding="async" src={url} alt="" className="rounded-xl w-56 max-w-full object-cover" />
+        <img
+          loading="lazy"
+          decoding="async"
+          src={url}
+          alt=""
+          className="rounded-xl w-56 max-w-full object-cover"
+        />
       </button>
       {open && (
         <button
@@ -457,7 +464,13 @@ export function MediaBubble({ value }: { value: string }) {
           style={{ background: "rgba(0,0,0,0.92)" }}
           aria-label="Close photo"
         >
-          <img loading="lazy" decoding="async" src={url} alt="" className="max-w-full max-h-full rounded-xl" />
+          <img
+            loading="lazy"
+            decoding="async"
+            src={url}
+            alt=""
+            className="max-w-full max-h-full rounded-xl"
+          />
         </button>
       )}
     </>
@@ -570,7 +583,11 @@ export function GrowingInput({
  * there while messages, photos and voice notes load in (they make the chat
  * taller after it opens). Stops following once you scroll up to read.
  */
-export function useStickToBottom<T extends HTMLElement>(key: string, count: number, extra?: unknown) {
+export function useStickToBottom<T extends HTMLElement>(
+  key: string,
+  count: number,
+  extra?: unknown,
+) {
   // A callback ref: the list may appear after a loading screen.
   const [el, setEl] = useState<T | null>(null);
   const stick = useRef(true);

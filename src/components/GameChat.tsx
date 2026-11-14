@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buzz } from "@/components/SocialUI";
+import { Glyph3D } from "@/components/Glyph3D";
 
 const REACTIONS = ["😂", "🔥", "😭", "👀", "😤", "🎉", "🫡", "💀"];
 
@@ -85,7 +86,7 @@ export function GameChat({
             className="absolute bottom-24 flex flex-col items-center game-burst"
             style={{ left: `${b.x}%` }}
           >
-            <span className="text-5xl">{b.emoji}</span>
+            <Glyph3D emoji={b.emoji} size={52} />
             <span
               className="text-[11px] font-bold px-1.5 rounded-full"
               style={{ background: "var(--edge)", color: "#fff" }}
@@ -155,7 +156,7 @@ export function GameChat({
                 style={{ background: "var(--fill)" }}
                 aria-label={`React ${e}`}
               >
-                {e}
+                <Glyph3D emoji={e} size={24} />
               </button>
             ))}
           </div>

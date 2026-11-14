@@ -2,6 +2,7 @@
  * GIFs and stickers for chats: the picker sheet, the message bubble, and
  * sending to a friend or a group.
  */
+import { EmojiText } from "@/components/Glyph3D";
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { Sheet } from "@/components/SocialUI";
@@ -41,7 +42,7 @@ export function StickerArt({ sticker, size = 1 }: { sticker: Sticker; size?: num
         transform: `rotate(${sticker.tilt}deg)`,
       }}
     >
-      {sticker.text}
+      <EmojiText text={sticker.text} />
     </span>
   );
 }

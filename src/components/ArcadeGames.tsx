@@ -1,3 +1,4 @@
+import { Glyph3D } from "@/components/Glyph3D";
 import { useEffect, useRef, useState } from "react";
 import {
   Brain,
@@ -138,7 +139,10 @@ function GameFrame({
         <div className="flex items-end justify-between mt-6">
           <div>
             <p className="label-caps">score</p>
-            <p className="font-display text-cream tabular-nums" style={{ fontSize: 44, lineHeight: 1 }}>
+            <p
+              className="font-display text-cream tabular-nums"
+              style={{ fontSize: 44, lineHeight: 1 }}
+            >
               {score}
             </p>
           </div>
@@ -146,7 +150,11 @@ function GameFrame({
             <p className="label-caps">{stat.label}</p>
             <p
               className="font-display tabular-nums"
-              style={{ fontSize: 44, lineHeight: 1, color: stat.warn ? "var(--pink)" : "var(--ink)" }}
+              style={{
+                fontSize: 44,
+                lineHeight: 1,
+                color: stat.warn ? "var(--pink)" : "var(--ink)",
+              }}
             >
               {stat.value}
             </p>
@@ -216,7 +224,12 @@ function TapRush({ onFinish, onClose }: RoundProps) {
   };
 
   return (
-    <GameFrame title="tap rush" score={score} stat={{ label: "time", value: left, warn: left <= 5 }} onClose={onClose}>
+    <GameFrame
+      title="tap rush"
+      score={score}
+      stat={{ label: "time", value: left, warn: left <= 5 }}
+      onClose={onClose}
+    >
       {over ? (
         <TimeUp />
       ) : (
@@ -275,7 +288,12 @@ function QuickMath({ onFinish, onClose }: RoundProps) {
   };
 
   return (
-    <GameFrame title="quick maths" score={score} stat={{ label: "time", value: left, warn: left <= 5 }} onClose={onClose}>
+    <GameFrame
+      title="quick maths"
+      score={score}
+      stat={{ label: "time", value: left, warn: left <= 5 }}
+      onClose={onClose}
+    >
       {over ? (
         <TimeUp />
       ) : (
@@ -285,7 +303,12 @@ function QuickMath({ onFinish, onClose }: RoundProps) {
             style={{
               fontSize: 56,
               transition: "color 200ms",
-              color: flash === "right" ? "var(--lime)" : flash === "wrong" ? "var(--pink)" : "var(--ink)",
+              color:
+                flash === "right"
+                  ? "var(--lime)"
+                  : flash === "wrong"
+                    ? "var(--pink)"
+                    : "var(--ink)",
             }}
           >
             {q.text}
@@ -341,7 +364,12 @@ function ColourClash({ onFinish, onClose }: RoundProps) {
   };
 
   return (
-    <GameFrame title="colour clash" score={score} stat={{ label: "time", value: left, warn: left <= 5 }} onClose={onClose}>
+    <GameFrame
+      title="colour clash"
+      score={score}
+      stat={{ label: "time", value: left, warn: left <= 5 }}
+      onClose={onClose}
+    >
       {over ? (
         <TimeUp />
       ) : (
@@ -351,18 +379,31 @@ function ColourClash({ onFinish, onClose }: RoundProps) {
             className="mt-6 card flex items-center justify-center"
             style={{
               minHeight: 180,
-              borderColor: flash === "right" ? "var(--lime)" : flash === "wrong" ? "var(--pink)" : undefined,
+              borderColor:
+                flash === "right" ? "var(--lime)" : flash === "wrong" ? "var(--pink)" : undefined,
             }}
           >
-            <span className="display" style={{ fontSize: 64, color: q.ink }} aria-label={`The word ${q.word} written in a colour`}>
+            <span
+              className="display"
+              style={{ fontSize: 64, color: q.ink }}
+              aria-label={`The word ${q.word} written in a colour`}
+            >
               {q.word}
             </span>
           </div>
           <div className="mt-8 grid grid-cols-2 gap-3">
-            <button onClick={() => answer(false)} className="btn-secondary" style={{ minHeight: 64, fontSize: 18 }}>
+            <button
+              onClick={() => answer(false)}
+              className="btn-secondary"
+              style={{ minHeight: 64, fontSize: 18 }}
+            >
               No match
             </button>
-            <button onClick={() => answer(true)} className="btn-primary" style={{ minHeight: 64, fontSize: 18 }}>
+            <button
+              onClick={() => answer(true)}
+              className="btn-primary"
+              style={{ minHeight: 64, fontSize: 18 }}
+            >
               Match
             </button>
           </div>
@@ -420,10 +461,19 @@ function PairUp({ onFinish, onClose }: RoundProps) {
   };
 
   return (
-    <GameFrame title="pair up" score={score} stat={{ label: "time", value: left, warn: left <= 10 }} onClose={onClose}>
+    <GameFrame
+      title="pair up"
+      score={score}
+      stat={{ label: "time", value: left, warn: left <= 10 }}
+      onClose={onClose}
+    >
       <div className="flex-1 flex flex-col justify-center">
         <p className="text-center meta mb-4">
-          {over ? "Done!" : started ? `${found.length} of 8 pairs` : "Tap a card to start the clock."}
+          {over
+            ? "Done!"
+            : started
+              ? `${found.length} of 8 pairs`
+              : "Tap a card to start the clock."}
         </p>
         <div className="grid grid-cols-4 gap-2.5">
           {cards.map((c, i) => {
@@ -444,7 +494,13 @@ function PairUp({ onFinish, onClose }: RoundProps) {
                   transition: "background-color 160ms",
                 }}
               >
-                {shown ? c.face : <span className="text-faint" style={{ fontSize: 18 }}>?</span>}
+                {shown ? (
+                  <Glyph3D emoji={c.face} size={40} />
+                ) : (
+                  <span className="text-faint" style={{ fontSize: 18 }}>
+                    ?
+                  </span>
+                )}
               </button>
             );
           })}
@@ -508,7 +564,12 @@ function OddOneOut({ onFinish, onClose }: RoundProps) {
   };
 
   return (
-    <GameFrame title="odd one out" score={score} stat={{ label: "time", value: left, warn: left <= 5 }} onClose={onClose}>
+    <GameFrame
+      title="odd one out"
+      score={score}
+      stat={{ label: "time", value: left, warn: left <= 5 }}
+      onClose={onClose}
+    >
       {over ? (
         <TimeUp />
       ) : (
@@ -526,7 +587,10 @@ function OddOneOut({ onFinish, onClose }: RoundProps) {
                 style={{ background: "var(--fill)", fontSize: board.size > 4 ? 26 : 34 }}
                 aria-label={`Emoji ${i + 1}`}
               >
-                {i === board.at ? board.odd : board.common}
+                <Glyph3D
+                  emoji={i === board.at ? board.odd : board.common}
+                  size={board.size > 4 ? 34 : 44}
+                />
               </button>
             ))}
           </div>
@@ -564,10 +628,13 @@ function Pattern({ onFinish, onClose }: RoundProps) {
       timers.push(setTimeout(() => setLit(null), 700 + i * speed + speed * 0.6));
     });
     timers.push(
-      setTimeout(() => {
-        setShowing(false);
-        setStep(0);
-      }, 700 + seq.length * speed),
+      setTimeout(
+        () => {
+          setShowing(false);
+          setStep(0);
+        },
+        700 + seq.length * speed,
+      ),
     );
     return () => timers.forEach(clearTimeout);
   }, [seq, over]);
@@ -589,7 +656,12 @@ function Pattern({ onFinish, onClose }: RoundProps) {
   };
 
   return (
-    <GameFrame title="pattern recall" score={best} stat={{ label: "length", value: seq.length }} onClose={onClose}>
+    <GameFrame
+      title="pattern recall"
+      score={best}
+      stat={{ label: "length", value: seq.length }}
+      onClose={onClose}
+    >
       <div className="flex-1 flex flex-col justify-center">
         <p className="text-center font-bold text-cream mb-5" aria-live="polite">
           {over ? "Oops. That's the one" : showing ? "Watch…" : "Your turn"}
@@ -668,7 +740,13 @@ function Reflex({ onFinish, onClose }: RoundProps) {
   };
 
   const bg =
-    phase === "go" ? "var(--lime)" : phase === "early" ? "var(--pink)" : phase === "wait" ? "#2A2438" : "var(--fill)";
+    phase === "go"
+      ? "var(--lime)"
+      : phase === "early"
+        ? "var(--pink)"
+        : phase === "wait"
+          ? "#2A2438"
+          : "var(--fill)";
   const text =
     phase === "ready"
       ? "Tap to start"
@@ -783,7 +861,10 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
   }
 
   const Dots = () => (
-    <div className="flex justify-center gap-2" aria-label={`${tries.length} of ${TRIES} tries used`}>
+    <div
+      className="flex justify-center gap-2"
+      aria-label={`${tries.length} of ${TRIES} tries used`}
+    >
       {Array.from({ length: TRIES }).map((_, i) => (
         <span
           key={i}
@@ -813,7 +894,12 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <span
               className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl"
-              style={{ background: g.tone, border: "var(--bd)", boxShadow: "var(--pop)", transform: "rotate(-4deg)" }}
+              style={{
+                background: g.tone,
+                border: "var(--bd)",
+                boxShadow: "var(--pop)",
+                transform: "rotate(-4deg)",
+              }}
             >
               <GameArt kind={game} size={72} />
             </span>
@@ -824,7 +910,9 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
             <div className="mt-6">
               <Dots />
               <p className="meta mt-2">
-                {left > 0 ? `${left} ${left === 1 ? "try" : "tries"} left today` : "All tries used today"}
+                {left > 0
+                  ? `${left} ${left === 1 ? "try" : "tries"} left today`
+                  : "All tries used today"}
               </p>
             </div>
             {tries.length > 0 && (
@@ -832,13 +920,20 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                 <p className="font-bold text-cream">
                   Your best: {best(tries)} {mine ? `· #${mine.rank} of ${ranking.length}` : ""}
                 </p>
-                <p className="meta mt-0.5">Tries: {tries.map((t) => (t < 0 ? "quit" : t)).join(" · ")}</p>
+                <p className="meta mt-0.5">
+                  Tries: {tries.map((t) => (t < 0 ? "quit" : t)).join(" · ")}
+                </p>
               </div>
             )}
             <div className="w-full mt-8 grid gap-3">
               {left > 0 ? (
                 <>
-                  <button onClick={() => begin(false)} disabled={busy} className="btn-primary w-full" style={{ minHeight: 56, fontSize: 18 }}>
+                  <button
+                    onClick={() => begin(false)}
+                    disabled={busy}
+                    className="btn-primary w-full"
+                    style={{ minHeight: 56, fontSize: 18 }}
+                  >
                     {busy ? "…" : `Start try ${tries.length + 1} of ${TRIES}`}
                   </button>
                   <p className="meta">
@@ -850,7 +945,11 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
               ) : (
                 <>
                   {!practiced && (
-                    <button onClick={() => begin(true)} className="btn-secondary w-full" style={{ minHeight: 52 }}>
+                    <button
+                      onClick={() => begin(true)}
+                      className="btn-secondary w-full"
+                      style={{ minHeight: 52 }}
+                    >
                       Practice once (doesn't count)
                     </button>
                   )}
@@ -887,12 +986,20 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
             )}
             <div className="w-full mt-8 grid gap-3">
               {session && left > 0 && (
-                <button onClick={() => setView("intro")} className="btn-primary w-full" style={{ minHeight: 52 }}>
+                <button
+                  onClick={() => setView("intro")}
+                  className="btn-primary w-full"
+                  style={{ minHeight: 52 }}
+                >
                   Another try ({left} left)
                 </button>
               )}
 
-              <button onClick={() => setChallenging(true)} className="btn-secondary w-full" style={{ minHeight: 52 }}>
+              <button
+                onClick={() => setChallenging(true)}
+                className="btn-secondary w-full"
+                style={{ minHeight: 52 }}
+              >
                 Trash talk someone
               </button>
               <button onClick={onClose} className="btn-quiet w-full">

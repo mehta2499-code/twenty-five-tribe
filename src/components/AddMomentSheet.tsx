@@ -1,3 +1,4 @@
+import { Glyph3D } from "@/components/Glyph3D";
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { FRIENDS, getSeatMeta } from "@/lib/data";
@@ -72,7 +73,7 @@ export function AddMomentSheet({
                     border: "1px solid var(--border-cool)",
                   }}
                 >
-                  <span style={{ fontSize: 22 }}>{k.glyph}</span>
+                  <Glyph3D emoji={k.glyph} size={26} />
                   <span className="font-display text-cream" style={{ fontSize: 16 }}>
                     {k.label}
                   </span>

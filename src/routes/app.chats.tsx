@@ -17,6 +17,7 @@ import { mutualFriends, timeAgo, useSocial, type ChatMessage, type Snap } from "
 import { FriendPicker, Sheet, Toast } from "@/components/SocialUI";
 import { useNavigate } from "@tanstack/react-router";
 import { createGroup, member, unreadIn, useGroups } from "@/lib/groups";
+import { Glyph3D } from "@/components/Glyph3D";
 
 const GROUP_EMOJIS = ["💬", "🏖️", "🎉", "🍕", "🎮", "📚", "💪", "🎬", "✈️", "🔥", "🫶", "🏏"];
 
@@ -111,7 +112,7 @@ function GroupsSection() {
                   border: "var(--bd)",
                 }}
               >
-                {e}
+                <Glyph3D emoji={e} size={26} />
               </button>
             ))}
           </div>

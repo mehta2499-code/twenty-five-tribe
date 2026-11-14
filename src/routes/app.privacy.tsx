@@ -96,6 +96,10 @@ function Privacy() {
         </p>
       </section>
       <BlockedList />
+      <p className="meta text-center px-8 mt-10" style={{ fontSize: 11.5, lineHeight: 1.5 }}>
+        3D art: table props made for 25 in Blender. Other emoji art from Microsoft Fluent Emoji
+        (MIT licence).
+      </p>
     </div>
   );
 }

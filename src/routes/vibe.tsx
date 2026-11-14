@@ -7,6 +7,7 @@ import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
 import { initLive, scheduleReload } from "@/lib/live";
 import { useSocial } from "@/lib/social";
 import { MONTHS, VIBE_QUESTIONS, myVibe, saveVibe, type Choice } from "@/lib/vibes";
+import { Glyph3D } from "@/components/Glyph3D";
 
 export const Route = createFileRoute("/vibe")({
   head: () => ({ meta: [{ title: "Vibe check · 25" }] }),
@@ -107,7 +108,7 @@ function VibeCheck() {
             const o = c ? q[c] : null;
             return o ? (
               <span key={q.id} className="chip">
-                <span aria-hidden="true">{o.emoji}</span> {o.label}
+                <Glyph3D emoji={o.emoji} size={18} /> {o.label}
               </span>
             ) : null;
           })}
@@ -182,9 +183,7 @@ function VibeCheck() {
               className="choice"
               data-on={on || undefined}
             >
-              <span style={{ fontSize: 54, lineHeight: 1 }} aria-hidden="true">
-                {o.emoji}
-              </span>
+              <Glyph3D emoji={o.emoji} size={64} />
               <span className="font-extrabold" style={{ fontSize: 19 }}>
                 {o.label}
               </span>

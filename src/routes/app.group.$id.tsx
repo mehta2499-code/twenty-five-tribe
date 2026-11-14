@@ -115,7 +115,13 @@ function GroupThread() {
       <div className="mx-auto w-full max-w-md flex flex-col h-full app-column">
         <header
           className="flex items-center gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2"
-          style={{ borderBottom: "1px solid var(--line)", background: "var(--band-bg)", boxShadow: "0 8px 22px rgba(0,0,0,0.3)", position: "relative", zIndex: 2 }}
+          style={{
+            borderBottom: "1px solid var(--line)",
+            background: "var(--band-bg)",
+            boxShadow: "0 8px 22px rgba(0,0,0,0.3)",
+            position: "relative",
+            zIndex: 2,
+          }}
         >
           <button
             onClick={() => navigate({ to: "/app/chats" })}
@@ -388,7 +394,7 @@ function GroupThread() {
       </div>
 
       {info && (
-        <Sheet title={`${g.emoji} ${g.name}`} onClose={() => setInfo(false)}>
+        <Sheet title={g.name} onClose={() => setInfo(false)}>
           <div className="flex items-center gap-3">
             <GroupFace avatar={g.avatar} emoji={g.emoji} size={56} />
             <label className="btn-secondary px-4 min-h-[40px] cursor-pointer">

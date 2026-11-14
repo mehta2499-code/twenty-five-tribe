@@ -1,4 +1,6 @@
-/** A group's photo, or its emoji when it has none. */
+/** A group's photo, or its emoji (as 3D art) when it has none. */
+import { Glyph3D } from "@/components/Glyph3D";
+
 export function GroupFace({
   avatar,
   emoji,
@@ -28,7 +30,7 @@ export function GroupFace({
           className="w-full h-full object-cover"
         />
       ) : (
-        emoji
+        <Glyph3D emoji={emoji} size={Math.round(size * 0.58)} />
       )}
     </span>
   );

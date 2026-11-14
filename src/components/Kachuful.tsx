@@ -1,3 +1,4 @@
+import { Glyph3D } from "@/components/Glyph3D";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HelpCircle, ListOrdered, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -77,22 +78,29 @@ export function PlayingCard({
         style={{ top: 5, left: 6, fontSize: corner, fontWeight: 900, letterSpacing: "-0.03em" }}
       >
         <span>{rank}</span>
-        <span style={{ fontSize: corner * 0.95, marginTop: 1 }}>{SUIT_SYMBOL[s]}</span>
+        <Glyph3D emoji={SUIT_SYMBOL[s]} size={Math.round(corner * 1.05)} style={{ marginTop: 1 }} />
       </span>
       <span
         className="absolute inset-0 flex items-center justify-center"
-        style={{ fontSize: Math.round(w * 0.62), lineHeight: 1 }}
+        style={{ lineHeight: 1 }}
         aria-hidden="true"
       >
-        {SUIT_SYMBOL[s]}
+        <Glyph3D emoji={SUIT_SYMBOL[s]} size={Math.round(w * 0.6)} />
       </span>
       <span
         className="absolute flex flex-col items-center leading-none"
-        style={{ bottom: 5, right: 6, fontSize: corner, fontWeight: 900, letterSpacing: "-0.03em", transform: "rotate(180deg)" }}
+        style={{
+          bottom: 5,
+          right: 6,
+          fontSize: corner,
+          fontWeight: 900,
+          letterSpacing: "-0.03em",
+          transform: "rotate(180deg)",
+        }}
         aria-hidden="true"
       >
         <span>{rank}</span>
-        <span style={{ fontSize: corner * 0.95, marginTop: 1 }}>{SUIT_SYMBOL[s]}</span>
+        <Glyph3D emoji={SUIT_SYMBOL[s]} size={Math.round(corner * 1.05)} style={{ marginTop: 1 }} />
       </span>
     </span>
   );
@@ -398,7 +406,7 @@ export function KachufulBoard({
               className="rounded-md px-1.5 font-extrabold text-[14px]"
               style={{ background: "#FFFFFF", color: isRed(state.trump) ? RED : BLACK }}
             >
-              {SUIT_SYMBOL[state.trump]} {SUIT_NAME[state.trump]}
+              <Glyph3D emoji={SUIT_SYMBOL[state.trump]} size={15} /> {SUIT_NAME[state.trump]}
             </span>
           </div>
 
@@ -894,7 +902,10 @@ export function useBotTurns(state: KState | null, drive: boolean, apply: (s: KSt
     if (!state.seats[state.turn]?.bot) {
       if (!state.turnSeconds || !state.turnStartedAt) return;
       const left = state.turnStartedAt + state.turnSeconds * 1000 - Date.now();
-      const t = setTimeout(() => applyRef.current(applyMove(state, botMove(state))), Math.max(0, left));
+      const t = setTimeout(
+        () => applyRef.current(applyMove(state, botMove(state))),
+        Math.max(0, left),
+      );
       return () => clearTimeout(t);
     }
     const justFinishedTrick =
@@ -1063,7 +1074,12 @@ export function KachufulLobby({
                     className="rounded-full p-[2px]"
                     style={{ background: on ? "var(--lime)" : "transparent" }}
                   >
-                    <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={48} />
+                    <Avatar
+                      src={p.avatar || undefined}
+                      initials={p.initials}
+                      color={p.color}
+                      size={48}
+                    />
                   </span>
                   <span className="text-[11px] mt-1 truncate w-full text-center text-cream">
                     {p.name.split(" ")[0]}
@@ -1119,12 +1135,24 @@ export function KachufulLobby({
           />
         </span>
       </button>
-      <p className="meta mt-1.5">At least {minRounds} rounds with {players} players.</p>
+      <p className="meta mt-1.5">
+        At least {minRounds} rounds with {players} players.
+      </p>
 
       <p className="label-caps mt-5 mb-2">Scoring</p>
       <div className="flex gap-2">
-        <Opt on={scoring === "classic"} onClick={() => setScoring("classic")} title="Classic" sub="10 + your call" />
-        <Opt on={scoring === "x10"} onClick={() => setScoring("x10")} title="×10" sub="10 × your call" />
+        <Opt
+          on={scoring === "classic"}
+          onClick={() => setScoring("classic")}
+          title="Classic"
+          sub="10 + your call"
+        />
+        <Opt
+          on={scoring === "x10"}
+          onClick={() => setScoring("x10")}
+          title="×10"
+          sub="10 × your call"
+        />
       </div>
 
       <p className="label-caps mt-5 mb-2">Timer per player</p>
@@ -1134,7 +1162,10 @@ export function KachufulLobby({
         ))}
       </div>
 
-      <button onClick={() => setHowTo(true)} className="mt-5 w-full text-sm font-bold text-bronze py-2">
+      <button
+        onClick={() => setHowTo(true)}
+        className="mt-5 w-full text-sm font-bold text-bronze py-2"
+      >
         New to Judgement? See how to play
       </button>
       {howTo && <HowToPlay onClose={() => setHowTo(false)} />}
@@ -1157,7 +1188,9 @@ export { botSeats };
 function TurnTimer({ state, mine }: { state: KState; mine: boolean }) {
   const [now, setNow] = useState(Date.now());
   const on =
-    !!state.turnSeconds && !!state.turnStartedAt && (state.phase === "bidding" || state.phase === "playing");
+    !!state.turnSeconds &&
+    !!state.turnStartedAt &&
+    (state.phase === "bidding" || state.phase === "playing");
   useEffect(() => {
     if (!on) return;
     const t = setInterval(() => setNow(Date.now()), 250);
@@ -1170,7 +1203,10 @@ function TurnTimer({ state, mine }: { state: KState; mine: boolean }) {
   const urgent = left < 5000;
   return (
     <div className="px-4 pt-[max(0.5rem,env(safe-area-inset-top))]" aria-live="polite">
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+      <div
+        className="h-1.5 rounded-full overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.08)" }}
+      >
         <div
           className="h-full rounded-full"
           style={{
@@ -1181,7 +1217,10 @@ function TurnTimer({ state, mine }: { state: KState; mine: boolean }) {
         />
       </div>
       {mine && (
-        <p className="text-center text-[12px] font-bold mt-1" style={{ color: urgent ? "var(--pink)" : "var(--ink-2)" }}>
+        <p
+          className="text-center text-[12px] font-bold mt-1"
+          style={{ color: urgent ? "var(--pink)" : "var(--ink-2)" }}
+        >
           {Math.ceil(left / 1000)}s to {state.phase === "bidding" ? "call" : "play"}
         </p>
       )}

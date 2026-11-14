@@ -701,3 +701,9 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 .menu-row { color: var(--ink); transition: background-color 140ms var(--ease, ease); }
 .menu-row:hover:not(:disabled), .menu-row:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+@keyframes confetti-fly {
+  0% { transform: translate(-50%, -50%) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty) + 22px)) rotate(var(--rot)); opacity: 0; }
+}

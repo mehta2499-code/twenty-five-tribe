@@ -1,3 +1,4 @@
+import { EmojiText } from "@/components/Glyph3D";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -93,7 +94,7 @@ function ActivityScreen() {
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-cream text-[14.5px] leading-snug line-clamp-2">
-                      {d.text}
+                      <EmojiText text={d.text} />
                     </span>
                     <span className="meta">{timeAgo(a.at)}</span>
                   </span>
