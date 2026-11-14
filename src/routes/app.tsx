@@ -30,7 +30,7 @@ function AppLayout() {
 
   // Swipe between the five tabs (like pages). Left = next tab, right = previous.
   const swipe = useRef<{ x: number; y: number; t: number } | null>(null);
-  const TAB_ORDER = ["home", "feed", "snap", "chats", "games"];
+  const TAB_ORDER = ["home", "feed", "drop", "chats", "games"];
   const onSwipeStart = (e: React.TouchEvent) => {
     swipe.current = null;
     const onTab = pathname === `/app/${tab}` && TAB_ORDER.includes(tab);
@@ -57,7 +57,7 @@ function AppLayout() {
     if (i < 0 || i >= TAB_ORDER.length) return;
     const to = `/app/${TAB_ORDER[i]}` as const;
     swipeDir.current = dx < 0 ? 1 : -1;
-    navigate({ to: to as "/app/home", ...(to === "/app/snap" ? { search: { to: undefined } } : {}) } as never);
+    navigate({ to: to as "/app/home" });
   };
   const firstTab = useRef(true);
   useEffect(() => {
@@ -70,7 +70,10 @@ function AppLayout() {
     swipeDir.current = 0;
     columnRef.current?.animate(
       dir
-        ? [{ transform: `translateX(${dir * 28}px)`, opacity: 0.6 }, { transform: "none", opacity: 1 }]
+        ? [
+            { transform: `translateX(${dir * 28}px)`, opacity: 0.6 },
+            { transform: "none", opacity: 1 },
+          ]
         : [{ transform: "translateY(6px)" }, { transform: "none" }],
       { duration: 200, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)" },
     );
@@ -198,7 +201,10 @@ function AppLayout() {
           {firstEver ? (
             <>
               <AnimatedLogo height={230} />
-              <p className="tagline-in display mt-6" style={{ fontSize: 26, letterSpacing: "-0.01em" }}>
+              <p
+                className="tagline-in display mt-6"
+                style={{ fontSize: 26, letterSpacing: "-0.01em" }}
+              >
                 Everyone else is noise.
               </p>
             </>

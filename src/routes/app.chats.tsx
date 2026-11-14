@@ -165,7 +165,8 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (!m) return "No messages yet";
   const who = m.from === "me" ? "You: " : "";
   if (m.snapId) return m.from === "me" ? "You sent a blink" : "Sent you a blink";
-  if (m.sharedPostId?.startsWith("wordup:")) return `${m.from === "me" ? "You: " : ""}Word Up result`;
+  if (m.sharedPostId?.startsWith("wordup:"))
+    return `${m.from === "me" ? "You: " : ""}Word Up result`;
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
   if (m.sharedPostId?.startsWith("voice:")) return `${who}Voice note`;
   if (m.sharedPostId?.startsWith("img:")) return `${who}Photo`;
@@ -189,6 +190,7 @@ function TabBadge({ n }: { n: number }) {
 
 function Chats() {
   const s = useSocial();
+  const newBlinks = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me")).length;
   const [q, setQ] = useState("");
   const [viewing, setViewing] = useState<Snap | null>(null);
   const everyone = mutualFriends();
@@ -253,21 +255,45 @@ function Chats() {
           <Link
             to="/app/snap"
             search={{ to: undefined }}
-            aria-label="New blink"
-            className="btn-quiet btn-icon"
+            aria-label={newBlinks ? `Blinks, ${newBlinks} new` : "Blinks"}
+            className="btn-secondary relative gap-1.5 px-3.5 min-h-[40px]"
           >
-            <Camera size={20} />
+            <Camera size={18} aria-hidden="true" /> Blinks
+            {newBlinks > 0 && (
+              <span
+                className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
+                style={{
+                  background: "var(--pink)",
+                  color: "var(--on-dark-fill)",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  border: "2px solid var(--surface)",
+                }}
+              >
+                {newBlinks > 99 ? "99+" : newBlinks}
+              </span>
+            )}
           </Link>
         }
       />
 
       <div className="px-5 mt-1 mb-2">
         <div className="segmented w-full" role="tablist" aria-label="Chats">
-          <button className="flex-1 gap-1.5" role="tab" aria-pressed={tab === "private"} onClick={() => pick("private")}>
+          <button
+            className="flex-1 gap-1.5"
+            role="tab"
+            aria-pressed={tab === "private"}
+            onClick={() => pick("private")}
+          >
             <MessageCircle size={16} aria-hidden="true" /> Private
             <TabBadge n={privateUnread} />
           </button>
-          <button className="flex-1 gap-1.5" role="tab" aria-pressed={tab === "groups"} onClick={() => pick("groups")}>
+          <button
+            className="flex-1 gap-1.5"
+            role="tab"
+            aria-pressed={tab === "groups"}
+            onClick={() => pick("groups")}
+          >
             <Users size={16} aria-hidden="true" /> Groups
             <TabBadge n={groupUnread} />
           </button>

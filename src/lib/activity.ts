@@ -17,6 +17,7 @@ import {
   Vote,
   type LucideIcon,
   DoorOpen,
+  Gamepad2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, seatedFriends, useSocial } from "@/lib/social";
@@ -229,8 +230,12 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       };
     case "game_win":
       return { Icon: Trophy, tone: "var(--sun)", text: `${who} won ${a.body}` };
+    case "daily_score":
+      return { Icon: Gamepad2, tone: "var(--lime)", text: `${who} scored ${a.body}` };
+    case "word_daily":
+      return { Icon: Type, tone: "var(--sun)", text: `${who} ${a.body}` };
     case "daily_top":
-      return { Icon: Crown, tone: "var(--sun)", text: `${who} is #1 in today's game (${a.body})` };
+      return { Icon: Crown, tone: "var(--sun)", text: `${who} took #1 in today's game: ${a.body}` };
     case "drop":
       return { Icon: Camera, tone: "var(--lime)", text: `${who} posted their Drop` };
     default:

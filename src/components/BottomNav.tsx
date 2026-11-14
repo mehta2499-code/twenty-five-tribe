@@ -1,13 +1,12 @@
-import { BlinkGlyph, ChatsGlyph, FeedGlyph, GamesGlyph, TableGlyph } from "@/components/Brand";
+import { ChatsGlyph, DropGlyph, FeedGlyph, GamesGlyph, TableGlyph } from "@/components/Brand";
 import { Link, useLocation } from "@tanstack/react-router";
 import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
-import { warmCamera } from "@/lib/camera";
 
 const tabs = [
   { to: "/app/home", label: "Table", Icon: TableGlyph },
   { to: "/app/feed", label: "Feed", Icon: FeedGlyph },
-  { to: "/app/snap", label: "Blink", Icon: BlinkGlyph },
+  { to: "/app/drop", label: "Drop", Icon: DropGlyph },
   { to: "/app/chats", label: "Chats", Icon: ChatsGlyph },
   { to: "/app/games", label: "Games", Icon: GamesGlyph },
 ] as const;
@@ -39,22 +38,20 @@ export function BottomNav() {
             pathname.startsWith(to) ||
             (to === "/app/home" &&
               (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat")));
-          const badge = to === "/app/chats" ? unread : to === "/app/snap" ? newSnaps : 0;
+          // Blinks live under Chats now, so new ones count there.
+          const badge = to === "/app/chats" ? unread + newSnaps : 0;
           const color = active ? "var(--lime)" : "var(--ink-2)";
-          const isSnap = to === "/app/snap";
+          const isCenter = to === "/app/drop";
           return (
             <li key={to}>
               <Link
                 to={to}
-                {...(isSnap ? { search: { to: undefined } } : {})}
                 aria-label={badge ? `${label}, ${badge} new` : label}
                 aria-current={active ? "page" : undefined}
                 onClick={() => buzz(8)}
-                // Start the camera as soon as a finger lands on Blink.
-                onPointerDown={isSnap ? () => warmCamera() : undefined}
                 className="flex flex-col items-center justify-end gap-0.5 pt-1.5 pb-1 min-h-[56px]"
               >
-                {isSnap ? (
+                {isCenter ? (
                   <span
                     className="relative -mt-6 w-[58px] h-[58px] rounded-[20px] flex items-center justify-center"
                     style={{
@@ -67,8 +64,7 @@ export function BottomNav() {
                       transform: "rotate(-4deg)",
                     }}
                   >
-                    <BlinkGlyph size={28} />
-                    {badge > 0 && <Badge n={badge} />}
+                    <DropGlyph size={28} />
                   </span>
                 ) : (
                   <span
@@ -83,7 +79,9 @@ export function BottomNav() {
                     {badge > 0 && <Badge n={badge} />}
                   </span>
                 )}
-                <span style={{ fontSize: 11.5, fontWeight: active ? 700 : 600, color }}>{label}</span>
+                <span style={{ fontSize: 11.5, fontWeight: active ? 700 : 600, color }}>
+                  {label}
+                </span>
               </Link>
             </li>
           );

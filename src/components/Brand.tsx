@@ -32,7 +32,14 @@ export function SeatRing({
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <circle cx="50" cy="50" r="27" fill="var(--fill)" stroke="var(--line)" strokeWidth={stroke * 1.5} />
+      <circle
+        cx="50"
+        cy="50"
+        r="27"
+        fill="var(--fill)"
+        stroke="var(--line)"
+        strokeWidth={stroke * 1.5}
+      />
       {seats.map((s, i) => (
         <circle
           key={i}
@@ -106,11 +113,24 @@ export function BlinkGlyph({ size = 26 }: G) {
   );
 }
 
+/** Drop: a camera with a spark (one real photo, same time for everyone). */
+export function DropGlyph({ size = 26 }: G) {
+  return (
+    <svg {...base(size)} strokeWidth={2.3}>
+      <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.4-2h4.6l1.4 2h1.8A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" />
+      <path d="M12.8 9.2 10.6 13h2.6l-1.9 3.6" />
+    </svg>
+  );
+}
+
 /** Chats: two bubbles, talking. */
 export function ChatsGlyph({ size = 22, active }: G) {
   return (
     <svg {...base(size)}>
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h8A2.5 2.5 0 0 1 17 5.5v5a2.5 2.5 0 0 1-2.5 2.5H9l-3.5 3v-3A2.5 2.5 0 0 1 4 10.5z" fill={active ? "currentColor" : "none"} />
+      <path
+        d="M4 5.5A2.5 2.5 0 0 1 6.5 3h8A2.5 2.5 0 0 1 17 5.5v5a2.5 2.5 0 0 1-2.5 2.5H9l-3.5 3v-3A2.5 2.5 0 0 1 4 10.5z"
+        fill={active ? "currentColor" : "none"}
+      />
       <path d="M19.5 9.5A2.5 2.5 0 0 1 21 12v4.5a2.5 2.5 0 0 1-2 2.45V21l-3-2h-3.5a2.5 2.5 0 0 1-2.3-1.5" />
     </svg>
   );
@@ -120,7 +140,15 @@ export function ChatsGlyph({ size = 22, active }: G) {
 export function GamesGlyph({ size = 22, active }: G) {
   return (
     <svg {...base(size)}>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="4" transform="rotate(-8 12 12)" fill={active ? "currentColor" : "none"} />
+      <rect
+        x="3.5"
+        y="3.5"
+        width="17"
+        height="17"
+        rx="4"
+        transform="rotate(-8 12 12)"
+        fill={active ? "currentColor" : "none"}
+      />
       <g fill={active ? "var(--surface)" : "currentColor"} stroke="none">
         <circle cx="8.6" cy="9" r="1.5" />
         <circle cx="12" cy="12" r="1.5" />

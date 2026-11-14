@@ -985,7 +985,7 @@ function Home() {
           {
             at: 'nav[aria-label="Main"]',
             title: "Everything else",
-            body: "Feed, Blink, Chats and Games live down here. Swipe left and right to move between them.",
+            body: "Feed, the Drop, Chats and Games live down here. Blinks are in Chats. Swipe left and right to move between them.",
           },
         ]}
       />

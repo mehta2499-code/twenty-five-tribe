@@ -76,7 +76,6 @@ function DropScreen() {
       <PageBand
         title="The 25 Drop"
         sub="Once a day, at a surprise time. 10 minutes. One real photo. Post yours to see theirs."
-        back
       />
 
       {phase === "before" && !data.mine && (
