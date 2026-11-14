@@ -3,7 +3,7 @@ import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, Eye, Handshake, MessageCircle, Search, UserPlus } from "lucide-react";
+import { Check, Eye, Handshake, MessageCircle, Search, UserPlus, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { account } from "@/lib/live";
@@ -12,7 +12,8 @@ import { ShareCard } from "@/components/ShareCard";
 import { SuggestionCards } from "@/components/Suggestions";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
-const SUB = "Seat anyone you know. They see your posts. Mutual seats unlock chats, blinks and games.";
+const SUB =
+  "Seat anyone you know. They see your posts. Mutual seats unlock chats, blinks and games.";
 
 export const Route = createFileRoute("/app/people")({
   component: clientOnly(People),
@@ -67,6 +68,7 @@ function People() {
   const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [burst, setBurst] = useState(0);
   const [quiz, setQuiz] = useState<{
@@ -126,9 +128,9 @@ function People() {
             <span className="sticker">how it works</span>
             <p className="heading mt-3">No seat without proof.</p>
             <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              To seat someone, guess their vibe-check answers. Get 4 of 7 right and they're in
-              your 25: they see your posts. When they seat you back, it's mutual and chats,
-              snaps and games unlock.
+              To seat someone, guess their vibe-check answers. Get 4 of 7 right and they're in your
+              25: they see your posts. When they seat you back, it's mutual and chats, snaps and
+              games unlock.
             </p>
             <button
               onClick={() =>
@@ -193,14 +195,19 @@ function People() {
             ))}
           </div>
           <p className="mt-2 meta flex flex-wrap gap-x-3">
-            <span><Ico i={Handshake} c={TONE.mutual} size={14} /> {mutualCount} mutual</span>
-            <span><Ico i={Eye} c={TONE.oneWay} size={14} /> {taken - mutualCount} one-way</span>
+            <span>
+              <Ico i={Handshake} c={TONE.mutual} size={14} /> {mutualCount} mutual
+            </span>
+            <span>
+              <Ico i={Eye} c={TONE.oneWay} size={14} /> {taken - mutualCount} one-way
+            </span>
             {taken >= SEATS && <span>Full. Remove someone to seat someone new.</span>}
           </p>
         </div>
         <div className="mt-3 flex">
           <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
-            <Ico i={Eye} size={13} /> you're in {s.seatedByCount} {s.seatedByCount === 1 ? "person's" : "people's"} 25
+            <Ico i={Eye} size={13} /> you're in {s.seatedByCount}{" "}
+            {s.seatedByCount === 1 ? "person's" : "people's"} 25
           </span>
           <span className="meta ml-2 self-center">only you see this</span>
         </div>
@@ -266,24 +273,59 @@ function People() {
             <Ico i={Eye} c={TONE.oneWay} size={18} /> They put you in their 25 · {incoming.length}
           </h2>
           <p className="meta mt-0.5">
-            You can see their posts. Seat them back to unlock chats, blinks and games.
+            You can see their posts. Seat them back to unlock chats, blinks and games. Don't know
+            them? Tap ✕ to remove yourself.
           </p>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
-            {incoming.map((r) => (
-              <Row
-                key={r.id}
-                p={r.person}
-                note={r.knew ? `Knew ${r.knew.score}/${r.knew.total} about you` : undefined}
-              >
-                <button
-                  disabled={busy === r.person.id || taken >= SEATS || !s.me?.vibeDone}
-                  onClick={() => seat(r.person)}
-                  className={`${pill} btn-primary`}
+            {incoming.map((r) =>
+              confirmLeave === r.person.id ? (
+                <li key={r.id} className="py-3 flex items-center gap-3">
+                  <p className="flex-1 text-sm text-cream">
+                    Remove yourself from {r.person.name.split(" ")[0]}'s 25? They'll be told, and
+                    can't add you again unless you add them.
+                  </p>
+                  <button onClick={() => setConfirmLeave(null)} className={`${pill} btn-quiet`}>
+                    Keep
+                  </button>
+                  <button
+                    onClick={() =>
+                      act(
+                        r.person.id,
+                        () => account.leaveTheir25(r.person.id),
+                        `You're out of ${r.person.name.split(" ")[0]}'s 25.`,
+                      ).then(() => setConfirmLeave(null))
+                    }
+                    disabled={busy === r.person.id}
+                    className={`${pill} btn-danger`}
+                  >
+                    Remove me
+                  </button>
+                </li>
+              ) : (
+                <Row
+                  key={r.id}
+                  p={r.person}
+                  note={r.knew ? `Knew ${r.knew.score}/${r.knew.total} about you` : undefined}
                 >
-                  <Check size={16} /> {r.iPassed ? "Seat back" : "Prove it"}
-                </button>
-              </Row>
-            ))}
+                  <button
+                    disabled={busy === r.person.id || taken >= SEATS || !s.me?.vibeDone}
+                    onClick={() => seat(r.person)}
+                    className={`${pill} btn-primary`}
+                  >
+                    <Check size={16} /> {r.iPassed ? "Seat back" : "Prove it"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmLeave(r.person.id)}
+                    aria-label={`Remove yourself from ${r.person.name}'s 25`}
+                    title="Don't know them? Remove yourself"
+                    className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center"
+                    style={{ background: "var(--bg-surface)", color: "var(--text-muted)" }}
+                  >
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                </Row>
+              ),
+            )}
           </ul>
         </section>
       )}

@@ -23,7 +23,11 @@ export const Route = createFileRoute("/app/drop")({
 });
 
 const clock = (ms: number) =>
-  new Date(ms).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+  new Date(ms).toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Kolkata",
+  });
 
 function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());
@@ -35,6 +39,13 @@ function useNow(ms = 1000) {
 }
 
 function DropScreen() {
+  useEffect(() => {
+    try {
+      localStorage.setItem("tf.seen.drop", "1");
+    } catch {
+      // ignore
+    }
+  }, []);
   useSocial();
   const now = useNow();
   const [at, setAt] = useState<number | null>(null);
@@ -115,8 +126,15 @@ function DropScreen() {
 
           <div className="mt-4">
             {image ? (
-              <div className="relative rounded-3xl overflow-hidden" style={{ aspectRatio: "3 / 4", border: "var(--bd)" }}>
-                <img src={image} alt="Your drop" className="absolute inset-0 w-full h-full object-cover" />
+              <div
+                className="relative rounded-3xl overflow-hidden"
+                style={{ aspectRatio: "3 / 4", border: "var(--bd)" }}
+              >
+                <img
+                  src={image}
+                  alt="Your drop"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
                 <button
                   onClick={() => setImage(null)}
                   className="absolute top-3 left-3 btn-quiet min-h-[36px] px-3 text-sm"
@@ -129,11 +147,19 @@ function DropScreen() {
               <button
                 onClick={() => shootRef.current?.click()}
                 className="w-full rounded-3xl flex flex-col items-center justify-center gap-3"
-                style={{ aspectRatio: "3 / 4", background: "var(--fill)", border: "2px dashed var(--line-2, rgba(255,255,255,0.3))" }}
+                style={{
+                  aspectRatio: "3 / 4",
+                  background: "var(--fill)",
+                  border: "2px dashed var(--line-2, rgba(255,255,255,0.3))",
+                }}
               >
                 <span
                   className="w-20 h-20 rounded-full flex items-center justify-center"
-                  style={{ background: "var(--lime)", color: "var(--on-accent)", border: "var(--bd)" }}
+                  style={{
+                    background: "var(--lime)",
+                    color: "var(--on-accent)",
+                    border: "var(--bd)",
+                  }}
                 >
                   <Camera size={34} />
                 </span>
@@ -180,7 +206,13 @@ function DropScreen() {
                 className="btn-primary w-full mt-3"
                 style={{ minHeight: 54, fontSize: 17 }}
               >
-                {busy ? "Dropping…" : <><Camera size={18} aria-hidden="true" /> Drop it</>}
+                {busy ? (
+                  "Dropping…"
+                ) : (
+                  <>
+                    <Camera size={18} aria-hidden="true" /> Drop it
+                  </>
+                )}
               </button>
             </>
           )}
@@ -242,20 +274,38 @@ function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
           className={`sticker ${post.late ? "pink" : ""} absolute top-2 left-2 !text-[11px]`}
           style={{ transform: "rotate(-4deg)" }}
         >
-          {post.late ? <><Ico i={Clock} size={11} /> {post.late}m late</> : <><Ico i={Zap} size={11} /> on time</>}
+          {post.late ? (
+            <>
+              <Ico i={Clock} size={11} /> {post.late}m late
+            </>
+          ) : (
+            <>
+              <Ico i={Zap} size={11} /> on time
+            </>
+          )}
         </span>
       </div>
       <figcaption className="p-2.5 flex items-center gap-2">
-        <Avatar src={who?.avatar || undefined} initials={who?.initials ?? "?"} color={f?.color} size={26} />
+        <Avatar
+          src={who?.avatar || undefined}
+          initials={who?.initials ?? "?"}
+          color={f?.color}
+          size={26}
+        />
         <span className="min-w-0">
           <span className="block text-[13px] font-bold text-cream truncate">
             {me ? "You" : who?.name.split(" ")[0]}
           </span>
-          {post.caption && <span className="block meta truncate" style={{ fontSize: 12 }}>{post.caption}</span>}
+          {post.caption && (
+            <span className="block meta truncate" style={{ fontSize: 12 }}>
+              {post.caption}
+            </span>
+          )}
         </span>
         <span className="ml-auto flex items-center gap-2 meta shrink-0" style={{ fontSize: 12 }}>
           <span className="flex items-center gap-0.5">
-            <Heart size={13} fill={post.likes?.includes("me") ? "var(--pink)" : "none"} /> {post.likes?.length ?? 0}
+            <Heart size={13} fill={post.likes?.includes("me") ? "var(--pink)" : "none"} />{" "}
+            {post.likes?.length ?? 0}
           </span>
           <span className="flex items-center gap-0.5">
             <MessageCircle size={13} /> {post.comments?.length ?? 0}
@@ -266,7 +316,15 @@ function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
   );
 }
 
-function DropViewer({ post, onClose, onChanged }: { post: DropPost; onClose: () => void; onChanged: () => void }) {
+function DropViewer({
+  post,
+  onClose,
+  onChanged,
+}: {
+  post: DropPost;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
   const by = personOf(post.id);
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
@@ -300,21 +358,47 @@ function DropViewer({ post, onClose, onChanged }: { post: DropPost; onClose: () 
           <span className="flex-1 min-w-0">
             <span className="block font-bold truncate">{by.name}</span>
             <span className="block text-xs text-white/70">
-              {post.late ? <><Ico i={Clock} size={11} /> {post.late}m late</> : <><Ico i={Zap} size={11} /> on time</>}
+              {post.late ? (
+                <>
+                  <Ico i={Clock} size={11} /> {post.late}m late
+                </>
+              ) : (
+                <>
+                  <Ico i={Zap} size={11} /> on time
+                </>
+              )}
             </span>
           </span>
-          <button onClick={onClose} aria-label="Close" className="w-10 h-10 flex items-center justify-center">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-10 h-10 flex items-center justify-center"
+          >
             <X size={22} />
           </button>
         </header>
         <div className="relative flex-1 min-h-0" onDoubleClick={() => !liked && like()}>
-          {post.image && <img src={post.image} alt="" className="absolute inset-0 w-full h-full object-contain" />}
+          {post.image && (
+            <img
+              src={post.image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-contain"
+            />
+          )}
         </div>
         <div className="px-4 pt-3 text-white">
           {post.caption && <p className="text-[15px]">{post.caption}</p>}
           <div className="flex items-center gap-4 mt-2">
-            <button onClick={like} aria-label={liked ? "Unlike" : "Like"} className="flex items-center gap-1.5 font-bold">
-              <Heart size={24} fill={liked ? "var(--pink)" : "none"} style={{ color: liked ? "var(--pink)" : "#fff" }} />
+            <button
+              onClick={like}
+              aria-label={liked ? "Unlike" : "Like"}
+              className="flex items-center gap-1.5 font-bold"
+            >
+              <Heart
+                size={24}
+                fill={liked ? "var(--pink)" : "none"}
+                style={{ color: liked ? "var(--pink)" : "#fff" }}
+              />
               {likes.length}
             </button>
             <span className="flex items-center gap-1.5 font-bold">
@@ -337,7 +421,11 @@ function DropViewer({ post, onClose, onChanged }: { post: DropPost; onClose: () 
               );
             })}
           </ul>
-          {err && <p className="text-xs mt-1" style={{ color: "var(--pink)" }}>{err}</p>}
+          {err && (
+            <p className="text-xs mt-1" style={{ color: "var(--pink)" }}>
+              {err}
+            </p>
+          )}
         </div>
         <form
           onSubmit={(e) => {

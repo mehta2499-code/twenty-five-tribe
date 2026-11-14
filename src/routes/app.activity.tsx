@@ -12,14 +12,14 @@ export const Route = createFileRoute("/app/activity")({
 });
 
 function target(a: Activity): { to: string; params?: Record<string, string> } {
-  if (a.kind === "seated") return { to: "/app/people" };
+  if (a.kind === "seated" || a.kind === "unseated") return { to: "/app/people" };
   if (a.kind === "seated_back" && a.actor) return { to: "/app/seat/$id", params: { id: a.actor } };
-  if (a.kind === "like" || a.kind === "comment")
-    return { to: "/app/feed" };
+  if (a.kind === "like" || a.kind === "comment") return { to: "/app/feed" };
   if (a.kind === "word_done" && a.ref?.startsWith("game:"))
     return { to: "/app/play/$id", params: { id: a.ref.slice(5) } };
   if (a.kind === "poll") return { to: "/app/polls" };
-  if (a.kind === "drop" || a.kind === "drop_like" || a.kind === "drop_comment") return { to: "/app/drop" };
+  if (a.kind === "drop" || a.kind === "drop_like" || a.kind === "drop_comment")
+    return { to: "/app/drop" };
   if (a.kind === "card") return { to: "/app/card/$id", params: { id: "me" } };
   return { to: "/app/home" };
 }
@@ -72,7 +72,12 @@ function ActivityScreen() {
                         className="w-11 h-11 rounded-full flex items-center justify-center text-xl"
                         style={{ background: "var(--sun)", border: "var(--bd)" }}
                       >
-                        <Lock size={20} strokeWidth={2.25} aria-hidden="true" style={{ color: "var(--on-accent)" }} />
+                        <Lock
+                          size={20}
+                          strokeWidth={2.25}
+                          aria-hidden="true"
+                          style={{ color: "var(--on-accent)" }}
+                        />
                       </span>
                     )}
                     <span
@@ -89,7 +94,10 @@ function ActivityScreen() {
                     <span className="meta">{timeAgo(a.at)}</span>
                   </span>
                   {!a.read && (
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: "var(--lime)" }} />
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: "var(--lime)" }}
+                    />
                   )}
                 </Link>
               </li>

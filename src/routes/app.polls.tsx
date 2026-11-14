@@ -25,6 +25,13 @@ export const Route = createFileRoute("/app/polls")({
 const TONES = ["var(--lime)", "var(--pink)", "var(--sky)", "var(--sun)"];
 
 function Polls() {
+  useEffect(() => {
+    try {
+      localStorage.setItem("tf.seen.polls", "1");
+    } catch {
+      // ignore
+    }
+  }, []);
   useSocial();
   const [tab, setTab] = useState<"vote" | "picked">("vote");
   const qs = questionsFor();
@@ -67,14 +74,22 @@ function Polls() {
 
   return (
     <div className="pb-8">
-      <PageBand title="Polls" sub="Anonymous compliments. They'll know someone picked them. Never who." back />
+      <PageBand
+        title="Polls"
+        sub="Anonymous compliments. They'll know someone picked them. Never who."
+        back
+      />
 
       <div className="px-5">
         <div className="segmented w-full" role="group" aria-label="Polls">
           <button className="flex-1" aria-pressed={tab === "vote"} onClick={() => setTab("vote")}>
             Today's polls · {done}/{PER_DAY}
           </button>
-          <button className="flex-1" aria-pressed={tab === "picked"} onClick={() => setTab("picked")}>
+          <button
+            className="flex-1"
+            aria-pressed={tab === "picked"}
+            onClick={() => setTab("picked")}
+          >
             Picked you
           </button>
         </div>
@@ -102,13 +117,24 @@ function Polls() {
                   <span
                     key={q}
                     className="h-1.5 rounded-full flex-1 max-w-12"
-                    style={{ background: votes[q] ? "var(--lime)" : q === current ? "var(--ink)" : "var(--fill-2)" }}
+                    style={{
+                      background: votes[q]
+                        ? "var(--lime)"
+                        : q === current
+                          ? "var(--ink)"
+                          : "var(--fill-2)",
+                    }}
                   />
                 ))}
               </div>
               <div
                 className="rounded-[24px] p-6 text-center"
-                style={{ background: TONES[qs.indexOf(current) % 4], color: "var(--on-accent)", border: "var(--bd)", boxShadow: "5px 5px 0 var(--edge)" }}
+                style={{
+                  background: TONES[qs.indexOf(current) % 4],
+                  color: "var(--on-accent)",
+                  border: "var(--bd)",
+                  boxShadow: "5px 5px 0 var(--edge)",
+                }}
               >
                 <p className="text-[13px] font-extrabold opacity-80">
                   Question {qs.indexOf(current) + 1} of {PER_DAY}
@@ -133,22 +159,40 @@ function Polls() {
                         opacity: chosen && !on ? 0.5 : 1,
                       }}
                     >
-                      <Avatar src={p.avatar || undefined} initials={p.initials} color={p.color} size={56} />
-                      <span className="font-bold text-[15px] truncate max-w-full">{p.name.split(" ")[0]}</span>
+                      <Avatar
+                        src={p.avatar || undefined}
+                        initials={p.initials}
+                        color={p.color}
+                        size={56}
+                      />
+                      <span className="font-bold text-[15px] truncate max-w-full">
+                        {p.name.split(" ")[0]}
+                      </span>
                     </button>
                   );
                 })}
               </div>
               <div className="mt-4 flex justify-center gap-3">
-                <button onClick={() => setShuffle((n) => n + 1)} className="btn-quiet inline-flex items-center gap-1.5">
+                <button
+                  onClick={() => setShuffle((n) => n + 1)}
+                  className="btn-quiet inline-flex items-center gap-1.5"
+                >
                   <Shuffle size={16} /> Shuffle
                 </button>
               </div>
-              <p className="meta text-center mt-3"><Ico i={Lock} size={13} /> Your pick is anonymous. Always.</p>
+              <p className="meta text-center mt-3">
+                <Ico i={Lock} size={13} /> Your pick is anonymous. Always.
+              </p>
             </div>
           ) : (
             <div className="card p-6 text-center">
-              <Vote size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--lime)" }} />
+              <Vote
+                size={44}
+                strokeWidth={2}
+                aria-hidden="true"
+                className="mx-auto"
+                style={{ color: "var(--lime)" }}
+              />
               <p className="heading mt-3">All done for today</p>
               <p className="meta mt-1">
                 5 people just got a little dopamine because of you. New polls in {untilMidnight()}.
@@ -167,9 +211,17 @@ function Polls() {
             <p className="meta text-center mt-10">Loading…</p>
           ) : picks.length === 0 ? (
             <div className="card p-6 text-center">
-              <Lock size={44} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--sun)" }} />
+              <Lock
+                size={44}
+                strokeWidth={2}
+                aria-hidden="true"
+                className="mx-auto"
+                style={{ color: "var(--sun)" }}
+              />
               <p className="heading mt-3">Nothing yet</p>
-              <p className="meta mt-1">When someone picks you in a poll, it shows up here. Never who.</p>
+              <p className="meta mt-1">
+                When someone picks you in a poll, it shows up here. Never who.
+              </p>
             </div>
           ) : (
             <ul className="grid gap-2.5">
@@ -177,7 +229,12 @@ function Polls() {
                 <li
                   key={p.question}
                   className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: TONES[i % 4], color: "var(--on-accent)", border: "var(--bd)", boxShadow: "var(--pop)" }}
+                  style={{
+                    background: TONES[i % 4],
+                    color: "var(--on-accent)",
+                    border: "var(--bd)",
+                    boxShadow: "var(--pop)",
+                  }}
                 >
                   <span className="flex-1 font-bold text-[15px] leading-snug">{p.question}</span>
                   <span className="text-right">

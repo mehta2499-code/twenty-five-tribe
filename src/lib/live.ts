@@ -843,6 +843,19 @@ export const account = {
     });
     if (error) throw new Error(friendly(error));
   },
+  /** Sign up with email + password straight away (no emailed code). */
+  async signUp(email: string, password: string) {
+    if (password.length < 8 || password.length > 128)
+      throw new Error("Use a password between 8 and 128 characters.");
+    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+    if (error) throw new Error(friendly(error));
+    if (data.user && (data.user.identities ?? []).length === 0)
+      throw new Error("That email already has a seat. Sign in instead.");
+    if (!data.session)
+      throw new Error(
+        "Sign-ups are paused for a moment while we fix email checks. Try again in a bit.",
+      );
+  },
   async verifyCode(email: string, token: string) {
     const { error } = await supabase.auth.verifyOtp({
       email: email.trim(),
@@ -860,8 +873,9 @@ export const account = {
     name: string;
     username: string;
     avatar?: string;
-    password: string;
-    confirmPassword: string;
+    /** Leave out when the password was already set at sign-up. */
+    password?: string;
+    confirmPassword?: string;
   }) {
     if (!myId) throw new Error("Sign in first.");
     const username = input.username.trim().toLowerCase();
@@ -870,10 +884,12 @@ export const account = {
     const displayName = input.name.trim();
     if (displayName.length < 1 || displayName.length > 40)
       throw new Error("Your name should be between 1 and 40 characters.");
-    if (input.password.length < 8 || input.password.length > 128)
-      throw new Error("Use a password between 8 and 128 characters.");
-    if (input.password !== input.confirmPassword)
-      throw new Error("Those passwords don’t match yet.");
+    if (input.password !== undefined) {
+      if (input.password.length < 8 || input.password.length > 128)
+        throw new Error("Use a password between 8 and 128 characters.");
+      if (input.password !== input.confirmPassword)
+        throw new Error("Those passwords don’t match yet.");
+    }
     if (!input.avatar) throw new Error("Add a profile photo before saving your seat.");
 
     // Make sure the sign-in from the email code is still here before saving anything.
@@ -893,13 +909,14 @@ export const account = {
     if (error) throw new Error(friendly(error));
     track("signup_completed");
 
-    const { error: passwordError } = await supabase.auth.updateUser({ password: input.password });
+    const passwordError =
+      input.password === undefined
+        ? null
+        : (await supabase.auth.updateUser({ password: input.password })).error;
     await loadAll();
     subscribe();
     if (passwordError)
-      fail(
-        "You're in! Your password didn't save, so sign in with an email code next time, or use Forgot password.",
-      );
+      fail("You're in! Your password didn't save, so use Forgot password next time you sign in.");
   },
   async updateAvatar(image: string) {
     if (!myId) throw new Error("Sign in first.");
@@ -911,6 +928,12 @@ export const account = {
   },
   async signOut() {
     await supabase.auth.signOut();
+  },
+  /** Take yourself out of someone's 25. They're told and can't re-add you unless you add them. */
+  async leaveTheir25(personId: string) {
+    const { error } = await supabase.rpc("leave_their_25" as never, { p_owner: personId } as never);
+    if (error) throw new Error(friendly(error));
+    await loadAll();
   },
   /** Block: they leave your 25, you leave theirs, and they can't find or seat you. */
   async block(personId: string) {

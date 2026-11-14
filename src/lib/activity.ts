@@ -16,6 +16,7 @@ import {
   Type,
   Vote,
   type LucideIcon,
+  DoorOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, seatedFriends, useSocial } from "@/lib/social";
@@ -62,7 +63,8 @@ async function load(me: string) {
   const names: Record<string, string> = {};
   if (ids.length) {
     const { data: ps } = await supabase.from("profiles").select("id,display_name").in("id", ids);
-    for (const p of (ps ?? []) as { id: string; display_name: string }[]) names[p.id] = p.display_name;
+    for (const p of (ps ?? []) as { id: string; display_name: string }[])
+      names[p.id] = p.display_name;
   }
   if (liveFor !== me) return;
   set({
@@ -91,7 +93,12 @@ function demoItems(): Activity[] {
     { kind: "like", actor: pick(2)?.id, ref: "post:p1", at: now - 2 * 60 * m },
     { kind: "comment", actor: pick(3)?.id, body: "this is SO you 😭", at: now - 5 * 60 * m },
     { kind: "seated", actor: pick(4)?.id, at: now - 26 * 60 * m },
-    { kind: "word_done", actor: pick(0)?.id, body: "cracked your word in 4/6", at: now - 30 * 60 * m },
+    {
+      kind: "word_done",
+      actor: pick(0)?.id,
+      body: "cracked your word in 4/6",
+      at: now - 30 * 60 * m,
+    },
   ].map((x, i) => ({
     id: `demo-${i}`,
     ref: null,
@@ -159,23 +166,49 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
   const who = a.actorName?.split(" ")[0] ?? "Someone";
   switch (a.kind) {
     case "seated":
-      return { Icon: Eye, tone: "var(--sky)", text: `${who} put you in their 25. Seat them back?` };
+      return {
+        Icon: Eye,
+        tone: "var(--sky)",
+        text: `${who} put you in their 25. Seat them back, or remove yourself.`,
+      };
+    case "unseated":
+      return {
+        Icon: DoorOpen,
+        tone: "var(--ink-3)",
+        text: `${who} removed themselves from your 25`,
+      };
     case "seated_back":
-      return { Icon: Handshake, tone: "var(--lime)", text: `${who} seated you back. Chats and blinks unlocked.` };
+      return {
+        Icon: Handshake,
+        tone: "var(--lime)",
+        text: `${who} seated you back. Chats and blinks unlocked.`,
+      };
     case "like":
-      return { Icon: Heart, tone: "var(--hot)", text: `${who} liked your ${a.ref?.startsWith("reel") ? "reel" : "post"}` };
+      return {
+        Icon: Heart,
+        tone: "var(--hot)",
+        text: `${who} liked your ${a.ref?.startsWith("reel") ? "reel" : "post"}`,
+      };
     case "comment":
       return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} commented: ${a.body}` };
     case "word_done":
       return { Icon: Type, tone: "var(--sun)", text: `${who} ${a.body}` };
     case "poll":
-      return { Icon: Vote, tone: "var(--pink)", text: `Someone in your 25 picked you for “${a.body}”` };
+      return {
+        Icon: Vote,
+        tone: "var(--pink)",
+        text: `Someone in your 25 picked you for “${a.body}”`,
+      };
     case "card":
       return { Icon: Cake, tone: "var(--pink)", text: `${who} signed your birthday card` };
     case "drop_like":
       return { Icon: Heart, tone: "var(--hot)", text: `${who} liked your Drop` };
     case "drop_comment":
-      return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} commented on your Drop: ${a.body}` };
+      return {
+        Icon: MessageCircle,
+        tone: "var(--sky)",
+        text: `${who} commented on your Drop: ${a.body}`,
+      };
     case "quiz_ace":
       return {
         Icon: Crown,
@@ -183,9 +216,17 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
         text: `${who} got ${a.body} on your quiz. ${a.body?.split("/")[0] === a.body?.split("/")[1] ? "Ride or Die." : "A Real One."}`,
       };
     case "quiz_try":
-      return { Icon: Eye, tone: "var(--sky)", text: `${who} tried to add you. Got ${a.body} on your quiz.` };
+      return {
+        Icon: Eye,
+        tone: "var(--sky)",
+        text: `${who} tried to add you. Got ${a.body} on your quiz.`,
+      };
     case "post":
-      return { Icon: Camera, tone: "var(--pink)", text: `${who} just posted${a.body && !/^New (post|reel)$/.test(a.body) ? `: ${a.body}` : ""}` };
+      return {
+        Icon: Camera,
+        tone: "var(--pink)",
+        text: `${who} just posted${a.body && !/^New (post|reel)$/.test(a.body) ? `: ${a.body}` : ""}`,
+      };
     case "game_win":
       return { Icon: Trophy, tone: "var(--sun)", text: `${who} won ${a.body}` };
     case "daily_top":

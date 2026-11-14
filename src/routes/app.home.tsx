@@ -26,8 +26,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
-import { BADGE_RING } from "@/components/QuizBadges";
-import { badgeOf, useQuizBadges } from "@/lib/quiz";
+import { useQuizBadges, type Best } from "@/lib/quiz";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
 import {
@@ -57,23 +56,62 @@ import { SuggestionCards } from "@/components/Suggestions";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
-import { myVotesToday } from "@/lib/polls";
+import { PER_DAY, myPicks, myVotesToday } from "@/lib/polls";
 
 export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
 });
 
-/** All 25 seats: an inner ring of 8 (your closest, by streak) and an outer ring of 17. */
+/**
+ * The table has three rings, set by how well each friend did on YOUR quiz:
+ * inner = 7/7, middle = 5–6 of 7, outer = everyone else (or no quiz yet).
+ * A ring that's full spills over into the next one out.
+ */
 const SEATS = 25;
-const INNER = 8;
-const OUTER = SEATS - INNER;
-function seatPos(i: number) {
-  const inner = i < INNER;
-  const n = inner ? INNER : OUTER;
-  const k = inner ? i : i - INNER;
-  const angle = (k / n) * Math.PI * 2 - Math.PI / 2 + (inner ? 0 : Math.PI / OUTER);
-  const r = inner ? 31 : 46;
-  return { x: 50 + r * Math.cos(angle), y: 50 + r * Math.sin(angle), inner };
+const RINGS = [
+  { r: 23.5, cap: 6, size: 50 },
+  { r: 36, cap: 11, size: 42 },
+  { r: 46.5, cap: SEATS, size: 34 },
+] as const;
+
+function ringFor(b?: Best): 0 | 1 | 2 {
+  if (!b || !b.total) return 2;
+  if (b.score >= b.total) return 0;
+  if (b.total >= 6 && b.score >= b.total - 2) return 1;
+  return 2;
+}
+
+/** Demo table: sample quiz scores so the rings show what they mean. */
+function demoScores(people: Person[]): Record<string, Best> {
+  const out: Record<string, Best> = {};
+  people.forEach((p, i) => {
+    out[p.id] = { score: [7, 6, 7, 5, 3, 6, 4, 7, 2, 6][i % 10], total: 7 };
+  });
+  return out;
+}
+
+/** Where each person sits: ring + position, in the same order as `people`. */
+function layout(people: Person[], knowsMe: Record<string, Best>) {
+  const rings: number[][] = [[], [], []];
+  people.forEach((p, i) => {
+    let r = ringFor(knowsMe[p.id]);
+    while (r < 2 && rings[r].length >= RINGS[r].cap) r++;
+    rings[r].push(i);
+  });
+  const out: { x: number; y: number; ring: 0 | 1 | 2 }[] = [];
+  rings.forEach((list, ri) => {
+    const { r } = RINGS[ri];
+    const offset = ri === 1 ? Math.PI / Math.max(list.length, 1) : 0;
+    list.forEach((idx, k) => {
+      const angle = (k / list.length) * Math.PI * 2 - Math.PI / 2 + offset;
+      out[idx] = {
+        x: 50 + r * Math.cos(angle),
+        y: 50 + r * Math.sin(angle),
+        ring: ri as 0 | 1 | 2,
+      };
+    });
+  });
+  return out;
 }
 
 /** Friends worth showing at the table first: streaks, then who posted today. */
@@ -129,34 +167,42 @@ function Table({
   const s = useSocial();
   const quiz = useQuizBadges();
   const seated = people.slice(0, SEATS);
-  const chairs: (Person | null)[] = [
-    ...seated,
-    ...Array.from({ length: SEATS - seated.length }, () => null),
-  ];
+  const scores = useMemo(
+    () => (s.mode === "live" ? quiz.knowsMe : demoScores(seated)),
+    [s.mode, quiz.knowsMe, seated],
+  );
+  const places = layout(seated, scores);
 
   return (
     <section className="px-5 pt-6" aria-label="Your table">
-      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 380, aspectRatio: "1" }}>
-        {/* Table top */}
+      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 400, aspectRatio: "1" }}>
+        {/* Ring lines */}
+        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" aria-hidden="true">
+          {RINGS.map((ring, i) => (
+            <circle
+              key={i}
+              cx={50}
+              cy={50}
+              r={ring.r}
+              fill="none"
+              stroke={i === 0 ? "rgba(193,239,98,0.22)" : "rgba(255,255,255,0.08)"}
+              strokeWidth={0.35}
+              strokeDasharray={i === 0 ? "1.2 1.2" : undefined}
+            />
+          ))}
+        </svg>
+
+        {/* Table top: just the dice */}
         <div
           className="absolute rounded-full"
           style={{
-            inset: "27%",
+            inset: "39.5%",
             background:
-              "radial-gradient(circle at 35% 30%, rgba(181,219,94,0.22), transparent 60%), #2B2736",
-            border: "var(--bd)",
-            boxShadow: "var(--pop-lg)",
+              "radial-gradient(circle at 35% 30%, rgba(181,219,94,0.2), transparent 65%), #24212D",
+            border: "1px solid var(--line)",
           }}
-        >
-          <div
-            className="absolute rounded-full"
-            style={{ inset: 10, border: "2px dashed rgba(181,219,94,0.35)" }}
-          />
-          {/* little things on the table */}
-        </div>
-
-        {/* You + the dice */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        />
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
           <button
             onClick={onRoll}
             disabled={rolling || !seated.length}
@@ -164,103 +210,106 @@ function Table({
             className="relative flex flex-col items-center"
           >
             <span
-              className={`flex items-center justify-center rounded-2xl ${rolling ? "die-rolling" : "wiggle-idle"}`}
+              className={`flex items-center justify-center rounded-xl ${rolling ? "die-rolling" : "wiggle-idle"}`}
               style={{
-                width: 52,
-                height: 52,
+                width: 36,
+                height: 36,
                 background: "var(--lime)",
                 color: "var(--on-accent)",
                 border: "var(--bd)",
-                boxShadow: "var(--pop)",
+                boxShadow: "var(--pop-sm)",
               }}
             >
-              <Dices size={28} strokeWidth={2.2} aria-hidden="true" />
+              <Dices size={21} strokeWidth={2.2} aria-hidden="true" />
             </span>
             <span
-              className="mt-2 font-display font-extrabold text-[13px] px-2 py-0.5 rounded-full"
-              style={{ background: "var(--edge)", color: "var(--lime)" }}
+              className="mt-1 font-display font-extrabold text-[11px]"
+              style={{ color: "var(--lime)" }}
             >
               {rolling ? "rolling…" : "tap to roll"}
             </span>
           </button>
         </div>
 
-        {/* Chairs */}
-        {chairs.map((f, i) => {
-          const { x, y, inner } = seatPos(i);
-          const size = inner ? 46 : 30;
-          const pos = {
-            left: `${x}%`,
-            top: `${y}%`,
-            transform: "translate(-50%, -50%)",
-          } as const;
-          // Empty seats stay hidden; a bubble appears when someone takes one.
-          if (!f) return null;
+        {/* Friends */}
+        {seated.map((f, i) => {
+          const { x, y, ring } = places[i];
+          const size = RINGS[ring].size;
           const st = streakStatus(s.streaks[f.id]);
           const lit = spot === i;
+          const oneWay = f.mutual === false;
+          const score = scores[f.id];
+          const small = ring === 2;
           return (
             <Link
               key={f.id}
               to="/app/seat/$id"
               params={{ id: f.id }}
               className="absolute flex flex-col items-center"
-              style={pos}
-              aria-label={`${f.name}${st.count ? `, ${st.count}-day streak` : ""}${f.postedToday ? ", posted today" : ""}`}
+              style={{
+                left: `${x}%`,
+                top: `${y}%`,
+                transform: "translate(-50%, -50%)",
+                zIndex: lit ? 3 : 1,
+              }}
+              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${st.count ? `, ${st.count}-day streak` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}`}
             >
               <span
-                className="rounded-full transition-transform duration-150"
+                className="relative rounded-full transition-transform duration-150"
                 style={{
                   border: "var(--bd)",
-                  boxShadow: (() => {
-                    if (lit) return "0 0 0 4px var(--lime), 0 0 28px rgba(193,239,98,0.8)";
-                    // Ride or Die / Real One: they aced your quiz.
-                    const b = badgeOf(quiz.knowsMe[f.id]);
-                    const ring = b ? BADGE_RING[b] : null;
-                    if (f.postedToday && ring) return `0 0 0 3px var(--pink), 0 0 0 6px ${ring}`;
-                    if (f.postedToday) return "0 0 0 3px var(--pink)";
-                    if (ring) return `0 0 0 3px ${ring}`;
-                    return "var(--pop-sm)";
-                  })(),
+                  boxShadow: lit
+                    ? "0 0 0 4px var(--lime), 0 0 28px rgba(193,239,98,0.8)"
+                    : "var(--pop-sm)",
                   transform: lit ? "scale(1.18)" : "scale(1)",
                 }}
               >
-                <Avatar src={f.avatar} initials={f.initials} color={f.color} size={size} />
-              </span>
-              {!inner ? (
-                st.count > 0 && (
+                <span style={{ display: "block", opacity: oneWay ? 0.55 : 1 }}>
+                  <Avatar src={f.avatar} initials={f.initials} color={f.color} size={size} />
+                </span>
+                {f.postedToday && (
                   <span
-                    className="absolute -bottom-1.5 -right-1.5 text-[11px] leading-none"
+                    className="absolute rounded-full flex items-center justify-center"
+                    style={{
+                      top: -3,
+                      right: -3,
+                      width: small ? 14 : 18,
+                      height: small ? 14 : 18,
+                      background: "var(--pink)",
+                      color: "var(--on-accent)",
+                      border: "2px solid var(--bg, #14121A)",
+                    }}
                     aria-hidden="true"
                   >
-                    <Ico i={Flame} c={TONE.streak} size={13} />
+                    <Camera size={small ? 8 : 10} strokeWidth={3} />
                   </span>
-                )
-              ) : st.count > 0 ? (
+                )}
+                {oneWay && (
+                  <span
+                    className="absolute rounded-full flex items-center justify-center"
+                    style={{
+                      top: -3,
+                      left: -3,
+                      width: small ? 14 : 18,
+                      height: small ? 14 : 18,
+                      background: "var(--edge)",
+                      color: "var(--sky)",
+                      border: "2px solid var(--bg, #14121A)",
+                    }}
+                    aria-hidden="true"
+                  >
+                    <Eye size={small ? 8 : 10} strokeWidth={3} />
+                  </span>
+                )}
+              </span>
+              {st.count > 0 ? (
                 <span
-                  className={`sticker relative z-[1] whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2.5 !text-[11px] !px-1.5 !py-0`}
-                  style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
+                  className={`sticker relative z-[1] whitespace-nowrap ${st.atRisk ? "sun" : ""} -mt-2 !px-1.5 !py-0`}
+                  style={{ fontSize: small ? 10 : 11 }}
                 >
-                  <Ico i={Flame} size={11} />
+                  <Ico i={Flame} size={small ? 10 : 11} />
                   {st.count}
-                  {st.atRisk && <Ico i={Hourglass} size={11} />}
-                </span>
-              ) : f.mutual === false ? (
-                <span
-                  className="sticker sky relative z-[1] -mt-2.5 !px-1.5 !py-0 whitespace-nowrap"
-                  style={{
-                    transform: `rotate(${i % 2 ? 4 : -4}deg)`,
-                    fontSize: labelSize(f.name),
-                  }}
-                  title="One-way: they haven't seated you back"
-                >
-                  <Ico i={Eye} size={11} /> {f.name.split(" ")[0]}
-                </span>
-              ) : f.postedToday ? (
-                <span
-                  className="sticker pink relative z-[1] -mt-2.5 !text-[11px] !px-1.5 !py-0"
-                  style={{ transform: `rotate(${i % 2 ? 4 : -4}deg)` }}
-                >
-                  new
+                  {st.atRisk && <Ico i={Hourglass} size={small ? 10 : 11} />}
                 </span>
               ) : (
                 <span
@@ -268,7 +317,7 @@ function Table({
                   style={{
                     background: "var(--edge)",
                     color: "var(--ink-2)",
-                    fontSize: labelSize(f.name),
+                    fontSize: labelSize(f.name) - (small ? 1 : 0),
                   }}
                 >
                   {f.name.split(" ")[0]}
@@ -277,46 +326,6 @@ function Table({
             </Link>
           );
         })}
-      </div>
-
-      {/* Key: one compact line. */}
-      <div className="mt-3 flex justify-center">
-        <div
-          className="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full whitespace-nowrap text-cool"
-          style={{
-            background: "var(--fill)",
-            border: "1px solid var(--line)",
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ background: "var(--pink)" }} />
-            posted
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Ico i={Flame} c={TONE.streak} size={12} /> streak
-          </span>
-          {Object.values(quiz.knowsMe).some((b) => badgeOf(b)) && (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: "var(--sun)" }} />
-              knows you
-            </span>
-          )}
-          {s.mode === "live" && (
-            <span className="inline-flex items-center gap-1">
-              <Ico i={Eye} c={TONE.oneWay} size={12} /> one-way
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="flex justify-center mt-3">
-        <Link to="/app/people" className="btn-primary px-5 gap-2" style={{ minHeight: 44 }}>
-          <UserPlus size={18} aria-hidden="true" />
-          {people.length >= 25
-            ? `Your 25 is full · manage`
-            : `Add people · ${25 - people.length} seat${25 - people.length === 1 ? "" : "s"} left`}
-        </Link>
       </div>
     </section>
   );
@@ -580,64 +589,137 @@ function ModeBanner() {
 
 // ---------- Drop + Polls ----------
 
+/** Has this person opened that screen yet? Shows a "new" sticker until they do. */
+function seen(key: string) {
+  try {
+    return localStorage.getItem(`tf.seen.${key}`) === "1";
+  } catch {
+    return true;
+  }
+}
+
 function TodayTiles() {
   const [at, setAt] = useState<number | null>(null);
   const [dropped, setDropped] = useState<boolean | null>(null);
+  const [othersDropped, setOthersDropped] = useState(0);
   const [voted, setVoted] = useState<number | null>(null);
+  const [picked, setPicked] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const [newDrop] = useState(() => !seen("drop"));
+  const [newPolls] = useState(() => !seen("polls"));
   useEffect(() => {
-    void dropTime().then(setAt);
-    void loadDrops().then((d) => setDropped(!!d.mine));
-    void myVotesToday().then((v) => setVoted(Object.keys(v).length));
+    void dropTime()
+      .then(setAt)
+      .catch(() => undefined);
+    void loadDrops()
+      .then((d) => {
+        setDropped(!!d.mine);
+        setOthersDropped(d.others.length);
+      })
+      .catch(() => setDropped(false));
+    void myVotesToday()
+      .then((v) => setVoted(Object.keys(v).length))
+      .catch(() => setVoted(0));
+    void myPicks()
+      .then((p) => setPicked(p.reduce((n, x) => n + x.picks, 0)))
+      .catch(() => undefined);
     const t = setInterval(() => setNow(Date.now()), 15_000);
     return () => clearInterval(t);
   }, []);
   const phase = at ? phaseOf(at, now) : "before";
   const live = phase === "now" && dropped === false;
+  const picksLeft = voted === null ? null : Math.max(0, PER_DAY - voted);
+  const pollsHot = picksLeft !== null && picksLeft > 0;
+
   return (
-    <section className="px-5 mt-6 grid grid-cols-2 gap-3">
-      <Link
-        to="/app/drop"
-        className={`rounded-[20px] p-4 flex flex-col gap-1 ${live ? "wiggle" : ""}`}
-        style={{
-          background: live ? "var(--lime)" : "var(--surface)",
-          color: live ? "var(--on-accent)" : "var(--ink)",
-          border: "var(--bd)",
-          boxShadow: "var(--pop)",
-        }}
-      >
-        <Camera size={30} strokeWidth={2.25} aria-hidden="true" />
-        <span className="font-extrabold text-[15px]">The 25 Drop</span>
-        <span className="text-[12.5px] font-semibold opacity-80">
-          {dropped
-            ? "Dropped. See theirs"
-            : phase === "now"
-              ? "IT'S DROP TIME. Go!"
-              : phase === "after"
-                ? "Missed it. Post late"
-                : "Surprise time today"}
-        </span>
-      </Link>
-      <Link
-        to="/app/polls"
-        className="rounded-[20px] p-4 flex flex-col gap-1"
-        style={{
-          background: voted !== null && voted < 5 ? "var(--pink)" : "var(--surface)",
-          color: voted !== null && voted < 5 ? "var(--on-accent)" : "var(--ink)",
-          border: "var(--bd)",
-          boxShadow: "var(--pop)",
-        }}
-      >
-        <Vote size={30} strokeWidth={2.25} aria-hidden="true" />
-        <span className="font-extrabold text-[15px]">Polls</span>
-        <span className="text-[12.5px] font-semibold opacity-80">
-          {voted === null
-            ? "…"
-            : voted < 5
-              ? `${5 - voted} anonymous picks left`
-              : "Done. See your picks"}
-        </span>
-      </Link>
+    <section className="px-5 mt-5" aria-label="Today">
+      <div className="grid grid-cols-2 gap-3">
+        <Link
+          to="/app/drop"
+          className={`relative rounded-[22px] p-4 flex flex-col gap-1.5 min-h-[150px] ${live ? "wiggle" : ""}`}
+          style={{
+            background: live
+              ? "var(--lime)"
+              : "linear-gradient(160deg, rgba(193,239,98,0.22), rgba(193,239,98,0.04) 70%), var(--surface)",
+            color: live ? "var(--on-accent)" : "var(--ink)",
+            border: "var(--bd)",
+            boxShadow: "var(--pop)",
+          }}
+        >
+          {newDrop && !live && (
+            <span
+              className="sticker pink absolute -top-2.5 -right-1.5"
+              style={{ transform: "rotate(6deg)" }}
+            >
+              new
+            </span>
+          )}
+          <span
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{
+              background: live ? "var(--on-accent)" : "var(--lime)",
+              color: live ? "var(--lime)" : "var(--on-accent)",
+            }}
+          >
+            <Camera size={24} strokeWidth={2.4} aria-hidden="true" />
+          </span>
+          <span className="display text-[20px] leading-tight mt-1">The 25 Drop</span>
+          <span className="text-[13px] font-semibold opacity-85 leading-snug">
+            {dropped
+              ? othersDropped
+                ? `${othersDropped} of your 25 dropped. See them →`
+                : "You dropped. Waiting on your 25…"
+              : phase === "now"
+                ? "IT'S DROP TIME. 10 minutes. Go!"
+                : phase === "after"
+                  ? "Missed it? Post late. They'll know 👀"
+                  : "Same surprise time for everyone. One real photo."}
+          </span>
+        </Link>
+        <Link
+          to="/app/polls"
+          className="relative rounded-[22px] p-4 flex flex-col gap-1.5 min-h-[150px]"
+          style={{
+            background: pollsHot
+              ? "var(--pink)"
+              : "linear-gradient(160deg, rgba(255,122,182,0.22), rgba(255,122,182,0.04) 70%), var(--surface)",
+            color: pollsHot ? "var(--on-accent)" : "var(--ink)",
+            border: "var(--bd)",
+            boxShadow: "var(--pop)",
+          }}
+        >
+          {newPolls && (
+            <span
+              className="sticker sun absolute -top-2.5 -right-1.5"
+              style={{ transform: "rotate(6deg)" }}
+            >
+              new
+            </span>
+          )}
+          <span
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{
+              background: pollsHot ? "var(--on-accent)" : "var(--pink)",
+              color: pollsHot ? "var(--pink)" : "var(--on-accent)",
+            }}
+          >
+            <Vote size={24} strokeWidth={2.4} aria-hidden="true" />
+          </span>
+          <span className="display text-[20px] leading-tight mt-1">Anonymous polls</span>
+          <span className="text-[13px] font-semibold opacity-85 leading-snug">
+            {picksLeft === null
+              ? "Who in your 25 is most likely to…"
+              : picksLeft > 0
+                ? `${picksLeft} secret picks left today`
+                : "Done for today. New ones tomorrow."}
+            {picked > 0 && (
+              <span className="block mt-0.5">
+                You've been picked {picked} time{picked === 1 ? "" : "s"} 👀
+              </span>
+            )}
+          </span>
+        </Link>
+      </div>
     </section>
   );
 }
@@ -846,13 +928,25 @@ function Home() {
         <p className="sub mt-1.5" style={{ fontSize: 15 }}>
           {mood}
         </p>
-        <div className="mt-4 flex gap-2 flex-wrap">
-          <Link to="/app/people" className="sticker" style={{ transform: "rotate(-3deg)" }}>
-            <Ico i={Armchair} size={13} /> {filled}/25 seats
+        <div className="mt-4 flex items-center gap-2.5">
+          <Link
+            to="/app/people"
+            className="btn-primary flex-1 gap-2 px-4"
+            style={{ minHeight: 46 }}
+          >
+            <UserPlus size={18} aria-hidden="true" />
+            {filled >= 25
+              ? "Your 25 is full · manage"
+              : `Add people · ${25 - filled} seat${25 - filled === 1 ? "" : "s"} left`}
           </Link>
-          <span className="sticker pink" style={{ transform: "rotate(-2deg)" }}>
-            <Ico i={Eye} size={13} /> in {s.seatedByCount} people's 25
-          </span>
+          <Link
+            to="/app/people"
+            className="sticker pink shrink-0"
+            style={{ transform: "rotate(-2deg)" }}
+            aria-label={`You're in ${s.seatedByCount} people's 25`}
+          >
+            <Ico i={Eye} size={13} /> in {s.seatedByCount}
+          </Link>
         </div>
       </header>
 
@@ -861,6 +955,8 @@ function Home() {
       <PushPrompt />
 
       <Birthdays />
+
+      <TodayTiles />
 
       {s.mode === "live" && people.length < 10 && (
         <SuggestionCards title="Find your people" max={12} />
@@ -874,7 +970,7 @@ function Home() {
           {
             at: 'section[aria-label="Your table"]',
             title: "This is your Table",
-            body: "25 seats for the people who matter. Tap a face to open them. Tap the dice to pick someone to catch up with.",
+            body: "Closest ring: people who got 7/7 on your quiz. Middle: 5 or 6. Outer: everyone else. Tap a face to open them, or the dice to pick someone.",
           },
           {
             at: 'a[href="/app/people"].btn-primary',
@@ -893,8 +989,6 @@ function Home() {
           },
         ]}
       />
-
-      <TodayTiles />
 
       <p className="text-center meta mt-10 mb-2 px-8">{VOICE.brandLine}</p>
 
