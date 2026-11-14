@@ -208,7 +208,25 @@ function Table({
   );
 
   useEffect(() => {
-    preloadSprites(["partyhat", "dice", "headphones", "notes", "camera"]);
+    preloadSprites([
+      "paddle",
+      "ball",
+      "cheers",
+      "highfive",
+      "plane",
+      "chai",
+      "whisper",
+      "laugh",
+      "wave",
+      "popper",
+      "sparkle",
+      "cake",
+      "flame",
+      "partyhat",
+      "dice",
+      "headphones",
+      "notes",
+    ]);
   }, []);
   // Tap a face → a menu: view, challenge, message, wish.
   const [menu, setMenu] = useState<{ f: Person; rect: DOMRect; step?: "challenge" } | null>(null);
@@ -240,8 +258,12 @@ function Table({
     }
   };
 
+  // A living table: every few seconds something small happens between friends.
+  const [scene, setScene] = useState<Scene | null>(null);
   // Tap the empty table: a Mexican wave runs around it.
   const [wave, setWave] = useState(0);
+  const spriteRef = useRef<HTMLSpanElement>(null);
+  const placesKey = places.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("|");
   const angle = (i: number) => Math.atan2(places[i].y - 50, places[i].x - 50);
   const aroundOrder = new Map(
     places
@@ -250,10 +272,174 @@ function Table({
       .map((i, k) => [i, k] as const),
   );
   useEffect(() => {
+    if (seated.length < 2) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let alive = true;
+    let t: ReturnType<typeof setTimeout>;
+    const pick = (): Scene | null => {
+      const rnd = <T,>(l: T[]) => l[Math.floor(Math.random() * l.length)];
+      // Neighbours: same ring, next to each other around the table.
+      const near: [number, number][] = [];
+      {
+        const ids = places
+          .map((p, i) => ({ p, i }))
+          .sort((x, y) => angle(x.i) - angle(y.i))
+          .map((o) => o.i);
+        for (let k = 0; k < ids.length && ids.length >= 2; k++) {
+          const next = ids[(k + 1) % ids.length];
+          if (next !== ids[k] && !(ids.length === 2 && k === 1)) near.push([ids[k], next]);
+        }
+      }
+      // Opposite: about 180° apart.
+      const across: [number, number][] = [];
+      for (let x = 0; x < places.length; x++)
+        for (let y = x + 1; y < places.length; y++) {
+          const d = Math.abs(angle(x) - angle(y));
+          if (Math.abs(d - Math.PI) < 0.45) across.push([x, y]);
+        }
+      const anyTwo = (): [number, number] => {
+        const x = Math.floor(Math.random() * places.length);
+        let y = Math.floor(Math.random() * (places.length - 1));
+        if (y >= x) y++;
+        return [x, y];
+      };
+      const bday = seated.map((f, i) => (bdayIn.has(f.id) ? i : -1)).filter((i) => i >= 0);
+      const fire = seated
+        .map((f, i) => ((s.streaks[f.id]?.count ?? 0) > 0 ? i : -1))
+        .filter((i) => i >= 0);
+      const choices: (() => Scene)[] = [];
+      const key = Date.now();
+      if (near.length)
+        for (const kind of ["cheers", "highfive", "chai", "whisper"] as const)
+          choices.push(() => {
+            const [x, y] = rnd(near);
+            return { kind, a: x, b: y, key };
+          });
+      if (across.length)
+        for (const kind of ["pong", "wave"] as const)
+          choices.push(() => {
+            const [x, y] = rnd(across);
+            return { kind, a: x, b: y, key };
+          });
+      choices.push(() => {
+        const [x, y] = anyTwo();
+        return { kind: "plane", a: x, b: y, key };
+      });
+      if (bday.length)
+        choices.push(() => {
+          const x = rnd(bday);
+          const n = near.find((p) => p[0] === x || p[1] === x);
+          return { kind: "bday", a: x, b: n ? (n[0] === x ? n[1] : n[0]) : -1, key };
+        });
+      if (fire.length) choices.push(() => ({ kind: "fire", a: rnd(fire), b: -1, key }));
+      return choices.length ? rnd(choices)() : null;
+    };
+    const play = () => {
+      if (!alive || rolling || document.visibilityState !== "visible") return;
+      const sc = pick();
+      if (!sc) return;
+      setScene(sc);
+      setTimeout(() => alive && setScene((cur) => (cur?.key === sc.key ? null : cur)), 3400);
+    };
+    const loop = (ms: number) => {
+      t = setTimeout(() => {
+        play();
+        loop(5000 + Math.random() * 3000);
+      }, ms);
+    };
+    loop(2200);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placesKey, rolling]);
+  useEffect(() => {
+    if (rolling) setScene(null);
+  }, [rolling]);
+  useEffect(() => {
     if (!wave) return;
     const t = setTimeout(() => setWave(0), 600 + seated.length * 70);
     return () => clearTimeout(t);
   }, [wave, seated.length]);
+
+  const px = (i: number) => ({ x: (places[i].x / 100) * W, y: (places[i].y / 100) * H });
+  // Things that travel: the pong ball, the paper plane, the chai.
+  useEffect(() => {
+    const el = spriteRef.current;
+    if (!scene || !el || !["pong", "plane", "chai"].includes(scene.kind)) return;
+    const A = px(scene.a);
+    const B = px(scene.b);
+    const at = (p: { x: number; y: number }, extra = "") =>
+      `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) ${extra}`;
+    let anim: Animation;
+    if (scene.kind === "pong") {
+      const ends = [A, B];
+      const frames: Keyframe[] = [];
+      for (let k = 0; k <= 4; k++) {
+        const p = ends[k % 2];
+        const q = ends[(k + 1) % 2];
+        const from = { x: p.x + (q.x - p.x) * 0.18, y: p.y + (q.y - p.y) * 0.18 };
+        frames.push({ transform: at(from), offset: k / 4 });
+        if (k < 4) {
+          const to = { x: q.x + (p.x - q.x) * 0.18, y: q.y + (p.y - q.y) * 0.18 };
+          frames.push({
+            transform: at({ x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 - 26 }, "scale(1.3)"),
+            offset: (k + 0.5) / 4,
+          });
+        }
+      }
+      anim = el.animate(frames, { duration: 2900, easing: "linear", fill: "forwards" });
+      // The streak: each ghost replays the path a few milliseconds later.
+      const ghosts = Array.from(
+        el.parentElement?.querySelectorAll<HTMLElement>("[data-trail]") ?? [],
+      ).map((g) =>
+        g.animate(frames, {
+          duration: 2900,
+          easing: "linear",
+          fill: "forwards",
+          delay: Number(g.dataset.trail) * 22,
+        }),
+      );
+      const main = anim;
+      anim = { cancel: () => (main.cancel(), ghosts.forEach((g) => g.cancel())) } as Animation;
+    } else if (scene.kind === "plane") {
+      // A curve: lift off sideways, glide over, land.
+      const mx = (A.x + B.x) / 2;
+      const my = (A.y + B.y) / 2;
+      const nx = -(B.y - A.y);
+      const ny = B.x - A.x;
+      const len = Math.hypot(nx, ny) || 1;
+      const mid = { x: mx + (nx / len) * 45, y: my + (ny / len) * 45 };
+      const deg = (p: { x: number; y: number }, q: { x: number; y: number }) =>
+        (Math.atan2(q.y - p.y, q.x - p.x) * 180) / Math.PI + 45;
+      anim = el.animate(
+        [
+          { transform: at(A, `rotate(${deg(A, mid)}deg) scale(0.6)`), opacity: 0 },
+          { transform: at(A, `rotate(${deg(A, mid)}deg) scale(1)`), opacity: 1, offset: 0.12 },
+          { transform: at(mid, `rotate(${deg(A, B)}deg) scale(1.15)`), offset: 0.55 },
+          { transform: at(B, `rotate(${deg(mid, B)}deg) scale(0.9)`), opacity: 1, offset: 0.92 },
+          { transform: at(B, `rotate(${deg(mid, B)}deg) scale(0.5)`), opacity: 0 },
+        ],
+        { duration: 2600, easing: "ease-in-out", fill: "forwards" },
+      );
+    } else {
+      // Chai slides across the table to the neighbour.
+      anim = el.animate(
+        [
+          { transform: at(A, "scale(0.4)"), opacity: 0 },
+          { transform: at(A, "scale(1)"), opacity: 1, offset: 0.15 },
+          { transform: at(A, "scale(1) rotate(-8deg)"), offset: 0.3 },
+          { transform: at(B, "scale(1) rotate(6deg)"), offset: 0.75 },
+          { transform: at(B, "scale(1.2)"), opacity: 1, offset: 0.88 },
+          { transform: at(B, "scale(0.6)"), opacity: 0 },
+        ],
+        { duration: 2800, easing: "ease-in-out", fill: "forwards" },
+      );
+    }
+    return () => anim.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene?.key]);
 
   return (
     <section
@@ -263,7 +449,7 @@ function Table({
       onPointerDown={(e) => {
         const el = e.target as HTMLElement;
         if (el.closest(".fixed")) return; // the face menu
-        if (el.closest("a, button")) return;
+        if (el.closest("a, button")) return setScene(null);
         if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setWave(Date.now());
       }}
     >
@@ -333,11 +519,30 @@ function Table({
           const now = raw?.here ? raw : undefined;
           // Sharing a song: they dance at the table, online or not.
           const dancing = isListening(f);
+          // Cheers / high five: both lean in. Whisper: the whisperer leans in.
+          const inScene =
+            !!scene &&
+            (((scene.kind === "cheers" || scene.kind === "highfive") &&
+              (scene.a === i || scene.b === i)) ||
+              (scene.kind === "whisper" && scene.a === i));
+          const other = inScene ? (scene!.a === i ? scene!.b : scene!.a) : -1;
           const lean = wave
             ? ({
                 animation: `face-bob 0.55s ease ${(aroundOrder.get(i) ?? 0) * 0.06}s both`,
               } as React.CSSProperties)
-            : undefined;
+            : inScene
+              ? (() => {
+                  const dx = places[other].x - x;
+                  const dy = places[other].y - y;
+                  const len = Math.hypot(dx, dy) || 1;
+                  return {
+                    "--dx": `${(dx / len) * 7}px`,
+                    "--dy": `${(dy / len) * 7}px`,
+                    "--rot": `${dx >= 0 ? 10 : -10}deg`,
+                    animation: "lean 3.2s var(--ease, ease) both",
+                  } as React.CSSProperties;
+                })()
+              : undefined;
           return (
             <button
               key={f.id}
@@ -345,6 +550,7 @@ function Table({
               data-person={f.id}
               aria-haspopup="menu"
               onClick={(e) => {
+                setScene(null);
                 setMenu({ f, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
               }}
               className="absolute flex flex-col items-center"
@@ -549,8 +755,208 @@ function Table({
             <NowPlayingCard np={listen.np} bare />
           </Sheet>
         )}
+
+        {/* Little scenes between friends (decorative). */}
+        {scene && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden="true"
+            style={{ zIndex: 4 }}
+          >
+            <SceneArt scene={scene} px={px} spriteRef={spriteRef} />
+          </div>
+        )}
       </div>
     </section>
+  );
+}
+
+type Scene = {
+  kind: "pong" | "cheers" | "highfive" | "plane" | "chai" | "whisper" | "wave" | "bday" | "fire";
+  a: number;
+  b: number;
+  key: number;
+};
+
+/** What each little table scene looks like (our Blender renders). Positions come from the seats. */
+function SceneArt({
+  scene,
+  px,
+  spriteRef,
+}: {
+  scene: Scene;
+  px: (i: number) => { x: number; y: number };
+  spriteRef: React.RefObject<HTMLSpanElement | null>;
+}) {
+  const A = px(scene.a);
+  const B = scene.b >= 0 ? px(scene.b) : A;
+  const mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+  const soft = "drop-shadow(0 4px 6px rgba(0,0,0,0.45))";
+  /** A sprite that pops in at a spot, holds, and fades. */
+  const pop = (
+    node: React.ReactNode,
+    at: { x: number; y: number },
+    anim: string,
+    delay = 0,
+    lift = 0,
+  ) => (
+    <span
+      className="absolute"
+      style={{
+        left: at.x,
+        top: at.y - lift,
+        lineHeight: 0,
+        filter: soft,
+        animation: `${anim} ${3.2 - delay}s ease ${delay}s both`,
+      }}
+    >
+      {node}
+    </span>
+  );
+  switch (scene.kind) {
+    case "pong":
+      return (
+        <>
+          {pop(
+            <Glyph3D name="paddle" size={26} animate fps={6} />,
+            { x: A.x + (B.x - A.x) * 0.1, y: A.y + (B.y - A.y) * 0.1 },
+            "paddle-in",
+          )}
+          {pop(
+            <Glyph3D name="paddle" size={26} animate fps={6} style={{ transform: "scaleX(-1)" }} />,
+            { x: B.x + (A.x - B.x) * 0.1, y: B.y + (A.y - B.y) * 0.1 },
+            "paddle-in",
+          )}
+          {/* The ball's comet streak: fading copies that follow a beat behind. */}
+          {Array.from({ length: 7 }, (_, k) => (
+            <span
+              key={k}
+              data-trail={k + 1}
+              className="absolute left-0 top-0 rounded-full"
+              style={{
+                width: 10 - k,
+                height: 10 - k,
+                background: "rgba(236,255,190,0.9)",
+                opacity: 0.55 - k * 0.07,
+                filter: `blur(${0.6 + k * 0.35}px)`,
+              }}
+            />
+          ))}
+          <span
+            ref={spriteRef}
+            className="absolute left-0 top-0"
+            style={{ lineHeight: 0, filter: soft }}
+          >
+            <Glyph3D name="ball" size={12} />
+          </span>
+        </>
+      );
+    case "cheers":
+      return pop(
+        <Glyph3D name="cheers" size={34} animate fps={4} loop={false} />,
+        mid,
+        "cheers-pop",
+        0,
+        6,
+      );
+    case "highfive":
+      return pop(
+        <Glyph3D name="highfive" size={34} animate fps={5} loop={false} />,
+        mid,
+        "cheers-pop",
+        0,
+        6,
+      );
+    case "plane":
+      return (
+        <span
+          ref={spriteRef}
+          className="absolute left-0 top-0"
+          style={{ lineHeight: 0, filter: soft }}
+        >
+          <Glyph3D name="plane" size={26} animate fps={4} />
+        </span>
+      );
+    case "chai":
+      return (
+        <span
+          ref={spriteRef}
+          className="absolute left-0 top-0"
+          style={{ lineHeight: 0, filter: soft }}
+        >
+          <Glyph3D name="chai" size={26} animate fps={4} />
+        </span>
+      );
+    case "whisper":
+      return (
+        <>
+          {pop(<Glyph3D name="whisper" size={26} animate fps={3} />, A, "bubble-in", 0, 30)}
+          {pop(<Glyph3D name="laugh" size={22} animate fps={4} />, B, "bubble-in", 1.3, 30)}
+        </>
+      );
+    case "wave":
+      return (
+        <>
+          {pop(<Glyph3D name="wave" size={26} animate fps={8} />, A, "bubble-in", 0, 32)}
+          {pop(
+            <Glyph3D name="wave" size={26} animate fps={8} style={{ transform: "scaleX(-1)" }} />,
+            B,
+            "bubble-in",
+            1.1,
+            32,
+          )}
+        </>
+      );
+    case "bday":
+      return (
+        <>
+          {pop(<Glyph3D name="popper" size={28} animate fps={3} />, A, "bubble-in", 0, 34)}
+          <Confetti3D at={{ x: A.x + 6, y: A.y - 44 }} />
+          {pop(
+            <Glyph3D name="sparkle" size={18} animate fps={5} />,
+            { x: A.x - 22, y: A.y },
+            "spark",
+            0.3,
+            20,
+          )}
+          {scene.b >= 0 &&
+            pop(<Glyph3D name="cake" size={22} animate fps={3} />, B, "bubble-in", 1.1, 30)}
+        </>
+      );
+    case "fire":
+      return pop(<Glyph3D name="flame" size={26} animate fps={7} />, A, "flare", 0, 30);
+  }
+}
+
+/** A small code-drawn confetti burst (crisp at any size, brand colours). */
+function Confetti3D({ at }: { at: { x: number; y: number } }) {
+  const colours = ["#C1EF62", "#F27DA6", "#7EB8F0", "#F5C451", "#F5F1FA"];
+  return (
+    <>
+      {Array.from({ length: 14 }, (_, k) => {
+        const a = (-150 + (k / 13) * 120) * (Math.PI / 180);
+        const d = 26 + (k % 4) * 9;
+        return (
+          <span
+            key={k}
+            className="absolute rounded-[1px]"
+            style={
+              {
+                left: at.x,
+                top: at.y,
+                width: 4,
+                height: 7,
+                background: colours[k % colours.length],
+                "--tx": `${Math.cos(a) * d}px`,
+                "--ty": `${Math.sin(a) * d}px`,
+                "--rot": `${(k % 2 ? 1 : -1) * (180 + k * 25)}deg`,
+                animation: `confetti-fly 1.6s cubic-bezier(.2,.7,.3,1) ${0.25 + (k % 3) * 0.05}s both`,
+              } as React.CSSProperties
+            }
+          />
+        );
+      })}
+    </>
   );
 }
 
