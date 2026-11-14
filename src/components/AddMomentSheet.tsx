@@ -33,7 +33,7 @@ export function AddMomentSheet({
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: "rgba(14,42,69,0.45)", backdropFilter: "blur(14px)" }}
+      style={{ background: "rgba(7,6,11,0.55)", backdropFilter: "blur(14px)" }}
       onClick={onClose}
     >
       <div

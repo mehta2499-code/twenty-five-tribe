@@ -167,10 +167,13 @@ export function Sheet({
   title,
   onClose,
   children,
+  center = false,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** A centred card instead of a sheet from the bottom. */
+  center?: boolean;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -179,24 +182,28 @@ export function Sheet({
   }, [onClose]);
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center"
-      style={{ background: "rgba(14,42,69,0.4)" }}
+      className={`fixed inset-0 z-[60] flex justify-center ${center ? "items-center px-4" : "items-end"}`}
+      style={{
+        background: "rgba(7,6,11,0.55)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+      }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md sheet-in"
+        className={`w-full max-w-md ${center ? "animate-soft-in" : "sheet-in"}`}
         style={{
           background:
             "linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 45%), rgba(33,30,43,0.94)",
           backdropFilter: "blur(28px) saturate(180%)",
           WebkitBackdropFilter: "blur(28px) saturate(180%)",
           border: "1px solid rgba(255,255,255,0.16)",
-          borderBottom: "none",
-          borderRadius: "28px 28px 0 0",
-          maxHeight: "88vh",
+          borderBottom: center ? undefined : "none",
+          borderRadius: center ? 28 : "28px 28px 0 0",
+          maxHeight: center ? "min(80dvh, 640px)" : "88vh",
           overflowY: "auto",
           boxShadow: "var(--shadow-float)",
-          paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))",
+          paddingBottom: center ? "1.25rem" : "max(1.5rem, env(safe-area-inset-bottom))",
         }}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -205,7 +212,7 @@ export function Sheet({
       >
         <div
           className="sticky top-0 z-10 flex justify-between items-center px-5 pt-4 pb-3"
-          style={{ background: "var(--surface)" }}
+          style={{ background: "rgba(33,30,43,0.96)" }}
         >
           <h2 className="heading" style={{ fontSize: 18 }}>
             {title.charAt(0).toUpperCase() + title.slice(1)}

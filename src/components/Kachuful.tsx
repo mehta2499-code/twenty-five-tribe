@@ -762,7 +762,7 @@ function RoundSummary({
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center"
-      style={{ background: "rgba(14,42,69,0.45)" }}
+      style={{ background: "rgba(7,6,11,0.55)" }}
     >
       <div
         className="w-full max-w-md card-editorial p-6 animate-soft-in"
@@ -957,7 +957,7 @@ export function LocalKachuful({
       {confirmLeave && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center px-6"
-          style={{ background: "rgba(14,42,69,0.45)" }}
+          style={{ background: "rgba(7,6,11,0.55)" }}
         >
           <div
             className="card w-full max-w-sm p-5"

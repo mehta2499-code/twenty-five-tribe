@@ -686,6 +686,7 @@ function Table({
           <Sheet
             title={listen.name.split(" ")[0] + " is listening to"}
             onClose={() => setListen(null)}
+            center
           >
             <SpotifyPlayer id={listen.np.id} title={listen.np.title} />
           </Sheet>

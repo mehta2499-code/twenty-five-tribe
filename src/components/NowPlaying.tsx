@@ -75,7 +75,7 @@ export function NowPlayingPicker({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Sheet title="Listening now" onClose={onClose}>
+    <Sheet title="Listening now" onClose={onClose} center>
       <p className="meta">Pick a song. Your 25 see it (and can play it) for 24 hours.</p>
       {s.me?.np && (
         <div className="mt-3 flex items-center gap-3 card p-2.5">
@@ -106,7 +106,7 @@ export function NowPlayingPicker({ onClose }: { onClose: () => void }) {
           autoFocus
         />
       </label>
-      <div className="mt-2 max-h-[48vh] overflow-y-auto" data-noswipe>
+      <div className="mt-2 max-h-[40dvh] overflow-y-auto" data-noswipe>
         {err && <p className="meta text-center mt-6">{err}</p>}
         {!err && list === null && (
           <p className="meta text-center mt-6 flex items-center justify-center gap-2">
