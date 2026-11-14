@@ -149,30 +149,8 @@ function Table({
   const places = layout(seated, scores);
 
   return (
-    <section className="px-5 pt-3" aria-label="Your table">
+    <section className="px-5 pt-8" aria-label="Your table">
       <div className="relative mx-auto" style={{ width: "100%", maxWidth: 400, aspectRatio: "1" }}>
-        <Link
-          to="/app/people"
-          aria-label="Add people"
-          className="absolute -top-1 -right-1 z-[4] flex flex-col items-center"
-        >
-          <span
-            className="w-11 h-11 rounded-full flex items-center justify-center"
-            style={{
-              background: "var(--lime)",
-              color: "var(--on-accent)",
-              border: "var(--bd)",
-              boxShadow: "var(--pop)",
-            }}
-          >
-            <UserPlus size={20} strokeWidth={2.4} aria-hidden="true" />
-          </span>
-          {seated.length < SEATS && (
-            <span className="mt-1 text-[10.5px] font-bold" style={{ color: "var(--ink-3)" }}>
-              {SEATS - seated.length} left
-            </span>
-          )}
-        </Link>
         {/* Ring lines */}
         <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" aria-hidden="true">
           {RINGS.map((ring, i) => (
@@ -850,6 +828,19 @@ function Home() {
         <div className="flex items-center justify-between">
           <Logo height={44} title={VOICE.brand} />
           <div className="flex items-center gap-2.5">
+            <Link
+              to="/app/people"
+              aria-label="Add people"
+              className="w-11 h-11 rounded-full flex items-center justify-center"
+              style={{
+                background: "var(--lime)",
+                color: "var(--on-accent)",
+                border: "var(--bd)",
+                boxShadow: "var(--pop)",
+              }}
+            >
+              <UserPlus size={20} strokeWidth={2.4} aria-hidden="true" />
+            </Link>
             <ActivityBell />
             <Link
               to="/app/profile"
@@ -869,9 +860,9 @@ function Home() {
 
       <ModeBanner />
 
-      <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
-
       <Birthdays />
+
+      <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
 
       <TodayTiles />
 

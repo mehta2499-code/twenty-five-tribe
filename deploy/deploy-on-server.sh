@@ -61,8 +61,10 @@ printf '[Service]\nEnvironmentFile=-%s\n' "$PUSH_ENV" > "/etc/systemd/system/$SE
 APP_ENV=/etc/twentyfive/app.env
 if [[ ! -f "$APP_ENV" ]]; then
   echo "# GIPHY_API_KEY=your-key   (free at developers.giphy.com)" > "$APP_ENV"
-  chmod 600 "$APP_ENV"
 fi
+# Readable by the app (it runs as the deploy user), not by anyone else.
+chown root:deploy "$APP_ENV"
+chmod 640 "$APP_ENV"
 printf '[Service]\nEnvironmentFile=-%s\n' "$APP_ENV" > "/etc/systemd/system/$SERVICE.service.d/app.conf"
 systemctl daemon-reload
 

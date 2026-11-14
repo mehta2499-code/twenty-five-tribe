@@ -38,11 +38,29 @@ async function signedIn(request: Request) {
 
 let trending: { at: number; gifs: Gif[] } | null = null;
 
+/** The key from the environment, or straight from /etc/twentyfive/app.env as a backup. */
+let fileKey: { at: number; key: string | null } | null = null;
+async function giphyKey() {
+  if (process.env.GIPHY_API_KEY) return process.env.GIPHY_API_KEY.trim();
+  if (fileKey && Date.now() - fileKey.at < 60_000) return fileKey.key;
+  let key: string | null = null;
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const text = await readFile("/etc/twentyfive/app.env", "utf8");
+    const m = /^\s*(?:export\s+)?GIPHY_API_KEY\s*=\s*["']?([^"'\s#]+)/m.exec(text);
+    key = m?.[1] ?? null;
+  } catch {
+    key = null;
+  }
+  fileKey = { at: Date.now(), key };
+  return key;
+}
+
 export const Route = createFileRoute("/api/gif")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const key = process.env.GIPHY_API_KEY;
+        const key = await giphyKey();
         if (!key) return json({ error: "GIFs aren't set up yet." }, 503, "no-store");
         if (!(await signedIn(request))) return json({ error: "Sign in first." }, 401, "no-store");
 
