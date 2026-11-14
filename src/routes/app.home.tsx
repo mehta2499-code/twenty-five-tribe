@@ -221,7 +221,6 @@ function Table({
       "popper",
       "sparkle",
       "cake",
-      "flame",
       "partyhat",
       "dice",
       "headphones",
@@ -304,9 +303,6 @@ function Table({
         return [x, y];
       };
       const bday = seated.map((f, i) => (bdayIn.has(f.id) ? i : -1)).filter((i) => i >= 0);
-      const fire = seated
-        .map((f, i) => ((s.streaks[f.id]?.count ?? 0) > 0 ? i : -1))
-        .filter((i) => i >= 0);
       const choices: (() => Scene)[] = [];
       const key = Date.now();
       if (near.length)
@@ -331,7 +327,6 @@ function Table({
           const n = near.find((p) => p[0] === x || p[1] === x);
           return { kind: "bday", a: x, b: n ? (n[0] === x ? n[1] : n[0]) : -1, key };
         });
-      if (fire.length) choices.push(() => ({ kind: "fire", a: rnd(fire), b: -1, key }));
       return choices.length ? rnd(choices)() : null;
     };
     const play = () => {
@@ -772,7 +767,7 @@ function Table({
 }
 
 type Scene = {
-  kind: "pong" | "cheers" | "highfive" | "plane" | "chai" | "whisper" | "wave" | "bday" | "fire";
+  kind: "pong" | "cheers" | "highfive" | "plane" | "chai" | "whisper" | "wave" | "bday";
   a: number;
   b: number;
   key: number;
@@ -923,8 +918,6 @@ function SceneArt({
             pop(<Glyph3D name="cake" size={22} animate fps={3} />, B, "bubble-in", 1.1, 30)}
         </>
       );
-    case "fire":
-      return pop(<Glyph3D name="flame" size={26} animate fps={7} />, A, "flare", 0, 30);
   }
 }
 
