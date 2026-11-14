@@ -73,7 +73,7 @@ async function refresh() {
   subs.forEach((f) => f());
 }
 
-/** Who in your 25 is in the app right now, and doing what (refreshes every 20s). */
+/** Who in your 25 is in the app right now, and doing what (refreshes every 5s). */
 export function useFriendsNow() {
   const snap = useSyncExternalStore(
     (f) => {
@@ -87,7 +87,7 @@ export function useFriendsNow() {
     users += 1;
     if (users === 1) {
       void refresh();
-      timer = setInterval(() => void refresh(), 20_000);
+      timer = setInterval(() => void refresh(), 5_000);
     }
     const onVis = () => document.visibilityState === "visible" && void refresh();
     document.addEventListener("visibilitychange", onVis);
