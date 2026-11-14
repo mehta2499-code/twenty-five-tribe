@@ -316,16 +316,18 @@ function Table({
             const [x, y] = rnd(near);
             return { kind, a: x, b: y, key };
           });
+      // Table tennis and the paper plane come up about 3× as often as the rest.
       if (across.length)
-        for (const kind of ["pong", "wave"] as const)
+        for (const kind of ["pong", "pong", "pong", "wave"] as const)
           choices.push(() => {
             const [x, y] = rnd(across);
             return { kind, a: x, b: y, key };
           });
-      choices.push(() => {
-        const [x, y] = anyTwo();
-        return { kind: "plane", a: x, b: y, key };
-      });
+      for (let k = 0; k < 3; k++)
+        choices.push(() => {
+          const [x, y] = anyTwo();
+          return { kind: "plane", a: x, b: y, key };
+        });
       if (bday.length)
         choices.push(() => {
           const x = rnd(bday);
