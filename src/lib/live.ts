@@ -138,6 +138,10 @@ function friendly(e: unknown) {
     return "That username is taken. Try another.";
   if (/invalid.*password|password.*(weak|short|length)/i.test(msg))
     return "Use a stronger password with at least 8 characters.";
+  if (/error sending .*email|smtp/i.test(msg))
+    return "We couldn't send your code right now. Try again in a minute.";
+  if (/rate limit|too many|only request this after/i.test(msg))
+    return "Too many codes sent. Wait a minute and try again.";
   if (/duplicate key.*seats/i.test(msg)) return "They're already in your 25.";
   if (/row-level security/i.test(msg)) return "You can only do that with people in your 25.";
   if (/Failed to fetch|NetworkError/i.test(msg))
@@ -878,25 +882,37 @@ export const account = {
     });
     if (error) throw new Error(friendly(error));
   },
-  /** Sign up with email + password straight away (no emailed code). */
-  async signUp(email: string, password: string) {
+  /**
+   * Sign up with email + password. Supabase emails a 6-digit code to confirm the
+   * email (needsCode); if email confirmation is switched off, you're in right away.
+   */
+  async signUp(email: string, password: string): Promise<{ needsCode: boolean }> {
     if (password.length < 8 || password.length > 128)
       throw new Error("Use a password between 8 and 128 characters.");
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
     if (error) throw new Error(friendly(error));
     if (data.user && (data.user.identities ?? []).length === 0)
       throw new Error("That email already has a seat. Sign in instead.");
-    if (!data.session)
-      throw new Error(
-        "Sign-ups are paused for a moment while we fix email checks. Try again in a bit.",
-      );
+    return { needsCode: !data.session };
+  },
+  /** Send the sign-up code again. */
+  async resendSignupCode(email: string) {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: `${window.location.origin}/login` },
+    });
+    if (error) throw new Error(friendly(error));
   },
   async verifyCode(email: string, token: string) {
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: token.trim(),
-      type: "email",
-    });
+    const args = { email: email.trim(), token: token.trim() };
+    // Sign-up codes are "signup"; codes from the sign-in email are "email".
+    let { error } = await supabase.auth.verifyOtp({ ...args, type: "signup" });
+    if (error) ({ error } = await supabase.auth.verifyOtp({ ...args, type: "email" }));
     if (error)
       throw new Error(
         /expired|invalid/i.test(error.message)

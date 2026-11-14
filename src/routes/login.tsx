@@ -109,10 +109,9 @@ function Login() {
     act(async () => {
       const normalizedEmail = email.trim().toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) throw new Error("Enter a valid email address.");
-      await account.sendCode(normalizedEmail);
-      setNotice(
-        "We sent a one-time code. Once verified, you’ll choose a username, password, and photo.",
-      );
+      if (isSignup) await account.resendSignupCode(normalizedEmail);
+      else await account.sendCode(normalizedEmail);
+      setNotice("We sent a new code. Check your inbox and spam folder.");
       setStep("code");
       setResendIn(45);
     });
@@ -124,8 +123,15 @@ function Login() {
       if (isSignup) {
         if (password.length < 8) throw new Error("Use at least 8 characters for your password.");
         if (password !== confirmPassword) throw new Error("Those passwords don’t match yet.");
-        await account.signUp(normalizedEmail, password);
+        const { needsCode } = await account.signUp(normalizedEmail, password);
         setPasswordSet(true);
+        if (needsCode) {
+          setCode("");
+          setNotice("We emailed you a 6-digit code. Enter it to claim your seat.");
+          setStep("code");
+          setResendIn(45);
+          return;
+        }
         setNotice(null);
         setStep("profile");
         await initLive();
@@ -318,8 +324,13 @@ function Login() {
               e.preventDefault();
               void act(async () => {
                 await account.verifyCode(email, code);
-                setNotice("Email verified. Now choose your username, password, and photo.");
+                setNotice(
+                  passwordSet
+                    ? "Email verified. Now choose your name, username and photo."
+                    : "Email verified. Now choose your username, password, and photo.",
+                );
                 setStep("profile");
+                await initLive();
               });
             }}
           >
@@ -389,7 +400,13 @@ function Login() {
                 className="w-20 h-20 shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-white/20 border-2 border-white/60"
               >
                 {avatar ? (
-                  <img loading="lazy" decoding="async" src={avatar} alt="" className="w-full h-full object-cover" />
+                  <img
+                    loading="lazy"
+                    decoding="async"
+                    src={avatar}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <ImagePlus size={24} />
                 )}
