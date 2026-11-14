@@ -973,7 +973,7 @@ function Confetti3D({ at }: { at: { x: number; y: number } }) {
 /** Food and drinks on the table (our Blender renders). x/y are % of the table box. */
 const TABLE_PROPS: {
   id: string;
-  sprite: "pizza" | "wine" | "winefallen" | "beer";
+  sprite: "pizza" | "wine" | "winefallen" | "beer" | "pongcups";
   label: string;
   x: number;
   y: number;
@@ -982,6 +982,7 @@ const TABLE_PROPS: {
   rot?: number;
 }[] = [
   { id: "pizza", sprite: "pizza", label: "Pizza", x: 37, y: 64, w: 0.25 },
+  { id: "pong", sprite: "pongcups", label: "Beer pong cups", x: 53, y: 77, w: 0.2 },
   { id: "wine1", sprite: "wine", label: "Glass of red wine", x: 63, y: 32, w: 0.17 },
   { id: "wine2", sprite: "wine", label: "Glass of red wine", x: 70, y: 52, w: 0.15, rot: 4 },
   {

@@ -384,6 +384,9 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .segmented > * { min-height: 36px; padding: 6px 16px; border-radius: 12px; font-size: 14px; font-weight: 700; color: var(--ink-2); display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background-color 180ms var(--ease), color 180ms var(--ease); }
 .segmented > [aria-current="page"], .segmented > [aria-pressed="true"] { background: var(--fill-2); color: var(--ink); box-shadow: var(--pop-sm); }
 .segmented > [aria-current="page"] svg, .segmented > [aria-pressed="true"] svg { color: var(--lime); }
+/* A smaller switch (Feed: Posts | Thoughts). */
+.segmented-sm { padding: 3px; gap: 3px; border-radius: 14px; }
+.segmented-sm > * { min-height: 30px; padding: 4px 12px; font-size: 12.5px; border-radius: 10px; }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px; border-radius: 999px; background: var(--glass-soft-bg), var(--fill); border: 1px solid var(--glass-line); color: var(--ink); font-size: 13px; font-weight: 600; transition: background-color 160ms var(--ease); }
 .chip[aria-pressed="true"] { background: var(--lime); color: var(--on-dark-fill); }
@@ -649,11 +652,13 @@ button, a, [role="button"] { touch-action: manipulation; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Top bar: a floating glass panel under the status bar. */
+/* Top bar: a floating glass panel under the status bar. Fully clear (no dark
+   fill): just the blur, sheen, bright edge and thin border of liquid glass. */
 .topband {
   margin: calc(env(safe-area-inset-top) + 8px) 10px 12px;
   border-radius: 28px;
   padding-top: 14px !important;
+  background: var(--lg-tint);
 }
 .band { border-radius: 0 0 28px 28px; }
 

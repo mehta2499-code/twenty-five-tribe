@@ -799,6 +799,48 @@ def beer():
 BUILDERS.update({"pizza": pizza, "wine": wine, "winefallen": winefallen, "beer": beer})
 
 
+
+def pongcups():
+    """Six red party cups racked in a triangle, beer pong style."""
+    reset()
+    red = mat("cupred", hexc("#E0322B"), rough=0.3, coat=0.6)
+    white = mat("cupwhite", hexc("#F7F3EC"), rough=0.4, coat=0.3)
+    beerm = mat("beer", hexc("#E8A630"), rough=0.15, coat=0.5)
+    ball = mat("pongball", hexc("#FFFFFF"), rough=0.35, coat=0.4)
+    cam = camera(elev=62, azim=20)
+    prof = [(0.0, 0.0), (0.42, 0.0), (0.44, 0.04), (0.6, 1.25), (0.63, 1.3)]
+    objs = []
+    r = 1.36  # cup spacing
+    spots = []
+    for row, count in enumerate((3, 2, 1)):
+        for k in range(count):
+            spots.append(((k - (count - 1) / 2) * r, row * r * 0.866))
+    for n, (x, y) in enumerate(spots):
+        cup = lathe("cup", prof, 48)
+        mod = cup.modifiers.new("thick", "SOLIDIFY")
+        mod.thickness = 0.03
+        assign(cup, red)
+        inner = lathe("inner", [(0.0, 0.08), (0.43, 0.08), (0.585, 1.22)], 40)
+        assign(inner, white)
+        bpy.ops.mesh.primitive_torus_add(major_radius=0.62, minor_radius=0.035, location=(0, 0, 1.3))
+        rim = bpy.context.active_object
+        rim.name = "rim"
+        smooth(rim)
+        assign(rim, white)
+        liquid = cyl("liq", 0.575, 0.02, loc=(0, 0, 1.12))
+        assign(liquid, beerm)
+        for o in (cup, inner, rim, liquid):
+            o.location.x += x
+            o.location.y += y
+        objs += [cup, rim]
+    b = sphere("ball", 0.22, loc=(spots[5][0], spots[5][1], 1.3))
+    assign(b, ball)
+    frame_to(cam, objs, margin=1.12)
+    render("pongcups", 0)
+
+
+BUILDERS.update({"pongcups": pongcups})
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else list(BUILDERS)
     for name in args:

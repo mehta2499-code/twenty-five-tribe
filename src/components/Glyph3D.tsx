@@ -27,6 +27,7 @@ export const SPRITES = {
   paddle: 3,
   partyhat: 2,
   pizza: 1,
+  pongcups: 1,
   plane: 3,
   popper: 2,
   sparkle: 3,

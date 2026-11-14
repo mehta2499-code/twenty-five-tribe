@@ -335,7 +335,7 @@ function Feed() {
           </button>
         }
       >
-        <div className="segmented w-full mt-4" role="tablist" aria-label="Feed">
+        <div className="segmented segmented-sm w-full mt-3" role="tablist" aria-label="Feed">
           <button
             className="flex-1"
             role="tab"
