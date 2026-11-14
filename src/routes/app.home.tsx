@@ -260,10 +260,9 @@ function Table({
               <span
                 className="relative rounded-full transition-transform duration-150"
                 style={{
-                  border: "var(--bd)",
                   boxShadow: lit
                     ? "0 0 0 4px var(--lime), 0 0 28px rgba(193,239,98,0.8)"
-                    : "var(--pop-sm)",
+                    : "0 0 0 2px rgba(255,255,255,0.22), 0 10px 22px rgba(0,0,0,0.6)",
                   transform: lit ? "scale(1.18)" : "scale(1)",
                 }}
               >
@@ -581,6 +580,16 @@ function ModeBanner() {
 
 // ---------- Drop + Polls ----------
 
+/** Frosted-glass surface (Table page look). */
+const GLASS = {
+  background:
+    "linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.035) 60%, rgba(255,255,255,0.02))",
+  border: "1px solid rgba(255,255,255,0.13)",
+  boxShadow: "0 12px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+  backdropFilter: "blur(18px)",
+  WebkitBackdropFilter: "blur(18px)",
+} as const;
+
 /** Has this person opened that screen yet? Shows a "new" sticker until they do. */
 function seen(key: string) {
   try {
@@ -633,17 +642,20 @@ function TodayTiles() {
   const pollStatus =
     picksLeft === null ? "…" : picksLeft > 0 ? `${picksLeft} left` : newPolls ? "new" : "Done ✓";
 
-  const card = (hot: boolean, tone: string) => ({
-    background: hot ? tone : "var(--surface)",
-    color: hot ? "var(--on-accent)" : "var(--ink)",
-    border: "var(--bd)",
-    boxShadow: "var(--pop-sm)",
-  });
+  const card = (hot: boolean, tone: string) =>
+    hot
+      ? {
+          background: tone,
+          color: "var(--on-accent)",
+          border: "var(--bd)",
+          boxShadow: "var(--pop-sm)",
+        }
+      : { ...GLASS, color: "var(--ink)" };
   return (
     <section className="px-5 mt-4 grid grid-cols-2 gap-3" aria-label="Today">
       <Link
         to="/app/drop"
-        className={`rounded-[18px] px-3 py-2.5 flex items-center gap-2.5 ${live ? "wiggle" : ""}`}
+        className={`rounded-[22px] px-3 py-3 flex items-center gap-2.5 ${live ? "wiggle" : ""}`}
         style={card(live, "var(--lime)")}
       >
         <span
@@ -651,6 +663,8 @@ function TodayTiles() {
           style={{
             background: live ? "var(--on-accent)" : "var(--lime)",
             color: live ? "var(--lime)" : "var(--on-accent)",
+            boxShadow: live ? undefined : "0 0 16px rgba(193,239,98,0.45)",
+            borderRadius: 14,
           }}
         >
           <Camera size={19} strokeWidth={2.4} aria-hidden="true" />
@@ -662,7 +676,7 @@ function TodayTiles() {
       </Link>
       <Link
         to="/app/polls"
-        className="rounded-[18px] px-3 py-2.5 flex items-center gap-2.5"
+        className="rounded-[22px] px-3 py-3 flex items-center gap-2.5"
         style={card(pollsHot, "var(--pink)")}
       >
         <span
@@ -670,6 +684,8 @@ function TodayTiles() {
           style={{
             background: pollsHot ? "var(--on-accent)" : "var(--pink)",
             color: pollsHot ? "var(--pink)" : "var(--on-accent)",
+            boxShadow: pollsHot ? undefined : "0 0 16px rgba(242,125,166,0.45)",
+            borderRadius: 14,
           }}
         >
           <Vote size={19} strokeWidth={2.4} aria-hidden="true" />
@@ -748,7 +764,7 @@ function Birthdays() {
               to="/app/card/$id"
               params={{ id: b.id }}
               className="chip shrink-0"
-              style={{ minHeight: 34 }}
+              style={{ minHeight: 34, ...GLASS, borderRadius: 999 }}
             >
               <Ico i={Cake} c={TONE.birthday} size={14} /> {name(b.id)} ·{" "}
               {b.inDays === 1 ? "tomorrow" : `in ${b.inDays}d`}
@@ -794,6 +810,29 @@ function ActivityBell() {
 }
 
 // ---------- Screen ----------
+
+/** A big number with a small label, for the top of the Table page. */
+function Stat({ label, value, of }: { label: string; value: number; of?: number }) {
+  return (
+    <div>
+      <p
+        className="font-bold uppercase"
+        style={{ fontSize: 10.5, letterSpacing: "0.12em", color: "var(--lime)" }}
+      >
+        {label}
+      </p>
+      <p
+        className="tabular-nums font-bold"
+        style={{ fontSize: 26, lineHeight: 1.1, letterSpacing: "-0.02em" }}
+      >
+        {value}
+        {of !== undefined && (
+          <span style={{ fontSize: 14, color: "var(--ink-3)", fontWeight: 600 }}>/{of}</span>
+        )}
+      </p>
+    </div>
+  );
+}
 
 function Home() {
   const s = useSocial();
@@ -854,6 +893,7 @@ function Home() {
     );
   };
 
+  const streakCount = people.filter((f) => (s.streaks[f.id]?.count ?? 0) > 0).length;
   return (
     <div className="flex flex-col" style={{ height: "calc(100dvh - 8rem)" }}>
       <header className="topband px-4 pt-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] pb-3">
@@ -861,10 +901,13 @@ function Home() {
           <div className="flex items-center gap-2.5 min-w-0">
             <Logo height={40} title={VOICE.brand} />
             <p
-              className="hidden min-[350px]:block meta leading-tight min-w-0"
-              style={{ fontSize: 12, maxWidth: 120 }}
+              className="hidden min-[340px]:block leading-tight min-w-0 whitespace-nowrap"
+              style={{ fontSize: 12.5, color: "var(--ink-2)" }}
             >
-              {VOICE.brandLine}
+              <span className="block font-bold" style={{ color: "var(--ink)" }}>
+                25 seats.
+              </span>
+              <span className="block">No more, no less.</span>
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -895,6 +938,11 @@ function Home() {
               />
             </Link>
           </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 text-center" aria-label="Your numbers">
+          <Stat label="Seats" value={people.length} of={SEATS} />
+          <Stat label="Streaks" value={streakCount} />
+          <Stat label="In their 25" value={s.seatedByCount} />
         </div>
       </header>
 
