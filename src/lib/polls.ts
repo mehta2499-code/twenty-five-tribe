@@ -1,10 +1,20 @@
 /**
- * Anonymous compliment polls. Each day: 5 questions, pick one of 4 people from
- * your mutual 25. The person picked is told "someone picked you", never who.
+ * Anonymous compliment polls, weekly: a new set of 10 questions every Sunday
+ * (India time). For each, pick one of 4 people from your mutual 25. The person
+ * picked is told "someone picked you", never who.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { _get, mutualFriends, type Person } from "@/lib/social";
-import { today } from "@/lib/daily";
+import { addDays, today } from "@/lib/daily";
+
+/** The Sunday this poll week started (India time), as "YYYY-MM-DD". */
+export function pollWeek(day = today()) {
+  const dow = new Date(`${day}T00:00:00Z`).getUTCDay(); // 0 = Sunday
+  return addDays(day, -dow);
+}
+
+/** Days until the next Sunday refresh (1-7). */
+export const daysToNewPolls = (day = today()) => 7 - new Date(`${day}T00:00:00Z`).getUTCDay();
 
 export const QUESTIONS = [
   "Most likely to become famous 🌟",
@@ -68,7 +78,8 @@ export const QUESTIONS = [
   "Most likely to remember your birthday 🎂",
   "The friend everyone needs 🌈",
 ];
-export const PER_DAY = 5;
+/** Questions per week. */
+export const PER_WEEK = 10;
 
 function hash(s: string) {
   let h = 2166136261;
@@ -76,13 +87,13 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-export function questionsFor(day = today()): string[] {
+export function questionsFor(day = pollWeek()): string[] {
   const order = [...QUESTIONS].sort((a, b) => hash(day + a) - hash(day + b));
-  return order.slice(0, PER_DAY);
+  return order.slice(0, PER_WEEK);
 }
 
 /** 4 people to pick from. `shuffle` changes the set. */
-export function optionsFor(question: string, shuffle = 0, day = today()): Person[] {
+export function optionsFor(question: string, shuffle = 0, day = pollWeek()): Person[] {
   return [...mutualFriends()]
     .sort((a, b) => hash(day + question + shuffle + a.id) - hash(day + question + shuffle + b.id))
     .slice(0, 4);
@@ -90,7 +101,7 @@ export function optionsFor(question: string, shuffle = 0, day = today()): Person
 
 // ---------- Votes ----------
 const DEMO_KEY = "tf.polls.v1";
-type DemoVotes = Record<string, Record<string, string>>; // day -> question -> person
+type DemoVotes = Record<string, Record<string, string>>; // week -> question -> person
 
 function readDemo(): DemoVotes {
   try {
@@ -100,16 +111,17 @@ function readDemo(): DemoVotes {
   }
 }
 
-/** Questions you've already answered today -> who you picked. */
-export async function myVotesToday(): Promise<Record<string, string>> {
+/** Questions you've already answered this week -> who you picked. */
+export async function myVotesThisWeek(): Promise<Record<string, string>> {
   const s = _get();
-  if (s.mode !== "live") return readDemo()[today()] ?? {};
+  if (s.mode !== "live") return readDemo()[pollWeek()] ?? {};
   const { data } = await supabase
     .from("poll_votes")
     .select("question,target")
-    .eq("day", today());
+    .eq("day", pollWeek());
   const out: Record<string, string> = {};
-  for (const r of (data ?? []) as { question: string; target: string }[]) out[r.question] = r.target;
+  for (const r of (data ?? []) as { question: string; target: string }[])
+    out[r.question] = r.target;
   return out;
 }
 
@@ -117,7 +129,7 @@ export async function vote(question: string, target: string) {
   const s = _get();
   if (s.mode !== "live") {
     const all = readDemo();
-    all[today()] = { ...(all[today()] ?? {}), [question]: target };
+    all[pollWeek()] = { ...(all[pollWeek()] ?? {}), [question]: target };
     localStorage.setItem(DEMO_KEY, JSON.stringify(all));
     return;
   }

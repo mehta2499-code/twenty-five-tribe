@@ -659,6 +659,146 @@ def notes():
 
 BUILDERS.update({"headphones": headphones, "notes": notes})
 
+
+
+# ---------------------------------------------------------------- table spread
+# Pizza (one slice missing), red wine glasses (standing and knocked over), beer.
+def wedge(name, r, a0, a1, z0, z1, steps=16):
+    """A pie slice from angle a0 to a1 (radians), between heights z0 and z1."""
+    verts = [(0, 0, z0), (0, 0, z1)]
+    for k in range(steps + 1):
+        a = a0 + (a1 - a0) * k / steps
+        verts += [(r * math.cos(a), r * math.sin(a), z0), (r * math.cos(a), r * math.sin(a), z1)]
+    faces = []
+    for k in range(steps):
+        b, t, b2, t2 = 2 + 2 * k, 3 + 2 * k, 4 + 2 * k, 5 + 2 * k
+        faces += [(0, b2, b), (1, t, t2), (b, b2, t2, t)]
+    faces += [(0, 2, 3, 1), (0, 1, 3 + 2 * steps, 2 + 2 * steps)]
+    o = mesh_obj(name, verts, faces)
+    return o
+
+
+def pizza():
+    reset()
+    crust = mat("crust", hexc("#D99A4E"), rough=0.7, coat=0.05)
+    sauce = mat("sauce", hexc("#C8412F"), rough=0.5)
+    cheese = mat("cheese", hexc("#F6CF62"), rough=0.4, coat=0.35, sss=0.2)
+    pep = mat("pep", hexc("#E0563F"), rough=0.45, coat=0.3)
+    basil = mat("basil", hexc("#4E9A3A"), rough=0.5, coat=0.2)
+    cam = camera(elev=58, azim=20)
+    n, gap = 8, 0.035
+    objs = []
+    random.seed(7)
+    for k in range(n):
+        if k == 1:  # the missing slice
+            continue
+        a0, a1 = k * 2 * math.pi / n + gap, (k + 1) * 2 * math.pi / n - gap
+        mid = (a0 + a1) / 2
+        off = (math.cos(mid) * 0.03, math.sin(mid) * 0.03, 0)
+        base = wedge("base", 1.0, a0, a1, 0.0, 0.1)
+        assign(base, crust)
+        sc = wedge("sauce", 0.9, a0 + 0.01, a1 - 0.01, 0.1, 0.13)
+        assign(sc, sauce)
+        ch = wedge("cheese", 0.86, a0 + 0.02, a1 - 0.02, 0.13, 0.17)
+        smooth(ch, bevel=0.015)
+        assign(ch, cheese)
+        rim = tube("rim", [(0.95 * math.cos(a0 + (a1 - a0) * t / 6), 0.95 * math.sin(a0 + (a1 - a0) * t / 6), 0.13) for t in range(7)], 0.085, crust)
+        for o in (base, sc, ch, rim):
+            o.location = off
+        objs += [base, ch, rim]
+        for _ in range(2):
+            a = random.uniform(a0 + 0.12, a1 - 0.12)
+            rr = random.uniform(0.3, 0.72)
+            p = cyl("pep", 0.11, 0.03, loc=(off[0] + rr * math.cos(a), off[1] + rr * math.sin(a), 0.185))
+            assign(p, pep)
+        if k % 2 == 0:
+            a = random.uniform(a0 + 0.15, a1 - 0.15)
+            rr = random.uniform(0.35, 0.65)
+            b = sphere("basil", 0.07, loc=(off[0] + rr * math.cos(a), off[1] + rr * math.sin(a), 0.19))
+            b.scale = (1.4, 0.8, 0.25)
+            assign(b, basil)
+    frame_to(cam, objs, margin=1.12)
+    render("pizza", 0)
+
+
+def _wine_glass(glass, wine, fill=True):
+    prof = [(0.0, 0.0), (0.5, 0.0), (0.5, 0.04), (0.06, 0.09), (0.05, 0.9), (0.1, 1.0), (0.36, 1.25), (0.46, 1.6), (0.43, 1.95), (0.38, 2.15)]
+    g = lathe("wine_glass", prof, 48)
+    mod = g.modifiers.new("thick", "SOLIDIFY")
+    mod.thickness = 0.025
+    assign(g, glass)
+    parts = [g]
+    if fill:
+        liq = lathe("wine", [(0.0, 1.06), (0.09, 1.06), (0.34, 1.28), (0.43, 1.52), (0.0, 1.52)], 40)
+        assign(liq, wine)
+        parts.append(liq)
+    return parts
+
+
+def _wine_mats():
+    glass = mat("glass", (1, 1, 1), rough=0.04, trans=1.0, coat=0.0)
+    glass.node_tree.nodes["Principled BSDF"].inputs["IOR"].default_value = 1.45
+    wine = mat("wine", hexc("#B0213A"), rough=0.12, coat=0.5)
+    return glass, wine
+
+
+def wine():
+    reset()
+    glass, red = _wine_mats()
+    cam = camera(elev=40, azim=20)
+    parts = _wine_glass(glass, red)
+    frame_to(cam, parts, margin=1.15)
+    render("wine", 0)
+
+
+def winefallen():
+    reset()
+    glass, red = _wine_mats()
+    cam = camera(elev=58, azim=20)
+    parts = _wine_glass(glass, red, fill=False)
+    root = group(parts, "glass")
+    root.rotation_euler = (0, math.radians(90), math.radians(-25))
+    root.location = (-0.9, 0.35, 0.46)
+    # The spill: a few flat, glossy puddles running out of the glass.
+    random.seed(3)
+    spill = []
+    for k, (x, y, s) in enumerate([(1.35, -0.25, 0.55), (1.8, -0.5, 0.38), (1.1, 0.12, 0.3), (2.15, -0.75, 0.18)]):
+        p = sphere("spill", s, loc=(x, y, 0.01))
+        p.scale = (1.25, 0.95, 0.06)
+        assign(p, red)
+        spill.append(p)
+    bpy.context.view_layer.update()
+    frame_to(cam, parts + spill, margin=1.12)
+    render("winefallen", 0)
+
+
+def beer():
+    reset()
+    amber = mat("amber", hexc("#8A4A12"), rough=0.15, trans=0.25, coat=0.6)
+    amber.node_tree.nodes["Principled BSDF"].inputs["IOR"].default_value = 1.5
+    label = mat("label", CREAM, rough=0.45, coat=0.2)
+    band = mat("band", LIME, rough=0.35, coat=0.4)
+    capm = mat("cap", hexc("#C9A227"), rough=0.25, metal=0.8)
+    cam = camera(elev=35, azim=20)
+    prof = [(0.0, 0.0), (0.42, 0.0), (0.45, 0.06), (0.45, 1.5), (0.4, 1.75), (0.2, 2.15), (0.15, 2.5), (0.15, 2.85), (0.17, 2.9), (0.0, 2.9)]
+    b = lathe("bottle", prof, 48)
+    assign(b, amber)
+    lab = cyl("label", 0.462, 0.75, loc=(0, 0, 0.85))
+    assign(lab, label)
+    stripe = cyl("stripe", 0.465, 0.12, loc=(0, 0, 0.85))
+    assign(stripe, band)
+    neck = cyl("necklabel", 0.165, 0.22, loc=(0, 0, 2.55))
+    assign(neck, band)
+    cap = cyl("cap", 0.19, 0.12, loc=(0, 0, 2.96), verts=24)
+    smooth(cap, bevel=0.02)
+    assign(cap, capm)
+    frame_to(cam, [b, cap], margin=1.15)
+    render("beer", 0)
+
+
+BUILDERS.update({"pizza": pizza, "wine": wine, "winefallen": winefallen, "beer": beer})
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else list(BUILDERS)
     for name in args:

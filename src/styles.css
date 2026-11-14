@@ -734,3 +734,15 @@ button, a, [role="button"] { touch-action: manipulation; }
   50% { box-shadow: 0 0 0 4px rgba(193, 239, 98, 0); }
 }
 @media (prefers-reduced-motion: reduce) { .dance, .badge-bounce { animation: none; } .online-dot { animation: none !important; } }
+
+/* Table props jiggle when tapped. */
+@keyframes prop-jiggle {
+  0% { transform: rotate(0) scale(1); }
+  15% { transform: rotate(-12deg) scale(1.08, 0.94); }
+  35% { transform: rotate(9deg) scale(0.96, 1.05); }
+  55% { transform: rotate(-6deg) scale(1.03, 0.98); }
+  75% { transform: rotate(3deg) scale(1); }
+  100% { transform: rotate(0) scale(1); }
+}
+.prop-jiggle { animation: prop-jiggle 0.6s ease-out both; transform-origin: 50% 85%; }
+@media (prefers-reduced-motion: reduce) { .prop-jiggle { animation: none; } }

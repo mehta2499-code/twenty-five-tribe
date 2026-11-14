@@ -6,17 +6,23 @@ import { Lock, Shuffle, Vote } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { mutualFriends, timeAgo, useSocial } from "@/lib/social";
-import { untilMidnight } from "@/lib/daily";
 import {
-  PER_DAY,
+  PER_WEEK,
+  daysToNewPolls,
   myPicks,
-  myVotesToday,
+  myVotesThisWeek,
   optionsFor,
   questionsFor,
   vote,
   type Pick,
 } from "@/lib/polls";
 import { Users } from "lucide-react";
+
+/** "tomorrow" / "in 3 days": when Sunday's new polls arrive. */
+const newPollsIn = () => {
+  const d = daysToNewPolls();
+  return d === 1 ? "tomorrow" : `in ${d} days`;
+};
 
 export const Route = createFileRoute("/app/polls")({
   head: () => ({ meta: [{ title: "Polls · 25" }] }),
@@ -43,7 +49,7 @@ function Polls() {
   const [toast, setToast] = useState<string | null>(null);
   const [party, setParty] = useState(0);
 
-  useEffect(() => void myVotesToday().then(setVotes), []);
+  useEffect(() => void myVotesThisWeek().then(setVotes), []);
   useEffect(() => {
     if (tab === "picked" && !picks) void myPicks().then(setPicks);
   }, [tab, picks]);
@@ -66,7 +72,7 @@ function Polls() {
       setVotes((v) => ({ ...(v ?? {}), [current]: id }));
       setChosen(null);
       setShuffle(0);
-      if (done + 1 === PER_DAY) {
+      if (done + 1 === PER_WEEK) {
         setParty((n) => n + 1);
         buzz(40);
       }
@@ -76,7 +82,7 @@ function Polls() {
   return (
     <div className="pb-8">
       <PageBand
-        title="Polls"
+        title="Weekly Polls"
         sub="Anonymous compliments. They'll know someone picked them. Never who."
         back
       />
@@ -84,7 +90,7 @@ function Polls() {
       <div className="px-5">
         <div className="segmented w-full" role="group" aria-label="Polls">
           <button className="flex-1" aria-pressed={tab === "vote"} onClick={() => setTab("vote")}>
-            Today's polls · {done}/{PER_DAY}
+            This week · {done}/{PER_WEEK}
           </button>
           <button
             className="flex-1"
@@ -138,7 +144,7 @@ function Polls() {
                 }}
               >
                 <p className="text-[13px] font-extrabold opacity-80">
-                  Question {qs.indexOf(current) + 1} of {PER_DAY}
+                  Question {qs.indexOf(current) + 1} of {PER_WEEK}
                 </p>
                 <h2 className="display mt-2" style={{ fontSize: 28, lineHeight: 1.1 }}>
                   <EmojiText text={current} />
@@ -194,9 +200,10 @@ function Polls() {
                 className="mx-auto"
                 style={{ color: "var(--lime)" }}
               />
-              <p className="heading mt-3">All done for today</p>
+              <p className="heading mt-3">All done this week</p>
               <p className="meta mt-1">
-                5 people just got a little dopamine because of you. New polls in {untilMidnight()}.
+                {PER_WEEK} people just got a little dopamine because of you. New polls{" "}
+                {newPollsIn()}.
               </p>
               <button onClick={() => setTab("picked")} className="btn-primary mt-4 px-5">
                 See what you got picked for

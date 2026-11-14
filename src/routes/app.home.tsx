@@ -63,7 +63,7 @@ import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
-import { PER_DAY, myVotesToday } from "@/lib/polls";
+import { PER_WEEK, daysToNewPolls, myVotesThisWeek } from "@/lib/polls";
 
 export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
@@ -493,6 +493,11 @@ function Table({
             </span>
           </button>
         </div>
+
+        {/* The spread: pizza, wine (one knocked over), beers. Tap one to jiggle it. */}
+        {TABLE_PROPS.map((p) => (
+          <TableProp key={p.id} prop={p} width={W} />
+        ))}
 
         {/* Empty chairs left by people who came onto the table. */}
         {busy.map((i) => (
@@ -965,6 +970,60 @@ function Confetti3D({ at }: { at: { x: number; y: number } }) {
 }
 
 /** A tilted 3D party hat that sits on a face (birthday this week). */
+/** Food and drinks on the table (our Blender renders). x/y are % of the table box. */
+const TABLE_PROPS: {
+  id: string;
+  sprite: "pizza" | "wine" | "winefallen" | "beer";
+  label: string;
+  x: number;
+  y: number;
+  /** Width as a share of the table box. */
+  w: number;
+  rot?: number;
+}[] = [
+  { id: "pizza", sprite: "pizza", label: "Pizza", x: 37, y: 64, w: 0.25 },
+  { id: "wine1", sprite: "wine", label: "Glass of red wine", x: 63, y: 32, w: 0.17 },
+  { id: "wine2", sprite: "wine", label: "Glass of red wine", x: 70, y: 52, w: 0.15, rot: 4 },
+  {
+    id: "spill",
+    sprite: "winefallen",
+    label: "Knocked-over wine glass",
+    x: 38,
+    y: 34,
+    w: 0.21,
+    rot: -6,
+  },
+  { id: "beer1", sprite: "beer", label: "Beer bottle", x: 63, y: 69, w: 0.16 },
+  { id: "beer2", sprite: "beer", label: "Beer bottle", x: 30, y: 47, w: 0.14, rot: -5 },
+];
+
+function TableProp({ prop, width }: { prop: (typeof TABLE_PROPS)[number]; width: number }) {
+  const [jig, setJig] = useState(0);
+  const size = Math.round(width * prop.w);
+  return (
+    <button
+      type="button"
+      aria-label={prop.label}
+      onClick={() => {
+        setJig((n) => n + 1);
+        buzz(8);
+      }}
+      className="absolute"
+      style={{
+        left: `${prop.x}%`,
+        top: `${prop.y}%`,
+        transform: `translate(-50%, -50%) rotate(${prop.rot ?? 0}deg)`,
+        lineHeight: 0,
+        filter: "drop-shadow(0 4px 5px rgba(0,0,0,0.45))",
+      }}
+    >
+      <span key={jig} className={jig ? "prop-jiggle" : undefined} style={{ display: "block" }}>
+        <Glyph3D name={prop.sprite} size={size} />
+      </span>
+    </button>
+  );
+}
+
 /** What someone at your Table is doing right now, in words. */
 function nowText(n: FriendNow) {
   if (n.doing === "game") return `playing ${n.detail ?? "a game"}`;
@@ -1257,7 +1316,7 @@ function TodayTiles() {
         setOthersDropped(d.others.length);
       })
       .catch(() => setDropped(false));
-    void myVotesToday()
+    void myVotesThisWeek()
       .then((v) => setVoted(Object.keys(v).length))
       .catch(() => setVoted(0));
     const t = setInterval(() => setNow(Date.now()), 15_000);
@@ -1265,7 +1324,7 @@ function TodayTiles() {
   }, []);
   const phase = at ? phaseOf(at, now) : "before";
   const live = phase === "now" && dropped === false;
-  const picksLeft = voted === null ? null : Math.max(0, PER_DAY - voted);
+  const picksLeft = voted === null ? null : Math.max(0, PER_WEEK - voted);
   const pollsHot = picksLeft !== null && picksLeft > 0;
 
   const dropStatus = dropped
@@ -1280,7 +1339,13 @@ function TodayTiles() {
           ? "new"
           : "Later today";
   const pollStatus =
-    picksLeft === null ? "…" : picksLeft > 0 ? `${picksLeft} left` : newPolls ? "new" : "Done ✓";
+    picksLeft === null
+      ? "…"
+      : picksLeft > 0
+        ? `${picksLeft} left`
+        : newPolls
+          ? "new"
+          : `New ${daysToNewPolls() === 1 ? "tomorrow" : "on Sunday"}`;
 
   const card = (hot: boolean, tone: string) =>
     hot
@@ -1331,7 +1396,7 @@ function TodayTiles() {
           <Vote size={19} strokeWidth={2.4} aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block font-extrabold text-[14.5px] leading-tight">Polls</span>
+          <span className="block font-extrabold text-[14.5px] leading-tight">Weekly Polls</span>
           <span className="block text-[12px] font-bold opacity-80 truncate">{pollStatus}</span>
         </span>
       </Link>
@@ -1498,14 +1563,17 @@ function Home() {
             <Link to="/app/home" aria-label="Your Table" className="inline-flex">
               <SeatLogo filled={people.length} height={56} />
             </Link>
-            <p
-              className="hidden min-[386px]:block leading-tight min-w-0 whitespace-nowrap"
-              style={{ fontSize: 12.5, color: "var(--ink-2)" }}
-            >
-              <span className="block font-bold" style={{ color: "var(--ink)", fontSize: 15.5 }}>
-                25 seats.
+            <p className="hidden min-[340px]:block leading-tight min-w-0 whitespace-nowrap">
+              <span
+                className="block font-bold truncate"
+                style={{ color: "var(--ink)", fontSize: 15.5 }}
+              >
+                Everyone else is noise.
               </span>
-              <span className="block">No more, no less.</span>
+              {/* Seat count, kept quiet. */}
+              <span className="block mt-0.5" style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                {Math.min(people.length, 25)} of 25 seats filled
+              </span>
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -1593,7 +1661,7 @@ function Home() {
           {
             at: 'a[href="/app/drop"]',
             title: "Every day",
-            body: "The Drop: everyone posts at the same surprise time. Polls: anonymous picks about your 25.",
+            body: "The Drop: everyone posts at the same surprise time. Weekly Polls: anonymous picks about your 25, new every Sunday.",
           },
           {
             at: 'nav[aria-label="Main"]',
