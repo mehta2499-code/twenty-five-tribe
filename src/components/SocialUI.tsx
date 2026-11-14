@@ -419,14 +419,14 @@ export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void 
         {snap.image && (
           <>
             {/* Whole photo, never cropped; a blurred copy fills the rest of the screen. */}
-            <img
+            <img loading="lazy" decoding="async"
               src={snap.image}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover scale-110"
               style={{ filter: "blur(28px) brightness(0.6)" }}
             />
-            <img src={snap.image} alt="" className="absolute inset-0 w-full h-full object-contain" />
+            <img loading="lazy" decoding="async" src={snap.image} alt="" className="absolute inset-0 w-full h-full object-contain" />
           </>
         )}
         {snap.caption && (

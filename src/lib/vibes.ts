@@ -100,9 +100,38 @@ export const PASS_MARK = 4;
 export const QUIZ_SIZE = 7;
 export const QUIZ_LENGTH = 6;
 
+/** A dropped connection: Safari says "TypeError: Load failed", Chrome "Failed to fetch". */
+export function isNetworkError(e: unknown) {
+  const m = (e as { message?: string })?.message ?? String(e);
+  return /load failed|failed to fetch|networkerror|network request failed|network connection was lost|internet connection appears to be offline/i.test(
+    m,
+  );
+}
+
+const NETWORK_MSG = "Connection dropped for a second. Check your internet and tap Try again.";
+
 function message(e: unknown) {
+  if (isNetworkError(e)) return NETWORK_MSG;
   const m = (e as { message?: string })?.message ?? String(e);
   return m.replace(/^.*?ERROR:\s*/, "");
+}
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Run a Supabase call, retrying a couple of times if the connection drops. */
+async function withRetry<T>(fn: () => PromiseLike<{ data: T; error: unknown }>) {
+  let last: { data: T; error: unknown } | null = null;
+  for (let i = 0; i < 3; i++) {
+    try {
+      last = await fn();
+      if (!last.error || !isNetworkError(last.error)) return { ...last, retried: i > 0 };
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      last = { data: null as T, error: e };
+    }
+    await wait(600 * (i + 1));
+  }
+  return { ...last!, retried: true };
 }
 
 export async function myVibe(
@@ -126,21 +155,38 @@ export async function saveVibe(userId: string, answers: Record<string, Choice>, 
 export type QuizStart = { passed: true } | { passed: false; attempt: string; questions: string[] };
 
 export async function startQuiz(targetId: string): Promise<QuizStart> {
-  const { data, error } = await supabase.rpc("start_vibe_quiz", { p_target: targetId });
+  const { data, error } = await withRetry(() =>
+    supabase.rpc("start_vibe_quiz", { p_target: targetId }),
+  );
   if (error) throw new Error(message(error));
   if (!(data as QuizStart).passed) track("quiz_started");
   return data as QuizStart;
 }
 
 export async function submitQuiz(attempt: string, guesses: Record<string, string>) {
-  const { data, error } = await supabase.rpc("submit_vibe_quiz", {
-    p_attempt: attempt,
-    p_guesses: guesses,
-  });
-  if (error) throw new Error(message(error));
-  const r = data as { score: number; total: number; passed: boolean };
+  const res = await withRetry(() =>
+    supabase.rpc("submit_vibe_quiz", { p_attempt: attempt, p_guesses: guesses }),
+  );
+  let r = res.data as { score: number; total: number; passed: boolean } | null;
+  if (res.error || !r) {
+    // The first try may have reached the server before the connection dropped:
+    // then the quiz is already scored, so read the saved result.
+    const { data: saved } = await supabase
+      .from("quiz_attempts")
+      .select("score,total,passed")
+      .eq("id", attempt)
+      .maybeSingle();
+    const row = saved as { score: number | null; total: number; passed: boolean } | null;
+    if (row && row.score !== null) r = { score: row.score, total: row.total, passed: row.passed };
+    else throw new Error(message(res.error ?? "Couldn't check your answers. Try again."));
+  }
   // Only the score, never the answers.
-  track("quiz_completed", { score: `${r.score}/${r.total}`, correct: r.score, total: r.total, passed: r.passed });
+  track("quiz_completed", {
+    score: `${r.score}/${r.total}`,
+    correct: r.score,
+    total: r.total,
+    passed: r.passed,
+  });
   return r;
 }
 

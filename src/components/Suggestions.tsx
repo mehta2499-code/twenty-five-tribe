@@ -1,4 +1,4 @@
-/** "People you may know": horizontal cards, mutuals first, then newcomers. */
+/** "People you may know", Instagram style: who seated you, then mutual connections, quiz links, friends of friends, newcomers. */
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { X } from "lucide-react";
@@ -37,9 +37,16 @@ export function useSuggestions(includeNew = false) {
   return { list: (list ?? []).filter((p) => !hidden.includes(p.id)), loaded: list !== null, hide };
 }
 
+/** Instagram-style reason: "Seated you", "Seated by Priya + 2 more", … */
 function line(p: Suggestion) {
-  if (p.reason === "new") return "New on 25";
-  return `${p.mutuals} mutual${p.mutuals === 1 ? "" : "s"}`;
+  if (p.reason === "seated_you") return "Seated you";
+  if (p.reason === "mutuals" && p.via.length) {
+    const more = p.mutuals - 1;
+    return `Seated by ${p.via[0].name}${more > 0 ? ` + ${more} more` : ""}`;
+  }
+  if (p.reason === "quiz") return "Took your quiz";
+  if (p.reason === "friends") return "Friend of a friend";
+  return "New on 25";
 }
 
 export function SuggestionCards({
@@ -74,12 +81,27 @@ export function SuggestionCards({
                 @{p.username}
               </span>
               <span
-                className="meta mt-1 leading-tight line-clamp-2 h-[2.4em]"
+                className="meta mt-1 leading-tight flex items-center justify-center gap-1 h-[2.4em]"
                 style={{ fontSize: 11.5 }}
               >
-                {line(p)}
+                {p.via.length > 0 && (
+                  <span className="flex shrink-0 -space-x-1.5" aria-hidden="true">
+                    {p.via.map((v, i) => (
+                      <span
+                        key={i}
+                        className="rounded-full"
+                        style={{ border: "1.5px solid var(--surface)" }}
+                      >
+                        <Avatar src={v.avatar || undefined} initials={v.name[0]} size={16} />
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <span className="line-clamp-2 text-left">{line(p)}</span>
               </span>
-              <span className="btn-primary mt-2 w-full min-h-[34px] text-[13px]">Prove it</span>
+              <span className="btn-primary mt-2 w-full min-h-[34px] text-[13px]">
+                {p.reason === "seated_you" ? "Seat back" : "Prove it"}
+              </span>
             </>
           );
           return (

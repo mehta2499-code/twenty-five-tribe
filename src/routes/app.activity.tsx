@@ -18,6 +18,8 @@ function target(a: Activity): { to: string; params?: Record<string, string> } {
   if (a.kind === "word_done" && a.ref?.startsWith("game:"))
     return { to: "/app/play/$id", params: { id: a.ref.slice(5) } };
   if (a.kind === "poll") return { to: "/app/polls" };
+  if (a.kind === "mention_all" && a.ref?.startsWith("group:"))
+    return { to: "/app/group/$id", params: { id: a.ref.slice(6) } };
   if (a.kind === "daily_score" || a.kind === "daily_top" || a.kind === "word_daily")
     return { to: "/app/games" };
   if (a.kind === "drop" || a.kind === "drop_like" || a.kind === "drop_comment")

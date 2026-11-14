@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
 import { personOf } from "@/components/FeedUI";
 import { buzz } from "@/components/SocialUI";
 import { timeAgo } from "@/lib/social";
@@ -133,7 +134,9 @@ export function ThoughtBox() {
               const p = personOf(t.id);
               return (
                 <li key={t.id} className="flex items-start gap-3">
-                  <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
+                  <PersonLink id={t.id} username={p.username} label={p.name}>
+                    <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
+                  </PersonLink>
                   <div className="flex-1 min-w-0">
                     <p className="text-cream" style={{ fontSize: 15, lineHeight: 1.45 }}>
                       “{t.body}”

@@ -57,6 +57,13 @@ if [[ ! -f "$PUSH_ENV" ]]; then
 fi
 mkdir -p "/etc/systemd/system/$SERVICE.service.d"
 printf '[Service]\nEnvironmentFile=-%s\n' "$PUSH_ENV" > "/etc/systemd/system/$SERVICE.service.d/push.conf"
+# Other app keys (e.g. GIPHY_API_KEY for GIFs in chat) go in /etc/twentyfive/app.env.
+APP_ENV=/etc/twentyfive/app.env
+if [[ ! -f "$APP_ENV" ]]; then
+  echo "# GIPHY_API_KEY=your-key   (free at developers.giphy.com)" > "$APP_ENV"
+  chmod 600 "$APP_ENV"
+fi
+printf '[Service]\nEnvironmentFile=-%s\n' "$APP_ENV" > "/etc/systemd/system/$SERVICE.service.d/app.conf"
 systemctl daemon-reload
 
 echo "==> Switch to the new version"

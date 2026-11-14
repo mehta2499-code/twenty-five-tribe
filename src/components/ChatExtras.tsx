@@ -448,7 +448,7 @@ export function MediaBubble({ value }: { value: string }) {
   ) : (
     <>
       <button onClick={() => setOpen(true)} className="block" aria-label="Open photo">
-        <img src={url} alt="" className="rounded-xl w-56 max-w-full object-cover" />
+        <img loading="lazy" decoding="async" src={url} alt="" className="rounded-xl w-56 max-w-full object-cover" />
       </button>
       {open && (
         <button
@@ -457,7 +457,7 @@ export function MediaBubble({ value }: { value: string }) {
           style={{ background: "rgba(0,0,0,0.92)" }}
           aria-label="Close photo"
         >
-          <img src={url} alt="" className="max-w-full max-h-full rounded-xl" />
+          <img loading="lazy" decoding="async" src={url} alt="" className="max-w-full max-h-full rounded-xl" />
         </button>
       )}
     </>

@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Paperclip, Send, Users } from "lucide-react";
+import { ArrowLeft, ImagePlus, Megaphone, Paperclip, Send, Sticker, Users } from "lucide-react";
+import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
+import { GroupFace } from "@/components/GroupFace";
 import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import {
   EarlierButton,
@@ -25,6 +28,8 @@ import {
   splitMentions,
   sendGroupVoice,
   sendToGroup,
+  sendGroupRich,
+  setGroupPhoto,
   useGroups,
 } from "@/lib/groups";
 
@@ -47,6 +52,7 @@ function GroupThread() {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
+  const [gifOpen, setGifOpen] = useState(false);
   const boxRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -87,11 +93,20 @@ function GroupThread() {
           .filter(
             (m) =>
               m.username!.toLowerCase().startsWith(q) ||
-              m.name.toLowerCase().split(" ").some((w) => w.startsWith(q)),
+              m.name
+                .toLowerCase()
+                .split(" ")
+                .some((w) => w.startsWith(q)),
           )
           .slice(0, 6);
+  // "@all" pings everyone in the group.
+  const showAll = q !== null && ("all".startsWith(q) || "everyone".startsWith(q));
   const pickMention = (m: (typeof everyone)[number]) => {
     setText((t) => t.replace(/@([\w.]*)$/, `@${m.username} `));
+    boxRef.current?.focus();
+  };
+  const pickAll = () => {
+    setText((t) => t.replace(/@([\w.]*)$/, "@all "));
     boxRef.current?.focus();
   };
 
@@ -113,12 +128,7 @@ function GroupThread() {
             onClick={() => setInfo(true)}
             className="flex items-center gap-3 flex-1 min-w-0 text-left"
           >
-            <span
-              className="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0"
-              style={{ background: "var(--fill)", border: "var(--bd)" }}
-            >
-              {g.emoji}
-            </span>
+            <GroupFace avatar={g.avatar} emoji={g.emoji} size={40} />
             <span className="min-w-0">
               <span className="block font-semibold text-cream truncate">{g.name}</span>
               <span className="block meta truncate">
@@ -128,116 +138,135 @@ function GroupThread() {
           </button>
         </header>
 
-        <div ref={logRef} className="flex-1 overflow-y-auto px-3 py-4" role="log" aria-live="polite">
+        <div
+          ref={logRef}
+          className="flex-1 overflow-y-auto px-3 py-4"
+          role="log"
+          aria-live="polite"
+        >
           {msgs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-8">
-              <p className="text-6xl">{g.emoji}</p>
+              <GroupFace avatar={g.avatar} emoji={g.emoji} size={96} />
               <p className="heading mt-3">{g.name}</p>
               <p className="meta mt-1">Say something. Someone has to go first.</p>
             </div>
           ) : (
             <>
-            {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
-            <ol className="space-y-1.5">
-              {msgs.slice(recent.start).map((m, j) => {
-                const i = recent.start + j;
-                const mine = m.from === "me";
-                const prev = msgs[i - 1];
-                const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
-                const grouped =
-                  prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
-                const who = member(m.from, st);
-                return (
-                  <li key={m.id}>
-                    {newDay && (
-                      <p className="text-center meta my-3" style={{ fontSize: 12 }}>
-                        {new Date(m.at).toLocaleDateString([], { day: "numeric", month: "short" })}
-                      </p>
-                    )}
-                    <div
-                      className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
-                    >
-                      {!mine && (
-                        <span className="w-7 shrink-0">
-                          {!grouped && (
-                            <Avatar
-                              src={who.avatar}
-                              initials={who.initials}
-                              color={who.color}
-                              size={28}
-                            />
-                          )}
-                        </span>
+              {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
+              <ol className="space-y-1.5">
+                {msgs.slice(recent.start).map((m, j) => {
+                  const i = recent.start + j;
+                  const mine = m.from === "me";
+                  const prev = msgs[i - 1];
+                  const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
+                  const grouped =
+                    prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
+                  const who = member(m.from, st);
+                  return (
+                    <li key={m.id}>
+                      {newDay && (
+                        <p className="text-center meta my-3" style={{ fontSize: 12 }}>
+                          {new Date(m.at).toLocaleDateString([], {
+                            day: "numeric",
+                            month: "short",
+                          })}
+                        </p>
                       )}
-                      <Reactable id={m.id} mine={mine}>
-                        <div
-                          className="px-3.5 py-2"
-                          style={{
-                            background: mine ? "var(--accent)" : "var(--surface)",
-                            border: mine
-                              ? "1px solid transparent"
-                              : m.text && splitMentions(m.text, everyone).some((x) => x.who?.id === "me")
-                                ? "2px solid var(--sun)"
-                                : "1px solid var(--line)",
-                            color: mine ? "var(--on-accent)" : "var(--ink)",
-                            borderRadius: 20,
-                            borderBottomRightRadius: mine ? 6 : 18,
-                            borderBottomLeftRadius: mine ? 18 : 6,
-                          }}
-                        >
-                          {!mine && !grouped && (
-                            <p
-                              className="text-[12px] font-extrabold mb-0.5"
-                              style={{ color: tone(m.from) }}
-                            >
-                              {who.name.split(" ")[0]}
-                            </p>
-                          )}
-                          {m.ref?.startsWith("voice:") ? (
-                            <VoicePlayer value={m.ref} mine={mine} />
-                          ) : parseMedia(m.ref) ? (
-                            <MediaBubble value={m.ref!} />
-                          ) : (
-                            <p
-                              style={{
-                                fontSize: 15,
-                                lineHeight: 1.4,
-                                whiteSpace: "pre-wrap",
-                                overflowWrap: "anywhere",
-                              }}
-                            >
-                              {splitMentions(m.text ?? "", everyone).map((x, k) =>
-                                x.who ? (
-                                  <b
-                                    key={k}
-                                    className="rounded px-0.5"
-                                    style={
-                                      x.who.id === "me"
-                                        ? { background: "var(--sun)", color: "var(--on-dark-fill)" }
-                                        : { color: mine ? "inherit" : tone(x.who.id), textDecoration: mine ? "underline" : undefined }
-                                    }
-                                  >
-                                    {x.text}
-                                  </b>
-                                ) : (
-                                  <span key={k}>{x.text}</span>
-                                ),
-                              )}
-                            </p>
-                          )}
-                          <p
-                            className="text-right tabular-nums"
-                            style={{ fontSize: 11.5, opacity: 0.7 }}
+                      <div
+                        className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
+                      >
+                        {!mine && (
+                          <span className="w-7 shrink-0">
+                            {!grouped && (
+                              <PersonLink id={m.from} username={who.username} label={who.name}>
+                                <Avatar
+                                  src={who.avatar}
+                                  initials={who.initials}
+                                  color={who.color}
+                                  size={28}
+                                />
+                              </PersonLink>
+                            )}
+                          </span>
+                        )}
+                        <Reactable id={m.id} mine={mine}>
+                          <div
+                            className="px-3.5 py-2"
+                            style={{
+                              background: mine ? "var(--accent)" : "var(--surface)",
+                              border: mine
+                                ? "1px solid transparent"
+                                : m.text &&
+                                    splitMentions(m.text, everyone).some((x) => x.who?.id === "me")
+                                  ? "2px solid var(--sun)"
+                                  : "1px solid var(--line)",
+                              color: mine ? "var(--on-accent)" : "var(--ink)",
+                              borderRadius: 20,
+                              borderBottomRightRadius: mine ? 6 : 18,
+                              borderBottomLeftRadius: mine ? 18 : 6,
+                            }}
                           >
-                            {clock(m.at)}
-                          </p>
-                        </div>
-                      </Reactable>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+                            {!mine && !grouped && (
+                              <p
+                                className="text-[12px] font-extrabold mb-0.5"
+                                style={{ color: tone(m.from) }}
+                              >
+                                {who.name.split(" ")[0]}
+                              </p>
+                            )}
+                            {isRich(m.ref) ? (
+                              <RichBubble value={m.ref} />
+                            ) : m.ref?.startsWith("voice:") ? (
+                              <VoicePlayer value={m.ref} mine={mine} />
+                            ) : parseMedia(m.ref) ? (
+                              <MediaBubble value={m.ref!} />
+                            ) : (
+                              <p
+                                style={{
+                                  fontSize: 15,
+                                  lineHeight: 1.4,
+                                  whiteSpace: "pre-wrap",
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                {splitMentions(m.text ?? "", everyone).map((x, k) =>
+                                  x.who ? (
+                                    <b
+                                      key={k}
+                                      className="rounded px-0.5"
+                                      style={
+                                        x.who.id === "me"
+                                          ? {
+                                              background: "var(--sun)",
+                                              color: "var(--on-dark-fill)",
+                                            }
+                                          : {
+                                              color: mine ? "inherit" : tone(x.who.id),
+                                              textDecoration: mine ? "underline" : undefined,
+                                            }
+                                      }
+                                    >
+                                      {x.text}
+                                    </b>
+                                  ) : (
+                                    <span key={k}>{x.text}</span>
+                                  ),
+                                )}
+                              </p>
+                            )}
+                            <p
+                              className="text-right tabular-nums"
+                              style={{ fontSize: 11.5, opacity: 0.7 }}
+                            >
+                              {clock(m.at)}
+                            </p>
+                          </div>
+                        </Reactable>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
             </>
           )}
         </div>
@@ -250,7 +279,7 @@ function GroupThread() {
           className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
           style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
         >
-          {picks.length > 0 && (
+          {(picks.length > 0 || showAll) && (
             <ul
               className="absolute left-3 right-3 bottom-full mb-2 rounded-2xl overflow-hidden py-1 z-10"
               style={{
@@ -261,6 +290,27 @@ function GroupThread() {
               role="listbox"
               aria-label="Mention someone"
             >
+              {showAll && (
+                <li>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={pickAll}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[var(--fill)]"
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: "var(--pink)", color: "var(--on-accent)" }}
+                    >
+                      <Megaphone size={16} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-cream">@all</span>
+                      <span className="block meta truncate">Notify everyone in the group</span>
+                    </span>
+                  </button>
+                </li>
+              )}
               {picks.map((m) => (
                 <li key={m.id}>
                   <button
@@ -283,9 +333,17 @@ function GroupThread() {
             type="button"
             onClick={() => attachRef.current?.click()}
             aria-label="Send a photo or video"
-            className="w-11 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
+            className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
           >
             <Paperclip size={21} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setGifOpen(true)}
+            aria-label="Send a GIF or sticker"
+            className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
+          >
+            <Sticker size={21} />
           </button>
           <input
             ref={attachRef}
@@ -331,14 +389,40 @@ function GroupThread() {
 
       {info && (
         <Sheet title={`${g.emoji} ${g.name}`} onClose={() => setInfo(false)}>
-          <p className="meta">{g.members.length} of 25 members</p>
+          <div className="flex items-center gap-3">
+            <GroupFace avatar={g.avatar} emoji={g.emoji} size={56} />
+            <label className="btn-secondary px-4 min-h-[40px] cursor-pointer">
+              <ImagePlus size={17} aria-hidden="true" />{" "}
+              {g.avatar ? "Change photo" : "Add group photo"}
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  void setGroupPhoto(id, file)
+                    .then(() => setToast("Group photo updated"))
+                    .catch((err) => setToast((err as Error).message));
+                }}
+              />
+            </label>
+          </div>
+          <p className="meta mt-3">{g.members.length} of 25 members</p>
           <ul className="mt-3 grid gap-2.5">
             {g.members.map((mId) => {
               const m = member(mId, st);
               return (
                 <li key={mId} className="flex items-center gap-3">
-                  <Avatar src={m.avatar} initials={m.initials} color={m.color} size={36} />
-                  <span className="flex-1 font-semibold text-cream">{m.name}</span>
+                  <PersonLink
+                    id={mId}
+                    username={m.username}
+                    className="flex flex-1 items-center gap-3 min-w-0"
+                  >
+                    <Avatar src={m.avatar} initials={m.initials} color={m.color} size={36} />
+                    <span className="flex-1 font-semibold text-cream truncate">{m.name}</span>
+                  </PersonLink>
                   {g.createdBy === mId && (
                     <span className="chip" style={{ minHeight: 24, fontSize: 11 }}>
                       made it
@@ -384,6 +468,15 @@ function GroupThread() {
               void addMembers(id, fresh)
                 .then(() => setToast("Added"))
                 .catch((e) => setToast((e as Error).message));
+          }}
+        />
+      )}
+      {gifOpen && (
+        <GifPicker
+          onClose={() => setGifOpen(false)}
+          onPick={(ref) => {
+            setGifOpen(false);
+            void sendGroupRich(id, ref).catch((err) => setToast((err as Error).message));
           }}
         />
       )}

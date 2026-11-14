@@ -1,13 +1,27 @@
 import { Ico, TONE } from "@/components/Ico";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Clock, Heart, Lock, MessageCircle, Send, X, Zap } from "lucide-react";
+import {
+  CalendarDays,
+  Camera,
+  Clock,
+  Heart,
+  Lock,
+  MessageCircle,
+  Send,
+  X,
+  Zap,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
 import { Confetti, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { fileToImage, friendById, mutualFriends, meView, useSocial } from "@/lib/social";
 import {
   WINDOW_MIN,
+  addMonths,
   commentOnDrop,
+  monthKey,
+  monthName,
   dropTime,
   loadDrops,
   phaseOf,
@@ -16,6 +30,7 @@ import {
   type DropPost,
 } from "@/lib/drop";
 import { personOf } from "@/components/FeedUI";
+import { today } from "@/lib/daily";
 
 export const Route = createFileRoute("/app/drop")({
   head: () => ({ meta: [{ title: "The 25 Drop · 25" }] }),
@@ -69,14 +84,42 @@ function DropScreen() {
   const left = Math.max(0, at + WINDOW_MIN * 60_000 - now);
   const mm = Math.floor(left / 60_000);
   const ss = String(Math.floor((left % 60_000) / 1000)).padStart(2, "0");
-  const waiting = mutualFriends().length - data.others.length;
 
   return (
     <div className="pb-8">
       <PageBand
         title="The 25 Drop"
         sub="Once a day, at a surprise time. 10 minutes. One real photo. Post yours to see theirs."
+        actions={
+          <Link
+            to="/app/recap"
+            search={{ m: undefined }}
+            className="btn-secondary gap-1.5 px-3.5 min-h-[40px]"
+          >
+            <CalendarDays size={17} aria-hidden="true" /> Recap
+          </Link>
+        }
       />
+
+      {Number(today().slice(8, 10)) <= 7 && (
+        <Link
+          to="/app/recap"
+          search={{ m: addMonths(monthKey(today()), -1) }}
+          className="mx-5 mb-4 rounded-[18px] px-4 py-3 flex items-center gap-3"
+          style={{
+            background: "var(--lime)",
+            color: "var(--on-accent)",
+            border: "var(--bd)",
+            boxShadow: "var(--pop-sm)",
+          }}
+        >
+          <CalendarDays size={22} aria-hidden="true" />
+          <span className="flex-1 font-extrabold text-[15px]">
+            Your {monthName(addMonths(monthKey(today()), -1))} recap is ready
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
+      )}
 
       {phase === "before" && !data.mine && (
         <section className="px-5">
@@ -130,6 +173,8 @@ function DropScreen() {
                 style={{ aspectRatio: "3 / 4", border: "var(--bd)" }}
               >
                 <img
+                  loading="lazy"
+                  decoding="async"
                   src={image}
                   alt="Your drop"
                   className="absolute inset-0 w-full h-full object-cover"
@@ -226,11 +271,6 @@ function DropScreen() {
               <DropCard key={p.id} post={p} onOpen={() => setOpen(p.id)} />
             ))}
           </div>
-          {waiting > 0 && (
-            <p className="meta text-center mt-5">
-              {waiting} of your 25 {waiting === 1 ? "hasn't" : "haven't"} dropped yet. Nudge them.
-            </p>
-          )}
         </section>
       )}
 
@@ -265,7 +305,13 @@ function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
     <figure className="card overflow-hidden p-0 cursor-pointer" onClick={onOpen}>
       <div className="relative" style={{ aspectRatio: "3 / 4" }}>
         {post.image ? (
-          <img src={post.image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img
+            loading="lazy"
+            decoding="async"
+            src={post.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div className="absolute inset-0" style={{ background: "var(--fill)" }} />
         )}
@@ -353,7 +399,9 @@ function DropViewer({
     <div className="fixed inset-0 z-[70] flex flex-col" style={{ background: "#000" }}>
       <div className="mx-auto w-full max-w-md flex flex-col h-full">
         <header className="flex items-center gap-3 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 text-white">
-          <Avatar src={by.avatar} initials={by.initials} color={by.color} size={34} />
+          <PersonLink id={post.id} username={by.username} label={by.name}>
+            <Avatar src={by.avatar} initials={by.initials} color={by.color} size={34} />
+          </PersonLink>
           <span className="flex-1 min-w-0">
             <span className="block font-bold truncate">{by.name}</span>
             <span className="block text-xs text-white/70">
@@ -379,6 +427,8 @@ function DropViewer({
         <div className="relative flex-1 min-h-0" onDoubleClick={() => !liked && like()}>
           {post.image && (
             <img
+              loading="lazy"
+              decoding="async"
               src={post.image}
               alt=""
               className="absolute inset-0 w-full h-full object-contain"

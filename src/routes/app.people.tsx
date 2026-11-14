@@ -8,7 +8,6 @@ import { Avatar } from "@/components/Avatar";
 import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { account } from "@/lib/live";
 import { KnowThemQuiz } from "@/components/KnowThemQuiz";
-import { ShareCard } from "@/components/ShareCard";
 import { SuggestionCards } from "@/components/Suggestions";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
@@ -170,6 +169,44 @@ function People() {
   return (
     <div className="pb-8">
       <PageBand title="Your 25" sub={SUB} back>
+        <section className="mt-4" aria-label="Find people">
+          <label className="field" htmlFor="people-search">
+            <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
+            <input
+              id="people-search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Find someone by name or @username"
+              autoCapitalize="none"
+              autoComplete="off"
+            />
+          </label>
+          {q.trim().length >= 2 && (
+            <ul className="mt-2 card px-4 divide-y" style={{ borderColor: "var(--border-cool)" }}>
+              {searching && <li className="py-4 text-sm text-faint">Looking…</li>}
+              {!searching && results.length === 0 && (
+                <li className="py-4 text-sm text-faint">
+                  Nobody by that name yet. Ask them to sign up, then search again.
+                </li>
+              )}
+              {results.map((p) => (
+                <Row key={p.id} p={p}>
+                  {inMine.has(p.id) ? (
+                    <span className="text-sm text-faint">In your 25</span>
+                  ) : (
+                    <button
+                      disabled={taken >= SEATS || !s.me?.vibeDone || busy === p.id}
+                      onClick={() => seat(p)}
+                      className={`${pill} btn-primary`}
+                    >
+                      <UserPlus size={16} /> {seatedMe.has(p.id) ? "Seat back" : "Prove it"}
+                    </button>
+                  )}
+                </Row>
+              ))}
+            </ul>
+          )}
+        </section>
         <div className="mt-4 card px-4 py-3.5">
           <div className="flex items-baseline justify-between">
             <p className="font-semibold text-cream">
@@ -224,48 +261,8 @@ function People() {
           </Link>
         </div>
       )}
-      {s.me?.vibeDone && <ShareCard />}
 
       {s.me?.vibeDone && taken < SEATS && <SuggestionCards includeNew onPick={(p) => seat(p)} />}
-
-      <section className="px-5 mt-6">
-        <label className="field" htmlFor="people-search">
-          <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
-          <input
-            id="people-search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Find someone by name or @username"
-            autoCapitalize="none"
-            autoComplete="off"
-          />
-        </label>
-        {q.trim().length >= 2 && (
-          <ul className="mt-2 card px-4 divide-y" style={{ borderColor: "var(--border-cool)" }}>
-            {searching && <li className="py-4 text-sm text-faint">Looking…</li>}
-            {!searching && results.length === 0 && (
-              <li className="py-4 text-sm text-faint">
-                Nobody by that name yet. Ask them to sign up, then search again.
-              </li>
-            )}
-            {results.map((p) => (
-              <Row key={p.id} p={p}>
-                {inMine.has(p.id) ? (
-                  <span className="text-sm text-faint">In your 25</span>
-                ) : (
-                  <button
-                    disabled={taken >= SEATS || !s.me?.vibeDone || busy === p.id}
-                    onClick={() => seat(p)}
-                    className={`${pill} btn-primary`}
-                  >
-                    <UserPlus size={16} /> {seatedMe.has(p.id) ? "Seat back" : "Prove it"}
-                  </button>
-                )}
-              </Row>
-            ))}
-          </ul>
-        )}
-      </section>
 
       {incoming.length > 0 && (
         <section className="px-5 mt-8">

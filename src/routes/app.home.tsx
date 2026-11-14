@@ -56,7 +56,7 @@ import { SuggestionCards } from "@/components/Suggestions";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
-import { PER_DAY, myPicks, myVotesToday } from "@/lib/polls";
+import { PER_DAY, myVotesToday } from "@/lib/polls";
 
 export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
@@ -126,31 +126,6 @@ function tableOrder(s: SocialState): Person[] {
 
 const dayIndex = () => Math.floor((Date.now() + 5.5 * 3600_000) / 86_400_000);
 
-const MOODS = [
-  "Your 25 is online. Your excuses aren't.",
-  "Someone here has gossip. It might be you.",
-  "Hydrate. Then text someone back.",
-  "Respectfully, check on your 25.",
-  "Seen-zoning is not a personality.",
-  "25 people. Zero chill.",
-  "Certified yapping hours are open.",
-  "Your streaks called. They miss you.",
-  "What's the plan tonight?",
-  "Delulu is the solulu. Your 25 is real.",
-  "Main character, supporting cast of 25.",
-  "Touch grass. Then post the grass.",
-  "The group chat is plotting. Probably.",
-  "Low battery, high gossip 🔋",
-];
-/** Lines that name one of your people. */
-const NAMED_MOODS = [
-  (n: string) => `${n} hasn't heard from you today. Suspicious 🤨`,
-  (n: string) => `${n} would 100% pick you in a poll. Return the favour.`,
-  (n: string) => `Plot twist: you text ${n} first.`,
-  (n: string) => `${n} owes you chai. Collect.`,
-  (n: string) => `Rumour has it ${n} is bored. Fix that.`,
-];
-
 // ---------- The table ----------
 
 function Table({
@@ -174,8 +149,30 @@ function Table({
   const places = layout(seated, scores);
 
   return (
-    <section className="px-5 pt-6" aria-label="Your table">
+    <section className="px-5 pt-3" aria-label="Your table">
       <div className="relative mx-auto" style={{ width: "100%", maxWidth: 400, aspectRatio: "1" }}>
+        <Link
+          to="/app/people"
+          aria-label="Add people"
+          className="absolute -top-1 -right-1 z-[4] flex flex-col items-center"
+        >
+          <span
+            className="w-11 h-11 rounded-full flex items-center justify-center"
+            style={{
+              background: "var(--lime)",
+              color: "var(--on-accent)",
+              border: "var(--bd)",
+              boxShadow: "var(--pop)",
+            }}
+          >
+            <UserPlus size={20} strokeWidth={2.4} aria-hidden="true" />
+          </span>
+          {seated.length < SEATS && (
+            <span className="mt-1 text-[10.5px] font-bold" style={{ color: "var(--ink-3)" }}>
+              {SEATS - seated.length} left
+            </span>
+          )}
+        </Link>
         {/* Ring lines */}
         <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" aria-hidden="true">
           {RINGS.map((ring, i) => (
@@ -603,7 +600,6 @@ function TodayTiles() {
   const [dropped, setDropped] = useState<boolean | null>(null);
   const [othersDropped, setOthersDropped] = useState(0);
   const [voted, setVoted] = useState<number | null>(null);
-  const [picked, setPicked] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [newDrop] = useState(() => !seen("drop"));
   const [newPolls] = useState(() => !seen("polls"));
@@ -620,9 +616,6 @@ function TodayTiles() {
     void myVotesToday()
       .then((v) => setVoted(Object.keys(v).length))
       .catch(() => setVoted(0));
-    void myPicks()
-      .then((p) => setPicked(p.reduce((n, x) => n + x.picks, 0)))
-      .catch(() => undefined);
     const t = setInterval(() => setNow(Date.now()), 15_000);
     return () => clearInterval(t);
   }, []);
@@ -631,95 +624,66 @@ function TodayTiles() {
   const picksLeft = voted === null ? null : Math.max(0, PER_DAY - voted);
   const pollsHot = picksLeft !== null && picksLeft > 0;
 
+  const dropStatus = dropped
+    ? othersDropped
+      ? `${othersDropped} dropped`
+      : "Dropped ✓"
+    : phase === "now"
+      ? "Drop time!"
+      : phase === "after"
+        ? "Post late"
+        : newDrop
+          ? "new"
+          : "Later today";
+  const pollStatus =
+    picksLeft === null ? "…" : picksLeft > 0 ? `${picksLeft} left` : newPolls ? "new" : "Done ✓";
+
+  const card = (hot: boolean, tone: string) => ({
+    background: hot ? tone : "var(--surface)",
+    color: hot ? "var(--on-accent)" : "var(--ink)",
+    border: "var(--bd)",
+    boxShadow: "var(--pop-sm)",
+  });
   return (
-    <section className="px-5 mt-5" aria-label="Today">
-      <div className="grid grid-cols-2 gap-3">
-        <Link
-          to="/app/drop"
-          className={`relative rounded-[22px] p-4 flex flex-col gap-1.5 min-h-[150px] ${live ? "wiggle" : ""}`}
+    <section className="px-5 mt-4 grid grid-cols-2 gap-3" aria-label="Today">
+      <Link
+        to="/app/drop"
+        className={`rounded-[18px] px-3 py-2.5 flex items-center gap-2.5 ${live ? "wiggle" : ""}`}
+        style={card(live, "var(--lime)")}
+      >
+        <span
+          className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center"
           style={{
-            background: live
-              ? "var(--lime)"
-              : "linear-gradient(160deg, rgba(193,239,98,0.22), rgba(193,239,98,0.04) 70%), var(--surface)",
-            color: live ? "var(--on-accent)" : "var(--ink)",
-            border: "var(--bd)",
-            boxShadow: "var(--pop)",
+            background: live ? "var(--on-accent)" : "var(--lime)",
+            color: live ? "var(--lime)" : "var(--on-accent)",
           }}
         >
-          {newDrop && !live && (
-            <span
-              className="sticker pink absolute -top-2.5 -right-1.5"
-              style={{ transform: "rotate(6deg)" }}
-            >
-              new
-            </span>
-          )}
-          <span
-            className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{
-              background: live ? "var(--on-accent)" : "var(--lime)",
-              color: live ? "var(--lime)" : "var(--on-accent)",
-            }}
-          >
-            <Camera size={24} strokeWidth={2.4} aria-hidden="true" />
-          </span>
-          <span className="display text-[20px] leading-tight mt-1">The 25 Drop</span>
-          <span className="text-[13px] font-semibold opacity-85 leading-snug">
-            {dropped
-              ? othersDropped
-                ? `${othersDropped} of your 25 dropped. See them →`
-                : "You dropped. Waiting on your 25…"
-              : phase === "now"
-                ? "IT'S DROP TIME. 10 minutes. Go!"
-                : phase === "after"
-                  ? "Missed it? Post late. They'll know 👀"
-                  : "Same surprise time for everyone. One real photo."}
-          </span>
-        </Link>
-        <Link
-          to="/app/polls"
-          className="relative rounded-[22px] p-4 flex flex-col gap-1.5 min-h-[150px]"
+          <Camera size={19} strokeWidth={2.4} aria-hidden="true" />
+        </span>
+        <span className="min-w-0">
+          <span className="block font-extrabold text-[14.5px] leading-tight">The Drop</span>
+          <span className="block text-[12px] font-bold opacity-80 truncate">{dropStatus}</span>
+        </span>
+      </Link>
+      <Link
+        to="/app/polls"
+        className="rounded-[18px] px-3 py-2.5 flex items-center gap-2.5"
+        style={card(pollsHot, "var(--pink)")}
+      >
+        <span
+          className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center"
           style={{
-            background: pollsHot
-              ? "var(--pink)"
-              : "linear-gradient(160deg, rgba(255,122,182,0.22), rgba(255,122,182,0.04) 70%), var(--surface)",
-            color: pollsHot ? "var(--on-accent)" : "var(--ink)",
-            border: "var(--bd)",
-            boxShadow: "var(--pop)",
+            background: pollsHot ? "var(--on-accent)" : "var(--pink)",
+            color: pollsHot ? "var(--pink)" : "var(--on-accent)",
           }}
         >
-          {newPolls && (
-            <span
-              className="sticker sun absolute -top-2.5 -right-1.5"
-              style={{ transform: "rotate(6deg)" }}
-            >
-              new
-            </span>
-          )}
-          <span
-            className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{
-              background: pollsHot ? "var(--on-accent)" : "var(--pink)",
-              color: pollsHot ? "var(--pink)" : "var(--on-accent)",
-            }}
-          >
-            <Vote size={24} strokeWidth={2.4} aria-hidden="true" />
-          </span>
-          <span className="display text-[20px] leading-tight mt-1">Anonymous polls</span>
-          <span className="text-[13px] font-semibold opacity-85 leading-snug">
-            {picksLeft === null
-              ? "Who in your 25 is most likely to…"
-              : picksLeft > 0
-                ? `${picksLeft} secret picks left today`
-                : "Done for today. New ones tomorrow."}
-            {picked > 0 && (
-              <span className="block mt-0.5">
-                You've been picked {picked} time{picked === 1 ? "" : "s"} 👀
-              </span>
-            )}
-          </span>
-        </Link>
-      </div>
+          <Vote size={19} strokeWidth={2.4} aria-hidden="true" />
+        </span>
+        <span className="min-w-0">
+          <span className="block font-extrabold text-[14.5px] leading-tight">Polls</span>
+          <span className="block text-[12px] font-bold opacity-80 truncate">{pollStatus}</span>
+        </span>
+      </Link>
     </section>
   );
 }
@@ -880,22 +844,9 @@ function Home() {
     );
   };
 
-  const first = s.me?.name.split(" ")[0];
-  const filled = people.length;
-  const streakCount = people.filter((f) => (s.streaks[f.id]?.count ?? 0) > 0).length;
-  const posted = people.filter((f) => f.postedToday).length;
-  const [mood] = useState(() => {
-    const friends = mutualFriends();
-    if (friends.length && Math.random() < 0.4) {
-      const f = friends[Math.floor(Math.random() * friends.length)];
-      return NAMED_MOODS[Math.floor(Math.random() * NAMED_MOODS.length)](f.name.split(" ")[0]);
-    }
-    return MOODS[Math.floor(Math.random() * MOODS.length)];
-  });
-
   return (
     <>
-      <header className="band px-5 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] pb-5">
+      <header className="px-5 pt-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] pb-1">
         <div className="flex items-center justify-between">
           <Logo height={44} title={VOICE.brand} />
           <div className="flex items-center gap-2.5">
@@ -914,55 +865,21 @@ function Home() {
             </Link>
           </div>
         </div>
-        <h1 className="title mt-4" style={{ fontSize: 30 }}>
-          {first ? (
-            <>
-              Hey <span className="mark">{first}</span>
-            </>
-          ) : (
-            <>
-              Your <span className="mark">table</span>
-            </>
-          )}
-        </h1>
-        <p className="sub mt-1.5" style={{ fontSize: 15 }}>
-          {mood}
-        </p>
-        <div className="mt-4 flex items-center gap-2.5">
-          <Link
-            to="/app/people"
-            className="btn-primary flex-1 gap-2 px-4"
-            style={{ minHeight: 46 }}
-          >
-            <UserPlus size={18} aria-hidden="true" />
-            {filled >= 25
-              ? "Your 25 is full · manage"
-              : `Add people · ${25 - filled} seat${25 - filled === 1 ? "" : "s"} left`}
-          </Link>
-          <Link
-            to="/app/people"
-            className="sticker pink shrink-0"
-            style={{ transform: "rotate(-2deg)" }}
-            aria-label={`You're in ${s.seatedByCount} people's 25`}
-          >
-            <Ico i={Eye} size={13} /> in {s.seatedByCount}
-          </Link>
-        </div>
       </header>
 
       <ModeBanner />
 
-      <PushPrompt />
+      <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
 
       <Birthdays />
 
       <TodayTiles />
 
+      <PushPrompt />
+
       {s.mode === "live" && people.length < 10 && (
         <SuggestionCards title="Find your people" max={12} />
       )}
-
-      <Table people={people} spot={spot} rolling={rolling} onRoll={onRoll} />
       <Tour
         id="table"
         delay={1200}
@@ -973,7 +890,7 @@ function Home() {
             body: "Closest ring: people who got 7/7 on your quiz. Middle: 5 or 6. Outer: everyone else. Tap a face to open them, or the dice to pick someone.",
           },
           {
-            at: 'a[href="/app/people"].btn-primary',
+            at: 'a[aria-label="Add people"]',
             title: "Fill your seats",
             body: "Add people you actually know. When you're in each other's 25, chats, blinks and games unlock.",
           },

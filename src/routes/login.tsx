@@ -389,7 +389,7 @@ function Login() {
                 className="w-20 h-20 shrink-0 rounded-full overflow-hidden flex items-center justify-center bg-white/20 border-2 border-white/60"
               >
                 {avatar ? (
-                  <img src={avatar} alt="" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={avatar} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <ImagePlus size={24} />
                 )}

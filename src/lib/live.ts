@@ -4,6 +4,7 @@
  */
 import type { RealtimeChannel, Session } from "@supabase/supabase-js";
 import { track } from "@/lib/track";
+import { isNetworkError } from "@/lib/vibes";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -110,6 +111,8 @@ function fail(message: string) {
 }
 function friendly(e: unknown) {
   const msg = (e as { message?: string })?.message ?? String(e);
+  if (isNetworkError(e))
+    return "Connection dropped for a second. Check your internet and try again.";
   if (/seats taken/i.test(msg)) return msg;
   if (/duplicate key.*username|profiles_username_key|username.*unique/i.test(msg))
     return "That username is taken. Try another.";
@@ -167,7 +170,11 @@ async function makeThumb(source: string | Blob): Promise<Blob> {
     c.height = Math.round(img.naturalHeight * scale);
     c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
     return await new Promise<Blob>((ok, bad) =>
-      c.toBlob((b) => (b ? ok(b) : bad(new Error("Couldn't shrink the photo."))), "image/jpeg", 0.82),
+      c.toBlob(
+        (b) => (b ? ok(b) : bad(new Error("Couldn't shrink the photo."))),
+        "image/jpeg",
+        0.82,
+      ),
     );
   } finally {
     if (typeof source !== "string") URL.revokeObjectURL(url);
@@ -236,7 +243,9 @@ async function deleteSnapFile(snapId: string, path: string) {
 
 export type Suggestion = Person & {
   mutuals: number;
-  reason: "mutuals" | "new";
+  reason: "seated_you" | "mutuals" | "quiz" | "friends" | "new";
+  /** Up to 2 people in your 25 who seated them (first names + photo URLs). */
+  via: { name: string; avatar: string }[];
 };
 
 // ---------- Loading ----------
@@ -646,11 +655,15 @@ function subscribe() {
             title: f?.name ?? "New message",
             body: ref.startsWith("voice:")
               ? "Voice note"
-              : ref.startsWith("img:")
-                ? "Photo"
-                : ref.startsWith("vid:")
-                  ? "Video"
-                  : (m.body ?? "New message"),
+              : ref.startsWith("gif:")
+                ? "Sent a GIF"
+                : ref.startsWith("sticker:")
+                  ? "Sent a sticker"
+                  : ref.startsWith("img:")
+                    ? "Photo"
+                    : ref.startsWith("vid:")
+                      ? "Video"
+                      : (m.body ?? "New message"),
             to: `/app/chat/${m.sender}`,
             avatar: f?.avatar || undefined,
             initials: f?.initials ?? "?",
@@ -1034,12 +1047,14 @@ export const account = {
       username: string;
       avatar_path: string | null;
       mutuals: number;
-      reason: "mutuals" | "new";
+      reason: Suggestion["reason"];
+      via_names: string[] | null;
+      via_avatars: string[] | null;
     }[];
-    const urls = await signed(
-      "avatars",
-      rows.map((r) => r.avatar_path ?? ""),
-    );
+    const urls = await signed("avatars", [
+      ...rows.map((r) => r.avatar_path ?? ""),
+      ...rows.flatMap((r) => r.via_avatars ?? []),
+    ]);
     return rows.map((p) => ({
       id: p.id,
       name: p.display_name,
@@ -1052,6 +1067,10 @@ export const account = {
       daysQuiet: 0,
       mutuals: p.mutuals,
       reason: p.reason,
+      via: (p.via_names ?? []).map((name, i) => ({
+        name,
+        avatar: urls[(p.via_avatars ?? [])[i] ?? ""] ?? "",
+      })),
     }));
   },
   /** Put someone in your 25 (after passing the quiz about them). */
@@ -1059,7 +1078,18 @@ export const account = {
     try {
       // Did they already seat me? Then this makes it mutual.
       const theySeatedMe = _get().requests.some((r) => r.person.id === personId);
-      await run(supabase.from("seats").insert({ owner: myId, guest: personId }).select());
+      // Retry if the connection drops; "already seated" after a retry means the first one worked.
+      for (let i = 0; ; i++) {
+        const { error } = await supabase.from("seats").insert({ owner: myId, guest: personId });
+        if (!error) break;
+        const msg = (error as { message?: string }).message ?? "";
+        if (/duplicate key|already exists/i.test(msg)) break;
+        if (i < 2 && isNetworkError(error)) {
+          await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+          continue;
+        }
+        throw error;
+      }
       track("seat_added");
       if (theySeatedMe) track("mutual_seat");
       await loadAll();

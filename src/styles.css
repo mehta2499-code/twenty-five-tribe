@@ -39,8 +39,9 @@
   --color-tag-milestone: var(--tag-milestone);
   --color-tag-mood: var(--tag-mood);
   --color-tag-thought: var(--tag-thought);
-  --font-sans: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* SF Pro on iPhone/Mac (built in), Inter elsewhere. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
   --font-chalk: "Cabin Sketch", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-hand: "Gochi Hand", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
@@ -50,7 +51,7 @@
    The playful sticker look (outlines, offset shadows, tilted
    tags, chunky type) on a deep plum-black ground, with softer,
    deeper versions of the fun colours so nothing glares.
-   Plus Jakarta Sans throughout: 800 headlines, 700 section heads, 400-600 body.
+   SF Pro (Inter off Apple) throughout: 800 headlines, 700 section heads, 400-600 body.
 
    Type scale   title 32 · heading 21 · section 16/700
                 body 15 · meta 13 · caption 12 (minimum)
@@ -204,7 +205,7 @@ button:disabled { cursor: not-allowed; }
 
 /* ---------- Type ---------- */
 /* Chalk: screen headings hand-written on the dark board. Working UI stays in
-   Plus Jakarta Sans. Cabin Sketch never below 28px, Gochi Hand never below
+   SF Pro. Cabin Sketch never below 28px, Gochi Hand never below
    16px; one chalk headline per screen; chalk only on --page / --surface. */
 .chalk-title { font-family: var(--font-chalk); font-weight: 700; font-size: 44px; line-height: 1.05; letter-spacing: 0.01em; color: var(--ink); text-wrap: balance; text-shadow: 0 0 1px rgba(245, 241, 250, 0.35); }
 .chalk-heading { font-family: var(--font-chalk); font-weight: 700; font-size: 28px; line-height: 1.1; letter-spacing: 0.01em; color: var(--ink); text-wrap: balance; text-shadow: 0 0 1px rgba(245, 241, 250, 0.35); }

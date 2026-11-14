@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { ImagePlus, LayoutGrid, Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
 import {
   AudienceNote,
   EmptyState,
@@ -48,10 +49,12 @@ function PostCard({
   return (
     <article className="py-3" aria-label={`Post by ${by.name}`}>
       <header className="flex items-center gap-3 px-4 py-3">
-        <Avatar src={by.avatar} initials={by.initials} color={by.color} size={36} />
-        <span className="font-semibold text-cream" style={{ fontSize: 15 }}>
-          {by.name}
-        </span>
+        <PersonLink id={post.by} username={by.username} className="flex items-center gap-3 min-w-0">
+          <Avatar src={by.avatar} initials={by.initials} color={by.color} size={36} />
+          <span className="font-semibold text-cream truncate" style={{ fontSize: 15 }}>
+            {by.name}
+          </span>
+        </PersonLink>
         <time className="ml-auto meta" style={{ fontSize: 13 }}>
           {timeAgo(post.at)}
         </time>
@@ -179,6 +182,7 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
       >
         {video ? (
           <video
+            preload="metadata"
             src={video.url}
             muted
             autoPlay
@@ -187,7 +191,13 @@ function NewPostSheet({ onClose, onDone }: { onClose: () => void; onDone: () => 
             className="w-full h-full object-cover"
           />
         ) : image ? (
-          <img src={image} alt="Your photo" className="w-full h-full object-cover" />
+          <img
+            loading="lazy"
+            decoding="async"
+            src={image}
+            alt="Your photo"
+            className="w-full h-full object-cover"
+          />
         ) : (
           <span className="flex flex-col items-center gap-2 text-cool">
             <ImagePlus size={28} aria-hidden="true" />

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
 import { AudienceNote, EmptyState, Sheet } from "@/components/SocialUI";
 import { friendById, meView, social, timeAgo, type Comment, _get } from "@/lib/social";
 
@@ -21,6 +22,7 @@ export function personOf(id: string) {
     avatar: f?.avatar || undefined,
     initials: f?.initials ?? "?",
     color: f?.color,
+    username: (f as { username?: string } | undefined)?.username,
   };
 }
 
@@ -50,7 +52,9 @@ export function CommentsSheet({
             const p = personOf(c.by);
             return (
               <li key={c.id} className="flex gap-3">
-                <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
+                <PersonLink id={c.by} username={p.username} label={p.name}>
+                  <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
+                </PersonLink>
                 <div className="min-w-0">
                   <p
                     className="text-cream"

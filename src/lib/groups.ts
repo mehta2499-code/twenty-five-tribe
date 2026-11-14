@@ -2,7 +2,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, friendById, mutualFriends, showBanner, useSocial } from "@/lib/social";
-import { uploadMediaAt } from "@/lib/live";
+import { signedMedia, uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 
 export type GMsg = { id: string; from: string; text?: string; ref?: string; at: number };
@@ -10,6 +10,8 @@ export type Group = {
   id: string;
   name: string;
   emoji: string;
+  /** Group photo (signed link), if one was set. */
+  avatar?: string;
   createdBy: string;
   members: string[];
 };
@@ -93,15 +95,21 @@ let channel: ReturnType<typeof supabase.channel> | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 async function load(me: string) {
-  const { data: gs } = await supabase.from("groups").select("id,name,emoji,created_by");
-  const groups = (gs ?? []) as { id: string; name: string; emoji: string; created_by: string }[];
+  const { data: gs } = await supabase
+    .from("groups")
+    .select("id,name,emoji,created_by,avatar_path" as "id,name,emoji,created_by");
+  const groups = (gs ?? []) as {
+    id: string;
+    name: string;
+    emoji: string;
+    created_by: string;
+    avatar_path?: string | null;
+  }[];
+  const photos = await signedMedia(groups.map((g) => g.avatar_path ?? "").filter(Boolean));
   const ids = groups.map((g) => g.id);
   const [mem, msg] = ids.length
     ? await Promise.all([
-        supabase
-          .from("group_members")
-          .select("group_id,user_id,last_read_at")
-          .in("group_id", ids),
+        supabase.from("group_members").select("group_id,user_id,last_read_at").in("group_id", ids),
         supabase
           .from("group_messages")
           .select("id,group_id,sender,body,shared_ref,created_at")
@@ -166,6 +174,7 @@ async function load(me: string) {
       id: g.id,
       name: g.name,
       emoji: g.emoji,
+      avatar: g.avatar_path ? photos[g.avatar_path] : undefined,
       createdBy: who(g.created_by),
       members: members[g.id] ?? [],
     })),
@@ -411,6 +420,36 @@ export async function sendGroupMedia(groupId: string, file: File) {
   if (error) throw new Error(error.message);
 }
 
+/** Send a GIF ("gif:<url>") or sticker ("sticker:<id>") to a group. */
+export async function sendGroupRich(groupId: string, ref: string) {
+  const id = uuid();
+  pushLocal(groupId, { id, from: "me", ref, at: Date.now() });
+  if (!mine()) return;
+  const { error } = await supabase
+    .from("group_messages")
+    .insert({ id, group_id: groupId, sender: _get().me!.id, body: null, shared_ref: ref });
+  if (error) throw new Error(error.message);
+}
+
+/** Set the group's photo (any member can). */
+export async function setGroupPhoto(groupId: string, file: File) {
+  const { prepareMedia } = await import("@/components/ChatExtras");
+  const { blob, kind, ext } = await prepareMedia(file);
+  if (kind !== "img") throw new Error("Pick a photo, not a video.");
+  const local = URL.createObjectURL(blob);
+  set((s) => ({
+    ...s,
+    groups: s.groups.map((g) => (g.id === groupId ? { ...g, avatar: local } : g)),
+  }));
+  if (!mine()) return;
+  const path = await uploadMediaAt(`g/${groupId}`, blob, ext);
+  const { error } = await supabase
+    .from("groups")
+    .update({ avatar_path: path } as never)
+    .eq("id", groupId);
+  if (error) throw new Error(error.message);
+}
+
 /** "@aman hey" → the @-word being typed at the end of the text, or null. */
 export function mentionQuery(text: string) {
   const m = /(^|\s)@([\w.]*)$/.exec(text);
@@ -426,7 +465,11 @@ export function splitMentions(text: string, members: Member[]) {
   let last = 0;
   for (const m of text.matchAll(/@([\w.]+)/g)) {
     const handle = m[1].replace(/\.+$/, "").toLowerCase();
-    const who = byName.get(handle);
+    // @all / @everyone counts as mentioning you too.
+    const who =
+      handle === "all" || handle === "everyone"
+        ? { id: "me", name: "everyone", initials: "" }
+        : byName.get(handle);
     if (!who) continue;
     const start = m.index!;
     const end = start + 1 + handle.length;

@@ -64,7 +64,7 @@ async function bakeCaption(image: string, text: string, yPct: number): Promise<s
   ctx.fillStyle = "rgba(0,0,0,0.5)";
   ctx.fillRect(0, y, c.width, barH);
   ctx.fillStyle = "#fff";
-  ctx.font = `600 ${size}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `600 ${size}px -apple-system, "SF Pro Display", Inter, system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, c.width / 2, y + barH / 2, c.width * 0.92);
@@ -258,7 +258,7 @@ function SnapScreen() {
           }}
         >
           {!hasShot && !camError && (
-            <video
+            <video preload="metadata"
               ref={videoRef}
               autoPlay
               playsInline
@@ -317,14 +317,14 @@ function SnapScreen() {
           {image && (
             <>
               {/* Whole photo, never cropped; a blurred copy fills the edges. */}
-              <img
+              <img loading="lazy" decoding="async"
                 src={image}
                 alt=""
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover scale-110"
                 style={{ filter: "blur(24px) brightness(0.6)" }}
               />
-              <img
+              <img loading="lazy" decoding="async"
                 src={image}
                 alt="Your blink"
                 className="absolute inset-0 w-full h-full object-contain"

@@ -17,6 +17,7 @@ import {
   Vote,
   type LucideIcon,
   DoorOpen,
+  Megaphone,
   Gamepad2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -230,6 +231,8 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       };
     case "game_win":
       return { Icon: Trophy, tone: "var(--sun)", text: `${who} won ${a.body}` };
+    case "mention_all":
+      return { Icon: Megaphone, tone: "var(--pink)", text: `${who} mentioned everyone: ${a.body}` };
     case "daily_score":
       return { Icon: Gamepad2, tone: "var(--lime)", text: `${who} scored ${a.body}` };
     case "word_daily":

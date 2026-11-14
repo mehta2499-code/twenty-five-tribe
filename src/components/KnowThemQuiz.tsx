@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, buzz } from "@/components/SocialUI";
@@ -18,7 +18,11 @@ import {
 
 type Phase =
   | { kind: "loading" }
-  | { kind: "error"; message: string }
+  | {
+      kind: "error";
+      message: string;
+      retry?: { attempt: string; questions: string[]; guesses: Record<string, string> };
+    }
   | {
       kind: "asking";
       attempt: string;
@@ -48,6 +52,8 @@ export function KnowThemQuiz({
   actionLabel?: string;
 }) {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+  // Ignore a second tap while the answers are being sent (double taps sent it twice).
+  const busy = useRef(false);
   const first = person.name.split(" ")[0];
 
   useEffect(() => {
@@ -85,7 +91,11 @@ export function KnowThemQuiz({
             guesses: {},
           });
       } catch (e) {
-        if (alive) setPhase({ kind: "error", message: (e as Error).message });
+        if (alive)
+          setPhase({
+            kind: "error",
+            message: (e as Error)?.message || "Something went wrong. Try again.",
+          });
       }
     })();
     return () => {
@@ -95,14 +105,22 @@ export function KnowThemQuiz({
   }, [person.id, demo]);
 
   const answer = async (value: string) => {
-    if (phase.kind !== "asking") return;
+    if (phase.kind !== "asking" || busy.current) return;
     buzz(8);
     const qid = phase.questions[phase.index];
+    if (!qid) return;
     const guesses = { ...phase.guesses, [qid]: value };
     if (phase.index + 1 < phase.questions.length) {
       setPhase({ ...phase, guesses, index: phase.index + 1 });
       return;
     }
+    await finish(phase.attempt, phase.questions, guesses);
+  };
+
+  const finish = async (attempt: string, questions: string[], guesses: Record<string, string>) => {
+    if (busy.current) return;
+    busy.current = true;
+    const phase = { attempt, questions };
     setPhase({ kind: "checking" });
     try {
       let result: { score: number; total: number; passed: boolean };
@@ -122,7 +140,14 @@ export function KnowThemQuiz({
       setPhase({ kind: "result", ...result });
       void refreshQuiz();
     } catch (e) {
-      setPhase({ kind: "error", message: (e as Error).message });
+      // Keep the answers so "Try again" doesn't start the quiz over.
+      setPhase({
+        kind: "error",
+        message: (e as Error)?.message || "Something went wrong. Try again.",
+        retry: { attempt, questions, guesses },
+      });
+    } finally {
+      busy.current = false;
     }
   };
 
@@ -187,9 +212,22 @@ export function KnowThemQuiz({
             <div className="text-center">
               <span className="sticker pink">hold up</span>
               <p className="heading mt-4">{phase.message}</p>
-              <button onClick={onClose} className="btn-secondary mt-6 px-6">
-                OK
-              </button>
+              <div className="mt-6 flex justify-center gap-3">
+                {phase.retry && (
+                  <button
+                    onClick={() => {
+                      const r = phase.retry!;
+                      void finish(r.attempt, r.questions, r.guesses);
+                    }}
+                    className="btn-primary px-6"
+                  >
+                    Try again
+                  </button>
+                )}
+                <button onClick={onClose} className="btn-secondary px-6">
+                  {phase.retry ? "Close" : "OK"}
+                </button>
+              </div>
             </div>
           ) : phase.kind === "result" ? (
             <div className="text-center animate-soft-in">
@@ -262,6 +300,12 @@ function Question({
   name: string;
   onAnswer: (v: string) => void;
 }) {
+  // A double tap shouldn't also answer the next question: ignore taps for a moment.
+  const [shownAt] = useState(() => Date.now());
+  const pick = (v: string) => {
+    if (Date.now() - shownAt < 300) return;
+    onAnswer(v);
+  };
   if (qid === "bday_month") {
     return (
       <div className="animate-soft-in">
@@ -271,7 +315,7 @@ function Question({
           {MONTHS.map((m, i) => (
             <button
               key={m}
-              onClick={() => onAnswer(String(i + 1))}
+              onClick={() => pick(String(i + 1))}
               className="btn-secondary"
               style={{ minHeight: 48, fontSize: 14 }}
             >
@@ -292,7 +336,7 @@ function Question({
       </h2>
       <div className="mt-7 grid grid-cols-2 gap-4">
         {(["a", "b"] as const).map((c, i) => (
-          <button key={c} onClick={() => onAnswer(c)} className="choice">
+          <button key={c} onClick={() => pick(c)} className="choice">
             <span style={{ fontSize: 50, lineHeight: 1 }} aria-hidden="true">
               {q[c].emoji}
             </span>
@@ -312,7 +356,8 @@ function BigConfetti({ perfect }: { perfect: boolean }) {
   useEffect(() => {
     const times = perfect ? [500, 1100, 1700] : [600];
     const ids = times.map((t, i) => setTimeout(() => setN(i + 2), t));
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.([30, 60, 30]);
+    if (typeof navigator !== "undefined" && "vibrate" in navigator)
+      navigator.vibrate?.([30, 60, 30]);
     return () => ids.forEach(clearTimeout);
   }, [perfect]);
   return <Confetti fire={n} />;

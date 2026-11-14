@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Crown, Flag, Flame, RotateCw, Sparkles, Trophy, Type, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
 import { GAMES } from "@/components/ArcadeGames";
 import { friendById, meView, useSocial } from "@/lib/social";
 import {
@@ -540,20 +541,22 @@ export function Scoreboard() {
                       style={{ color: "var(--sun)", fill: "var(--sun)", stroke: "var(--edge)" }}
                     />
                   )}
-                  <span
-                    className="rounded-full"
-                    style={{
-                      border: "var(--bd)",
-                      boxShadow: first ? "0 0 0 4px var(--sun), var(--pop-lg)" : "var(--pop)",
-                    }}
-                  >
-                    <Avatar
-                      src={p.avatar}
-                      initials={p.initials}
-                      color={p.color}
-                      size={first ? 96 : 70}
-                    />
-                  </span>
+                  <PersonLink id={r.id} label={p.name} className="rounded-full">
+                    <span
+                      className="block rounded-full"
+                      style={{
+                        border: "var(--bd)",
+                        boxShadow: first ? "0 0 0 4px var(--sun), var(--pop-lg)" : "var(--pop)",
+                      }}
+                    >
+                      <Avatar
+                        src={p.avatar}
+                        initials={p.initials}
+                        color={p.color}
+                        size={first ? 96 : 70}
+                      />
+                    </span>
+                  </PersonLink>
                   <span
                     className="-mt-3 px-2.5 py-0.5 rounded-full font-extrabold tabular-nums text-[14px] relative"
                     style={{ background: "var(--surface)", border: "var(--bd)" }}
@@ -672,9 +675,11 @@ function RankRow({ row, tone, light }: { row: Row; tone: string; light?: boolean
         #{row.rank}
       </span>
       <span className="py-2.5 pl-3">
-        <span className="block rounded-full" style={{ border: "var(--bd)" }}>
-          <Avatar src={p.avatar} initials={p.initials} color={p.color} size={52} />
-        </span>
+        <PersonLink id={row.id} label={p.name} className="block rounded-full">
+          <span className="block rounded-full" style={{ border: "var(--bd)" }}>
+            <Avatar src={p.avatar} initials={p.initials} color={p.color} size={52} />
+          </span>
+        </PersonLink>
       </span>
       <span className="flex-1 min-w-0 pl-3 pr-4 py-2.5">
         <span className="block display tabular-nums" style={{ fontSize: 26, lineHeight: 1 }}>

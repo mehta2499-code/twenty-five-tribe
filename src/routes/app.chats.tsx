@@ -2,6 +2,7 @@ import { Tour } from "@/components/Tour";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Camera, MessageCircle, Search, UserPlus, Users } from "lucide-react";
+import { GroupFace } from "@/components/GroupFace";
 import { Avatar } from "@/components/Avatar";
 import {
   EmptyState,
@@ -63,12 +64,7 @@ function GroupsSection() {
                   params={{ id: g.id }}
                   className="flex items-center gap-3 px-5 py-2.5 hover:bg-[var(--fill)]"
                 >
-                  <span
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0"
-                    style={{ background: "var(--fill)", border: "var(--bd)" }}
-                  >
-                    {g.emoji}
-                  </span>
+                  <GroupFace avatar={g.avatar} emoji={g.emoji} size={48} />
                   <span className="flex-1 min-w-0">
                     <span className="block font-semibold text-cream truncate">{g.name}</span>
                     <span
@@ -76,7 +72,7 @@ function GroupsSection() {
                       style={{ color: n ? "var(--ink)" : undefined, fontWeight: n ? 700 : 400 }}
                     >
                       {last
-                        ? `${last.from === "me" ? "You" : member(last.from, st).name.split(" ")[0]}: ${last.text ?? ""}`
+                        ? `${last.from === "me" ? "You" : member(last.from, st).name.split(" ")[0]}: ${last.text ?? (last.ref?.startsWith("gif:") ? "GIF" : last.ref?.startsWith("sticker:") ? "Sticker" : "")}`
                         : `${g.members.length} members`}
                     </span>
                   </span>
@@ -170,6 +166,8 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
   if (m.sharedPostId?.startsWith("voice:")) return `${who}Voice note`;
   if (m.sharedPostId?.startsWith("img:")) return `${who}Photo`;
+  if (m.sharedPostId?.startsWith("gif:")) return `${who}GIF`;
+  if (m.sharedPostId?.startsWith("sticker:")) return `${who}Sticker`;
   if (m.sharedPostId?.startsWith("vid:")) return `${who}Video`;
   if (m.sharedPostId)
     return `${who}shared a ${m.sharedPostId.startsWith("reel") ? "reel" : "post"}`;

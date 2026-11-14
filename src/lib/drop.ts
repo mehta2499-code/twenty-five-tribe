@@ -72,7 +72,9 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
   if (s.mode !== "live") {
     let mine: DropPost | null = null;
     try {
-      const saved = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null") as (DropPost & { day: string }) | null;
+      const saved = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null") as
+        | (DropPost & { day: string })
+        | null;
       if (saved?.day === day) mine = saved;
     } catch {
       // ignore
@@ -106,7 +108,11 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
   const who = (id: string) => (id === me ? "me" : id);
   const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
     supabase.from("drop_likes").select("owner,user_id").eq("day", day),
-    supabase.from("drop_comments").select("id,owner,author,body,created_at").eq("day", day).order("created_at"),
+    supabase
+      .from("drop_comments")
+      .select("id,owner,author,body,created_at")
+      .eq("day", day)
+      .order("created_at"),
   ]);
   const likes = (likeRows ?? []) as { owner: string; user_id: string }[];
   const comments = (commentRows ?? []) as {
@@ -164,7 +170,12 @@ export async function toggleDropLike(owner: string, liked: boolean) {
   if (!me) return;
   const day = today();
   if (liked)
-    await supabase.from("drop_likes").delete().eq("owner", owner).eq("day", day).eq("user_id", me.id);
+    await supabase
+      .from("drop_likes")
+      .delete()
+      .eq("owner", owner)
+      .eq("day", day)
+      .eq("user_id", me.id);
   else await supabase.from("drop_likes").insert({ owner, day, user_id: me.id });
 }
 
@@ -175,4 +186,125 @@ export async function commentOnDrop(owner: string, body: string) {
     .from("drop_comments")
     .insert({ owner, day: today(), author: me.id, body: body.trim().slice(0, 300) });
   if (error) throw new Error(error.message);
+}
+
+// ---------- Monthly recap ----------
+
+export type RecapDay = {
+  day: string;
+  image: string;
+  caption: string;
+  late: number;
+  likes: number;
+  comments: number;
+};
+
+export type Recap = {
+  month: string; // YYYY-MM
+  days: RecapDay[];
+  daysInMonth: number;
+  /** Days of the month that have happened so far (all of them for past months). */
+  daysSoFar: number;
+  onTime: number;
+  late: number;
+  longestStreak: number;
+  reactions: number;
+  best: RecapDay | null;
+};
+
+const pad = (n: number) => String(n).padStart(2, "0");
+export const monthKey = (d: string) => d.slice(0, 7);
+export function addMonths(month: string, n: number) {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`;
+}
+export const monthName = (month: string, withYear = false) =>
+  new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-IN", {
+    month: "long",
+    ...(withYear ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  });
+
+/** The month a recap link should open: last month in the first week, else this month. */
+export function defaultRecapMonth() {
+  const t = today();
+  return Number(t.slice(8, 10)) <= 7 ? addMonths(monthKey(t), -1) : monthKey(t);
+}
+
+function summarise(month: string, days: RecapDay[]): Recap {
+  const [y, m] = month.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const t = today();
+  const daysSoFar =
+    monthKey(t) === month ? Number(t.slice(8, 10)) : month < monthKey(t) ? daysInMonth : 0;
+  const have = new Set(days.map((d) => d.day));
+  let longestStreak = 0;
+  let run = 0;
+  for (let i = 1; i <= daysInMonth; i++) {
+    run = have.has(`${month}-${pad(i)}`) ? run + 1 : 0;
+    longestStreak = Math.max(longestStreak, run);
+  }
+  const score = (d: RecapDay) => d.likes + d.comments;
+  const best = days.reduce<RecapDay | null>((b, d) => (!b || score(d) > score(b) ? d : b), null);
+  return {
+    month,
+    days,
+    daysInMonth,
+    daysSoFar,
+    onTime: days.filter((d) => d.late <= 0).length,
+    late: days.filter((d) => d.late > 0).length,
+    longestStreak,
+    reactions: days.reduce((n, d) => n + score(d), 0),
+    best,
+  };
+}
+
+/** Your Drops for one month (YYYY-MM), with photo links and reaction counts. */
+export async function loadRecap(month: string): Promise<Recap> {
+  if (_get().mode !== "live") {
+    const days: RecapDay[] = [];
+    for (let i = 1; i <= 28; i++) {
+      if (hash(`${month}${i}`) % 4 === 0) continue;
+      days.push({
+        day: `${month}-${pad(i)}`,
+        image: PHOTOS[i % PHOTOS.length],
+        caption: "",
+        late: hash(`${i}`) % 5 === 0 ? 20 : 0,
+        likes: hash(`${month}l${i}`) % 6,
+        comments: hash(`${month}c${i}`) % 3,
+      });
+    }
+    return summarise(
+      month,
+      days.filter((d) => d.day <= today()),
+    );
+  }
+  const { data, error } = await supabase.rpc(
+    "my_drop_month" as never,
+    {
+      p_month: `${month}-01`,
+    } as never,
+  );
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as {
+    day: string;
+    image_path: string;
+    caption: string;
+    late_minutes: number;
+    likes: number;
+    comments: number;
+  }[];
+  const urls = await signedMedia(rows.map((r) => r.image_path));
+  return summarise(
+    month,
+    rows.map((r) => ({
+      day: r.day,
+      image: urls[r.image_path] ?? "",
+      caption: r.caption,
+      late: r.late_minutes,
+      likes: r.likes,
+      comments: r.comments,
+    })),
+  );
 }

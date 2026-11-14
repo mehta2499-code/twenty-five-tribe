@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as InUsernameRouteImport } from './routes/in.$username'
 import { Route as AppSnapRouteImport } from './routes/app.snap'
+import { Route as AppRecapRouteImport } from './routes/app.recap'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
 import { Route as AppPollsRouteImport } from './routes/app.polls'
@@ -30,6 +31,7 @@ import { Route as AppDropRouteImport } from './routes/app.drop'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
 import { Route as ApiPushRouteImport } from './routes/api.push'
+import { Route as ApiGifRouteImport } from './routes/api.gif'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
 import { Route as AppGroupIdRouteImport } from './routes/app.group.$id'
@@ -84,6 +86,11 @@ const InUsernameRoute = InUsernameRouteImport.update({
 const AppSnapRoute = AppSnapRouteImport.update({
   id: '/snap',
   path: '/snap',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRecapRoute = AppRecapRouteImport.update({
+  id: '/recap',
+  path: '/recap',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -141,6 +148,11 @@ const ApiPushRoute = ApiPushRouteImport.update({
   path: '/api/push',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGifRoute = ApiGifRouteImport.update({
+  id: '/api/gif',
+  path: '/api/gif',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppSeatIdRoute = AppSeatIdRouteImport.update({
   id: '/seat/$id',
   path: '/seat/$id',
@@ -175,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
@@ -186,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/recap': typeof AppRecapRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
@@ -202,6 +216,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
@@ -213,6 +228,7 @@ export interface FileRoutesByTo {
   '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/recap': typeof AppRecapRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app': typeof AppIndexRoute
@@ -231,6 +247,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
+  '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
   '/app/activity': typeof AppActivityRoute
   '/app/chats': typeof AppChatsRoute
@@ -242,6 +259,7 @@ export interface FileRoutesById {
   '/app/polls': typeof AppPollsRoute
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
+  '/app/recap': typeof AppRecapRoute
   '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
@@ -261,6 +279,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/vibe'
     | '/walkthrough'
+    | '/api/gif'
     | '/api/push'
     | '/app/activity'
     | '/app/chats'
@@ -272,6 +291,7 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
+    | '/app/recap'
     | '/app/snap'
     | '/in/$username'
     | '/app/'
@@ -288,6 +308,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/vibe'
     | '/walkthrough'
+    | '/api/gif'
     | '/api/push'
     | '/app/activity'
     | '/app/chats'
@@ -299,6 +320,7 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
+    | '/app/recap'
     | '/app/snap'
     | '/in/$username'
     | '/app'
@@ -316,6 +338,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/vibe'
     | '/walkthrough'
+    | '/api/gif'
     | '/api/push'
     | '/app/activity'
     | '/app/chats'
@@ -327,6 +350,7 @@ export interface FileRouteTypes {
     | '/app/polls'
     | '/app/privacy'
     | '/app/profile'
+    | '/app/recap'
     | '/app/snap'
     | '/in/$username'
     | '/app/'
@@ -345,6 +369,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   VibeRoute: typeof VibeRoute
   WalkthroughRoute: typeof WalkthroughRoute
+  ApiGifRoute: typeof ApiGifRoute
   ApiPushRoute: typeof ApiPushRoute
   InUsernameRoute: typeof InUsernameRoute
 }
@@ -419,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/snap'
       fullPath: '/app/snap'
       preLoaderRoute: typeof AppSnapRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/recap': {
+      id: '/app/recap'
+      path: '/recap'
+      fullPath: '/app/recap'
+      preLoaderRoute: typeof AppRecapRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/profile': {
@@ -498,6 +530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/gif': {
+      id: '/api/gif'
+      path: '/api/gif'
+      fullPath: '/api/gif'
+      preLoaderRoute: typeof ApiGifRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/seat/$id': {
       id: '/app/seat/$id'
       path: '/seat/$id'
@@ -547,6 +586,7 @@ interface AppRouteChildren {
   AppPollsRoute: typeof AppPollsRoute
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
+  AppRecapRoute: typeof AppRecapRoute
   AppSnapRoute: typeof AppSnapRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCardIdRoute: typeof AppCardIdRoute
@@ -567,6 +607,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPollsRoute: AppPollsRoute,
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
+  AppRecapRoute: AppRecapRoute,
   AppSnapRoute: AppSnapRoute,
   AppIndexRoute: AppIndexRoute,
   AppCardIdRoute: AppCardIdRoute,
@@ -586,6 +627,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   VibeRoute: VibeRoute,
   WalkthroughRoute: WalkthroughRoute,
+  ApiGifRoute: ApiGifRoute,
   ApiPushRoute: ApiPushRoute,
   InUsernameRoute: InUsernameRoute,
 }

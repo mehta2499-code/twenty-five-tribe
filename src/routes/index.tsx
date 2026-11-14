@@ -25,8 +25,8 @@ const C = {
   coral: "#C1EF62",
 };
 
-const serif = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
-const sans = { fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" };
+const serif = { fontFamily: "-apple-system, 'SF Pro Display', Inter, system-ui, sans-serif" };
+const sans = { fontFamily: "-apple-system, 'SF Pro Display', Inter, system-ui, sans-serif" };
 
 // ----- Reveal on scroll -----
 function Reveal({
@@ -117,7 +117,7 @@ function Landing() {
           0%, 100% { transform: translateY(0); opacity: 0.7; }
           50%      { transform: translateY(8px); opacity: 1; }
         }
-        .h-serif { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-weight: 800; font-style: normal !important; letter-spacing: -0.03em; }
+        .h-serif { font-family: -apple-system, 'SF Pro Display', Inter, system-ui, sans-serif; font-weight: 800; font-style: normal !important; letter-spacing: -0.03em; }
         .glass {
           background: rgba(255,255,255,0.08);
           border: 1px solid rgba(255,255,255,0.16);
