@@ -286,18 +286,7 @@ function Table({
                   {st.count}
                   {st.atRisk && <Ico i={Hourglass} size={small ? 10 : 11} />}
                 </span>
-              ) : (
-                <span
-                  className="relative z-[1] -mt-1 font-bold px-1.5 rounded-full whitespace-nowrap"
-                  style={{
-                    background: "var(--edge)",
-                    color: "var(--ink-2)",
-                    fontSize: labelSize(f.name) - (small ? 1 : 0),
-                  }}
-                >
-                  {f.name.split(" ")[0]}
-                </span>
-              )}
+              ) : null}
             </Link>
           );
         })}
@@ -907,10 +896,4 @@ function Home() {
       )}
     </>
   );
-}
-
-/** Smaller text for longer first names, so the whole name fits under the bubble. */
-function labelSize(name: string) {
-  const n = name.split(" ")[0].length;
-  return n <= 6 ? 11 : n <= 8 ? 10 : n <= 11 ? 9 : 8;
 }
