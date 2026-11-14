@@ -23,6 +23,7 @@ import {
   leaveGroup,
   markSeen,
   member,
+  seenBy,
   mentionQuery,
   sendGroupMedia,
   splitMentions,
@@ -49,6 +50,8 @@ function GroupThread() {
   const msgs = st.msgs[id] ?? [];
   const [text, setText] = useState("");
   const [info, setInfo] = useState(false);
+  // "Seen by": who has read one of my messages.
+  const [seenFor, setSeenFor] = useState<(typeof msgs)[number] | null>(null);
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
@@ -77,6 +80,17 @@ function GroupThread() {
     setText("");
     boxRef.current?.focus();
     void sendToGroup(id, t).catch((e) => setToast((e as Error).message));
+  };
+  // My latest message gets a "Seen by …" line (tap it to see everyone).
+  const lastMine = msgs.reduce((k, m, i) => (m.from === "me" ? i : k), -1);
+  const seenLine = (m: (typeof msgs)[number]) => {
+    const list = seenBy(st, id, m);
+    const seen = list.filter((x) => x.at);
+    if (!list.length) return null;
+    if (seen.length === list.length) return "Seen by everyone";
+    if (!seen.length) return "Not seen yet";
+    const names = seen.map((x) => member(x.id, st).name.split(" ")[0]);
+    return `Seen by ${names.slice(0, 2).join(", ")}${names.length > 2 ? ` +${names.length - 2}` : ""}`;
   };
   const tone = (who: string) =>
     NAME_TONES[g.members.indexOf(who) % NAME_TONES.length] ?? "var(--ink-2)";
@@ -269,6 +283,18 @@ function GroupThread() {
                           </div>
                         </Reactable>
                       </div>
+                      {i === lastMine && seenLine(m) && (
+                        <div className="flex justify-end mt-1">
+                          <button
+                            type="button"
+                            onClick={() => setSeenFor(m)}
+                            className="meta text-[12px] px-1"
+                            aria-label={`${seenLine(m)}. Show who has seen it`}
+                          >
+                            {seenLine(m)}
+                          </button>
+                        </div>
+                      )}
                     </li>
                   );
                 })}
@@ -368,7 +394,7 @@ function GroupThread() {
             onChange={setText}
             onSend={send}
             inputRef={boxRef}
-            placeholder={`Message ${g.name} · @ to tag`}
+            label={`Message ${g.name}`}
           />
           {text.trim() ? (
             <button
@@ -393,6 +419,29 @@ function GroupThread() {
         </form>
       </div>
 
+      {seenFor && (
+        <Sheet title="Seen by" onClose={() => setSeenFor(null)}>
+          <ul className="grid gap-1">
+            {seenBy(st, id, seenFor)
+              .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
+              .map((x) => {
+                const p = member(x.id, st);
+                return (
+                  <li key={x.id} className="flex items-center gap-3 py-1.5">
+                    <Avatar src={p.avatar} initials={p.initials} color={p.color} size={36} />
+                    <span className="flex-1 min-w-0 font-semibold truncate">{p.name}</span>
+                    <span
+                      className="meta text-[12.5px] shrink-0"
+                      style={x.at ? { color: "var(--lime)" } : undefined}
+                    >
+                      {x.at ? `Seen ${clock(x.at)}` : "Not yet"}
+                    </span>
+                  </li>
+                );
+              })}
+          </ul>
+        </Sheet>
+      )}
       {info && (
         <Sheet title={g.name} onClose={() => setInfo(false)}>
           <div className="flex items-center gap-3">

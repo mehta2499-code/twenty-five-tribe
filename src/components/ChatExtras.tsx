@@ -535,14 +535,15 @@ export function GrowingInput({
   value,
   onChange,
   onSend,
-  placeholder,
+  label,
   id,
   inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
-  placeholder: string;
+  /** Read out by screen readers (no placeholder text is shown in the box). */
+  label: string;
   id?: string;
   /** Lets a parent (the @mention picker) put the cursor back in the box. */
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -569,8 +570,7 @@ export function GrowingInput({
           if (value.trim()) onSend();
         }
       }}
-      placeholder={placeholder}
-      aria-label={placeholder}
+      aria-label={label}
       className="input flex-1 resize-none py-3 leading-snug"
       style={{ borderRadius: 24, minHeight: 48, maxHeight: 128, overflowY: "auto" }}
       autoComplete="off"

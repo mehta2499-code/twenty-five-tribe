@@ -28,9 +28,11 @@ type State = {
   groups: Group[];
   msgs: Record<string, GMsg[]>;
   people: Record<string, Member>;
+  /** When each member last read each group: readAt[groupId][memberId] (ms). */
+  readAt: Record<string, Record<string, number>>;
   loaded: boolean;
 };
-let store: State = { groups: [], msgs: {}, people: {}, loaded: false };
+let store: State = { groups: [], msgs: {}, people: {}, readAt: {}, loaded: false };
 const listeners = new Set<() => void>();
 function set(fn: (s: State) => State) {
   store = fn(store);
@@ -83,11 +85,11 @@ function demoState(): State {
       "groups" | "msgs"
     > | null;
     if (saved?.groups?.length)
-      return { groups: saved.groups, msgs: saved.msgs, people: {}, loaded: true };
+      return { groups: saved.groups, msgs: saved.msgs, people: {}, readAt: {}, loaded: true };
   } catch {
     // ignore
   }
-  return { groups: [g], msgs, people: {}, loaded: true };
+  return { groups: [g], msgs, people: {}, readAt: {}, loaded: true };
 }
 
 let liveFor: string | null = null;
@@ -120,12 +122,14 @@ async function load(me: string) {
     : [{ data: [] }, { data: [] }];
   const who = (id: string) => (id === me ? "me" : id);
   const members: Record<string, string[]> = {};
+  const readAt: State["readAt"] = {};
   for (const r of (mem.data ?? []) as {
     group_id: string;
     user_id: string;
     last_read_at?: string | null;
   }[]) {
     (members[r.group_id] ??= []).push(who(r.user_id));
+    if (r.last_read_at) (readAt[r.group_id] ??= {})[who(r.user_id)] = Date.parse(r.last_read_at);
     if (r.user_id === me && r.last_read_at)
       serverSeen[r.group_id] = Math.max(serverSeen[r.group_id] ?? 0, Date.parse(r.last_read_at));
   }
@@ -170,6 +174,7 @@ async function load(me: string) {
     loaded: true,
     people,
     msgs,
+    readAt,
     groups: groups.map((g) => ({
       id: g.id,
       name: g.name,
@@ -227,7 +232,33 @@ export function useGroups() {
             reload();
           },
         )
-        .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, reload)
+        // Someone read a group: just update their "read up to" mark.
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "group_members" },
+          ({ new: row }) => {
+            const r = row as { group_id: string; user_id: string; last_read_at: string | null };
+            if (!r.last_read_at) return;
+            const id = r.user_id === me ? "me" : r.user_id;
+            const at = Date.parse(r.last_read_at);
+            if (r.user_id === me)
+              serverSeen[r.group_id] = Math.max(serverSeen[r.group_id] ?? 0, at);
+            set((st) => ({
+              ...st,
+              readAt: { ...st.readAt, [r.group_id]: { ...st.readAt[r.group_id], [id]: at } },
+            }));
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "group_members" },
+          reload,
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "group_members" },
+          reload,
+        )
         .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, reload)
         .subscribe();
     } else if (s.mode === "demo" && liveFor !== "demo") {
@@ -289,9 +320,21 @@ export function markSeen(groupId: string) {
   // Tell the server, so other devices and future logins know too.
   if (mine()) {
     serverSeen[groupId] = Date.now();
-    void supabase.rpc("mark_group_read" as never, { p_group: groupId } as never);
+    // (A Supabase request is only sent once something waits on it.)
+    void supabase
+      .rpc("mark_group_read" as never, { p_group: groupId } as never)
+      .then(() => undefined);
   }
 }
+/** Who in the group has read a message (everyone but the sender), and when. */
+export function seenBy(st: State, groupId: string, msg: GMsg) {
+  const g = st.groups.find((x) => x.id === groupId);
+  const marks = st.readAt[groupId] ?? {};
+  return (g?.members ?? [])
+    .filter((m) => m !== msg.from && m !== "me")
+    .map((m) => ({ id: m, at: (marks[m] ?? 0) >= msg.at ? marks[m] : null }));
+}
+
 export function unreadIn(st: State, groupId: string) {
   const since = Math.max(seenMap()[groupId] ?? 0, serverSeen[groupId] ?? 0);
   return (st.msgs[groupId] ?? []).filter((m) => m.from !== "me" && m.at > since).length;

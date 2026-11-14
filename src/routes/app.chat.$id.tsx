@@ -135,7 +135,13 @@ function ChatThread() {
       <div className="mx-auto w-full max-w-md flex flex-col h-full app-column">
         <header
           className="flex items-center gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2"
-          style={{ borderBottom: "1px solid var(--line)", background: "var(--band-bg)", boxShadow: "0 8px 22px rgba(0,0,0,0.3)", position: "relative", zIndex: 2 }}
+          style={{
+            borderBottom: "1px solid var(--line)",
+            background: "var(--band-bg)",
+            boxShadow: "0 8px 22px rgba(0,0,0,0.3)",
+            position: "relative",
+            zIndex: 2,
+          }}
         >
           <button
             onClick={() => navigate({ to: "/app/chats" })}
@@ -415,7 +421,7 @@ function ChatThread() {
               if (live) sendTyping(id);
             }}
             onSend={send}
-            placeholder={`Message ${firstName}`}
+            label={`Message ${firstName}`}
           />
           {text.trim() ? (
             <button

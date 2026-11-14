@@ -187,7 +187,7 @@ export function GameChat({
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Say something…"
+              aria-label="Message the game chat"
               className="input flex-1"
               style={{ borderRadius: 22 }}
               autoComplete="off"
