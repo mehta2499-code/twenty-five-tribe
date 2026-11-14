@@ -80,7 +80,15 @@ async function spotifyToken(id: string, secret: string) {
     },
     body: "grant_type=client_credentials",
   });
-  if (!r.ok) throw new Error("spotify auth");
+  if (!r.ok) {
+    const detail = await r.text().catch(() => "");
+    console.error("[spotify] token request failed", r.status, detail.slice(0, 300));
+    throw new Error(
+      r.status === 400 || r.status === 401
+        ? "Spotify didn't accept the keys. Check SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET."
+        : `Spotify login failed (${r.status}).`,
+    );
+  }
   const body = (await r.json()) as { access_token: string; expires_in: number };
   appToken = { value: body.access_token, until: Date.now() + body.expires_in * 1000 };
   return appToken.value;
@@ -107,7 +115,17 @@ export const Route = createFileRoute("/api/spotify")({
           url.searchParams.set("limit", "12");
           const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
           if (r.status === 401) appToken = null;
-          if (!r.ok) return json({ error: "Song search is busy. Try again." }, 502, "no-store");
+          if (!r.ok) {
+            const detail = await r.text().catch(() => "");
+            console.error("[spotify] search failed", r.status, detail.slice(0, 300));
+            const msg =
+              r.status === 429
+                ? "Too many searches right now. Try again in a minute."
+                : r.status === 403
+                  ? "Spotify blocked search for this app. Check the app's settings on developer.spotify.com."
+                  : `Spotify search failed (${r.status}).`;
+            return json({ error: msg }, 502, "no-store");
+          }
           const body = (await r.json()) as {
             tracks?: {
               items?: {
@@ -138,8 +156,10 @@ export const Route = createFileRoute("/api/spotify")({
           if (cache.size > 500) cache.clear();
           cache.set(q.toLowerCase(), { at: Date.now(), tracks });
           return json(tracks);
-        } catch {
-          return json({ error: "Song search is busy. Try again." }, 502, "no-store");
+        } catch (e) {
+          console.error("[spotify]", e);
+          const msg = e instanceof Error && e.message ? e.message : "Couldn't reach Spotify.";
+          return json({ error: msg }, 502, "no-store");
         }
       },
     },

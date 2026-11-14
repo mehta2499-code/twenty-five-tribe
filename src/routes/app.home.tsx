@@ -1317,11 +1317,30 @@ function Home() {
       e.style.overflow = "hidden";
       e.style.overscrollBehavior = "none";
     });
-    return () =>
+    // iPhone shifts the page up when the keyboard opens (e.g. song search) and,
+    // with scrolling locked, it would stay stuck there. Put it back once typing ends.
+    const typing = () => {
+      const a = document.activeElement as HTMLElement | null;
+      return !!a && a.matches("input, textarea, [contenteditable]");
+    };
+    const settle = () => {
+      if (!typing() && (window.scrollY !== 0 || document.documentElement.scrollTop !== 0))
+        window.scrollTo(0, 0);
+    };
+    const onFocusOut = () => setTimeout(settle, 60);
+    const vv = window.visualViewport;
+    document.addEventListener("focusout", onFocusOut);
+    vv?.addEventListener("resize", settle);
+    window.addEventListener("scroll", settle, { passive: true });
+    return () => {
+      document.removeEventListener("focusout", onFocusOut);
+      vv?.removeEventListener("resize", settle);
+      window.removeEventListener("scroll", settle);
       els.forEach((e, i) => {
         e.style.overflow = prev[i][0];
         e.style.overscrollBehavior = prev[i][1];
       });
+    };
   }, []);
 
   // Spotlight hops around the table, slows down, lands on someone.
@@ -1467,7 +1486,14 @@ function Home() {
       />
 
       <Confetti fire={confetti} />
-      {pickSong && <NowPlayingPicker onClose={() => setPickSong(false)} />}
+      {pickSong && (
+        <NowPlayingPicker
+          onClose={() => {
+            setPickSong(false);
+            setTimeout(() => window.scrollTo(0, 0), 80);
+          }}
+        />
+      )}
       {adding && (
         <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
       )}

@@ -21,7 +21,7 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { _get, seatedFriends, useSocial } from "@/lib/social";
+import { _get, friendById, seatedFriends, showBanner, useSocial } from "@/lib/social";
 
 export type Activity = {
   id: string;
@@ -125,7 +125,23 @@ function ensure() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${me}` },
-        () => void load(me),
+        ({ new: row }) => {
+          void load(me).then(() => {
+            const a = store.items.find((i) => i.id === (row as { id?: string }).id);
+            if (!a) return;
+            const f = a.actor ? friendById(a.actor) : undefined;
+            showBanner({
+              id: `act-${a.id}`,
+              title: a.actorName ?? f?.name ?? "25",
+              body: describe(a).text,
+              to: linkFor(a),
+              avatar: f?.avatar || undefined,
+              initials: f?.initials ?? a.actorName?.slice(0, 2).toUpperCase() ?? "25",
+              color: f?.color,
+              onOpen: () => void markRead(a.id),
+            });
+          });
+        },
       )
       .subscribe();
   } else if (s.mode === "demo" && liveFor !== "demo") {
@@ -151,6 +167,53 @@ export function useActivity() {
 }
 
 export const unreadCount = (s: State) => s.items.filter((i) => !i.read).length;
+
+/** Mark one notification read (tapping it, or its banner). */
+export async function markRead(id?: string) {
+  if (!id) return;
+  const it = store.items.find((i) => i.id === id);
+  if (!it || it.read) return;
+  set({ ...store, items: store.items.map((i) => (i.id === id ? { ...i, read: true } : i)) });
+  if (_get().mode === "live")
+    await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+}
+
+/** Where a notification takes you (same places as the phone notifications). */
+export function linkFor(a: Activity): string {
+  const ref = a.ref ?? "";
+  switch (a.kind) {
+    case "seated":
+    case "seated_back":
+    case "quiz_ace":
+      return a.actor ? `/app/seat/${a.actor}` : "/app/people";
+    case "quiz_try":
+    case "unseated":
+      return "/app/people";
+    case "like":
+    case "comment":
+    case "post":
+      return "/app/feed";
+    case "word_done":
+      return ref.startsWith("game:") ? `/app/play/${ref.slice(5)}` : "/app/games";
+    case "poll":
+      return "/app/polls";
+    case "card":
+      return "/app/card/me";
+    case "drop":
+    case "drop_like":
+    case "drop_comment":
+      return "/app/drop";
+    case "game_win":
+    case "daily_score":
+    case "daily_top":
+    case "word_daily":
+      return "/app/games";
+    case "mention_all":
+      return ref.startsWith("group:") ? `/app/group/${ref.slice(6)}` : "/app/chats";
+    default:
+      return "/app/activity";
+  }
+}
 
 export async function markAllRead() {
   if (!store.items.some((i) => !i.read)) return;

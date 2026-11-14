@@ -466,6 +466,8 @@ export type Banner = {
   initials: string;
   color?: string;
   emoji?: string;
+  /** Called when the banner is tapped. */
+  onOpen?: () => void;
 };
 export function showBanner(b: Banner) {
   set((s) => ({ ...s, banner: b }));

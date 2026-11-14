@@ -1,10 +1,10 @@
 import { EmojiText } from "@/components/Glyph3D";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState, PageBand, clientOnly } from "@/components/SocialUI";
 import { Bell, Lock } from "lucide-react";
-import { describe, markAllRead, useActivity, type Activity } from "@/lib/activity";
+import { describe, linkFor, markAllRead, markRead, useActivity } from "@/lib/activity";
 import { friendById, timeAgo } from "@/lib/social";
 
 export const Route = createFileRoute("/app/activity")({
@@ -12,30 +12,18 @@ export const Route = createFileRoute("/app/activity")({
   component: clientOnly(ActivityScreen),
 });
 
-function target(a: Activity): { to: string; params?: Record<string, string> } {
-  if (a.kind === "seated" || a.kind === "unseated") return { to: "/app/people" };
-  if (a.kind === "seated_back" && a.actor) return { to: "/app/seat/$id", params: { id: a.actor } };
-  if (a.kind === "like" || a.kind === "comment") return { to: "/app/feed" };
-  if (a.kind === "word_done" && a.ref?.startsWith("game:"))
-    return { to: "/app/play/$id", params: { id: a.ref.slice(5) } };
-  if (a.kind === "poll") return { to: "/app/polls" };
-  if (a.kind === "mention_all" && a.ref?.startsWith("group:"))
-    return { to: "/app/group/$id", params: { id: a.ref.slice(6) } };
-  if (a.kind === "daily_score" || a.kind === "daily_top" || a.kind === "word_daily")
-    return { to: "/app/games" };
-  if (a.kind === "drop" || a.kind === "drop_like" || a.kind === "drop_comment")
-    return { to: "/app/drop" };
-  if (a.kind === "card") return { to: "/app/card/$id", params: { id: "me" } };
-  return { to: "/app/home" };
-}
-
 function ActivityScreen() {
   const st = useActivity();
-  // Opening the screen marks everything as seen (after a beat, so the new dots show first).
+  const navigate = useNavigate();
+  // Opening the screen marks everything read right away (the bell clears), but
+  // the ones that were new stay highlighted for this visit.
+  const [fresh, setFresh] = useState<Set<string> | null>(null);
   useEffect(() => {
-    const t = setTimeout(() => void markAllRead(), 1500);
-    return () => clearTimeout(t);
-  }, [st.items.length]);
+    if (!st.loaded) return;
+    const unread = st.items.filter((i) => !i.read && i.id).map((i) => i.id!);
+    setFresh((prev) => new Set([...(prev ?? []), ...unread]));
+    if (unread.length) void markAllRead();
+  }, [st.loaded, st.items]);
 
   return (
     <div className="pb-8">
@@ -55,14 +43,17 @@ function ActivityScreen() {
           {st.items.map((a) => {
             const d = describe(a);
             const f = a.actor ? friendById(a.actor) : undefined;
-            const t = target(a);
+            const isNew = !!a.id && !!fresh?.has(a.id);
             return (
               <li key={a.id}>
-                <Link
-                  to={t.to}
-                  params={t.params}
-                  className="card flex items-center gap-3 p-3 hover:bg-[var(--fill)]"
-                  style={{ borderColor: a.read ? undefined : "var(--lime)" }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    void markRead(a.id);
+                    navigate({ to: linkFor(a) as "/app/home" });
+                  }}
+                  className="card w-full text-left flex items-center gap-3 p-3 hover:bg-[var(--fill)]"
+                  style={{ borderColor: isNew ? "var(--lime)" : undefined }}
                 >
                   <span className="relative shrink-0">
                     {a.actor ? (
@@ -98,13 +89,13 @@ function ActivityScreen() {
                     </span>
                     <span className="meta">{timeAgo(a.at)}</span>
                   </span>
-                  {!a.read && (
+                  {isNew && (
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ background: "var(--lime)" }}
                     />
                   )}
-                </Link>
+                </button>
               </li>
             );
           })}
