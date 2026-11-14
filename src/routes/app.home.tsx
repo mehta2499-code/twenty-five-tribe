@@ -135,6 +135,7 @@ function Table({
   onRoll,
   picked,
   onPickedShown,
+  onSpotDone,
   topLeft,
   topRight,
 }: {
@@ -148,6 +149,8 @@ function Table({
   /** The friend the dice landed on: their menu opens next to their face. */
   picked: Person | null;
   onPickedShown: () => void;
+  /** The dice's highlight can go (its menu was closed). */
+  onSpotDone: () => void;
 }) {
   const s = useSocial();
   // Who at your Table is in the app right now, and doing what.
@@ -250,6 +253,11 @@ function Table({
     onPickedShown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [picked]);
+  // Closing the menu (or picking something in it) turns the dice's highlight off.
+  useEffect(() => {
+    if (!menu && spot !== null && !rolling) onSpotDone();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menu]);
   const challenge = async (kind: "trivia" | "ludo", f: Person) => {
     setMenu(null);
     try {
@@ -1611,6 +1619,7 @@ function Home() {
         onRoll={onRoll}
         picked={picked}
         onPickedShown={() => setPicked(null)}
+        onSpotDone={() => setSpot(null)}
         topLeft={
           <button
             onClick={() => setPickSong(true)}
