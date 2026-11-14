@@ -112,7 +112,7 @@ export const Route = createFileRoute("/api/spotify")({
           const url = new URL("https://api.spotify.com/v1/search");
           url.searchParams.set("q", q);
           url.searchParams.set("type", "track");
-          url.searchParams.set("limit", "12");
+          url.searchParams.set("limit", "10");
           const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
           if (r.status === 401) appToken = null;
           if (!r.ok) {
