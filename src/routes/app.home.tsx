@@ -57,7 +57,7 @@ import { WaffleMenu } from "@/components/WaffleMenu";
 import { ListeningBadge, NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
 import { cleanTitle, isListening, mainArtist } from "@/lib/music";
 import { Glyph3D, preloadSprites } from "@/components/Glyph3D";
-import { TRIVIA_PACKS } from "@/lib/data";
+import { thisWeeksPacks } from "@/lib/data";
 import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
 import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
@@ -249,7 +249,9 @@ function Table({
     setMenu(null);
     try {
       if (kind === "trivia") {
-        const pack = TRIVIA_PACKS[Math.floor(Math.random() * TRIVIA_PACKS.length)];
+        // A random topic from this week's trivia.
+        const packs = thisWeeksPacks();
+        const pack = packs[Math.floor(Math.random() * packs.length)];
         const id = await startTriviaChallenge(pack.id, f);
         void inviteToDuel(id, f.id, pack.name);
         navigate({ to: "/app/play/$id", params: { id } });

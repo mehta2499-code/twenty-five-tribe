@@ -36,7 +36,8 @@ import type { Length } from "@/lib/kachuful";
 import type { ImpState } from "@/lib/imposter";
 import { TriviaGame } from "@/components/TriviaGame";
 import { PackIcon } from "@/components/PackIcon";
-import { TRIVIA_PACKS, type TriviaPack } from "@/lib/data";
+import { TRIVIA_PACKS, thisWeeksPacks, type TriviaPack } from "@/lib/data";
+import { switchesIn } from "@/lib/triviaWeeks";
 import { ROUND, bankSize } from "@/lib/trivia";
 import {
   botSeats,
@@ -633,9 +634,10 @@ function Games() {
       )}
 
       {packs && (
-        <Sheet title="Trivia: pick a pack" onClose={() => setPacks(false)}>
-          <ul className="grid gap-2.5">
-            {TRIVIA_PACKS.filter((p) => p.price === "Free").map((p) => (
+        <Sheet title="Trivia: pick a topic" onClose={() => setPacks(false)}>
+          <p className="meta mb-3">This week's topics · new ones {switchesIn()}</p>
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-2.5">
+            {thisWeeksPacks().map((p) => (
               <li key={p.id}>
                 <button
                   onClick={() => {
@@ -724,7 +726,7 @@ function Games() {
 
       {packFor && (
         <Sheet title={packFor.name} onClose={() => setPackFor(null)}>
-          <p className="text-sm text-cool">{packFor.tagline} 10 seconds a question.</p>
+          <p className="text-sm text-cool">{packFor.tagline} · 10 seconds a question.</p>
           <div className="mt-5 grid gap-3">
             <button
               onClick={() => {

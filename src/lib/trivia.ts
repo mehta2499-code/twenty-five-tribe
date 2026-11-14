@@ -3,10 +3,13 @@
  * A round picks ROUND questions at random and shuffles the options, so no two
  * games look the same. Challenges share a seed so both friends get the same round.
  */
-export type TriviaQ = { q: string; options: string[]; answer: number };
-type Raw = [string, string, string, string, string];
+import type { Raw } from "@/lib/trivia/types";
+import { WEEKS } from "@/lib/triviaWeeks";
 
-const BANK: Record<string, Raw[]> = {
+export type TriviaQ = { q: string; options: string[]; answer: number };
+
+/** The original 5 packs (still playable from old challenges). */
+const CLASSIC: Record<string, Raw[]> = {
   ipl: [
     ["Who has scored the most runs in IPL history?", "Virat Kohli", "Rohit Sharma", "David Warner", "MS Dhoni"],
     ["Which team won the first IPL, in 2008?", "Rajasthan Royals", "CSK", "RCB", "Mumbai Indians"],
@@ -189,6 +192,12 @@ const BANK: Record<string, Raw[]> = {
     ["Mom's universal 'I'm not angry' sign?", "Calling you by your full name", "Making your favourite food", "Hugging you", "Ordering pizza"],
     ["When a relative asks 'beta, kya kar rahe ho aajkal?' you say…", "'Bas, padhai'", "The truth", "'Startup'", "Nothing, you run"],
   ],
+};
+
+/** Every pack: the classics plus all weekly topics (see triviaWeeks.ts). */
+const BANK: Record<string, Raw[]> = {
+  ...CLASSIC,
+  ...Object.fromEntries(WEEKS.flat().map((p) => [p.id, p.qs])),
 };
 
 export const ROUND = 10;

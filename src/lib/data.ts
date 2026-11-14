@@ -1,3 +1,4 @@
+import { WEEKS, thisWeekIds } from "@/lib/triviaWeeks";
 export type Friend = {
   id: string;
   name: string;
@@ -289,6 +290,20 @@ export type TriviaPack = {
   gradient: string;
 };
 
+const PACK_GRADIENTS = [
+  "linear-gradient(135deg,#1A5276,#2B8AC4)",
+  "linear-gradient(135deg,#9b1c4a,#F7A8A0)",
+  "linear-gradient(135deg,#0f5132,#BFE9C9)",
+  "linear-gradient(135deg,#4a1d7a,#C9B6F2)",
+  "linear-gradient(135deg,#9a3412,#FFD9A8)",
+];
+
+/** Packs shown in the picker this week (classics stay playable from old challenges). */
+export const thisWeeksPacks = () => {
+  const ids = thisWeekIds();
+  return TRIVIA_PACKS.filter((p) => ids.includes(p.id));
+};
+
 export const TRIVIA_PACKS: TriviaPack[] = [
   {
     id: "ipl",
@@ -340,6 +355,19 @@ export const TRIVIA_PACKS: TriviaPack[] = [
     price: "Free",
     gradient: "linear-gradient(135deg,#9a3412,#FFD9A8)",
   },
+  // Weekly topics (5 a week, see triviaWeeks.ts).
+  ...WEEKS.flat().map(
+    (p, i): TriviaPack => ({
+      id: p.id,
+      emoji: p.emoji,
+      name: p.name,
+      tagline: p.tagline,
+      questions: p.qs.length,
+      difficulty: p.difficulty,
+      price: "Free",
+      gradient: PACK_GRADIENTS[i % PACK_GRADIENTS.length],
+    }),
+  ),
 ];
 
 // ============== Memory Capsules ==============
@@ -418,9 +446,7 @@ export const CAPSULES: Capsule[] = CAPSULE_FRIEND_IDS.map((fid, i) => {
   };
 });
 
-
 export { type TriviaQ } from "@/lib/trivia";
-
 
 // ============== Relationship tags & moments (warm layer) ==============
 export type RelationshipTag =
