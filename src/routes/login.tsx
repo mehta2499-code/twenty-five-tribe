@@ -127,7 +127,7 @@ function Login() {
         setPasswordSet(true);
         if (needsCode) {
           setCode("");
-          setNotice("We emailed you a 6-digit code. Enter it to claim your seat.");
+          setNotice("We emailed you an 8-digit code. Enter it to claim your seat.");
           setStep("code");
           setResendIn(45);
           return;
@@ -338,24 +338,24 @@ function Login() {
               Check your email.
             </p>
             <p className="text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              Enter the 6-digit code we sent to{" "}
+              Enter the 8-digit code we sent to{" "}
               <span className="font-semibold text-cream">{email}</span>.
             </p>
             <label htmlFor="login-code" className="sr-only">
-              6-digit code
+              8-digit code
             </label>
             <input
               id="login-code"
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={8}
-              placeholder="123456"
+              placeholder="12345678"
               autoFocus
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               className={`${field} text-center tracking-[0.5em] text-2xl font-bold`}
             />
-            <button type="submit" disabled={busy || code.length < 6} className={primary}>
+            <button type="submit" disabled={busy || code.length < 8} className={primary}>
               {busy ? "Checking…" : "Verify email"}
             </button>
             <p className="text-center text-sm text-faint">
