@@ -217,6 +217,20 @@ function Table({
     Math.min(46, Math.max(30, (perimeter / Math.max(seated.length, 1)) * 0.8)),
   );
 
+  // Is a prop under someone on the table (or a birthday cake)? Then it's cleared away.
+  const blocked = (p: PropDef) => {
+    const r = (p.w * W) / 2;
+    const near = (x: number, y: number, room: number) =>
+      Math.hypot(((p.x - x) / 100) * W, ((p.y - y) / 100) * H) < room + r * 0.8;
+    return (
+      busy.some((i) => near(places[i].x, places[i].y, faceSize / 2 + 8)) ||
+      seated.some(
+        (f, i) =>
+          bdayIn.get(f.id) === 0 &&
+          near(50 + (places[i].x - 50) * 0.66, 50 + (places[i].y - 50) * 0.66, W * 0.075),
+      )
+    );
+  };
   // Birthdays in the next 7 days get a party hat.
   const bdays = useBirthdays();
   const bdayIn = new Map(
@@ -508,7 +522,17 @@ function Table({
         </div>
 
         {/* The spread: pizza slices, red cups, wine (one knocked over). Tap one to jiggle it. */}
-        {measured && TABLE_PROPS.map((p) => <TableProp key={p.id} prop={p} width={W} />)}
+        {/* Table-aware: nothing sits under someone who's come onto the table (or a
+            birthday cake), and an empty table gets a few more things on it. */}
+        {measured &&
+          TABLE_PROPS.map((p) => (
+            <TableProp
+              key={p.id}
+              prop={p}
+              width={W}
+              hidden={(p.extra && busy.length > 0) || blocked(p)}
+            />
+          ))}
 
         {/* Birthday today: a cake on the table in front of their seat. */}
         {measured &&
@@ -972,7 +996,7 @@ function Confetti3D({ at }: { at: { x: number; y: number } }) {
 
 /** A tilted 3D party hat that sits on a face (birthday this week). */
 /** Snacks and drinks on the table (our Blender renders). x/y are % of the table box. */
-const TABLE_PROPS: {
+type PropDef = {
   id: string;
   sprite: "pizzaslice" | "wine" | "winefallen" | "redcup" | "cake";
   label: string;
@@ -981,7 +1005,10 @@ const TABLE_PROPS: {
   /** Width as a share of the table box. */
   w: number;
   rot?: number;
-}[] = [
+  /** Only out when nobody has come onto the table (more room). */
+  extra?: boolean;
+};
+const TABLE_PROPS: PropDef[] = [
   { id: "slice1", sprite: "pizzaslice", label: "Slice of pizza", x: 37, y: 65, w: 0.15, rot: -18 },
   { id: "slice2", sprite: "pizzaslice", label: "Slice of pizza", x: 31, y: 47, w: 0.13, rot: 32 },
   { id: "cup1", sprite: "redcup", label: "Red cup", x: 50, y: 77, w: 0.1, rot: 3 },
@@ -995,35 +1022,203 @@ const TABLE_PROPS: {
     label: "Knocked-over wine glass",
     x: 38,
     y: 34,
-    w: 0.21,
+    w: 0.17,
     rot: -6,
   },
+  // More on an empty table.
+  {
+    id: "slice3",
+    sprite: "pizzaslice",
+    label: "Slice of pizza",
+    x: 61,
+    y: 71,
+    w: 0.13,
+    rot: 150,
+    extra: true,
+  },
+  { id: "cup4", sprite: "redcup", label: "Red cup", x: 26, y: 60, w: 0.085, rot: -6, extra: true },
+  { id: "cup5", sprite: "redcup", label: "Red cup", x: 78, y: 63, w: 0.08, rot: 5, extra: true },
 ];
 
-function TableProp({ prop, width }: { prop: (typeof TABLE_PROPS)[number]; width: number }) {
+/**
+ * A prop you can play with:
+ *  wine  → tap: it tips over and spills, gets cleaned up, a fresh full glass arrives
+ *          (the knocked-over one: tap and it's cleaned up and replaced)
+ *  cup   → tap: someone downs it, crushes the cup, a new one lands
+ *  pizza → tap: a bite each time; the third finishes it and a new slice arrives
+ *  cake  → tap: the candle lights, gets blown out, confetti
+ */
+function TableProp({
+  prop,
+  width,
+  hidden = false,
+}: {
+  prop: PropDef;
+  width: number;
+  hidden?: boolean;
+}) {
+  const kind =
+    prop.sprite === "wine" || prop.sprite === "winefallen"
+      ? "wine"
+      : prop.sprite === "redcup"
+        ? "cup"
+        : prop.sprite === "pizzaslice"
+          ? "slice"
+          : "cake";
+  const [st, setSt] = useState(prop.sprite === "winefallen" ? "fallen" : "idle");
+  const [bites, setBites] = useState(0);
   const [jig, setJig] = useState(0);
-  const size = Math.round(width * prop.w);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const after = (steps: [string, number][]) => {
+    let t = 0;
+    for (const [next, ms] of steps) {
+      t += ms;
+      timers.current.push(setTimeout(() => setSt(next), t));
+    }
+  };
+  const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const tap = () => {
+    buzz(8);
+    if (reduced()) return setJig((n) => n + 1);
+    if (kind === "wine") {
+      if (st === "idle") {
+        setSt("tipping");
+        after([
+          ["fallen", 650],
+          ["cleaning", 1500],
+          ["fresh", 800],
+          ["idle", 700],
+        ]);
+      } else if (st === "fallen") {
+        setSt("cleaning");
+        after([
+          ["fresh", 800],
+          ["idle", 700],
+        ]);
+      }
+    } else if (kind === "cup") {
+      if (st !== "idle") return;
+      setSt("drinking");
+      after([
+        ["crushed", 1000],
+        ["gone", 550],
+        ["fresh", 500],
+        ["idle", 700],
+      ]);
+    } else if (kind === "slice") {
+      if (st !== "idle") return;
+      if (bites < 2) {
+        setBites((b) => b + 1);
+        setJig((n) => n + 1);
+      } else {
+        setSt("eaten");
+        timers.current.push(setTimeout(() => setBites(0), 500));
+        after([
+          ["gone", 500],
+          ["fresh", 600],
+          ["idle", 700],
+        ]);
+      }
+    } else {
+      if (st !== "idle") return;
+      setSt("lit");
+      after([
+        ["blown", 1300],
+        ["idle", 1500],
+      ]);
+    }
+  };
+  const base = Math.round(width * prop.w);
+  const fallenLook = kind === "wine" && (st === "fallen" || st === "cleaning");
+  const size = fallenLook ? Math.round(base * 1.25) : base;
+  const sprite = fallenLook ? "winefallen" : prop.sprite === "winefallen" ? "wine" : prop.sprite;
+  const anim: Record<string, string> = {
+    tipping: "wine-tip 0.65s cubic-bezier(.5,0,.75,.4) both",
+    fallen: "prop-in 0.15s ease-out both",
+    cleaning: "prop-clean 0.8s ease-in both",
+    fresh: "prop-fresh 0.7s cubic-bezier(.3,1.4,.5,1) both",
+    drinking: "cup-drink 1s ease-in-out both",
+    crushed: "cup-crush 0.55s ease-in both",
+    eaten: "slice-eat 0.5s ease-in both",
+    gone: "none",
+  };
+  // Bites out of the tip of the slice.
+  const BITES = [
+    "radial-gradient(circle at 14% 56%, transparent 13%, #000 13.6%)",
+    "radial-gradient(circle at 30% 50%, transparent 15%, #000 15.6%)",
+  ];
+  const mask =
+    kind === "slice" && bites > 0
+      ? ({
+          maskImage: BITES.slice(0, bites).join(", "),
+          WebkitMaskImage: BITES.slice(0, bites).join(", "),
+          maskComposite: "intersect",
+          WebkitMaskComposite: "source-in",
+        } as React.CSSProperties)
+      : {};
   return (
     <button
       type="button"
       aria-label={prop.label}
-      onClick={() => {
-        setJig((n) => n + 1);
-        buzz(8);
-      }}
+      aria-hidden={hidden || undefined}
+      tabIndex={hidden ? -1 : undefined}
+      onClick={tap}
       className="absolute"
       style={{
         left: `${prop.x}%`,
         top: `${prop.y}%`,
-        transform: `translate(-50%, -50%) rotate(${prop.rot ?? 0}deg)`,
+        transform: `translate(-50%, -50%) rotate(${prop.rot ?? 0}deg) scale(${hidden ? 0.6 : 1})`,
         lineHeight: 0,
         filter: "drop-shadow(0 4px 5px rgba(0,0,0,0.45))",
-        animation: "prop-in 0.35s ease-out both",
+        animation: hidden ? undefined : "prop-in 0.35s ease-out both",
+        opacity: hidden ? 0 : 1,
+        pointerEvents: hidden ? "none" : undefined,
+        transition: "opacity 0.35s ease, transform 0.35s ease",
       }}
     >
-      <span key={jig} className={jig ? "prop-jiggle" : undefined} style={{ display: "block" }}>
-        <Glyph3D name={prop.sprite} size={size} />
+      <span
+        key={`${st}-${jig}`}
+        className={jig && st === "idle" ? "prop-jiggle" : undefined}
+        style={{
+          display: "block",
+          transformOrigin: kind === "wine" ? "50% 92%" : "50% 80%",
+          animation: anim[st],
+          opacity: st === "gone" ? 0 : undefined,
+          ...mask,
+        }}
+      >
+        <Glyph3D name={sprite} size={size} animate={kind === "cake" && st === "lit"} fps={4} />
       </span>
+      {/* Cleaning up the spill / crumbs: a little sparkle. */}
+      {(st === "cleaning" || st === "eaten" || st === "blown") && (
+        <span
+          aria-hidden="true"
+          className="absolute pointer-events-none"
+          style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)", lineHeight: 0 }}
+        >
+          <Glyph3D name="sparkle" size={Math.round(base * 1.1)} animate fps={8} />
+        </span>
+      )}
+      {/* Cake: the candle lights up, then it's blown out with confetti. */}
+      {kind === "cake" && st === "lit" && (
+        <span
+          aria-hidden="true"
+          className="absolute pointer-events-none"
+          style={{ left: "52%", top: "2%", transform: "translate(-50%, -70%)", lineHeight: 0 }}
+        >
+          <Glyph3D name="flame" size={Math.round(base * 0.38)} animate fps={10} />
+        </span>
+      )}
+      {kind === "cake" && st === "blown" && (
+        <span
+          aria-hidden="true"
+          className="absolute pointer-events-none prop-pop-up"
+          style={{ left: "50%", top: "0%", lineHeight: 0 }}
+        >
+          <Glyph3D name="popper" size={Math.round(base * 0.8)} animate fps={6} loop={false} />
+        </span>
+      )}
     </button>
   );
 }
@@ -1364,7 +1559,7 @@ function TodayTiles() {
     <section className="px-5 mt-4 grid grid-cols-2 gap-3" aria-label="Today">
       <Link
         to="/app/drop"
-        className={`rounded-[22px] px-3 py-3 flex items-center gap-2.5 ${live ? "wiggle" : ""} ${dropped === false ? "pulse-lime" : ""}`}
+        className={`rounded-[22px] px-3 py-3 flex items-center gap-2.5 ${live ? "wiggle" : ""} ${phase === "after" && dropped === false ? "pulse-lime" : ""}`}
         style={card(live, "var(--lime)")}
       >
         <span
