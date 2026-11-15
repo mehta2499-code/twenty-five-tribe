@@ -273,7 +273,7 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
         text: `Someone in your 25 picked you for “${a.body}”`,
       };
     case "card_ready":
-      return { Icon: Cake, tone: "var(--pink)", text: `Your birthday card is ready. ${a.body}` };
+      return { Icon: Cake, tone: "var(--pink)", text: `Happy birthday! ${a.body}` };
     case "card":
       return { Icon: Cake, tone: "var(--pink)", text: `${who} signed your birthday card` };
     case "drop_like":
