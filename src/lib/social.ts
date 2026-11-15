@@ -36,6 +36,35 @@ export type Streak = {
   lastGotDay: string | null;
 };
 
+/**
+ * Tap an option: in single choice it becomes your vote (tap it again to take
+ * the vote back); in multiple choice it's added or removed. Takes effect at once.
+ */
+export function tapPoll(poll: Poll, option: number) {
+  const had = poll.mine;
+  const mine = poll.multi
+    ? had.includes(option)
+      ? had.filter((x) => x !== option)
+      : [...had, option].sort((a, b) => a - b)
+    : had.includes(option)
+      ? []
+      : [option];
+  const added = mine.filter((x) => !had.includes(x));
+  const removed = had.filter((x) => !mine.includes(x));
+  const next: Poll = {
+    ...poll,
+    mine,
+    voters: poll.voters + (mine.length ? 1 : 0) - (had.length ? 1 : 0),
+    counts: poll.counts.map(
+      (c, i) => c + (added.includes(i) ? 1 : 0) - (removed.includes(i) ? 1 : 0),
+    ),
+    by: poll.by?.map((b, i) =>
+      added.includes(i) ? [...b, "me"] : removed.includes(i) ? b.filter((x) => x !== "me") : b,
+    ),
+  };
+  return { next, added, removed };
+}
+
 export type Poll = {
   options: string[];
   /** Several answers allowed. */
@@ -802,21 +831,11 @@ const demo = {
   },
 
   /** Vote in a scene's poll (one option, or several on multiple choice). */
-  votePoll(postId: string, options: number[]) {
+  votePoll(postId: string, option: number) {
     set((s) => ({
       ...s,
       posts: s.posts.map((p) =>
-        p.id === postId && p.poll && !p.poll.mine.length
-          ? {
-              ...p,
-              poll: {
-                ...p.poll,
-                mine: options,
-                voters: p.poll.voters + 1,
-                counts: p.poll.counts.map((c, i) => (options.includes(i) ? c + 1 : c)),
-              },
-            }
-          : p,
+        p.id === postId && p.poll ? { ...p, poll: tapPoll(p.poll, option).next } : p,
       ),
     }));
   },

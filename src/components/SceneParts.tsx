@@ -191,20 +191,19 @@ export function PollView({
 }: {
   postId: string;
   poll: Poll;
-  /** Where the vote goes (default: a Scenes poll). */
-  onVote?: (options: number[]) => void;
+  /** Where a tap goes (default: a Scenes poll). */
+  onVote?: (option: number) => void;
   /** Group polls: open the list of who voted for what. */
   onShowVotes?: () => void;
 }) {
-  const [picked, setPicked] = useState<number[]>([]);
+  // A tap counts straight away. Tap your pick again to take it back; in
+  // multiple choice, tap more options to add them.
   const voted = poll.mine.length > 0;
   const total = poll.counts.reduce((a, b) => a + b, 0);
-  const vote = (opts: number[]) => {
-    if (!opts.length) return;
+  const tap = (i: number) => {
     buzz(12);
-    if (onVote) onVote(opts);
-    else social.votePoll(postId, opts);
-    setPicked([]);
+    if (onVote) onVote(i);
+    else social.votePoll(postId, i);
   };
   return (
     <div className="mt-2.5 grid gap-2" role="group" aria-label="Poll">
@@ -214,10 +213,16 @@ export function PollView({
         const mine = poll.mine.includes(i);
         if (voted)
           return (
-            <div
+            <button
               key={i}
-              className="relative overflow-hidden rounded-xl px-3.5 py-2.5 flex items-center gap-2"
-              style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+              type="button"
+              onClick={() => tap(i)}
+              aria-pressed={mine}
+              className="relative overflow-hidden rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-left"
+              style={{
+                background: "var(--fill)",
+                border: `1px solid ${mine ? "rgba(193,239,98,0.55)" : "var(--line)"}`,
+              }}
               aria-label={`${o}: ${pct}%${mine ? ", your vote" : ""}`}
             >
               <span
@@ -245,35 +250,25 @@ export function PollView({
               <span className="relative tabular-nums font-bold shrink-0" style={{ fontSize: 13.5 }}>
                 {pct}%
               </span>
-            </div>
+            </button>
           );
-        const on = picked.includes(i);
         return (
           <button
             key={i}
             type="button"
-            onClick={() =>
-              poll.multi ? setPicked((p) => (on ? p.filter((x) => x !== i) : [...p, i])) : vote([i])
-            }
-            aria-pressed={poll.multi ? on : undefined}
-            className="rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left font-semibold transition-colors"
+            onClick={() => tap(i)}
+            className="rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left font-semibold"
             style={{
               fontSize: 14.5,
               color: "var(--lime)",
-              border: `1.5px solid ${on ? "var(--lime)" : "rgba(193,239,98,0.45)"}`,
-              background: on ? "rgba(193,239,98,0.12)" : "transparent",
+              border: "1.5px solid rgba(193,239,98,0.45)",
             }}
           >
             <span
               aria-hidden="true"
-              className={`shrink-0 w-[18px] h-[18px] flex items-center justify-center ${poll.multi ? "rounded-md" : "rounded-full"}`}
-              style={{
-                border: "1.5px solid currentColor",
-                background: on ? "var(--lime)" : "transparent",
-              }}
-            >
-              {on && <Check size={12} strokeWidth={3} style={{ color: "var(--on-accent)" }} />}
-            </span>
+              className={`shrink-0 w-[18px] h-[18px] ${poll.multi ? "rounded-md" : "rounded-full"}`}
+              style={{ border: "1.5px solid currentColor" }}
+            />
             <span className="flex-1 min-w-0 truncate">{o}</span>
           </button>
         );
@@ -281,9 +276,9 @@ export function PollView({
       <div className="flex items-center gap-2 meta" style={{ fontSize: 12.5 }}>
         <span>
           {poll.voters} vote{poll.voters === 1 ? "" : "s"}
-          {poll.multi ? " · Multiple choice" : ""}
+          {poll.multi ? " · Pick one or more" : ""}
         </span>
-        {onShowVotes && poll.voters > 0 && (voted || !poll.multi) && (
+        {onShowVotes && poll.voters > 0 && (
           <button
             type="button"
             onClick={onShowVotes}
@@ -291,22 +286,6 @@ export function PollView({
             style={{ color: "var(--lime)", fontSize: 12.5 }}
           >
             View votes
-          </button>
-        )}
-        {!voted && poll.multi && (
-          <button
-            type="button"
-            disabled={!picked.length}
-            onClick={() => vote(picked)}
-            className="ml-auto rounded-full px-4 font-bold disabled:opacity-40"
-            style={{
-              minHeight: 32,
-              background: "var(--lime)",
-              color: "var(--on-accent)",
-              fontSize: 13,
-            }}
-          >
-            Vote
           </button>
         )}
       </div>

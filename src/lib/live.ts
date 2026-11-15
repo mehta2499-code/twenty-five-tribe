@@ -18,6 +18,7 @@ import {
   type ChatMessage,
   type Comment,
   type Poll,
+  tapPoll,
   type FriendRequest,
   type GameId,
   type Me,
@@ -621,6 +622,9 @@ function toSnap(x: SnapRow, to: string[], openedBy: string[], urls: Record<strin
 }
 
 /** Coalesce bursts of realtime events into one refresh. */
+/** Poll vote changes waiting to go out, per poll. */
+const pollQueue: Record<string, Promise<void>> = {};
+
 export function scheduleReload(ms = 500) {
   if (reloadTimer) clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => void loadAll(), ms);
@@ -735,7 +739,7 @@ function subscribe() {
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_comments" }, () =>
       scheduleReload(),
     )
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_poll_votes" }, () =>
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_poll_votes" }, () =>
       scheduleReload(800),
     )
     .subscribe();
@@ -1301,34 +1305,36 @@ registerLive({
       });
   },
 
-  votePoll(postId: string, options: number[]) {
+  votePoll(postId: string, option: number) {
     const before = _get().posts.find((p) => p.id === postId);
-    if (!myId || !before?.poll || before.poll.mine.length || !options.length) return;
-    const poll = before.poll;
+    if (!myId || !before?.poll) return;
+    const { next, added, removed } = tapPoll(before.poll, option);
     patch((s) => ({
       ...s,
-      posts: s.posts.map((p) =>
-        p.id === postId
-          ? {
-              ...p,
-              poll: {
-                ...poll,
-                mine: options,
-                voters: poll.voters + 1,
-                counts: poll.counts.map((c, i) => (options.includes(i) ? c + 1 : c)),
-              },
-            }
-          : p,
-      ),
+      posts: s.posts.map((p) => (p.id === postId ? { ...p, poll: next } : p)),
     }));
-    void supabase
-      .from("post_poll_votes" as never)
-      .insert(options.map((option) => ({ post_id: postId, user_id: myId, option })) as never)
-      .then(({ error }) => {
-        if (!error) return;
-        fail(`Your vote didn't go through. ${friendly(error)}`);
-        patch((s) => ({ ...s, posts: s.posts.map((p) => (p.id === postId ? before : p)) }));
-      });
+    const me = myId;
+    // One change at a time per poll, in the order they were tapped.
+    pollQueue[postId] = (pollQueue[postId] ?? Promise.resolve()).then(async () => {
+      const del = removed.length
+        ? await supabase
+            .from("post_poll_votes" as never)
+            .delete()
+            .eq("post_id" as never, postId as never)
+            .eq("user_id" as never, me as never)
+            .in("option" as never, removed as never)
+        : { error: null };
+      const ins =
+        !del.error && added.length
+          ? await supabase
+              .from("post_poll_votes" as never)
+              .insert(added.map((o) => ({ post_id: postId, user_id: me, option: o })) as never)
+          : { error: null };
+      const error = del.error ?? ins.error;
+      if (!error) return;
+      fail(`Your vote didn't go through. ${friendly(error)}`);
+      scheduleReload(100);
+    });
   },
 
   addPost(

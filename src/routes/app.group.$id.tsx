@@ -288,8 +288,8 @@ function GroupThread() {
                                 <PollView
                                   postId={m.id}
                                   poll={m.poll}
-                                  onVote={(opts) =>
-                                    void voteGroupPoll(id, m.id, opts).catch((e) =>
+                                  onVote={(o) =>
+                                    void voteGroupPoll(id, m.id, o).catch((e) =>
                                       setToast((e as Error).message),
                                     )
                                   }

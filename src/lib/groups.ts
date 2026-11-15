@@ -1,7 +1,15 @@
 /** Group chats with people from your mutual 25. */
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { _get, friendById, mutualFriends, showBanner, useSocial, type Poll } from "@/lib/social";
+import {
+  _get,
+  friendById,
+  mutualFriends,
+  showBanner,
+  useSocial,
+  tapPoll,
+  type Poll,
+} from "@/lib/social";
 import { signedMedia, uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 
@@ -313,11 +321,7 @@ export function useGroups() {
           reload,
         )
         .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, reload)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "group_poll_votes" },
-          reload,
-        )
+        .on("postgres_changes", { event: "*", schema: "public", table: "group_poll_votes" }, reload)
         .subscribe();
     } else if (s.mode === "demo" && liveFor !== "demo") {
       liveFor = "demo";
@@ -567,39 +571,45 @@ export async function sendGroupPoll(
   if (error) throw new Error(error.message);
 }
 
-/** Vote on a group poll (once; several options if it's multiple choice). */
-export async function voteGroupPoll(groupId: string, msgId: string, options: number[]) {
+const pollQueue: Record<string, Promise<void>> = {};
+
+/** Tap an option on a group poll: counts straight away (tap again to undo). */
+export async function voteGroupPoll(groupId: string, msgId: string, option: number) {
   const before = store.msgs[groupId]?.find((m) => m.id === msgId);
-  const p = before?.poll;
-  if (!before || !p || p.mine.length || !options.length) return;
-  const after: GMsg = {
-    ...before,
-    poll: {
-      ...p,
-      mine: options,
-      voters: p.voters + 1,
-      counts: p.counts.map((c, i) => (options.includes(i) ? c + 1 : c)),
-      by: p.by?.map((b, i) => (options.includes(i) ? [...b, "me"] : b)),
+  if (!before?.poll) return;
+  const { next, added, removed } = tapPoll(before.poll, option);
+  set((s) => ({
+    ...s,
+    msgs: {
+      ...s.msgs,
+      [groupId]: (s.msgs[groupId] ?? []).map((x) => (x.id === msgId ? { ...x, poll: next } : x)),
     },
-  };
-  const swap = (m: GMsg) =>
-    set((s) => ({
-      ...s,
-      msgs: {
-        ...s.msgs,
-        [groupId]: (s.msgs[groupId] ?? []).map((x) => (x.id === msgId ? m : x)),
-      },
-    }));
-  swap(after);
+  }));
   if (!mine()) return;
-  const { error } = await supabase
-    .from("group_poll_votes" as never)
-    .insert(
-      options.map((option) => ({ message_id: msgId, user_id: _get().me!.id, option })) as never,
-    );
-  if (error) {
-    swap(before);
-    throw new Error(error.message);
+  const me = _get().me!.id;
+  const run = (pollQueue[msgId] ?? Promise.resolve()).then(async () => {
+    if (removed.length) {
+      const { error } = await supabase
+        .from("group_poll_votes" as never)
+        .delete()
+        .eq("message_id" as never, msgId as never)
+        .eq("user_id" as never, me as never)
+        .in("option" as never, removed as never);
+      if (error) throw new Error(error.message);
+    }
+    if (added.length) {
+      const { error } = await supabase
+        .from("group_poll_votes" as never)
+        .insert(added.map((o) => ({ message_id: msgId, user_id: me, option: o })) as never);
+      if (error) throw new Error(error.message);
+    }
+  });
+  pollQueue[msgId] = run.catch(() => undefined);
+  try {
+    await run;
+  } catch (e) {
+    if (liveFor) void load(liveFor);
+    throw e;
   }
 }
 
