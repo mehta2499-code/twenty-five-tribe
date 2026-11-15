@@ -21,7 +21,6 @@ import {
   Swords,
   Trophy,
   UserPlus,
-  UserRound,
   Vote,
   Zap,
   type LucideIcon,
@@ -644,20 +643,32 @@ function Table({
             label={`Options for ${menu.f.name}`}
             onClose={() => setMenu(null)}
             header={
-              <div className="flex items-center gap-2.5">
+              // Tap the name (or photo) to open their profile.
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/app/seat/$id", params: { id: menu.f.id } })}
+                aria-label={`View ${menu.f.name}'s profile`}
+                className="menu-row w-full flex items-center gap-2.5 rounded-[14px] -m-1 p-1 text-left"
+              >
                 <Avatar
                   src={menu.f.avatar}
                   initials={menu.f.initials}
                   color={menu.f.color}
                   size={36}
                 />
-                <span className="min-w-0">
+                <span className="flex-1 min-w-0">
                   <span className="block font-bold truncate">{menu.f.name}</span>
                   {menu.step === "challenge" && (
                     <span className="block meta text-[12px]">Pick a game</span>
                   )}
                 </span>
-              </div>
+                <ChevronRight
+                  size={18}
+                  className="shrink-0"
+                  style={{ color: "var(--ink-3)" }}
+                  aria-hidden="true"
+                />
+              </button>
             }
             items={
               menu.step === "challenge"
@@ -678,12 +689,6 @@ function Table({
                     },
                   ]
                 : [
-                    {
-                      key: "view",
-                      icon: <UserRound size={20} />,
-                      label: "View profile",
-                      onSelect: () => navigate({ to: "/app/seat/$id", params: { id: menu.f.id } }),
-                    },
                     {
                       key: "challenge",
                       icon: <Swords size={20} />,
