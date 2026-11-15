@@ -14,6 +14,7 @@ import {
   questionById,
   startQuiz,
   submitQuiz,
+  type QuizMiss,
 } from "@/lib/vibes";
 import { EmojiText, Glyph3D } from "@/components/Glyph3D";
 
@@ -32,7 +33,7 @@ type Phase =
       guesses: Record<string, string>;
     }
   | { kind: "checking" }
-  | { kind: "result"; score: number; total: number; passed: boolean };
+  | { kind: "result"; score: number; total: number; passed: boolean; wrong?: QuizMiss[] };
 
 /**
  * "How well do you know them?" Guess 6 of their vibe-check answers (5 this-or-that
@@ -124,13 +125,17 @@ export function KnowThemQuiz({
     const phase = { attempt, questions };
     setPhase({ kind: "checking" });
     try {
-      let result: { score: number; total: number; passed: boolean };
+      let result: { score: number; total: number; passed: boolean; wrong?: QuizMiss[] };
       if (demo) {
         const truth = DEMO_ANSWERS[person.id] ?? DEMO_ANSWERS["2"];
-        const score = phase.questions.filter((q) =>
-          q === "bday_month" ? Number(guesses[q]) === truth.month : guesses[q] === truth.answers[q],
-        ).length;
-        result = { score, total: phase.questions.length, passed: score >= PASS_MARK };
+        const real = (q: string) =>
+          q === "bday_month" ? String(truth.month) : (truth.answers[q] ?? null);
+        const wrong = phase.questions
+          .filter((q) => guesses[q] !== real(q))
+          .map((q) => ({ q, guess: guesses[q] ?? null, answer: real(q) }));
+        const score = phase.questions.length - wrong.length;
+        const passed = score >= PASS_MARK;
+        result = { score, total: phase.questions.length, passed, wrong: passed ? wrong : [] };
       } else {
         result = await submitQuiz(phase.attempt, guesses);
       }
@@ -204,7 +209,7 @@ export function KnowThemQuiz({
           </div>
         )}
 
-        <div className="flex-1 flex flex-col justify-center">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col [&>*]:my-auto">
           {phase.kind === "loading" || phase.kind === "checking" ? (
             <p className="text-center heading">
               {phase.kind === "loading" ? "Shuffling their answers…" : "Checking…"}
@@ -274,6 +279,7 @@ export function KnowThemQuiz({
                   `You need ${PASS_MARK} right. Try again in 30 minutes, or ask ${first} something IRL.`
                 )}
               </p>
+              {phase.passed && !!phase.wrong?.length && <Misses wrong={phase.wrong} name={first} />}
               <button
                 onClick={onClose}
                 className={`${phase.passed ? "btn-fun" : "btn-secondary"} w-full mt-8`}
@@ -352,6 +358,48 @@ function Question({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Passed: what you got wrong, and what they actually picked. */
+function Misses({ wrong, name }: { wrong: QuizMiss[]; name: string }) {
+  const label = (q: string, v: string | null) => {
+    if (!v) return "No answer";
+    if (q === "bday_month") return MONTHS[Number(v) - 1] ?? "No answer";
+    const opt = questionById(q)?.[v as "a" | "b"];
+    return opt ? `${opt.emoji} ${opt.label}` : "No answer";
+  };
+  return (
+    <section className="mt-7 text-left" aria-label="What you got wrong">
+      <p className="meta font-bold uppercase tracking-wide" style={{ fontSize: 12 }}>
+        What you got wrong
+      </p>
+      <ul className="mt-2 grid gap-2">
+        {wrong.map((w) => (
+          <li
+            key={w.q}
+            className="rounded-2xl px-4 py-3"
+            style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+          >
+            <p className="font-bold text-cream" style={{ fontSize: 15 }}>
+              {w.q === "bday_month" ? `${name}'s birthday month` : questionById(w.q)?.ask}
+            </p>
+            <p
+              className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1"
+              style={{ fontSize: 14 }}
+            >
+              <span className="meta line-through">You: {label(w.q, w.guess)}</span>
+              <span aria-hidden="true" className="meta">
+                →
+              </span>
+              <span className="font-bold" style={{ color: "var(--lime)" }}>
+                <EmojiText text={`${name}: ${label(w.q, w.answer)}`} />
+              </span>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

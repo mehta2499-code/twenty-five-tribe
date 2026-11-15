@@ -163,11 +163,19 @@ export async function startQuiz(targetId: string): Promise<QuizStart> {
   return data as QuizStart;
 }
 
+export type QuizMiss = { q: string; guess: string | null; answer: string | null };
+
 export async function submitQuiz(attempt: string, guesses: Record<string, string>) {
   const res = await withRetry(() =>
     supabase.rpc("submit_vibe_quiz", { p_attempt: attempt, p_guesses: guesses }),
   );
-  let r = res.data as { score: number; total: number; passed: boolean } | null;
+  let r = res.data as {
+    score: number;
+    total: number;
+    passed: boolean;
+    /** Passed only: the ones you got wrong, with their real answer. */
+    wrong?: QuizMiss[];
+  } | null;
   if (res.error || !r) {
     // The first try may have reached the server before the connection dropped:
     // then the quiz is already scored, so read the saved result.
