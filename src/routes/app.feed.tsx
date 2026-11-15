@@ -4,7 +4,7 @@
  * posts get comments. Tag people with @username, or everyone with @all.
  */
 import { Tour } from "@/components/Tour";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   AtSign,
@@ -12,6 +12,7 @@ import {
   Megaphone,
   MessageCircle,
   MoreHorizontal,
+  Pencil,
   Plus,
   Trash2,
   X,
@@ -44,6 +45,9 @@ const MAX_VIDEO_MB = 50;
 const MAX_CHARS = 280;
 
 export const Route = createFileRoute("/app/feed")({
+  // ?post=<id>: open that scene (from a notification).
+  validateSearch: (s: Record<string, unknown>): { post?: string } =>
+    typeof s.post === "string" ? { post: s.post } : {},
   component: clientOnly(Scenes),
 });
 
@@ -97,6 +101,128 @@ function Tagged({ text }: { text: string }) {
   );
 }
 
+// ---------- @tag suggestions (people at your Table, or @all) ----------
+function TagPicker({ text, onPick }: { text: string; onPick: (handle: string) => void }) {
+  const s = useSocial();
+  const q = mentionQuery(text);
+  if (q === null) return null;
+  const picks = s.people
+    .filter((p) => p.username)
+    .filter(
+      (p) =>
+        p.username!.toLowerCase().startsWith(q) ||
+        p.name
+          .toLowerCase()
+          .split(" ")
+          .some((w) => w.startsWith(q)),
+    )
+    .slice(0, 5);
+  const showAll = "all".startsWith(q) || "everyone".startsWith(q);
+  if (!picks.length && !showAll) return null;
+  return (
+    <ul
+      className="rounded-2xl overflow-hidden py-1 mb-2"
+      style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+      role="listbox"
+      aria-label="Tag someone"
+    >
+      {showAll && (
+        <li>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick("all")}
+            className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
+          >
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: "var(--pink)", color: "var(--on-accent)" }}
+            >
+              <Megaphone size={16} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-bold text-cream">@all</span>
+              <span className="block meta truncate">Tag everyone who can see it</span>
+            </span>
+          </button>
+        </li>
+      )}
+      {picks.map((p) => (
+        <li key={p.id}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick(p.username!)}
+            className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
+          >
+            <Avatar src={p.avatar} initials={p.initials} color={p.color} size={32} />
+            <span className="min-w-0">
+              <span className="block font-bold text-cream truncate">{p.name}</span>
+              <span className="block meta truncate">@{p.username}</span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+const withTag = (t: string, handle: string) => t.replace(/@([\w.]*)$/, `@${handle} `);
+
+/** Edit the words of a scene or a reply. */
+function EditSheet({
+  title,
+  initial,
+  allowEmpty,
+  onSave,
+  onClose,
+}: {
+  title: string;
+  initial: string;
+  allowEmpty: boolean;
+  onSave: (t: string) => void;
+  onClose: () => void;
+}) {
+  const [t, setT] = useState(initial);
+  const ok =
+    (allowEmpty || t.trim().length > 0) && t.length <= MAX_CHARS && t.trim() !== initial.trim();
+  return (
+    <Sheet title={title} onClose={onClose}>
+      <label htmlFor="edit-text" className="sr-only">
+        {title}
+      </label>
+      <textarea
+        id="edit-text"
+        autoFocus
+        value={t}
+        onChange={(e) => setT(e.target.value.slice(0, MAX_CHARS + 20))}
+        rows={4}
+        className="input resize-none mt-1"
+        style={{ fontSize: 16, lineHeight: 1.4 }}
+      />
+      <TagPicker text={t} onPick={(h) => setT((x) => withTag(x, h))} />
+      <div className="flex items-center gap-2 mt-3">
+        <span className="meta tabular-nums" style={{ fontSize: 12.5 }}>
+          {MAX_CHARS - t.length}
+        </span>
+        <button onClick={onClose} className="btn-quiet ml-auto px-4">
+          Cancel
+        </button>
+        <button
+          disabled={!ok}
+          onClick={() => {
+            onSave(t);
+            onClose();
+          }}
+          className="rounded-full px-5 font-bold disabled:opacity-40"
+          style={{ minHeight: 38, background: "var(--lime)", color: "var(--on-accent)" }}
+        >
+          Save
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
 // ---------- One scene ----------
 function SceneRow({
   post,
@@ -110,7 +236,7 @@ function SceneRow({
   const by = personOf(post.by);
   const s = useSocial();
   const handle = post.by === "me" ? s.me?.username : by.username;
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [sheet, setSheet] = useState<null | "options" | "edit" | "delete">(null);
   const n = post.comments.length;
 
   return (
@@ -118,6 +244,7 @@ function SceneRow({
       className="flex gap-3 px-4 py-3.5"
       style={{ borderBottom: "1px solid var(--line)" }}
       aria-label={`Scene by ${by.name}`}
+      data-scene={post.id}
     >
       <PersonLink
         id={post.by}
@@ -133,10 +260,13 @@ function SceneRow({
             <span className="font-bold text-cream">{by.name}</span>
           </PersonLink>
           {handle && <span className="meta truncate shrink">@{handle}</span>}
-          <span className="meta shrink-0">· {timeAgo(post.at)}</span>
+          <span className="meta shrink-0">
+            · {timeAgo(post.at)}
+            {post.edited ? " · edited" : ""}
+          </span>
           {post.by === "me" && (
             <button
-              onClick={() => setConfirmDelete(true)}
+              onClick={() => setSheet("options")}
               aria-label="Scene options"
               className="ml-auto w-8 h-8 -mr-1.5 -my-1 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)] shrink-0"
             >
@@ -201,14 +331,35 @@ function SceneRow({
           </button>
         </div>
       </div>
-      {confirmDelete && (
-        <Sheet title="Delete this scene?" onClose={() => setConfirmDelete(false)}>
+      {sheet === "options" && (
+        <Sheet title="Your scene" onClose={() => setSheet(null)}>
+          <div className="grid gap-2 pb-1">
+            <button onClick={() => setSheet("edit")} className="btn-secondary w-full">
+              <Pencil size={18} /> Edit {post.text ? "text" : "caption"}
+            </button>
+            <button onClick={() => setSheet("delete")} className="btn-danger w-full">
+              <Trash2 size={18} /> Delete scene
+            </button>
+          </div>
+        </Sheet>
+      )}
+      {sheet === "edit" && (
+        <EditSheet
+          title={post.text ? "Edit scene" : "Edit caption"}
+          initial={post.caption}
+          allowEmpty={!post.text}
+          onSave={(t) => social.editPost(post.id, t)}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet === "delete" && (
+        <Sheet title="Delete this scene?" onClose={() => setSheet(null)}>
           <p className="text-cool text-sm">
             It disappears for everyone, along with its {word(post)}s. This can't be undone.
           </p>
           <button
             onClick={() => {
-              setConfirmDelete(false);
+              setSheet(null);
               onDeleted();
               social.deletePost(post.id);
             }}
@@ -216,7 +367,7 @@ function SceneRow({
           >
             <Trash2 size={18} /> Delete scene
           </button>
-          <button onClick={() => setConfirmDelete(false)} className="btn-quiet w-full mt-2">
+          <button onClick={() => setSheet(null)} className="btn-quiet w-full mt-2">
             Keep it
           </button>
         </Sheet>
@@ -225,13 +376,16 @@ function SceneRow({
   );
 }
 
-// ---------- Thread: the scene plus its replies / comments ----------
+// ---------- Thread: replies / comments on a scene ----------
 function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
-  const by = personOf(post.by);
   const me = meView();
   const [text, setText] = useState("");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLInputElement>(null);
   const label = post.text ? "Reply" : "Comment";
+  const mine = post.by === "me";
   const send = () => {
     const t = text.trim();
     if (!t) return;
@@ -242,36 +396,12 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [post.comments.length]);
+  const menuC = post.comments.find((c) => c.id === menuFor);
+  const editC = post.comments.find((c) => c.id === editing);
 
   return (
     <Sheet title={post.text ? "Replies" : "Comments"} onClose={onClose}>
       <div ref={listRef} className="max-h-[52dvh] overflow-y-auto -mx-1 px-1" data-noswipe>
-        {/* The scene, small, at the top. */}
-        <div className="flex gap-3 pb-3" style={{ borderBottom: "1px solid var(--line)" }}>
-          <Avatar src={by.avatar} initials={by.initials} color={by.color} size={36} />
-          <div className="min-w-0 flex-1">
-            <p style={{ fontSize: 14.5 }}>
-              <span className="font-bold text-cream">{by.name}</span>{" "}
-              <span className="meta">· {timeAgo(post.at)}</span>
-            </p>
-            {post.caption && (
-              <p
-                className="text-cream"
-                style={{
-                  fontSize: 15,
-                  lineHeight: 1.4,
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                <Tagged text={post.caption} />
-              </p>
-            )}
-            {post.image && (
-              <img src={post.image} alt="" className="mt-2 w-24 h-24 rounded-xl object-cover" />
-            )}
-          </div>
-        </div>
         {post.comments.length === 0 ? (
           <p className="meta text-center py-8">
             No {word(post)}s yet. Say something. Only your 25 can read it.
@@ -280,6 +410,8 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
           <ul>
             {post.comments.map((c) => {
               const p = personOf(c.by);
+              // Your own: edit or delete. On your scene: you can delete anyone's.
+              const canMenu = c.by === "me" || mine;
               return (
                 <li
                   key={c.id}
@@ -294,23 +426,49 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
                   >
                     <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
                   </PersonLink>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p style={{ fontSize: 14 }}>
                       <span className="font-bold text-cream">{p.name}</span>{" "}
-                      <span className="meta">· {timeAgo(c.at)}</span>
+                      <span className="meta">
+                        · {timeAgo(c.at)}
+                        {c.edited ? " · edited" : ""}
+                      </span>
                     </p>
                     <p
                       className="text-cream"
-                      style={{ fontSize: 15, lineHeight: 1.42, overflowWrap: "anywhere" }}
+                      style={{
+                        fontSize: 15,
+                        lineHeight: 1.42,
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                      }}
                     >
-                      {c.text}
+                      <Tagged text={c.text} />
                     </p>
                   </div>
+                  {canMenu && (
+                    <button
+                      onClick={() => setMenuFor(c.id)}
+                      aria-label={`Options for this ${word(post)}`}
+                      className="w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)] shrink-0 self-start"
+                    >
+                      <MoreHorizontal size={17} />
+                    </button>
+                  )}
                 </li>
               );
             })}
           </ul>
         )}
+      </div>
+      <div className="mt-3">
+        <TagPicker
+          text={text}
+          onPick={(h) => {
+            setText((t) => withTag(t, h));
+            boxRef.current?.focus();
+          }}
+        />
       </div>
       {/* Composer: your photo, a rounded box, and a clear pill button. */}
       <form
@@ -318,7 +476,7 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
           e.preventDefault();
           send();
         }}
-        className="flex items-center gap-2.5 mt-3 pt-3"
+        className="flex items-center gap-2.5 pt-3"
         style={{ borderTop: "1px solid var(--line)" }}
       >
         <Avatar src={me.avatar} initials={me.initials} size={34} />
@@ -327,6 +485,7 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
         </label>
         <input
           id="thread-input"
+          ref={boxRef}
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, 500))}
           placeholder={post.text ? "Post your reply" : "Add a comment"}
@@ -355,13 +514,47 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
           {label}
         </button>
       </form>
+      {menuC && (
+        <Sheet title={`Your ${word(post)}`} onClose={() => setMenuFor(null)}>
+          <div className="grid gap-2 pb-1">
+            {menuC.by === "me" && (
+              <button
+                onClick={() => {
+                  setMenuFor(null);
+                  setEditing(menuC.id);
+                }}
+                className="btn-secondary w-full"
+              >
+                <Pencil size={18} /> Edit {word(post)}
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setMenuFor(null);
+                social.deleteComment(post.id, menuC.id);
+              }}
+              className="btn-danger w-full"
+            >
+              <Trash2 size={18} /> Delete {word(post)}
+            </button>
+          </div>
+        </Sheet>
+      )}
+      {editC && (
+        <EditSheet
+          title={`Edit ${word(post)}`}
+          initial={editC.text}
+          allowEmpty={false}
+          onSave={(t) => social.editComment(post.id, editC.id, t)}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </Sheet>
   );
 }
 
 // ---------- New scene ----------
 function Composer({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const s = useSocial();
   const me = meView();
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
@@ -377,25 +570,8 @@ function Composer({ onClose, onDone }: { onClose: () => void; onDone: () => void
     el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
   }, [text]);
 
-  // @tags: people at your Table (they're the ones who can see it), or @all.
-  const q = mentionQuery(text);
-  const picks =
-    q === null
-      ? []
-      : s.people
-          .filter((p) => p.username)
-          .filter(
-            (p) =>
-              p.username!.toLowerCase().startsWith(q) ||
-              p.name
-                .toLowerCase()
-                .split(" ")
-                .some((w) => w.startsWith(q)),
-          )
-          .slice(0, 5);
-  const showAll = q !== null && ("all".startsWith(q) || "everyone".startsWith(q));
   const put = (handle: string) => {
-    setText((t) => t.replace(/@([\w.]*)$/, `@${handle} `));
+    setText((t) => withTag(t, handle));
     boxRef.current?.focus();
   };
   const addAt = () => {
@@ -408,7 +584,7 @@ function Composer({ onClose, onDone }: { onClose: () => void; onDone: () => void
 
   return (
     <Sheet title="New scene" onClose={onClose}>
-      <div className="flex gap-3">
+      <div className="flex gap-3 pt-3">
         <Avatar src={me.avatar} initials={me.initials} size={40} />
         <div className="flex-1 min-w-0">
           <label htmlFor="scene-text" className="sr-only">
@@ -425,52 +601,7 @@ function Composer({ onClose, onDone }: { onClose: () => void; onDone: () => void
             className="w-full resize-none bg-transparent outline-none text-cream pt-2"
             style={{ fontSize: 18, lineHeight: 1.4 }}
           />
-          {(picks.length > 0 || showAll) && (
-            <ul
-              className="rounded-2xl overflow-hidden py-1 mb-2"
-              style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
-              role="listbox"
-              aria-label="Tag someone"
-            >
-              {showAll && (
-                <li>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => put("all")}
-                    className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
-                  >
-                    <span
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ background: "var(--pink)", color: "var(--on-accent)" }}
-                    >
-                      <Megaphone size={16} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-bold text-cream">@all</span>
-                      <span className="block meta truncate">Tag everyone who can see it</span>
-                    </span>
-                  </button>
-                </li>
-              )}
-              {picks.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => put(p.username!)}
-                    className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
-                  >
-                    <Avatar src={p.avatar} initials={p.initials} color={p.color} size={32} />
-                    <span className="min-w-0">
-                      <span className="block font-bold text-cream truncate">{p.name}</span>
-                      <span className="block meta truncate">@{p.username}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <TagPicker text={text} onPick={put} />
           {(image || video) && (
             <div
               className="relative mt-1 rounded-2xl overflow-hidden"
@@ -600,6 +731,17 @@ function Scenes() {
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const open = s.posts.find((p) => p.id === openId);
+  // From a notification (?post=<id>): show that scene and open its thread.
+  const { post: wanted } = Route.useSearch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!wanted || !s.posts.some((p) => p.id === wanted)) return;
+    document
+      .querySelector(`[data-scene="${wanted}"]`)
+      ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    setOpenId(wanted);
+    void navigate({ to: "/app/feed", search: {}, replace: true });
+  }, [wanted, s.posts, navigate]);
 
   return (
     <>

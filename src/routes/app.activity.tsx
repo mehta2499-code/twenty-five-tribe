@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { EmptyState, PageBand, clientOnly } from "@/components/SocialUI";
 import { Bell, Lock } from "lucide-react";
-import { describe, linkFor, markAllRead, markRead, useActivity } from "@/lib/activity";
+import { describe, linkFor, markAllRead, markRead, openLink, useActivity } from "@/lib/activity";
 import { friendById, timeAgo } from "@/lib/social";
 
 export const Route = createFileRoute("/app/activity")({
@@ -50,7 +50,13 @@ function ActivityScreen() {
                   type="button"
                   onClick={() => {
                     void markRead(a.id);
-                    navigate({ to: linkFor(a) as "/app/home" });
+                    openLink(
+                      navigate as unknown as (o: {
+                        to: string;
+                        search?: Record<string, string>;
+                      }) => unknown,
+                      linkFor(a),
+                    );
                   }}
                   className="card w-full text-left flex items-center gap-3 p-3 hover:bg-[var(--fill)]"
                   style={{ borderColor: isNew ? "var(--lime)" : undefined }}

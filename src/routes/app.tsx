@@ -1,4 +1,5 @@
-import { onMyStatusChange, sendStatus } from "@/lib/status";
+import { openLink } from "@/lib/activity";
+import { markAway, onMyStatusChange, sendStatus } from "@/lib/status";
 import { savePendingPath } from "@/lib/pending";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -109,7 +110,10 @@ function AppLayout() {
     const onMessage = (e: MessageEvent) => {
       const d = e.data as { type?: string; url?: string } | null;
       if (d?.type === "open" && typeof d.url === "string" && d.url.startsWith("/"))
-        navigate({ to: d.url as "/app/home" });
+        openLink(
+          navigate as unknown as (o: { to: string; search?: Record<string, string> }) => unknown,
+          d.url,
+        );
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
@@ -120,19 +124,19 @@ function AppLayout() {
   useEffect(() => {
     if (s.mode !== "live" || !s.me) return;
     // Also tells your 25 what you're doing (playing, on the Drop) for the Table.
-    const ping = (active: boolean) =>
-      void supabase.rpc("set_active", { p_active: active }).then(() => undefined);
+    // Leaving (or hiding the app) uses markAway(), which iPhones don't cut off.
     const beat = () => sendStatus();
     beat();
     const t = setInterval(beat, 30_000);
     const off = onMyStatusChange(beat);
-    const onVis = () => (document.visibilityState === "visible" ? sendStatus() : ping(false));
+    const onVis = () => (document.visibilityState === "visible" ? sendStatus() : markAway());
     document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("pagehide", () => ping(false));
+    window.addEventListener("pagehide", markAway);
     return () => {
       clearInterval(t);
       off();
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", markAway);
     };
   }, [s.mode, s.me?.id]);
 

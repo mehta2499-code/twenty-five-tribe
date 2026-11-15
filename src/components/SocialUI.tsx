@@ -182,10 +182,15 @@ export function Sheet({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  // Fit the part of the screen above the keyboard (iPhone keyboards cover the
+  // bottom of the page without shrinking it), so text boxes stay visible.
+  const vv = useVisibleViewport();
   return (
     <div
-      className={`fixed inset-0 z-[60] flex justify-center ${center ? "items-center px-4" : "items-end"}`}
+      className={`fixed inset-x-0 z-[60] flex justify-center ${center ? "items-center px-4" : "items-end"}`}
       style={{
+        top: vv ? vv.top : 0,
+        height: vv ? vv.height : "100%",
         background: "rgba(7,6,11,0.55)",
         backdropFilter: "blur(4px)",
         WebkitBackdropFilter: "blur(4px)",
@@ -202,7 +207,11 @@ export function Sheet({
           border: "1px solid rgba(255,255,255,0.16)",
           borderBottom: center ? undefined : "none",
           borderRadius: center ? 28 : "28px 28px 0 0",
-          maxHeight: center ? "min(80dvh, 640px)" : "88vh",
+          maxHeight: center
+            ? `min(${vv ? `${Math.round(vv.height * 0.8)}px` : "80dvh"}, 640px)`
+            : vv
+              ? `${Math.round(vv.height - 24)}px`
+              : "88vh",
           overflowY: "auto",
           boxShadow: "var(--shadow-float)",
           paddingBottom: center ? "1.25rem" : "max(1.5rem, env(safe-area-inset-bottom))",
@@ -231,6 +240,28 @@ export function Sheet({
       </div>
     </div>
   );
+}
+
+/** The visible part of the screen (shrinks when the keyboard opens). */
+function useVisibleViewport() {
+  const [vv, setVv] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const v = window.visualViewport;
+    if (!v) return;
+    const update = () =>
+      setVv(
+        // Only take over when something (the keyboard) actually shrinks it.
+        v.height < window.innerHeight - 60 ? { top: v.offsetTop, height: v.height } : null,
+      );
+    update();
+    v.addEventListener("resize", update);
+    v.addEventListener("scroll", update);
+    return () => {
+      v.removeEventListener("resize", update);
+      v.removeEventListener("scroll", update);
+    };
+  }, []);
+  return vv;
 }
 
 /** Pick one or more people from your 25. */

@@ -102,9 +102,17 @@ type PostRow = {
   media_type: "image" | "video" | "text";
   caption: string;
   created_at: string;
+  edited_at?: string | null;
 };
 type LikeRow = { post_id: string; user_id: string };
-type CommentRow = { id: string; post_id: string; author: string; body: string; created_at: string };
+type CommentRow = {
+  id: string;
+  post_id: string;
+  author: string;
+  body: string;
+  created_at: string;
+  edited_at?: string | null;
+};
 type ScoreRow = { user_id: string; game: GameId; week: string; best: number };
 
 const COLOURS = ["#C1EF62", "#F15B91", "#77B9E8", "#F4C96B"];
@@ -544,7 +552,13 @@ async function loadAll() {
     const commentsFor = (id: string): Comment[] =>
       comments
         .filter((c) => c.post_id === id)
-        .map((c) => ({ id: c.id, by: who(c.author), text: c.body, at: ts(c.created_at) }));
+        .map((c) => ({
+          id: c.id,
+          by: who(c.author),
+          text: c.body,
+          at: ts(c.created_at),
+          edited: !!c.edited_at,
+        }));
     const posts: Post[] = [];
     const reels: Reel[] = [];
     // The database only returns posts you're allowed to see (yours, and from
@@ -556,6 +570,7 @@ async function loadAll() {
         by: who(p.author),
         caption: p.caption,
         at: ts(p.created_at),
+        edited: !!p.edited_at,
         likes: likesFor(p.id),
         comments: commentsFor(p.id),
       };
@@ -1290,6 +1305,67 @@ registerLive({
       // Likes and comments go with the post; also remove the photo or video file.
       if (post.mediaPath) await supabase.storage.from("media").remove([post.mediaPath]);
     })();
+  },
+
+  editPost(postId: string, caption: string) {
+    const post = _get().posts.find((p) => p.id === postId);
+    const t = caption.trim();
+    if (!post || post.by !== "me") return;
+    if (post.text && !t) return fail("A text scene needs some words.");
+    patch((s) => ({
+      ...s,
+      posts: s.posts.map((p) => (p.id === postId ? { ...p, caption: t, edited: true } : p)),
+    }));
+    void supabase
+      .from("posts")
+      .update({ caption: t })
+      .eq("id", postId)
+      .then(({ error }) => {
+        if (!error) return;
+        fail(`Couldn't save that edit. ${friendly(error)}`);
+        patch((s) => ({ ...s, posts: s.posts.map((p) => (p.id === postId ? post : p)) }));
+      });
+  },
+
+  editComment(postId: string, commentId: string, text: string) {
+    const t = text.trim();
+    if (!t) return;
+    const before = _get().posts.find((p) => p.id === postId);
+    const setComments = (fn: (c: Comment[]) => Comment[]) =>
+      patch((s) => ({
+        ...s,
+        posts: s.posts.map((p) => (p.id === postId ? { ...p, comments: fn(p.comments) } : p)),
+      }));
+    setComments((cs) => cs.map((c) => (c.id === commentId ? { ...c, text: t, edited: true } : c)));
+    void supabase
+      .from("post_comments")
+      .update({ body: t })
+      .eq("id", commentId)
+      .then(({ error }) => {
+        if (!error || !before) return;
+        fail(`Couldn't save that edit. ${friendly(error)}`);
+        setComments(() => before.comments);
+      });
+  },
+
+  deleteComment(postId: string, commentId: string) {
+    const before = _get().posts.find((p) => p.id === postId);
+    if (!before) return;
+    patch((s) => ({
+      ...s,
+      posts: s.posts.map((p) =>
+        p.id === postId ? { ...p, comments: p.comments.filter((c) => c.id !== commentId) } : p,
+      ),
+    }));
+    void supabase
+      .from("post_comments")
+      .delete()
+      .eq("id", commentId)
+      .then(({ error }) => {
+        if (!error) return;
+        fail(`Couldn't delete that. ${friendly(error)}`);
+        patch((s) => ({ ...s, posts: s.posts.map((p) => (p.id === postId ? before : p)) }));
+      });
   },
 
   addPost(image: string, caption: string, video?: Blob) {

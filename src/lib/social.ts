@@ -36,7 +36,7 @@ export type Streak = {
   lastGotDay: string | null;
 };
 
-export type Comment = { id: string; by: "me" | string; text: string; at: number };
+export type Comment = { id: string; by: "me" | string; text: string; at: number; edited?: boolean };
 export type Post = {
   id: string;
   by: "me" | string;
@@ -47,6 +47,8 @@ export type Post = {
   mediaPath?: string;
   /** A text-only post (no photo or video). */
   text?: boolean;
+  /** The words were changed after posting. */
+  edited?: boolean;
   caption: string;
   at: number;
   likes: string[]; // friendIds + "me"
@@ -775,6 +777,43 @@ const demo = {
             reels: s.reels.map((r) => (r.id === id ? { ...r, comments: [...r.comments, c] } : r)),
           },
     );
+  },
+
+  /** Change the words of your own scene. */
+  editPost(postId: string, caption: string) {
+    set((s) => ({
+      ...s,
+      posts: s.posts.map((p) =>
+        p.id === postId ? { ...p, caption: caption.trim(), edited: true } : p,
+      ),
+    }));
+  },
+
+  /** Change your own reply/comment. */
+  editComment(postId: string, commentId: string, text: string) {
+    set((s) => ({
+      ...s,
+      posts: s.posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              comments: p.comments.map((c) =>
+                c.id === commentId ? { ...c, text: text.trim(), edited: true } : c,
+              ),
+            }
+          : p,
+      ),
+    }));
+  },
+
+  /** Delete your own reply/comment, or any on your scene. */
+  deleteComment(postId: string, commentId: string) {
+    set((s) => ({
+      ...s,
+      posts: s.posts.map((p) =>
+        p.id === postId ? { ...p, comments: p.comments.filter((c) => c.id !== commentId) } : p,
+      ),
+    }));
   },
 
   _friendComment(kind: "post" | "reel", id: string, by: string, text: string) {

@@ -1,4 +1,5 @@
 /** Slide-down banner for new messages and snaps while you're in the app. */
+import { openLink } from "@/lib/activity";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Avatar } from "@/components/Avatar";
@@ -32,7 +33,10 @@ export function InAppBanner() {
         onClick={() => {
           clearBanner(b.id);
           b.onOpen?.();
-          navigate({ to: b.to as "/app/home" });
+          openLink(
+            navigate as unknown as (o: { to: string; search?: Record<string, string> }) => unknown,
+            b.to,
+          );
         }}
         className="pointer-events-auto w-full max-w-md flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left banner-in"
         style={{

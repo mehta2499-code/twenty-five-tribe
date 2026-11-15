@@ -196,7 +196,10 @@ export function linkFor(a: Activity): string {
     case "post":
     case "post_tag":
     case "post_tag_all":
-      return "/app/feed";
+    case "reply_tag":
+    case "comment_tag":
+      // Open that scene (ref is "post:<id>").
+      return ref.includes(":") ? `/app/feed?post=${ref.split(":")[1]}` : "/app/feed";
     case "word_done":
       return ref.startsWith("game:") ? `/app/play/${ref.slice(5)}` : "/app/games";
     case "poll":
@@ -306,6 +309,14 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       };
     case "reply":
       return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} replied: ${a.body}` };
+    case "reply_tag":
+      return { Icon: AtSign, tone: "var(--lime)", text: `${who} tagged you in a reply: ${a.body}` };
+    case "comment_tag":
+      return {
+        Icon: AtSign,
+        tone: "var(--lime)",
+        text: `${who} tagged you in a comment: ${a.body}`,
+      };
     case "game_win":
       return { Icon: Trophy, tone: "var(--sun)", text: `${who} won ${a.body}` };
     case "mention_all":
@@ -321,4 +332,17 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
     default:
       return { Icon: Sparkles, tone: "var(--sun)", text: a.body || "Something happened" };
   }
+}
+
+/**
+ * Go to a link like "/app/feed?post=123" (the router wants the ?query passed
+ * separately, not inside the path).
+ */
+export function openLink(
+  navigate: (o: { to: string; search?: Record<string, string> }) => unknown,
+  url: string,
+) {
+  const [path, query] = url.split("?");
+  const search = query ? Object.fromEntries(new URLSearchParams(query)) : undefined;
+  navigate({ to: path, ...(search ? { search } : {}) });
 }

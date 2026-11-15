@@ -4,7 +4,7 @@
  * in the database returns only people you've seated).
  */
 import { useEffect, useSyncExternalStore } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, supabase } from "@/integrations/supabase/client";
 import { _get, type NowPlaying } from "@/lib/social";
 
 export type Doing = { doing: "game" | "drop"; detail: string; ref?: string };
@@ -52,6 +52,36 @@ export function sendStatus() {
       } as never,
     )
     .then(() => undefined);
+}
+
+// The current sign-in token, kept handy so "I've left" can go out instantly.
+let token: string | null = null;
+if (typeof window !== "undefined") {
+  void supabase.auth.getSession().then(({ data }) => (token = data.session?.access_token ?? null));
+  supabase.auth.onAuthStateChange((_e, session) => (token = session?.access_token ?? null));
+}
+
+/**
+ * Tell the server you've left the app, so push notifications start again
+ * straight away. Sent with keepalive: a normal request is often cut off on
+ * iPhones as the app goes to the background, which held pushes back.
+ */
+export function markAway() {
+  if (_get().mode !== "live" || !token) return;
+  try {
+    void fetch(`${SUPABASE_URL}/rest/v1/rpc/set_active`, {
+      method: "POST",
+      keepalive: true,
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_active: false }),
+    }).catch(() => undefined);
+  } catch {
+    // ignore
+  }
 }
 
 /** Send right away whenever what I'm doing changes. */
