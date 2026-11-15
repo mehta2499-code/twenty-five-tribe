@@ -204,6 +204,7 @@ export function linkFor(a: Activity): string {
       return ref.startsWith("game:") ? `/app/play/${ref.slice(5)}` : "/app/games";
     case "poll":
       return "/app/polls";
+    case "card_ready":
     case "card":
       return "/app/card/me";
     case "drop":
@@ -271,6 +272,8 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
         tone: "var(--pink)",
         text: `Someone in your 25 picked you for “${a.body}”`,
       };
+    case "card_ready":
+      return { Icon: Cake, tone: "var(--pink)", text: `Your birthday card is ready. ${a.body}` };
     case "card":
       return { Icon: Cake, tone: "var(--pink)", text: `${who} signed your birthday card` };
     case "drop_like":

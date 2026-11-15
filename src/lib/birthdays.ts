@@ -14,6 +14,12 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export const bdayLabel = (b: Bday) => `${b.day} ${MONTHS[b.month - 1]}`;
 
 /** 0 = today, 1 = tomorrow … */
+/** Has this year's birthday card opened (it's their birthday, or it's passed)? */
+export function cardOpen(b: Bday, from = today()): boolean {
+  const year = from.slice(0, 4);
+  return `${year}-${pad(b.month)}-${pad(b.day)}` <= from;
+}
+
 export function daysUntil(b: Bday, from = today()): number {
   const year = Number(from.slice(0, 4));
   const leap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
@@ -94,7 +100,11 @@ export async function loadCard(target: string): Promise<CardNote[]> {
         .slice(0, 3)
         .map((f, i) => ({
           author: f.id,
-          body: ["HAPPIEST BIRTHDAY 🎉 love you idiot", "Another year of you being iconic 💅", "Party at yours? 🎂"][i],
+          body: [
+            "HAPPIEST BIRTHDAY 🎉 love you idiot",
+            "Another year of you being iconic 💅",
+            "Party at yours? 🎂",
+          ][i],
           at: Date.now() - (i + 1) * 3_600_000,
         }));
       return [...mine, ...others];
@@ -127,5 +137,6 @@ export async function signCard(target: string, body: string) {
   const { error } = await supabase
     .from("birthday_cards")
     .insert({ target, year: cardYear(), author: s.me!.id, body });
-  if (error) throw new Error(/duplicate/i.test(error.message) ? "You've already signed." : error.message);
+  if (error)
+    throw new Error(/duplicate/i.test(error.message) ? "You've already signed." : error.message);
 }

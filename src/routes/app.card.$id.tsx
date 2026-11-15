@@ -4,7 +4,16 @@ import { ArrowLeft, Cake } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { friendById, meView, useSocial } from "@/lib/social";
-import { bdayLabel, daysUntil, loadCard, signCard, useBirthdays, type CardNote } from "@/lib/birthdays";
+import {
+  bdayLabel,
+  cardOpen,
+  daysUntil,
+  loadCard,
+  signCard,
+  useBirthdays,
+  type CardNote,
+} from "@/lib/birthdays";
+import { Glyph3D } from "@/components/Glyph3D";
 
 export const Route = createFileRoute("/app/card/$id")({
   head: () => ({ meta: [{ title: "Birthday card · 25" }] }),
@@ -35,6 +44,8 @@ function CardScreen() {
   }, [mine, b]);
 
   const first = person?.name.split(" ")[0] ?? "them";
+  // Your own card stays shut until your birthday (the database enforces it too).
+  const locked = mine && !!b && !cardOpen(b);
   const signed = notes?.some((n) => n.author === "me");
 
   return (
@@ -49,10 +60,23 @@ function CardScreen() {
             <ArrowLeft size={18} />
           </button>
         </div>
-        <Cake size={48} strokeWidth={2} aria-hidden="true" className="mx-auto" style={{ color: "var(--pink)" }} />
+        <Cake
+          size={48}
+          strokeWidth={2}
+          aria-hidden="true"
+          className="mx-auto"
+          style={{ color: "var(--pink)" }}
+        />
         <div className="flex justify-center mt-3">
-          <span className="rounded-full" style={{ border: "var(--bd)", boxShadow: "0 0 0 4px var(--pink)" }}>
-            <Avatar src={person?.avatar || undefined} initials={person?.initials ?? "?"} size={84} />
+          <span
+            className="rounded-full"
+            style={{ border: "var(--bd)", boxShadow: "0 0 0 4px var(--pink)" }}
+          >
+            <Avatar
+              src={person?.avatar || undefined}
+              initials={person?.initials ?? "?"}
+              size={84}
+            />
           </span>
         </div>
         <h1 className="title mt-4" style={{ fontSize: 30 }}>
@@ -70,9 +94,7 @@ function CardScreen() {
         <section className="px-5 mt-6">
           <div className="card p-4">
             <p className="font-bold text-cream">Sign {first}'s card</p>
-            <p className="meta mt-0.5">
-              Only {first} and the people who sign can read the card.
-            </p>
+            <p className="meta mt-0.5">Only {first} and the people who sign can read the card.</p>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 280))}
@@ -105,43 +127,58 @@ function CardScreen() {
         </section>
       )}
 
-      <section className="px-5 mt-6">
-        <h2 className="heading" style={{ fontSize: 19 }}>
-          {notes?.length ? `${notes.length} signature${notes.length > 1 ? "s" : ""}` : "No signatures yet"}
-        </h2>
-        {!mine && !signed && (notes?.length ?? 0) > 0 && (
-          <p className="meta mt-1">Sign it to read what everyone wrote</p>
-        )}
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          {(notes ?? []).map((n, i) => {
-            const who = n.author === "me" ? meView() : friendById(n.author);
-            const hidden = !mine && !signed;
-            return (
-              <div
-                key={i}
-                className="rounded-2xl p-3.5"
-                style={{
-                  background: TONES[i % TONES.length],
-                  color: "var(--on-accent)",
-                  border: "var(--bd)",
-                  boxShadow: "var(--pop)",
-                  transform: `rotate(${i % 2 ? 2 : -2}deg)`,
-                }}
-              >
-                <p
-                  className="font-bold text-[14px] leading-snug"
-                  style={{ filter: hidden ? "blur(6px)" : "none" }}
+      {locked ? (
+        <section className="px-5 mt-8 text-center">
+          <Glyph3D name="cake" size={88} animate fps={2} />
+          <h2 className="heading mt-3" style={{ fontSize: 20 }}>
+            No peeking 👀
+          </h2>
+          <p className="meta mt-1.5 px-4">
+            Your card opens on your birthday{b ? `, ${bdayLabel(b)}` : ""}. Your 25 might be signing
+            it right now.
+          </p>
+        </section>
+      ) : (
+        <section className="px-5 mt-6">
+          <h2 className="heading" style={{ fontSize: 19 }}>
+            {notes?.length
+              ? `${notes.length} signature${notes.length > 1 ? "s" : ""}`
+              : "No signatures yet"}
+          </h2>
+          {!mine && !signed && (notes?.length ?? 0) > 0 && (
+            <p className="meta mt-1">Sign it to read what everyone wrote</p>
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {(notes ?? []).map((n, i) => {
+              const who = n.author === "me" ? meView() : friendById(n.author);
+              const hidden = !mine && !signed;
+              return (
+                <div
+                  key={i}
+                  className="rounded-2xl p-3.5"
+                  style={{
+                    background: TONES[i % TONES.length],
+                    color: "var(--on-accent)",
+                    border: "var(--bd)",
+                    boxShadow: "var(--pop)",
+                    transform: `rotate(${i % 2 ? 2 : -2}deg)`,
+                  }}
                 >
-                  {n.body}
-                </p>
-                <p className="mt-2 text-[12px] font-extrabold opacity-80">
-                  — {n.author === "me" ? "you" : (who?.name.split(" ")[0] ?? "someone")}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+                  <p
+                    className="font-bold text-[14px] leading-snug"
+                    style={{ filter: hidden ? "blur(6px)" : "none" }}
+                  >
+                    {n.body}
+                  </p>
+                  <p className="mt-2 text-[12px] font-extrabold opacity-80">
+                    — {n.author === "me" ? "you" : (who?.name.split(" ")[0] ?? "someone")}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
       <Confetti fire={party} />
     </div>

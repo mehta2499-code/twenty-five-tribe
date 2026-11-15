@@ -16,7 +16,6 @@ import {
   Headphones,
   ImagePlus,
   MessageCircle,
-  PartyPopper,
   Shuffle,
   Swords,
   Trophy,
@@ -1403,21 +1402,26 @@ function Birthdays() {
       <Link
         to="/app/card/$id"
         params={{ id: "me" }}
-        className="rounded-[20px] p-4 flex items-center gap-3"
+        className="lg rounded-[22px] p-3.5 flex items-center gap-3 overflow-hidden"
         style={{
-          background: "var(--pink)",
-          color: "var(--on-accent)",
-          border: "var(--bd)",
-          boxShadow: "var(--pop)",
+          // Dark glass with a soft pink-to-lime glow (not a flat pink block).
+          background:
+            "radial-gradient(120% 140% at 0% 0%, rgba(242,125,166,0.28), transparent 55%), radial-gradient(120% 140% at 100% 100%, rgba(193,239,98,0.18), transparent 55%), rgba(14,12,20,0.7)",
+          color: "var(--ink)",
         }}
       >
-        <PartyPopper size={36} strokeWidth={2.25} aria-hidden="true" className="shrink-0" />
-        <span className="flex-1">
-          <span className="block display text-[20px]">
-            Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}!
+        <span className="shrink-0" style={{ lineHeight: 0 }}>
+          <Glyph3D name="cake" size={52} animate fps={2} />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-extrabold text-[18px] leading-tight">
+            Happy birthday{s.me ? `, ${s.me.name.split(" ")[0]}` : ""}! 🎉
           </span>
-          <span className="block font-bold text-[13px]">
-            Your 25 has been signing your card. Open it →
+          <span className="block text-[13px] mt-0.5" style={{ color: "var(--ink-2)" }}>
+            Your 25 signed your card.{" "}
+            <span className="font-bold" style={{ color: "var(--lime)" }}>
+              Open it →
+            </span>
           </span>
         </span>
       </Link>
