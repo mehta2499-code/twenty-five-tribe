@@ -34,6 +34,7 @@ import { Route as ApiSpotifyRouteImport } from './routes/api.spotify'
 import { Route as ApiPushRouteImport } from './routes/api.push'
 import { Route as ApiGifRouteImport } from './routes/api.gif'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
+import { Route as AppScenesNewRouteImport } from './routes/app.scenes.new'
 import { Route as AppPlayIdRouteImport } from './routes/app.play.$id'
 import { Route as AppGroupIdRouteImport } from './routes/app.group.$id'
 import { Route as AppChatIdRouteImport } from './routes/app.chat.$id'
@@ -164,6 +165,11 @@ const AppSeatIdRoute = AppSeatIdRouteImport.update({
   path: '/seat/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppScenesNewRoute = AppScenesNewRouteImport.update({
+  id: '/scenes/new',
+  path: '/scenes/new',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPlayIdRoute = AppPlayIdRouteImport.update({
   id: '/play/$id',
   path: '/play/$id',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/group/$id': typeof AppGroupIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
+  '/app/scenes/new': typeof AppScenesNewRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesByTo {
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/group/$id': typeof AppGroupIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
+  '/app/scenes/new': typeof AppScenesNewRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRoutesById {
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/app/chat/$id': typeof AppChatIdRoute
   '/app/group/$id': typeof AppGroupIdRoute
   '/app/play/$id': typeof AppPlayIdRoute
+  '/app/scenes/new': typeof AppScenesNewRoute
   '/app/seat/$id': typeof AppSeatIdRoute
 }
 export interface FileRouteTypes {
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/app/chat/$id'
     | '/app/group/$id'
     | '/app/play/$id'
+    | '/app/scenes/new'
     | '/app/seat/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/app/chat/$id'
     | '/app/group/$id'
     | '/app/play/$id'
+    | '/app/scenes/new'
     | '/app/seat/$id'
   id:
     | '__root__'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/app/chat/$id'
     | '/app/group/$id'
     | '/app/play/$id'
+    | '/app/scenes/new'
     | '/app/seat/$id'
   fileRoutesById: FileRoutesById
 }
@@ -564,6 +576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSeatIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/scenes/new': {
+      id: '/app/scenes/new'
+      path: '/scenes/new'
+      fullPath: '/app/scenes/new'
+      preLoaderRoute: typeof AppScenesNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/play/$id': {
       id: '/app/play/$id'
       path: '/play/$id'
@@ -613,6 +632,7 @@ interface AppRouteChildren {
   AppChatIdRoute: typeof AppChatIdRoute
   AppGroupIdRoute: typeof AppGroupIdRoute
   AppPlayIdRoute: typeof AppPlayIdRoute
+  AppScenesNewRoute: typeof AppScenesNewRoute
   AppSeatIdRoute: typeof AppSeatIdRoute
 }
 
@@ -634,6 +654,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppChatIdRoute: AppChatIdRoute,
   AppGroupIdRoute: AppGroupIdRoute,
   AppPlayIdRoute: AppPlayIdRoute,
+  AppScenesNewRoute: AppScenesNewRoute,
   AppSeatIdRoute: AppSeatIdRoute,
 }
 

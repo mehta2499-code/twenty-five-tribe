@@ -1,0 +1,179 @@
+/** Shared pieces of Scenes: @tags in text, the tag picker, and the edit sheet. */
+import { Fragment, useState } from "react";
+import { Megaphone } from "lucide-react";
+import { Avatar } from "@/components/Avatar";
+import { PersonLink } from "@/components/PersonLink";
+import { Sheet } from "@/components/SocialUI";
+import { mentionQuery } from "@/lib/groups";
+import { useSocial, type Person } from "@/lib/social";
+
+export const MAX_CHARS = 280;
+
+// ---------- Text with @tags ----------
+export function useHandles() {
+  const s = useSocial();
+  const map = new Map<string, Person>();
+  for (const p of s.people) if (p.username) map.set(p.username.toLowerCase(), p);
+  return { map, myHandle: s.me?.username?.toLowerCase() };
+}
+
+/** Post text with @tags in lime (tap a tag to open their profile). */
+export function Tagged({ text }: { text: string }) {
+  const { map, myHandle } = useHandles();
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(/@([\w.]+)/g)) {
+    const handle = m[1].replace(/\.+$/, "").toLowerCase();
+    const all = handle === "all" || handle === "everyone";
+    const who = map.get(handle);
+    if (!all && !who && handle !== myHandle) continue;
+    const start = m.index!;
+    const end = start + 1 + m[1].replace(/\.+$/, "").length;
+    if (start > last) parts.push(text.slice(last, start));
+    const tag = text.slice(start, end);
+    parts.push(
+      who ? (
+        <PersonLink key={start} id={who.id} username={who.username} label={who.name}>
+          <span className="font-semibold" style={{ color: "var(--lime)" }}>
+            {tag}
+          </span>
+        </PersonLink>
+      ) : (
+        <span key={start} className="font-semibold" style={{ color: "var(--lime)" }}>
+          {tag}
+        </span>
+      ),
+    );
+    last = end;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return (
+    <>
+      {parts.map((p, i) => (
+        <Fragment key={i}>{p}</Fragment>
+      ))}
+    </>
+  );
+}
+
+// ---------- @tag suggestions (people at your Table, or @all) ----------
+export function TagPicker({ text, onPick }: { text: string; onPick: (handle: string) => void }) {
+  const s = useSocial();
+  const q = mentionQuery(text);
+  if (q === null) return null;
+  const picks = s.people
+    .filter((p) => p.username)
+    .filter(
+      (p) =>
+        p.username!.toLowerCase().startsWith(q) ||
+        p.name
+          .toLowerCase()
+          .split(" ")
+          .some((w) => w.startsWith(q)),
+    )
+    .slice(0, 5);
+  const showAll = "all".startsWith(q) || "everyone".startsWith(q);
+  if (!picks.length && !showAll) return null;
+  return (
+    <ul
+      className="rounded-2xl overflow-hidden py-1 mb-2"
+      style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+      role="listbox"
+      aria-label="Tag someone"
+    >
+      {showAll && (
+        <li>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick("all")}
+            className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
+          >
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: "var(--pink)", color: "var(--on-accent)" }}
+            >
+              <Megaphone size={16} aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-bold text-cream">@all</span>
+              <span className="block meta truncate">Tag everyone who can see it</span>
+            </span>
+          </button>
+        </li>
+      )}
+      {picks.map((p) => (
+        <li key={p.id}>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPick(p.username!)}
+            className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
+          >
+            <Avatar src={p.avatar} initials={p.initials} color={p.color} size={32} />
+            <span className="min-w-0">
+              <span className="block font-bold text-cream truncate">{p.name}</span>
+              <span className="block meta truncate">@{p.username}</span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+export const withTag = (t: string, handle: string) => t.replace(/@([\w.]*)$/, `@${handle} `);
+
+/** Edit the words of a scene or a reply. */
+export function EditSheet({
+  title,
+  initial,
+  allowEmpty,
+  onSave,
+  onClose,
+}: {
+  title: string;
+  initial: string;
+  allowEmpty: boolean;
+  onSave: (t: string) => void;
+  onClose: () => void;
+}) {
+  const [t, setT] = useState(initial);
+  const ok =
+    (allowEmpty || t.trim().length > 0) && t.length <= MAX_CHARS && t.trim() !== initial.trim();
+  return (
+    <Sheet title={title} onClose={onClose}>
+      <label htmlFor="edit-text" className="sr-only">
+        {title}
+      </label>
+      <textarea
+        id="edit-text"
+        autoFocus
+        value={t}
+        onChange={(e) => setT(e.target.value.slice(0, MAX_CHARS + 20))}
+        rows={4}
+        className="input resize-none mt-1"
+        style={{ fontSize: 16, lineHeight: 1.4 }}
+      />
+      <TagPicker text={t} onPick={(h) => setT((x) => withTag(x, h))} />
+      <div className="flex items-center gap-2 mt-3">
+        <span className="meta tabular-nums" style={{ fontSize: 12.5 }}>
+          {MAX_CHARS - t.length}
+        </span>
+        <button onClick={onClose} className="btn-quiet ml-auto px-4">
+          Cancel
+        </button>
+        <button
+          disabled={!ok}
+          onClick={() => {
+            onSave(t);
+            onClose();
+          }}
+          className="rounded-full px-5 font-bold disabled:opacity-40"
+          style={{ minHeight: 38, background: "var(--lime)", color: "var(--on-accent)" }}
+        >
+          Save
+        </button>
+      </div>
+    </Sheet>
+  );
+}

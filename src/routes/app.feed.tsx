@@ -5,44 +5,15 @@
  */
 import { Tour } from "@/components/Tour";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Fragment, useEffect, useRef, useState } from "react";
-import {
-  AtSign,
-  ImagePlus,
-  Megaphone,
-  MessageCircle,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MessageCircle, MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
-import {
-  AudienceNote,
-  EmptyState,
-  PageBand,
-  Sheet,
-  Toast,
-  buzz,
-  clientOnly,
-} from "@/components/SocialUI";
+import { EmptyState, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { personOf } from "@/components/FeedUI";
 import { LazyVideo } from "@/components/LazyVideo";
-import { mentionQuery } from "@/lib/groups";
-import {
-  fileToImage,
-  meView,
-  social,
-  timeAgo,
-  useSocial,
-  type Person,
-  type Post,
-} from "@/lib/social";
-
-const MAX_VIDEO_MB = 50;
-const MAX_CHARS = 280;
+import { EditSheet, TagPicker, Tagged, withTag } from "@/components/SceneParts";
+import { meView, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
 export const Route = createFileRoute("/app/feed")({
   // ?post=<id>: open that scene (from a notification).
@@ -53,175 +24,6 @@ export const Route = createFileRoute("/app/feed")({
 
 /** "Reply" on text posts, "Comment" on photo and video posts. */
 const word = (p: Post) => (p.text ? "reply" : "comment");
-
-// ---------- Text with @tags ----------
-function useHandles() {
-  const s = useSocial();
-  const map = new Map<string, Person>();
-  for (const p of s.people) if (p.username) map.set(p.username.toLowerCase(), p);
-  return { map, myHandle: s.me?.username?.toLowerCase() };
-}
-
-/** Post text with @tags in lime (tap a tag to open their profile). */
-function Tagged({ text }: { text: string }) {
-  const { map, myHandle } = useHandles();
-  const parts: React.ReactNode[] = [];
-  let last = 0;
-  for (const m of text.matchAll(/@([\w.]+)/g)) {
-    const handle = m[1].replace(/\.+$/, "").toLowerCase();
-    const all = handle === "all" || handle === "everyone";
-    const who = map.get(handle);
-    if (!all && !who && handle !== myHandle) continue;
-    const start = m.index!;
-    const end = start + 1 + m[1].replace(/\.+$/, "").length;
-    if (start > last) parts.push(text.slice(last, start));
-    const tag = text.slice(start, end);
-    parts.push(
-      who ? (
-        <PersonLink key={start} id={who.id} username={who.username} label={who.name}>
-          <span className="font-semibold" style={{ color: "var(--lime)" }}>
-            {tag}
-          </span>
-        </PersonLink>
-      ) : (
-        <span key={start} className="font-semibold" style={{ color: "var(--lime)" }}>
-          {tag}
-        </span>
-      ),
-    );
-    last = end;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return (
-    <>
-      {parts.map((p, i) => (
-        <Fragment key={i}>{p}</Fragment>
-      ))}
-    </>
-  );
-}
-
-// ---------- @tag suggestions (people at your Table, or @all) ----------
-function TagPicker({ text, onPick }: { text: string; onPick: (handle: string) => void }) {
-  const s = useSocial();
-  const q = mentionQuery(text);
-  if (q === null) return null;
-  const picks = s.people
-    .filter((p) => p.username)
-    .filter(
-      (p) =>
-        p.username!.toLowerCase().startsWith(q) ||
-        p.name
-          .toLowerCase()
-          .split(" ")
-          .some((w) => w.startsWith(q)),
-    )
-    .slice(0, 5);
-  const showAll = "all".startsWith(q) || "everyone".startsWith(q);
-  if (!picks.length && !showAll) return null;
-  return (
-    <ul
-      className="rounded-2xl overflow-hidden py-1 mb-2"
-      style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
-      role="listbox"
-      aria-label="Tag someone"
-    >
-      {showAll && (
-        <li>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onPick("all")}
-            className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
-          >
-            <span
-              className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: "var(--pink)", color: "var(--on-accent)" }}
-            >
-              <Megaphone size={16} aria-hidden="true" />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-bold text-cream">@all</span>
-              <span className="block meta truncate">Tag everyone who can see it</span>
-            </span>
-          </button>
-        </li>
-      )}
-      {picks.map((p) => (
-        <li key={p.id}>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onPick(p.username!)}
-            className="menu-row w-full flex items-center gap-3 px-3 py-2 text-left"
-          >
-            <Avatar src={p.avatar} initials={p.initials} color={p.color} size={32} />
-            <span className="min-w-0">
-              <span className="block font-bold text-cream truncate">{p.name}</span>
-              <span className="block meta truncate">@{p.username}</span>
-            </span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
-const withTag = (t: string, handle: string) => t.replace(/@([\w.]*)$/, `@${handle} `);
-
-/** Edit the words of a scene or a reply. */
-function EditSheet({
-  title,
-  initial,
-  allowEmpty,
-  onSave,
-  onClose,
-}: {
-  title: string;
-  initial: string;
-  allowEmpty: boolean;
-  onSave: (t: string) => void;
-  onClose: () => void;
-}) {
-  const [t, setT] = useState(initial);
-  const ok =
-    (allowEmpty || t.trim().length > 0) && t.length <= MAX_CHARS && t.trim() !== initial.trim();
-  return (
-    <Sheet title={title} onClose={onClose}>
-      <label htmlFor="edit-text" className="sr-only">
-        {title}
-      </label>
-      <textarea
-        id="edit-text"
-        autoFocus
-        value={t}
-        onChange={(e) => setT(e.target.value.slice(0, MAX_CHARS + 20))}
-        rows={4}
-        className="input resize-none mt-1"
-        style={{ fontSize: 16, lineHeight: 1.4 }}
-      />
-      <TagPicker text={t} onPick={(h) => setT((x) => withTag(x, h))} />
-      <div className="flex items-center gap-2 mt-3">
-        <span className="meta tabular-nums" style={{ fontSize: 12.5 }}>
-          {MAX_CHARS - t.length}
-        </span>
-        <button onClick={onClose} className="btn-quiet ml-auto px-4">
-          Cancel
-        </button>
-        <button
-          disabled={!ok}
-          onClick={() => {
-            onSave(t);
-            onClose();
-          }}
-          className="rounded-full px-5 font-bold disabled:opacity-40"
-          style={{ minHeight: 38, background: "var(--lime)", color: "var(--on-accent)" }}
-        >
-          Save
-        </button>
-      </div>
-    </Sheet>
-  );
-}
 
 // ---------- One scene ----------
 function SceneRow({
@@ -553,183 +355,21 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
   );
 }
 
-// ---------- New scene ----------
-function Composer({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const me = meView();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const boxRef = useRef<HTMLTextAreaElement>(null);
-  const [text, setText] = useState("");
-  const [image, setImage] = useState<string | null>(null);
-  const [video, setVideo] = useState<{ file: File; url: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const el = boxRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
-  }, [text]);
-
-  const put = (handle: string) => {
-    setText((t) => withTag(t, handle));
-    boxRef.current?.focus();
-  };
-  const addAt = () => {
-    setText((t) => (t && !/\s$/.test(t) ? `${t} @` : `${t}@`));
-    boxRef.current?.focus();
-  };
-
-  const left = MAX_CHARS - text.length;
-  const canPost = (text.trim().length > 0 || !!image || !!video) && left >= 0;
-
-  return (
-    <Sheet title="New scene" onClose={onClose}>
-      <div className="flex gap-3 pt-3">
-        <Avatar src={me.avatar} initials={me.initials} size={40} />
-        <div className="flex-1 min-w-0">
-          <label htmlFor="scene-text" className="sr-only">
-            What's happening
-          </label>
-          <textarea
-            id="scene-text"
-            ref={boxRef}
-            autoFocus
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS + 20))}
-            placeholder={image || video ? "Add a caption (optional)" : "What's happening?"}
-            rows={2}
-            className="w-full resize-none bg-transparent outline-none text-cream pt-2"
-            style={{ fontSize: 18, lineHeight: 1.4 }}
-          />
-          <TagPicker text={text} onPick={put} />
-          {(image || video) && (
-            <div
-              className="relative mt-1 rounded-2xl overflow-hidden"
-              style={{ border: "1px solid var(--line)" }}
-            >
-              {video ? (
-                <video
-                  src={video.url}
-                  muted
-                  autoPlay
-                  loop
-                  playsInline
-                  className="w-full max-h-[320px] object-cover"
-                />
-              ) : (
-                <img src={image!} alt="Your photo" className="w-full max-h-[320px] object-cover" />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setImage(null);
-                  setVideo(null);
-                }}
-                aria-label="Remove photo or video"
-                className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-      {error && (
-        <p className="mt-2 text-sm" style={{ color: "var(--coral-deep)" }} role="alert">
-          {error}
-        </p>
-      )}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*,video/*"
-        hidden
-        onChange={async (e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (!f) return;
-          try {
-            if (f.type.startsWith("video/")) {
-              if (f.size > MAX_VIDEO_MB * 1024 * 1024)
-                throw new Error(
-                  `Videos can be up to ${MAX_VIDEO_MB} MB. Trim it a bit and try again.`,
-                );
-              setImage(null);
-              setVideo({ file: f, url: URL.createObjectURL(f) });
-            } else {
-              setVideo(null);
-              setImage(await fileToImage(f));
-            }
-            setError(null);
-          } catch (err) {
-            setError((err as Error).message);
-          }
-        }}
-      />
-      {/* Toolbar */}
-      <div
-        className="flex items-center gap-1 mt-3 pt-3"
-        style={{ borderTop: "1px solid var(--line)" }}
-      >
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          aria-label="Add a photo or video"
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--fill)]"
-          style={{ color: "var(--lime)" }}
-        >
-          <ImagePlus size={21} />
-        </button>
-        <button
-          type="button"
-          onClick={addAt}
-          aria-label="Tag someone"
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--fill)]"
-          style={{ color: "var(--lime)" }}
-        >
-          <AtSign size={21} />
-        </button>
-        <span
-          className="ml-auto mr-2 tabular-nums meta"
-          style={{
-            fontSize: 12.5,
-            color: left < 0 ? "var(--coral-deep)" : left <= 20 ? "var(--sun)" : undefined,
-          }}
-          aria-live="polite"
-        >
-          {left <= 40 ? left : ""}
-        </span>
-        <button
-          disabled={!canPost}
-          onClick={() => {
-            social.addPost(image ?? "", text, video?.file);
-            onDone();
-          }}
-          className="rounded-full px-5 font-bold transition-opacity disabled:opacity-40"
-          style={{
-            minHeight: 38,
-            fontSize: 15,
-            background: "var(--lime)",
-            color: "var(--on-accent)",
-          }}
-        >
-          Post
-        </button>
-      </div>
-      <div className="mt-3">
-        <AudienceNote>Only people at your Table will see this.</AudienceNote>
-      </div>
-    </Sheet>
-  );
-}
-
 // ---------- Page ----------
 function Scenes() {
   const s = useSocial();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(() => {
+    try {
+      if (sessionStorage.getItem("tf.scene.posted")) {
+        sessionStorage.removeItem("tf.scene.posted");
+        return "Posted. Your 25 can see it now.";
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
   const open = s.posts.find((p) => p.id === openId);
   // From a notification (?post=<id>): show that scene and open its thread.
   const { post: wanted } = Route.useSearch();
@@ -766,7 +406,7 @@ function Scenes() {
         sub="What your 25 are up to. Nobody else sees it."
         actions={
           <button
-            onClick={() => setCreating(true)}
+            onClick={() => navigate({ to: "/app/scenes/new" })}
             className="lg w-12 h-12 rounded-full flex items-center justify-center"
             style={{ color: "#fff" }}
             aria-label="New scene"
@@ -795,7 +435,10 @@ function Scenes() {
           title="No scenes yet"
           body="Share what's happening: a thought, a photo or a video. Only your 25 see it."
           action={
-            <button onClick={() => setCreating(true)} className="btn-primary px-5">
+            <button
+              onClick={() => navigate({ to: "/app/scenes/new" })}
+              className="btn-primary px-5"
+            >
               <Plus size={18} /> Share the first scene
             </button>
           }
@@ -817,15 +460,6 @@ function Scenes() {
       )}
 
       {open && <Thread post={open} onClose={() => setOpenId(null)} />}
-      {creating && (
-        <Composer
-          onClose={() => setCreating(false)}
-          onDone={() => {
-            setCreating(false);
-            setToast("Posted. Your 25 can see it now.");
-          }}
-        />
-      )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
     </>
   );
