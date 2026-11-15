@@ -206,7 +206,12 @@ export function PollView({
     else social.votePoll(postId, i);
   };
   return (
-    <div className="mt-2.5 grid gap-2" role="group" aria-label="Poll">
+    <div
+      className="mt-2.5 grid gap-2 w-full min-w-0"
+      style={{ gridTemplateColumns: "minmax(0, 1fr)" }}
+      role="group"
+      aria-label="Poll"
+    >
       {poll.options.map((o, i) => {
         const n = poll.counts[i] ?? 0;
         const pct = total ? Math.round((n / total) * 100) : 0;
@@ -218,7 +223,7 @@ export function PollView({
               type="button"
               onClick={() => tap(i)}
               aria-pressed={mine}
-              className="relative overflow-hidden rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-left"
+              className="relative overflow-hidden rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-left w-full min-w-0"
               style={{
                 background: "var(--fill)",
                 border: `1px solid ${mine ? "rgba(193,239,98,0.55)" : "var(--line)"}`,
@@ -234,8 +239,8 @@ export function PollView({
                 }}
               />
               <span
-                className="relative flex-1 min-w-0 truncate font-semibold text-cream"
-                style={{ fontSize: 14.5 }}
+                className="relative flex-1 min-w-0 font-semibold text-cream"
+                style={{ fontSize: 14.5, overflowWrap: "anywhere", lineHeight: 1.3 }}
               >
                 {o}
               </span>
@@ -257,7 +262,7 @@ export function PollView({
             key={i}
             type="button"
             onClick={() => tap(i)}
-            className="rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left font-semibold"
+            className="rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left font-semibold w-full min-w-0"
             style={{
               fontSize: 14.5,
               color: "var(--lime)",
@@ -269,7 +274,9 @@ export function PollView({
               className={`shrink-0 w-[18px] h-[18px] ${poll.multi ? "rounded-md" : "rounded-full"}`}
               style={{ border: "1.5px solid currentColor" }}
             />
-            <span className="flex-1 min-w-0 truncate">{o}</span>
+            <span className="flex-1 min-w-0" style={{ overflowWrap: "anywhere", lineHeight: 1.3 }}>
+              {o}
+            </span>
           </button>
         );
       })}
