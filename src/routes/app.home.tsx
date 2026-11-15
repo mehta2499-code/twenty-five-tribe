@@ -1518,7 +1518,9 @@ function Home() {
 
   // The Table page fits the screen: no scrolling and no iPhone rubber-band bounce.
   useEffect(() => {
-    const els = [document.documentElement, document.body];
+    // Lock the app's scroll box too (pages scroll inside it, not the page).
+    const box = document.getElementById("app-scroll");
+    const els = [document.documentElement, document.body, ...(box ? [box] : [])];
     const prev = els.map((e) => [e.style.overflow, e.style.overscrollBehavior] as const);
     els.forEach((e) => {
       e.style.overflow = "hidden";

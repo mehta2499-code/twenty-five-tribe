@@ -61,6 +61,13 @@ function AppLayout() {
     navigate({ to: to as "/app/home" });
   };
   const firstTab = useRef(true);
+  // New page: start at the top of the scroll box.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { pathname: path } = useLocation();
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [path]);
+
   useEffect(() => {
     if (firstTab.current) {
       firstTab.current = false;
@@ -240,16 +247,20 @@ function AppLayout() {
     );
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="h-[100dvh] overflow-hidden bg-background relative">
       {/* Soft colour behind everything, so the glass has something to show. */}
       <div aria-hidden="true" className="ambient" />
-      <div
-        ref={columnRef}
-        className="mx-auto max-w-md pb-32 relative app-column"
-        onTouchStart={onSwipeStart}
-        onTouchEnd={onSwipeEnd}
-      >
-        <Outlet />
+      {/* Pages scroll inside this box, not the whole page: on iPhone a scrolling
+          page can leave the bottom tab bar stuck halfway up the screen. */}
+      <div id="app-scroll" ref={scrollRef} className="app-scroll">
+        <div
+          ref={columnRef}
+          className="mx-auto max-w-md pb-32 relative app-column"
+          onTouchStart={onSwipeStart}
+          onTouchEnd={onSwipeEnd}
+        >
+          <Outlet />
+        </div>
       </div>
       <BottomNav />
       <InAppBanner />

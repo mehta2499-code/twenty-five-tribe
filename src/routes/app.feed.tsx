@@ -400,6 +400,18 @@ function Scenes() {
     return null;
   });
   const open = s.posts.find((p) => p.id === openId);
+  // Is the title bar (with its + button) scrolled out of view?
+  const bandRef = useRef<HTMLDivElement>(null);
+  const [bandGone, setBandGone] = useState(false);
+  useEffect(() => {
+    const el = bandRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setBandGone(!e.isIntersecting), {
+      rootMargin: "-40px 0px 0px 0px",
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   // From a notification (?post=<id>): show that scene and open its thread.
   const { post: wanted } = Route.useSearch();
   const navigate = useNavigate();
@@ -429,21 +441,42 @@ function Scenes() {
           },
         ]}
       />
-      <PageBand
-        ring
-        title="Scenes"
-        sub="What your 25 are up to. Nobody else sees it."
-        actions={
-          <button
-            onClick={() => navigate({ to: "/app/scenes/new" })}
-            className="lg w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ color: "#fff" }}
-            aria-label="New scene"
-          >
-            <Plus size={24} strokeWidth={2.4} />
-          </button>
-        }
-      />
+      <div ref={bandRef}>
+        <PageBand
+          ring
+          title="Scenes"
+          sub="What your 25 are up to. Nobody else sees it."
+          actions={
+            <button
+              onClick={() => navigate({ to: "/app/scenes/new" })}
+              className="lg w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ color: "#fff" }}
+              aria-label="New scene"
+            >
+              <Plus size={24} strokeWidth={2.4} />
+            </button>
+          }
+        />
+      </div>
+      {/* Scrolled past the title bar: just a small glass + floats at the top. */}
+      <button
+        onClick={() => navigate({ to: "/app/scenes/new" })}
+        aria-label="New scene"
+        tabIndex={bandGone ? 0 : -1}
+        aria-hidden={!bandGone}
+        className="lg fixed z-30 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200"
+        style={{
+          top: "max(12px, calc(env(safe-area-inset-top) + 8px))",
+          right: "max(16px, calc(50vw - 224px + 16px))",
+          color: "#fff",
+          background: "rgba(10,10,14,0.35)",
+          opacity: bandGone ? 1 : 0,
+          transform: bandGone ? "scale(1)" : "scale(0.8)",
+          pointerEvents: bandGone ? "auto" : "none",
+        }}
+      >
+        <Plus size={24} strokeWidth={2.4} />
+      </button>
 
       {s.loading ? (
         <div aria-busy="true" aria-label="Loading scenes">

@@ -727,6 +727,15 @@ button, a, [role="button"] { touch-action: manipulation; }
     radial-gradient(48% 32% at 28% 88%, rgba(120, 180, 255, 0.09), transparent 70%);
 }
 /* No z-index on the column: full-screen chats, sheets and menus must stay above the tab bar. */
+/* The app's own scroll box (the page itself never scrolls, so the tab bar can't
+   get stuck mid-screen on iPhone). Not fixed and no z-index, for the same reason
+   as above. */
+.app-scroll {
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
 
 /* People who turn off transparency / want more contrast get solid surfaces. */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
