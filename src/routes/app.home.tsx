@@ -5,6 +5,7 @@ import { SeatLogo } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Armchair,
+  BarChart3,
   Bell,
   Cake,
   Camera,
@@ -2066,7 +2067,7 @@ function PollsBar({ left }: { left: number }) {
           className="w-9 h-9 shrink-0 flex items-center justify-center"
           style={{ background: "var(--on-accent)", color: "var(--pink)", borderRadius: 14 }}
         >
-          <Vote size={19} strokeWidth={2.4} aria-hidden="true" />
+          <BarChart3 size={19} strokeWidth={2.4} aria-hidden="true" />
         </span>
         <span className="flex-1 min-w-0">
           <span className="block font-extrabold text-[15px] leading-tight">Weekly Polls</span>
@@ -2102,7 +2103,7 @@ function PollsButton() {
         color: "var(--ink)",
       }}
     >
-      <Vote size={20} aria-hidden="true" />
+      <BarChart3 size={20} strokeWidth={2.2} aria-hidden="true" />
       {left > 0 && (
         <span
           aria-hidden="true"
