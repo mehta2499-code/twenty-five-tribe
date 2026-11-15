@@ -734,7 +734,6 @@ button, a, [role="button"] { touch-action: manipulation; }
   height: 100dvh;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* People who turn off transparency / want more contrast get solid surfaces. */

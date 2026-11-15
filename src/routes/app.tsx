@@ -261,8 +261,10 @@ function AppLayout() {
         >
           <Outlet />
         </div>
+        {/* The tab bar lives in the same box as the pages, so sheets and chat
+            screens (which sit above it) always cover it, iPhone included. */}
+        <BottomNav />
       </div>
-      <BottomNav />
       <InAppBanner />
       {s.error && <Toast text={s.error} onDone={() => clearError()} />}
       {!s.error && s.notice && <Toast text={s.notice} onDone={() => clearNotice()} />}
