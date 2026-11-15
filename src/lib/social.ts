@@ -45,6 +45,8 @@ export type Post = {
   video?: string;
   /** Where the photo/video is stored (live posts), so deleting removes the file too. */
   mediaPath?: string;
+  /** A text-only post (no photo or video). */
+  text?: boolean;
   caption: string;
   at: number;
   likes: string[]; // friendIds + "me"
@@ -715,6 +717,7 @@ const demo = {
     const post: Post = {
       id: uid(),
       by: "me",
+      text: !image && !video,
       image: video ? "" : image,
       video: video ? URL.createObjectURL(video) : undefined,
       caption: caption.trim(),

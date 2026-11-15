@@ -1680,7 +1680,7 @@ function Home() {
           {
             at: 'nav[aria-label="Main"]',
             title: "Everything else",
-            body: "Tap the big button to come back to your Table. The Drop, Feed, Chats and Games are around it; Blinks are in Chats. Swipe left and right to move between them.",
+            body: "Tap the big button to come back to your Table. The Drop, Scenes, Chats and Games are around it; Blinks are in Chats. Swipe left and right to move between them.",
           },
         ]}
       />

@@ -356,8 +356,8 @@ function Landing() {
               },
               {
                 icon: "✦",
-                tag: "Feed & Reels",
-                line: "Posts and reels from your people only. It ends when you're caught up.",
+                tag: "Scenes",
+                line: "Thoughts, photos and videos from your people only. It ends when you're caught up.",
               },
               {
                 icon: "◆",
@@ -463,7 +463,11 @@ const IOS_STEPS = [
   { n: "1", t: "Open in Safari", d: "Go to the25.world in Safari (not Chrome or Instagram)." },
   { n: "2", t: "Tap Share", d: "The square with the arrow, at the bottom of the screen." },
   { n: "3", t: "Add to Home Screen", d: "Scroll down the share menu and tap it, then Add." },
-  { n: "4", t: "Open 25 from your Home Screen", d: "Sign in once, then turn on notifications. That's it." },
+  {
+    n: "4",
+    t: "Open 25 from your Home Screen",
+    d: "Sign in once, then turn on notifications. That's it.",
+  },
 ];
 
 function InstallSection() {

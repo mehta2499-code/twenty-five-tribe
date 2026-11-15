@@ -98,8 +98,8 @@ type PostRow = {
   id: string;
   author: string;
   kind: "post" | "reel";
-  media_path: string;
-  media_type: "image" | "video";
+  media_path: string | null;
+  media_type: "image" | "video" | "text";
   caption: string;
   created_at: string;
 };
@@ -511,7 +511,7 @@ async function loadAll() {
       : [[], []];
     const mediaUrls = await signed(
       "media",
-      postRows.map((p) => p.media_path),
+      postRows.map((p) => p.media_path ?? ""),
     );
     const who = (id: string) => (id === me ? "me" : id);
     // People who liked/commented/posted but aren't loaded yet: fetch their names.
@@ -550,7 +550,7 @@ async function loadAll() {
     // The database only returns posts you're allowed to see (yours, and from
     // anyone who put you in their 25), so show them all.
     for (const p of postRows) {
-      const url = mediaUrls[p.media_path] ?? "";
+      const url = p.media_path ? (mediaUrls[p.media_path] ?? "") : "";
       const base = {
         id: p.id,
         by: who(p.author),
@@ -561,9 +561,11 @@ async function loadAll() {
       };
       // Reels are gone: videos are just posts now.
       posts.push(
-        p.media_type === "video"
-          ? { ...base, image: "", video: url, mediaPath: p.media_path }
-          : { ...base, image: url, mediaPath: p.media_path },
+        p.media_type === "text"
+          ? { ...base, image: "", text: true }
+          : p.media_type === "video"
+            ? { ...base, image: "", video: url, mediaPath: p.media_path ?? undefined }
+            : { ...base, image: url, mediaPath: p.media_path ?? undefined },
       );
     }
     const postedToday = new Set(
@@ -1292,7 +1294,8 @@ registerLive({
 
   addPost(image: string, caption: string, video?: Blob) {
     if (!myId) return;
-    track("post_created", { video: !!video });
+    const textOnly = !image && !video;
+    track("post_created", { video: !!video, text: textOnly });
     const me = myId;
     const id = newId();
     const preview = video ? URL.createObjectURL(video) : undefined;
@@ -1302,6 +1305,7 @@ registerLive({
         {
           id,
           by: "me",
+          text: textOnly,
           image: video ? "" : image,
           video: preview,
           caption: caption.trim(),
@@ -1314,9 +1318,11 @@ registerLive({
     }));
     void (async () => {
       try {
-        const media_path = video
-          ? await upload("media", video, video.type.includes("quicktime") ? "mov" : "mp4")
-          : await upload("media", image, "jpg");
+        const media_path = textOnly
+          ? null
+          : video
+            ? await upload("media", video, video.type.includes("quicktime") ? "mov" : "mp4")
+            : await upload("media", image, "jpg");
         await run(
           supabase
             .from("posts")
@@ -1325,7 +1331,7 @@ registerLive({
               author: me,
               kind: "post",
               media_path,
-              media_type: video ? "video" : "image",
+              media_type: textOnly ? "text" : video ? "video" : "image",
               caption: caption.trim(),
             })
             .select(),

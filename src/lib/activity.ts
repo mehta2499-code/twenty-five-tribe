@@ -4,21 +4,22 @@
  */
 import { useEffect, useSyncExternalStore } from "react";
 import {
+  AtSign,
   Cake,
   Camera,
   Crown,
+  DoorOpen,
   Eye,
+  Gamepad2,
   Handshake,
   Heart,
+  Megaphone,
   MessageCircle,
   Sparkles,
   Trophy,
   Type,
   Vote,
   type LucideIcon,
-  DoorOpen,
-  Megaphone,
-  Gamepad2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, friendById, seatedFriends, showBanner, useSocial } from "@/lib/social";
@@ -191,7 +192,10 @@ export function linkFor(a: Activity): string {
       return "/app/people";
     case "like":
     case "comment":
+    case "reply":
     case "post":
+    case "post_tag":
+    case "post_tag_all":
       return "/app/feed";
     case "word_done":
       return ref.startsWith("game:") ? `/app/play/${ref.slice(5)}` : "/app/games";
@@ -290,8 +294,18 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       return {
         Icon: Camera,
         tone: "var(--pink)",
-        text: `${who} just posted${a.body && !/^New (post|reel)$/.test(a.body) ? `: ${a.body}` : ""}`,
+        text: `${who} shared a new scene${a.body && !/^New (post|reel|photo|video)$/.test(a.body) ? `: ${a.body}` : ""}`,
       };
+    case "post_tag":
+      return { Icon: AtSign, tone: "var(--lime)", text: `${who} tagged you in a scene: ${a.body}` };
+    case "post_tag_all":
+      return {
+        Icon: Megaphone,
+        tone: "var(--pink)",
+        text: `${who} tagged everyone in a scene: ${a.body}`,
+      };
+    case "reply":
+      return { Icon: MessageCircle, tone: "var(--sky)", text: `${who} replied: ${a.body}` };
     case "game_win":
       return { Icon: Trophy, tone: "var(--sun)", text: `${who} won ${a.body}` };
     case "mention_all":

@@ -5,7 +5,7 @@ import { buzz } from "@/components/SocialUI";
 
 const tabs = [
   { to: "/app/drop", label: "Drop", Icon: DropGlyph },
-  { to: "/app/feed", label: "Feed", Icon: FeedGlyph },
+  { to: "/app/feed", label: "Scenes", Icon: FeedGlyph },
   { to: "/app/home", label: "Table", Icon: TableGlyph },
   { to: "/app/chats", label: "Chats", Icon: ChatsGlyph },
   { to: "/app/games", label: "Games", Icon: GamesGlyph },

@@ -592,7 +592,7 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
         <ul className="px-5 grid gap-2">
           {[
             { to: "/app/chats" as const, label: "Chats and blinks" },
-            { to: "/app/feed" as const, label: "Feed and reels" },
+            { to: "/app/feed" as const, label: "Scenes" },
             { to: "/app/games" as const, label: "Games" },
           ].map((l) => (
             <li key={l.to}>
