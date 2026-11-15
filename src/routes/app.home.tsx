@@ -1070,6 +1070,8 @@ function TableProp({
           : "cake";
   const [st, setSt] = useState(prop.sprite === "winefallen" ? "fallen" : "idle");
   const [bites, setBites] = useState(0);
+  // Knocked over by a tap: liquid splashes out and spreads into a puddle.
+  const [spilt, setSpilt] = useState(false);
   const [jig, setJig] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -1087,12 +1089,14 @@ function TableProp({
     if (kind === "wine") {
       if (st === "idle") {
         setSt("tipping");
+        setSpilt(true);
         after([
-          ["fallen", 650],
-          ["cleaning", 1500],
+          ["fallen", 520],
+          ["cleaning", 1700],
           ["fresh", 800],
           ["idle", 700],
         ]);
+        timers.current.push(setTimeout(() => setSpilt(false), 520 + 1700 + 800));
       } else if (st === "fallen") {
         setSt("cleaning");
         after([
@@ -1102,13 +1106,15 @@ function TableProp({
       }
     } else if (kind === "cup") {
       if (st !== "idle") return;
-      setSt("drinking");
+      setSt("tipping");
+      setSpilt(true);
       after([
-        ["crushed", 1000],
-        ["gone", 550],
-        ["fresh", 500],
+        ["spilled", 480],
+        ["cleaning", 1700],
+        ["fresh", 800],
         ["idle", 700],
       ]);
+      timers.current.push(setTimeout(() => setSpilt(false), 480 + 1700 + 800));
     } else if (kind === "slice") {
       if (st !== "idle") return;
       if (bites < 2) {
@@ -1133,16 +1139,15 @@ function TableProp({
     }
   };
   const base = Math.round(width * prop.w);
+  // Cups fall toward the middle of the table, so the spill stays on it.
+  const fallLeft = kind === "cup" && prop.x > 50;
   const fallenLook = kind === "wine" && (st === "fallen" || st === "cleaning");
   const size = fallenLook ? Math.round(base * 1.25) : base;
   const sprite = fallenLook ? "winefallen" : prop.sprite === "winefallen" ? "wine" : prop.sprite;
   const anim: Record<string, string> = {
-    tipping: "wine-tip 0.65s cubic-bezier(.5,0,.75,.4) both",
-    fallen: "prop-in 0.15s ease-out both",
+    fallen: "prop-in 0.12s ease-out both",
     cleaning: "prop-clean 0.8s ease-in both",
     fresh: "prop-fresh 0.7s cubic-bezier(.3,1.4,.5,1) both",
-    drinking: "cup-drink 1s ease-in-out both",
-    crushed: "cup-crush 0.55s ease-in both",
     eaten: "slice-eat 0.5s ease-in both",
     gone: "none",
   };
@@ -1180,18 +1185,39 @@ function TableProp({
         transition: "opacity 0.35s ease, transform 0.35s ease",
       }}
     >
+      {/* The spill: a puddle that spreads out from the glass's mouth, plus a splash. */}
+      {spilt && (kind === "cup" || kind === "wine") && st !== "tipping" && st !== "fresh" && (
+        <Spill kind={kind} base={base} cleaning={st === "cleaning"} left={fallLeft} />
+      )}
       <span
-        key={`${st}-${jig}`}
+        key={`j${jig}`}
         className={jig && st === "idle" ? "prop-jiggle" : undefined}
         style={{
           display: "block",
-          transformOrigin: kind === "wine" ? "50% 92%" : "50% 80%",
+          transformOrigin: "50% 80%",
           animation: anim[st],
           opacity: st === "gone" ? 0 : undefined,
-          ...mask,
+          position: "relative",
         }}
       >
-        <Glyph3D name={sprite} size={size} animate={kind === "cake" && st === "lit"} fps={4} />
+        {/* Tipping over: the glass falls onto its side (and stays there for a cup). */}
+        <span
+          style={{
+            display: "block",
+            transformOrigin: kind === "wine" ? "50% 92%" : "50% 88%",
+            transform:
+              kind === "cup" && (st === "tipping" || st === "spilled" || st === "cleaning")
+                ? `rotate(${fallLeft ? -92 : 92}deg)`
+                : kind === "wine" && st === "tipping"
+                  ? "rotate(96deg)"
+                  : undefined,
+            transition:
+              st === "tipping" ? "transform 0.5s cubic-bezier(0.55, 0, 0.85, 0.4)" : undefined,
+            ...mask,
+          }}
+        >
+          <Glyph3D name={sprite} size={size} animate={kind === "cake" && st === "lit"} fps={4} />
+        </span>
       </span>
       {/* Cleaning up the spill / crumbs: a little sparkle. */}
       {(st === "cleaning" || st === "eaten" || st === "blown") && (
@@ -1223,6 +1249,88 @@ function TableProp({
         </span>
       )}
     </button>
+  );
+}
+
+/**
+ * Spilt drink: a puddle spreads out from where the glass's mouth landed, with
+ * a few drops splashing out first. Wiped away (fades) while it's cleaned up.
+ */
+function Spill({
+  kind,
+  base,
+  cleaning,
+  left = false,
+}: {
+  kind: "cup" | "wine";
+  base: number;
+  cleaning: boolean;
+  /** The cup fell to the left. */
+  left?: boolean;
+}) {
+  // Where the mouth ends up, as a share of the prop's box (cup falls to the right;
+  // the knocked-over wine glass lies with its mouth bottom-right).
+  const at = kind === "cup" ? { x: left ? -0.28 : 1.28, y: 0.9 } : { x: 0.8, y: 0.8 };
+  const flip = left ? -1 : 1;
+  const box = kind === "wine" ? base * 1.25 : base;
+  const tone =
+    kind === "cup"
+      ? { fill: "rgba(240,176,48,0.88)", rim: "rgba(255,244,214,0.95)" }
+      : { fill: "rgba(128,10,34,0.92)", rim: "rgba(214,60,80,0.9)" };
+  const w = base * (kind === "cup" ? 1.25 : 1.0);
+  const h = w * 0.42;
+  const drops = [
+    { dx: 0.55, dy: -0.35, r: 0.09 },
+    { dx: 0.8, dy: -0.1, r: 0.07 },
+    { dx: 0.35, dy: -0.55, r: 0.06 },
+    { dx: 0.7, dy: 0.25, r: 0.08 },
+    { dx: 0.15, dy: 0.35, r: 0.05 },
+  ];
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute pointer-events-none"
+      style={{
+        left: box * at.x,
+        top: box * at.y,
+        width: 0,
+        height: 0,
+        opacity: cleaning ? 0 : 1,
+        transition: "opacity 0.7s ease-in",
+      }}
+    >
+      <span
+        className="absolute spill-grow"
+        style={{
+          left: left ? -w * 0.7 : -w * 0.3,
+          top: -h / 2,
+          width: w,
+          height: h,
+          borderRadius: "48% 52% 45% 55% / 55% 45% 55% 45%",
+          background: `radial-gradient(ellipse at 30% 40%, ${tone.rim}, ${tone.fill} 38%, ${tone.fill})`,
+          boxShadow: `inset 0 -2px 4px rgba(0,0,0,0.25)`,
+          transformOrigin: left ? "80% 50%" : "20% 50%",
+        }}
+      />
+      {drops.map((d, k) => (
+        <span
+          key={k}
+          className="absolute spill-drop rounded-full"
+          style={
+            {
+              left: 0,
+              top: 0,
+              width: base * d.r,
+              height: base * d.r,
+              background: tone.fill,
+              "--dx": `${d.dx * base * flip}px`,
+              "--dy": `${d.dy * base}px`,
+              animationDelay: `${k * 25}ms`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </span>
   );
 }
 

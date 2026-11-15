@@ -841,3 +841,17 @@ button, a, [role="button"] { touch-action: manipulation; }
   background: var(--line);
   pointer-events: none;
 }
+
+/* Spilt drinks on the table: the puddle spreads, drops splash out and land. */
+@keyframes spill-grow {
+  0% { transform: scale(0.05, 0.2); }
+  55% { transform: scale(0.85, 0.95); }
+  100% { transform: scale(1); }
+}
+.spill-grow { animation: spill-grow 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes spill-drop {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 1; }
+  60% { transform: translate(var(--dx), calc(var(--dy) - 6px)) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.9, 0.6); opacity: 0.85; }
+}
+.spill-drop { animation: spill-drop 0.45s ease-out both; }
