@@ -97,10 +97,13 @@ export async function sendRichToFriend(friendId: string, ref: string) {
 export function GifPicker({
   onPick,
   onClose,
+  gifsOnly = false,
 }: {
   /** Gets "gif:<url>" or "sticker:<id>". */
   onPick: (ref: string) => void;
   onClose: () => void;
+  /** Just GIFs, no stickers (Scenes replies and comments). */
+  gifsOnly?: boolean;
 }) {
   const [tab, setTab] = useState<"gifs" | "stickers">("gifs");
   const [q, setQ] = useState("");
@@ -123,25 +126,27 @@ export function GifPicker({
   }, [q, tab]);
 
   return (
-    <Sheet title="Send something" onClose={onClose}>
-      <div className="segmented w-full" role="tablist" aria-label="GIFs or stickers">
-        <button
-          className="flex-1"
-          role="tab"
-          aria-pressed={tab === "gifs"}
-          onClick={() => setTab("gifs")}
-        >
-          GIFs
-        </button>
-        <button
-          className="flex-1"
-          role="tab"
-          aria-pressed={tab === "stickers"}
-          onClick={() => setTab("stickers")}
-        >
-          Stickers
-        </button>
-      </div>
+    <Sheet title={gifsOnly ? "Send a GIF" : "Send something"} onClose={onClose}>
+      {!gifsOnly && (
+        <div className="segmented w-full" role="tablist" aria-label="GIFs or stickers">
+          <button
+            className="flex-1"
+            role="tab"
+            aria-pressed={tab === "gifs"}
+            onClick={() => setTab("gifs")}
+          >
+            GIFs
+          </button>
+          <button
+            className="flex-1"
+            role="tab"
+            aria-pressed={tab === "stickers"}
+            onClick={() => setTab("stickers")}
+          >
+            Stickers
+          </button>
+        </div>
+      )}
 
       {tab === "gifs" ? (
         <>

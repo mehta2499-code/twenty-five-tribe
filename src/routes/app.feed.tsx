@@ -6,7 +6,7 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, MoreHorizontal, Pencil, Plus, Sticker, Trash2 } from "lucide-react";
+import { MessageCircle, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
 import { EmptyState, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
@@ -288,11 +288,16 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
           <button
             type="button"
             onClick={() => setGifOpen(true)}
-            aria-label="Send a GIF or sticker"
+            aria-label="Send a GIF"
             className="w-9 h-9 -mx-1 shrink-0 rounded-full flex items-center justify-center hover:bg-[var(--fill)]"
             style={{ color: "var(--lime)" }}
           >
-            <Sticker size={20} />
+            <span
+              className="rounded-md px-1 font-extrabold"
+              style={{ fontSize: 10.5, border: "1.5px solid currentColor", lineHeight: "15px" }}
+            >
+              GIF
+            </span>
           </button>
           <label htmlFor="thread-input" className="sr-only">
             {label}
@@ -366,6 +371,7 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
       )}
       {gifOpen && (
         <GifPicker
+          gifsOnly
           onClose={() => setGifOpen(false)}
           onPick={(ref) => {
             setGifOpen(false);
