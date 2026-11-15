@@ -362,7 +362,15 @@ function Question({
 }
 
 /** Passed: what you got wrong, and what they actually picked. */
-function Misses({ wrong, name }: { wrong: QuizMiss[]; name: string }) {
+export function Misses({
+  wrong,
+  name,
+  heading = true,
+}: {
+  wrong: QuizMiss[];
+  name: string;
+  heading?: boolean;
+}) {
   const label = (q: string, v: string | null) => {
     if (!v) return "No answer";
     if (q === "bday_month") return MONTHS[Number(v) - 1] ?? "No answer";
@@ -370,11 +378,13 @@ function Misses({ wrong, name }: { wrong: QuizMiss[]; name: string }) {
     return opt ? `${opt.emoji} ${opt.label}` : "No answer";
   };
   return (
-    <section className="mt-7 text-left" aria-label="What you got wrong">
-      <p className="meta font-bold uppercase tracking-wide" style={{ fontSize: 12 }}>
-        What you got wrong
-      </p>
-      <ul className="mt-2 grid gap-2">
+    <section className={`${heading ? "mt-7" : ""} text-left`} aria-label="What you got wrong">
+      {heading && (
+        <p className="meta font-bold uppercase tracking-wide" style={{ fontSize: 12 }}>
+          What you got wrong
+        </p>
+      )}
+      <ul className={`${heading ? "mt-2" : ""} grid gap-2`}>
         {wrong.map((w) => (
           <li
             key={w.q}

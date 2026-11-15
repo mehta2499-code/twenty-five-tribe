@@ -4,8 +4,10 @@ import { KnowsBest, QuizBadge } from "@/components/QuizBadges";
 import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, Cake, Eye, Handshake, MoreHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Cake, ChevronDown, Eye, Handshake, MoreHorizontal } from "lucide-react";
+import { Misses } from "@/components/KnowThemQuiz";
+import { myQuizMisses, type QuizMiss } from "@/lib/vibes";
 import { PersonMenu } from "@/components/Safety";
 import { bdayLabel, daysUntil, useBirthdays } from "@/lib/birthdays";
 import { Avatar } from "@/components/Avatar";
@@ -200,8 +202,68 @@ function LiveSeat() {
           ))}
         </ul>
       </section>
+      <MyProveIt id={id} name={f.name.split(" ")[0]} />
       {mutual && <KnowsBest userId={id} title={`Knows ${f.name.split(" ")[0]} best`} />}
       {menu && <PersonMenu person={f} onClose={() => setMenu(false)} />}
     </div>
+  );
+}
+
+/** Your Prove it on them: your score, and (tap) what you got wrong. Only after a pass. */
+function MyProveIt({ id, name }: { id: string; name: string }) {
+  const [res, setRes] = useState<{ score: number; total: number; wrong: QuizMiss[] } | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    setRes(null);
+    setOpen(false);
+    myQuizMisses(id).then(
+      (r) => alive && setRes(r),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+  if (!res) return null;
+  const n = res.wrong.length;
+  return (
+    <section className="px-5 mt-8">
+      <p className="label-caps mb-2">your prove it</p>
+      <div className="card-editorial px-4 py-3">
+        <button
+          type="button"
+          onClick={() => n && setOpen((o) => !o)}
+          aria-expanded={n ? open : undefined}
+          className="w-full flex items-center justify-between gap-3 text-left"
+        >
+          <span className="min-w-0">
+            <span className="block font-semibold text-cream">
+              You got {res.score}/{res.total} on {name}
+            </span>
+            <span className="block meta text-sm">
+              {n
+                ? open
+                  ? "Hide what you got wrong"
+                  : `See what you got wrong (${n})`
+                : "Perfect. Nothing wrong."}
+            </span>
+          </span>
+          {n > 0 && (
+            <ChevronDown
+              size={18}
+              aria-hidden="true"
+              className="shrink-0 text-cool transition-transform"
+              style={{ transform: open ? "rotate(180deg)" : undefined }}
+            />
+          )}
+        </button>
+        {open && n > 0 && (
+          <div className="mt-3">
+            <Misses wrong={res.wrong} name={name} heading={false} />
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

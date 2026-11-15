@@ -165,6 +165,16 @@ export async function startQuiz(targetId: string): Promise<QuizStart> {
 
 export type QuizMiss = { q: string; guess: string | null; answer: string | null };
 
+/** Your best passing Prove it on someone, with what you got wrong (null if you never passed). */
+export async function myQuizMisses(targetId: string) {
+  const { data, error } = await supabase.rpc(
+    "my_quiz_misses" as never,
+    { p_target: targetId } as never,
+  );
+  if (error) throw new Error(message(error));
+  return data as { score: number; total: number; wrong: QuizMiss[] } | null;
+}
+
 export async function submitQuiz(attempt: string, guesses: Record<string, string>) {
   const res = await withRetry(() =>
     supabase.rpc("submit_vibe_quiz", { p_attempt: attempt, p_guesses: guesses }),
