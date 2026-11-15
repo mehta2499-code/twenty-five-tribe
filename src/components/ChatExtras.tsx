@@ -1,4 +1,5 @@
 /** Chat extras: emoji reactions, voice notes. Used by 1:1 and group chats. */
+import { LazyVideo } from "@/components/LazyVideo";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Mic, Pause, Play, Square, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -437,13 +438,10 @@ export function MediaBubble({ value }: { value: string }) {
   if (!m) return null;
   if (!url) return <div className="w-52 aspect-[3/4] rounded-xl skeleton" />;
   return m.kind === "vid" ? (
-    <video
-      src={firstFrame(url)}
-      controls
-      playsInline
-      preload="metadata"
-      className="rounded-xl w-56 max-w-full aspect-[3/4] object-cover"
-      style={{ background: "#000" }}
+    <LazyVideo
+      src={url}
+      autoplay={false}
+      className="rounded-xl overflow-hidden w-56 max-w-full aspect-[3/4]"
     />
   ) : (
     <>

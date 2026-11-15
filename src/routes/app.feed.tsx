@@ -24,7 +24,7 @@ import {
 import { CommentsSheet, personOf } from "@/components/FeedUI";
 import { ThoughtBox } from "@/components/ThoughtBox";
 import { WaffleMenu } from "@/components/WaffleMenu";
-import { firstFrame } from "@/components/ChatExtras";
+import { LazyVideo } from "@/components/LazyVideo";
 import { fileToImage, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
 const MAX_VIDEO_MB = 50;
@@ -99,14 +99,10 @@ function PostCard({
       )}
       <div className="relative select-none">
         {post.video ? (
-          <video
-            src={firstFrame(post.video)}
-            controls
-            playsInline
-            loop
-            preload="metadata"
-            className="w-full aspect-[4/5] object-cover"
-            style={{ background: "#000" }}
+          <LazyVideo
+            src={post.video}
+            label={`Video from ${by.name}`}
+            className="w-full aspect-[4/5]"
           />
         ) : post.image ? (
           <img
