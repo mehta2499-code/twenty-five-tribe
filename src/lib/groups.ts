@@ -1,11 +1,19 @@
 /** Group chats with people from your mutual 25. */
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { _get, friendById, mutualFriends, showBanner, useSocial } from "@/lib/social";
+import { _get, friendById, mutualFriends, showBanner, useSocial, type Poll } from "@/lib/social";
 import { signedMedia, uploadMediaAt } from "@/lib/live";
 import { uuid } from "@/lib/uuid";
 
-export type GMsg = { id: string; from: string; text?: string; ref?: string; at: number };
+export type GMsg = {
+  id: string;
+  from: string;
+  text?: string;
+  ref?: string;
+  at: number;
+  /** A poll ("ref" is "poll"; the question is "text"). */
+  poll?: Poll;
+};
 export type Group = {
   id: string;
   name: string;
@@ -114,7 +122,9 @@ async function load(me: string) {
         supabase.from("group_members").select("group_id,user_id,last_read_at").in("group_id", ids),
         supabase
           .from("group_messages")
-          .select("id,group_id,sender,body,shared_ref,created_at")
+          .select(
+            "id,group_id,sender,body,shared_ref,created_at,poll_options,poll_multi" as "id,group_id,sender,body,shared_ref,created_at",
+          )
           .in("group_id", ids)
           .order("created_at", { ascending: false })
           .limit(1500),
@@ -142,6 +152,8 @@ async function load(me: string) {
       body: string | null;
       shared_ref: string | null;
       created_at: string;
+      poll_options?: string[] | null;
+      poll_multi?: boolean;
     }[]
   ).reverse())
     (msgs[r.group_id] ??= []).push({
@@ -150,7 +162,42 @@ async function load(me: string) {
       text: r.body ?? undefined,
       ref: r.shared_ref ?? undefined,
       at: Date.parse(r.created_at),
+      poll: r.poll_options?.length
+        ? {
+            options: r.poll_options,
+            multi: !!r.poll_multi,
+            counts: r.poll_options.map(() => 0),
+            mine: [],
+            voters: 0,
+            by: r.poll_options.map(() => []),
+          }
+        : undefined,
     });
+  // Poll votes (everyone in the group can see who picked what).
+  const polls = new Map(
+    Object.values(msgs)
+      .flat()
+      .filter((m) => m.poll)
+      .map((m) => [m.id, m.poll!] as const),
+  );
+  if (polls.size) {
+    const { data: votes } = await supabase
+      .from("group_poll_votes" as never)
+      .select("message_id,user_id,option")
+      .in("message_id", [...polls.keys()]);
+    const seen = new Map<string, Set<string>>();
+    for (const v of (votes ?? []) as { message_id: string; user_id: string; option: number }[]) {
+      const p = polls.get(v.message_id);
+      if (!p || v.option >= p.options.length) continue;
+      p.counts[v.option] += 1;
+      p.by![v.option].push(who(v.user_id));
+      if (v.user_id === me) p.mine.push(v.option);
+      const s = seen.get(v.message_id) ?? new Set();
+      s.add(v.user_id);
+      seen.set(v.message_id, s);
+    }
+    for (const [id, s] of seen) polls.get(id)!.voters = s.size;
+  }
   // Names for members who aren't in your 25.
   const unknown = [...new Set(Object.values(members).flat())].filter(
     (id) => id !== "me" && !friendById(id),
@@ -214,7 +261,13 @@ export function useGroups() {
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "group_messages" },
           ({ new: row }) => {
-            const m = row as { id: string; group_id: string; sender: string; body: string | null };
+            const m = row as {
+              id: string;
+              group_id: string;
+              sender: string;
+              body: string | null;
+              shared_ref: string | null;
+            };
             if (m.sender !== me) {
               const g = store.groups.find((x) => x.id === m.group_id);
               const who = member(m.sender, store);
@@ -222,7 +275,7 @@ export function useGroups() {
                 showBanner({
                   id: m.id,
                   title: `${g.emoji} ${g.name}`,
-                  body: `${who.name.split(" ")[0]}: ${m.body ?? "New message"}`,
+                  body: `${who.name.split(" ")[0]}: ${m.shared_ref === "poll" ? "📊 " : ""}${m.body ?? "New message"}`,
                   to: `/app/group/${g.id}`,
                   avatar: who.avatar,
                   initials: who.initials,
@@ -260,6 +313,11 @@ export function useGroups() {
           reload,
         )
         .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, reload)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "group_poll_votes" },
+          reload,
+        )
         .subscribe();
     } else if (s.mode === "demo" && liveFor !== "demo") {
       liveFor = "demo";
@@ -474,6 +532,75 @@ export async function sendGroupMedia(groupId: string, file: File) {
     shared_ref: `${kind}:${path}`,
   });
   if (error) throw new Error(error.message);
+}
+
+/** Send a poll: a question and 2-4 options, single or multiple choice. */
+export async function sendGroupPoll(
+  groupId: string,
+  question: string,
+  options: string[],
+  multi: boolean,
+) {
+  const q = question.trim();
+  const opts = options.map((o) => o.trim()).filter(Boolean);
+  if (!q || opts.length < 2) return;
+  const id = uuid();
+  const poll: Poll = {
+    options: opts,
+    multi,
+    counts: opts.map(() => 0),
+    mine: [],
+    voters: 0,
+    by: opts.map(() => []),
+  };
+  pushLocal(groupId, { id, from: "me", text: q, ref: "poll", poll, at: Date.now() });
+  if (!mine()) return;
+  const { error } = await supabase.from("group_messages").insert({
+    id,
+    group_id: groupId,
+    sender: _get().me!.id,
+    body: q,
+    shared_ref: "poll",
+    poll_options: opts,
+    poll_multi: multi,
+  } as never);
+  if (error) throw new Error(error.message);
+}
+
+/** Vote on a group poll (once; several options if it's multiple choice). */
+export async function voteGroupPoll(groupId: string, msgId: string, options: number[]) {
+  const before = store.msgs[groupId]?.find((m) => m.id === msgId);
+  const p = before?.poll;
+  if (!before || !p || p.mine.length || !options.length) return;
+  const after: GMsg = {
+    ...before,
+    poll: {
+      ...p,
+      mine: options,
+      voters: p.voters + 1,
+      counts: p.counts.map((c, i) => (options.includes(i) ? c + 1 : c)),
+      by: p.by?.map((b, i) => (options.includes(i) ? [...b, "me"] : b)),
+    },
+  };
+  const swap = (m: GMsg) =>
+    set((s) => ({
+      ...s,
+      msgs: {
+        ...s.msgs,
+        [groupId]: (s.msgs[groupId] ?? []).map((x) => (x.id === msgId ? m : x)),
+      },
+    }));
+  swap(after);
+  if (!mine()) return;
+  const { error } = await supabase
+    .from("group_poll_votes" as never)
+    .insert(
+      options.map((option) => ({ message_id: msgId, user_id: _get().me!.id, option })) as never,
+    );
+  if (error) {
+    swap(before);
+    throw new Error(error.message);
+  }
 }
 
 /** Send a GIF ("gif:<url>") or sticker ("sticker:<id>") to a group. */

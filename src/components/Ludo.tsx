@@ -367,21 +367,21 @@ function Board({
             )}
             {/* Chess-style pawn: wide base, tapered body, collar, round head */}
             <g transform="scale(1.36)">
-            <ellipse cx={0.05} cy={0.4} rx={0.38} ry={0.1} fill="#000" opacity={0.45} />
-            <g stroke="#0B0A10" strokeWidth={0.08} strokeLinejoin="round">
-              <path
-                d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
-                fill={COLOR_HEX[pl.color]}
-              />
-              <path
-                d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
-                fill={`url(#pawnl-${pl.color})`}
-                stroke="none"
-              />
-              <ellipse cx={0} cy={-0.09} rx={0.2} ry={0.06} fill={COLOR_HEX[pl.color]} />
-              <circle cy={-0.29} r={0.17} fill={`url(#pawn-${pl.color})`} />
-            </g>
-            <circle cx={-0.06} cy={-0.34} r={0.055} fill="#fff" opacity={0.85} />
+              <ellipse cx={0.05} cy={0.4} rx={0.38} ry={0.1} fill="#000" opacity={0.45} />
+              <g stroke="#0B0A10" strokeWidth={0.08} strokeLinejoin="round">
+                <path
+                  d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
+                  fill={COLOR_HEX[pl.color]}
+                />
+                <path
+                  d="M -0.36 0.38 L 0.36 0.38 Q 0.38 0.24 0.26 0.22 C 0.17 0.14 0.12 0.02 0.12 -0.08 L -0.12 -0.08 C -0.12 0.02 -0.17 0.14 -0.26 0.22 Q -0.38 0.24 -0.36 0.38 Z"
+                  fill={`url(#pawnl-${pl.color})`}
+                  stroke="none"
+                />
+                <ellipse cx={0} cy={-0.09} rx={0.2} ry={0.06} fill={COLOR_HEX[pl.color]} />
+                <circle cy={-0.29} r={0.17} fill={`url(#pawn-${pl.color})`} />
+              </g>
+              <circle cx={-0.06} cy={-0.34} r={0.055} fill="#fff" opacity={0.85} />
             </g>
           </g>
         );
@@ -567,8 +567,18 @@ export function LudoTable({
               <Avatar src={p.avatar} initials={p.initials} size={26} />
               <span className="flex-1 min-w-0 truncate text-[13px] font-bold text-cream">
                 {i === mine ? "You" : p.name.split(" ")[0]}
-                {p.bot && <> <Ico i={Bot} size={13} c="var(--ink-3)" /></>}
-                {p.out && <> <Ico i={Flag} size={13} c="var(--ink-3)" /></>}
+                {p.bot && (
+                  <>
+                    {" "}
+                    <Ico i={Bot} size={13} c="var(--ink-3)" />
+                  </>
+                )}
+                {p.out && (
+                  <>
+                    {" "}
+                    <Ico i={Flag} size={13} c="var(--ink-3)" />
+                  </>
+                )}
               </span>
               <span className="meta tabular-nums" style={{ fontSize: 12 }}>
                 <Ico i={House} size={12} /> {home(i)}
@@ -733,7 +743,12 @@ export function LudoWaiting({
                   <Avatar src={p.avatar} initials={p.initials} size={40} />
                   <span className="flex-1 font-bold text-cream">
                     {p.id === meId ? "You" : p.name.split(" ")[0]}
-                    {p.bot && <> <Ico i={Bot} size={14} c="var(--ink-3)" /></>}
+                    {p.bot && (
+                      <>
+                        {" "}
+                        <Ico i={Bot} size={14} c="var(--ink-3)" />
+                      </>
+                    )}
                   </span>
                   <span
                     className="text-sm font-bold"

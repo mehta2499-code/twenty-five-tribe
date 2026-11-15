@@ -2,14 +2,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
+  BarChart3,
   ImagePlus,
   Megaphone,
   Paperclip,
+  Plus,
   Send,
   Sticker,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
+import { PollView } from "@/components/SceneParts";
 import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
 import { GroupFace } from "@/components/GroupFace";
 import { Avatar } from "@/components/Avatar";
@@ -40,7 +44,9 @@ import {
   sendGroupVoice,
   sendToGroup,
   sendGroupRich,
+  sendGroupPoll,
   setGroupPhoto,
+  voteGroupPoll,
   useGroups,
 } from "@/lib/groups";
 
@@ -73,6 +79,9 @@ function GroupThread() {
   const [toast, setToast] = useState<string | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const [gifOpen, setGifOpen] = useState(false);
+  // New poll being written, and the poll whose votes are open.
+  const [draft, setDraft] = useState<{ q: string; options: string[]; multi: boolean } | null>(null);
+  const [votesFor, setVotesFor] = useState<string | null>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -230,14 +239,20 @@ function GroupThread() {
                           <div
                             className="px-3.5 py-2"
                             style={{
-                              background: mine ? "var(--accent)" : "var(--surface)",
-                              border: mine
-                                ? "1px solid transparent"
-                                : m.text &&
-                                    splitMentions(m.text, everyone).some((x) => x.who?.id === "me")
-                                  ? "2px solid var(--sun)"
-                                  : "1px solid var(--line)",
-                              color: mine ? "var(--on-accent)" : "var(--ink)",
+                              background: mine && !m.poll ? "var(--accent)" : "var(--surface)",
+                              width: m.poll ? 270 : undefined,
+                              maxWidth: "100%",
+                              border: m.poll
+                                ? "1px solid var(--line)"
+                                : mine
+                                  ? "1px solid transparent"
+                                  : m.text &&
+                                      splitMentions(m.text, everyone).some(
+                                        (x) => x.who?.id === "me",
+                                      )
+                                    ? "2px solid var(--sun)"
+                                    : "1px solid var(--line)",
+                              color: mine && !m.poll ? "var(--on-accent)" : "var(--ink)",
                               borderRadius: 20,
                               borderBottomRightRadius: mine ? 6 : 18,
                               borderBottomLeftRadius: mine ? 18 : 6,
@@ -252,7 +267,36 @@ function GroupThread() {
                                 {who.name.split(" ")[0]}
                               </p>
                             )}
-                            {isRich(m.ref) ? (
+                            {m.poll ? (
+                              <div>
+                                <p
+                                  className="flex items-center gap-1.5 meta font-bold"
+                                  style={{ fontSize: 11.5 }}
+                                >
+                                  <BarChart3 size={13} aria-hidden="true" /> Poll
+                                </p>
+                                <p
+                                  className="font-bold text-cream mt-1"
+                                  style={{
+                                    fontSize: 15.5,
+                                    lineHeight: 1.35,
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {m.text}
+                                </p>
+                                <PollView
+                                  postId={m.id}
+                                  poll={m.poll}
+                                  onVote={(opts) =>
+                                    void voteGroupPoll(id, m.id, opts).catch((e) =>
+                                      setToast((e as Error).message),
+                                    )
+                                  }
+                                  onShowVotes={() => setVotesFor(m.id)}
+                                />
+                              </div>
+                            ) : isRich(m.ref) ? (
                               <RichBubble value={m.ref} />
                             ) : m.ref?.startsWith("voice:") ? (
                               <VoicePlayer value={m.ref} mine={mine} />
@@ -394,6 +438,14 @@ function GroupThread() {
             className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
           >
             <Sticker size={21} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDraft({ q: "", options: ["", ""], multi: false })}
+            aria-label="Make a poll"
+            className="w-9 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
+          >
+            <BarChart3 size={21} />
           </button>
           <input
             ref={attachRef}
@@ -570,6 +622,143 @@ function GroupThread() {
           }}
         />
       )}
+      {draft && (
+        <Sheet title="New poll" onClose={() => setDraft(null)}>
+          <form
+            className="grid gap-2.5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const d = draft;
+              setDraft(null);
+              void sendGroupPoll(id, d.q, d.options, d.multi).catch((err) =>
+                setToast((err as Error).message),
+              );
+            }}
+          >
+            <label className="grid gap-1">
+              <span className="meta font-semibold" style={{ fontSize: 13 }}>
+                Question
+              </span>
+              <input
+                autoFocus
+                value={draft.q}
+                onChange={(e) => setDraft({ ...draft, q: e.target.value.slice(0, 200) })}
+                placeholder="Ask something"
+                className="input"
+              />
+            </label>
+            <span className="meta font-semibold mt-1" style={{ fontSize: 13 }}>
+              Options
+            </span>
+            {draft.options.map((o, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={o}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      options: draft.options.map((x, k) =>
+                        k === i ? e.target.value.slice(0, 40) : x,
+                      ),
+                    })
+                  }
+                  aria-label={`Option ${i + 1}`}
+                  placeholder={`Option ${i + 1}`}
+                  className="input flex-1"
+                />
+                {draft.options.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDraft({ ...draft, options: draft.options.filter((_, k) => k !== i) })
+                    }
+                    aria-label={`Remove option ${i + 1}`}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-cool"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+            {draft.options.length < 4 && (
+              <button
+                type="button"
+                onClick={() => setDraft({ ...draft, options: [...draft.options, ""] })}
+                className="flex items-center gap-1.5 font-semibold self-start px-1"
+                style={{ color: "var(--lime)", fontSize: 14 }}
+              >
+                <Plus size={16} aria-hidden="true" /> Add option
+              </button>
+            )}
+            <label
+              className="flex items-center justify-between gap-3 py-1"
+              style={{ fontSize: 14 }}
+            >
+              <span className="text-cream font-semibold">Allow multiple answers</span>
+              <input
+                type="checkbox"
+                checked={draft.multi}
+                onChange={(e) => setDraft({ ...draft, multi: e.target.checked })}
+                className="w-5 h-5 accent-[#C1EF62]"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!draft.q.trim() || draft.options.filter((o) => o.trim()).length < 2}
+              className="btn-primary mt-1"
+            >
+              Send poll
+            </button>
+          </form>
+        </Sheet>
+      )}
+      {votesFor &&
+        (() => {
+          const pm = msgs.find((x) => x.id === votesFor);
+          if (!pm?.poll) return null;
+          return (
+            <Sheet title="Votes" onClose={() => setVotesFor(null)}>
+              <p className="font-bold text-cream" style={{ fontSize: 15.5 }}>
+                {pm.text}
+              </p>
+              <div className="grid gap-4 mt-3">
+                {pm.poll.options.map((o, i) => {
+                  const who = pm.poll!.by?.[i] ?? [];
+                  return (
+                    <section key={i}>
+                      <p className="flex items-center justify-between font-semibold text-cream">
+                        <span className="truncate">{o}</span>
+                        <span className="meta tabular-nums shrink-0" style={{ fontSize: 12.5 }}>
+                          {who.length} vote{who.length === 1 ? "" : "s"}
+                        </span>
+                      </p>
+                      {who.length > 0 && (
+                        <ul className="grid gap-1 mt-1.5">
+                          {who.map((uid) => {
+                            const p = member(uid, st);
+                            return (
+                              <li key={uid} className="flex items-center gap-2.5 py-0.5">
+                                <Avatar
+                                  src={p.avatar}
+                                  initials={p.initials}
+                                  color={p.color}
+                                  size={28}
+                                />
+                                <span className="truncate" style={{ fontSize: 14.5 }}>
+                                  {uid === "me" ? "You" : p.name}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            </Sheet>
+          );
+        })()}
       {gifOpen && (
         <GifPicker
           onClose={() => setGifOpen(false)}

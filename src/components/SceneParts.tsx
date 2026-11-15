@@ -183,14 +183,27 @@ export function EditSheet({
  * A scene's poll. Before you vote: the options (tap one; on multiple choice,
  * tick several and press Vote). After: bars with percentages and your picks.
  */
-export function PollView({ postId, poll }: { postId: string; poll: Poll }) {
+export function PollView({
+  postId,
+  poll,
+  onVote,
+  onShowVotes,
+}: {
+  postId: string;
+  poll: Poll;
+  /** Where the vote goes (default: a Scenes poll). */
+  onVote?: (options: number[]) => void;
+  /** Group polls: open the list of who voted for what. */
+  onShowVotes?: () => void;
+}) {
   const [picked, setPicked] = useState<number[]>([]);
   const voted = poll.mine.length > 0;
   const total = poll.counts.reduce((a, b) => a + b, 0);
   const vote = (opts: number[]) => {
     if (!opts.length) return;
     buzz(12);
-    social.votePoll(postId, opts);
+    if (onVote) onVote(opts);
+    else social.votePoll(postId, opts);
     setPicked([]);
   };
   return (
@@ -270,6 +283,16 @@ export function PollView({ postId, poll }: { postId: string; poll: Poll }) {
           {poll.voters} vote{poll.voters === 1 ? "" : "s"}
           {poll.multi ? " · Multiple choice" : ""}
         </span>
+        {onShowVotes && poll.voters > 0 && (voted || !poll.multi) && (
+          <button
+            type="button"
+            onClick={onShowVotes}
+            className="ml-auto font-bold"
+            style={{ color: "var(--lime)", fontSize: 12.5 }}
+          >
+            View votes
+          </button>
+        )}
         {!voted && poll.multi && (
           <button
             type="button"

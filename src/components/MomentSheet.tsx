@@ -17,10 +17,7 @@ export function MomentSheet({ open, onClose }: { open: boolean; onClose: () => v
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog">
-      <div
-        className="absolute inset-0 bg-[rgba(7,6,11,0.55)] backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-[rgba(7,6,11,0.55)] backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-surface rounded-t-3xl p-5 border-t border-border animate-soft-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">New Moment</h2>

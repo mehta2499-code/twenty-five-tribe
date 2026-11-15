@@ -46,6 +46,8 @@ export type Poll = {
   mine: number[];
   /** How many people voted. */
   voters: number;
+  /** Who picked each option (group polls only; ids, "me" for you). */
+  by?: string[][];
 };
 
 export type Comment = { id: string; by: "me" | string; text: string; at: number; edited?: boolean };

@@ -241,7 +241,9 @@ export function leaveLobby(s: LudoState, id: string): LudoState | null {
 
 /** The phone that plays the bots: the first human still in the game. */
 export const ludoDriver = (s: LudoState) =>
-  s.players.find((p) => !p.bot && !p.out && (s.phase !== "lobby" || (s.joined ?? []).includes(p.id)))?.id;
+  s.players.find(
+    (p) => !p.bot && !p.out && (s.phase !== "lobby" || (s.joined ?? []).includes(p.id)),
+  )?.id;
 
 /** Skip a player who's gone quiet (anyone can do it after the wait). */
 export const IDLE_MS = 60_000;

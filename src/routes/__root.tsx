@@ -73,7 +73,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      },
       { name: "theme-color", content: "#17151F" },
       // "Add to Home Screen" on iPhone: open full screen, like an app.
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -110,6 +114,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     scripts: [
+      {
+        // No zooming anywhere: iPhone Safari ignores "user-scalable=no", so stop
+        // pinch (gesture / two-finger move) and ctrl+wheel zoom here as well.
+        children: `(function(){var n=function(e){e.preventDefault()};["gesturestart","gesturechange","gestureend"].forEach(function(t){document.addEventListener(t,n,{passive:false})});document.addEventListener("touchmove",function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});document.addEventListener("wheel",function(e){if(e.ctrlKey)e.preventDefault()},{passive:false});})();`,
+      },
       {
         // Runs before the page is drawn: on the landing page, if this is the
         // Home Screen app or you're already signed in, go straight into the

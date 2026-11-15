@@ -65,7 +65,7 @@ function GroupsSection() {
                       style={{ color: n ? "var(--ink)" : undefined, fontWeight: n ? 700 : 400 }}
                     >
                       {last
-                        ? `${last.from === "me" ? "You" : member(last.from, st).name.split(" ")[0]}: ${last.text ?? (last.ref?.startsWith("gif:") ? "GIF" : last.ref?.startsWith("sticker:") ? "Sticker" : "")}`
+                        ? `${last.from === "me" ? "You" : member(last.from, st).name.split(" ")[0]}: ${last.ref === "poll" ? "📊 " : ""}${last.text ?? (last.ref?.startsWith("gif:") ? "GIF" : last.ref?.startsWith("sticker:") ? "Sticker" : "")}`
                         : `${g.members.length} members`}
                     </span>
                   </span>

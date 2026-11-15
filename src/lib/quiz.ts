@@ -51,7 +51,12 @@ export async function refreshQuiz() {
       const cur = map[id];
       if (!cur || b.score / b.total > cur.score / cur.total) map[id] = b;
     };
-    for (const r of (data ?? []) as { guesser: string; target: string; score: number; total: number }[]) {
+    for (const r of (data ?? []) as {
+      guesser: string;
+      target: string;
+      score: number;
+      total: number;
+    }[]) {
       if (r.target === me) keep(knowsMe, r.guesser, { score: r.score, total: r.total });
       if (r.guesser === me) keep(iKnow, r.target, { score: r.score, total: r.total });
     }

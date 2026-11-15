@@ -8,7 +8,14 @@ import { track } from "@/lib/track";
 import { uuid } from "@/lib/uuid";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, type Person } from "@/lib/social";
-import { newGame, quitSeat, type KState, type Length, type Scoring, type Seat } from "@/lib/kachuful";
+import {
+  newGame,
+  quitSeat,
+  type KState,
+  type Length,
+  type Scoring,
+  type Seat,
+} from "@/lib/kachuful";
 import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 
@@ -228,7 +235,10 @@ export async function quitGame(g: GameRow, meId: string) {
         return { state: r, status: r.phase === "over" ? "done" : undefined };
       });
     } else if (g.kind === "word") {
-      await changeLatest<WordState>(g.id, (cur) => ({ state: { ...cur, gaveUp: meId }, status: "done" }));
+      await changeLatest<WordState>(g.id, (cur) => ({
+        state: { ...cur, gaveUp: meId },
+        status: "done",
+      }));
     } else if (g.kind === "trivia") {
       await changeLatest<TriviaState>(g.id, (cur) =>
         cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },

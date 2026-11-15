@@ -519,7 +519,7 @@ html.privacy-blur body { filter: blur(28px) saturate(0.6); transition: filter 80
 .banner-in { animation: banner-in 0.35s var(--spring, cubic-bezier(.2,.9,.3,1.2)) both; }
 
 /* Snappier taps in the home-screen app */
-html { -webkit-tap-highlight-color: transparent; }
+html { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button, a, [role="button"] { touch-action: manipulation; }
 
 /* Mystery game reveal: each slot flips in */

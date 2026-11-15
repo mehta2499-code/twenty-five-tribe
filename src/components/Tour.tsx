@@ -27,7 +27,15 @@ const markSeen = (id: string) => {
   }
 };
 
-export function Tour({ id, steps, delay = 700 }: { id: string; steps: TourStep[]; delay?: number }) {
+export function Tour({
+  id,
+  steps,
+  delay = 700,
+}: {
+  id: string;
+  steps: TourStep[];
+  delay?: number;
+}) {
   const [on, setOn] = useState(false);
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -95,7 +103,12 @@ export function Tour({ id, steps, delay = 700 }: { id: string; steps: TourStep[]
         style={{
           ...(below
             ? { top: Math.min(rect.bottom + pad + 14, window.innerHeight - 230) }
-            : { bottom: Math.min(window.innerHeight - rect.top + pad + 14, window.innerHeight - 230) }),
+            : {
+                bottom: Math.min(
+                  window.innerHeight - rect.top + pad + 14,
+                  window.innerHeight - 230,
+                ),
+              }),
           background: "var(--surface)",
           border: "var(--bd)",
           boxShadow: "var(--pop-lg)",

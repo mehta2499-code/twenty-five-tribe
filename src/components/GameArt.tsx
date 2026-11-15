@@ -46,13 +46,41 @@ function Cards() {
   return (
     <g strokeLinejoin="round">
       <g transform="rotate(-16 32 40)">
-        <rect x="12" y="10" width="28" height="40" rx="5" fill="#FFF8EC" stroke={EDGE} strokeWidth="2.5" />
-        <path d="M26 22c-4 5-8 7-8 11a4 4 0 0 0 7 2.5l-1.5 5h5l-1.5-5a4 4 0 0 0 7-2.5c0-4-4-6-8-11z" fill={EDGE} />
+        <rect
+          x="12"
+          y="10"
+          width="28"
+          height="40"
+          rx="5"
+          fill="#FFF8EC"
+          stroke={EDGE}
+          strokeWidth="2.5"
+        />
+        <path
+          d="M26 22c-4 5-8 7-8 11a4 4 0 0 0 7 2.5l-1.5 5h5l-1.5-5a4 4 0 0 0 7-2.5c0-4-4-6-8-11z"
+          fill={EDGE}
+        />
       </g>
       <g transform="rotate(14 32 40)">
-        <rect x="24" y="10" width="28" height="40" rx="5" fill="#FFF8EC" stroke={EDGE} strokeWidth="2.5" />
-        <path d="M38 40c-6-4.5-9-8-9-11.5a4.5 4.5 0 0 1 9-1.5 4.5 4.5 0 0 1 9 1.5c0 3.5-3 7-9 11.5z" fill="#F15B91" stroke={EDGE} strokeWidth="1.5" />
-        <text x="29" y="19" fontSize="8" fontWeight="800" fill="#F15B91" fontFamily="system-ui">A</text>
+        <rect
+          x="24"
+          y="10"
+          width="28"
+          height="40"
+          rx="5"
+          fill="#FFF8EC"
+          stroke={EDGE}
+          strokeWidth="2.5"
+        />
+        <path
+          d="M38 40c-6-4.5-9-8-9-11.5a4.5 4.5 0 0 1 9-1.5 4.5 4.5 0 0 1 9 1.5c0 3.5-3 7-9 11.5z"
+          fill="#F15B91"
+          stroke={EDGE}
+          strokeWidth="1.5"
+        />
+        <text x="29" y="19" fontSize="8" fontWeight="800" fill="#F15B91" fontFamily="system-ui">
+          A
+        </text>
       </g>
     </g>
   );
@@ -74,7 +102,16 @@ function Die() {
   );
   return (
     <g strokeLinejoin="round" transform="rotate(-10 32 32)">
-      <rect x="9" y="9" width="46" height="46" rx="11" fill="#FFF8EC" stroke={EDGE} strokeWidth="2.5" />
+      <rect
+        x="9"
+        y="9"
+        width="46"
+        height="46"
+        rx="11"
+        fill="#FFF8EC"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
       {pip(21, 21, "#F15B91")}
       {pip(43, 21, "#C1EF62")}
       {pip(32, 32, EDGE)}
@@ -113,7 +150,17 @@ function Tiles() {
 function Mystery() {
   return (
     <g strokeLinejoin="round">
-      <rect x="8" y="8" width="48" height="48" rx="12" fill="#F15B91" stroke={EDGE} strokeWidth="2.5" transform="rotate(-8 32 32)" />
+      <rect
+        x="8"
+        y="8"
+        width="48"
+        height="48"
+        rx="12"
+        fill="#F15B91"
+        stroke={EDGE}
+        strokeWidth="2.5"
+        transform="rotate(-8 32 32)"
+      />
       <text
         x="32"
         y="45"
@@ -148,7 +195,15 @@ function MathTiles() {
   const t = (x: number, y: number, c: string, sym: string, r: number) => (
     <g transform={`rotate(${r} ${x + 12} ${y + 12})`}>
       <rect x={x} y={y} width="24" height="24" rx="6" fill={c} stroke={EDGE} strokeWidth="2.5" />
-      <text x={x + 12} y={y + 18.5} textAnchor="middle" fontSize="18" fontWeight="900" fill={EDGE} fontFamily="system-ui">
+      <text
+        x={x + 12}
+        y={y + 18.5}
+        textAnchor="middle"
+        fontSize="18"
+        fontWeight="900"
+        fill={EDGE}
+        fontFamily="system-ui"
+      >
         {sym}
       </text>
     </g>
@@ -182,16 +237,47 @@ function PaletteArt() {
 }
 
 function Pairs() {
-  const star = "M0,-1 L0.29,-0.4 L0.95,-0.31 L0.48,0.15 L0.59,0.81 L0,0.5 L-0.59,0.81 L-0.48,0.15 L-0.95,-0.31 L-0.29,-0.4 Z";
+  const star =
+    "M0,-1 L0.29,-0.4 L0.95,-0.31 L0.48,0.15 L0.59,0.81 L0,0.5 L-0.59,0.81 L-0.48,0.15 L-0.95,-0.31 L-0.29,-0.4 Z";
   return (
     <g strokeLinejoin="round">
       <g transform="rotate(-12 20 34)">
-        <rect x="6" y="14" width="28" height="38" rx="6" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" />
-        <path d={star} transform="translate(20 33) scale(9)" fill="#F4C96B" stroke={EDGE} strokeWidth="0.2" />
+        <rect
+          x="6"
+          y="14"
+          width="28"
+          height="38"
+          rx="6"
+          fill="#77B9E8"
+          stroke={EDGE}
+          strokeWidth="2.5"
+        />
+        <path
+          d={star}
+          transform="translate(20 33) scale(9)"
+          fill="#F4C96B"
+          stroke={EDGE}
+          strokeWidth="0.2"
+        />
       </g>
       <g transform="rotate(12 44 34)">
-        <rect x="30" y="14" width="28" height="38" rx="6" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" />
-        <path d={star} transform="translate(44 33) scale(9)" fill="#F4C96B" stroke={EDGE} strokeWidth="0.2" />
+        <rect
+          x="30"
+          y="14"
+          width="28"
+          height="38"
+          rx="6"
+          fill="#77B9E8"
+          stroke={EDGE}
+          strokeWidth="2.5"
+        />
+        <path
+          d={star}
+          transform="translate(44 33) scale(9)"
+          fill="#F4C96B"
+          stroke={EDGE}
+          strokeWidth="0.2"
+        />
       </g>
     </g>
   );
@@ -216,7 +302,16 @@ function OddOne() {
     }
   return (
     <g strokeLinejoin="round">
-      <rect x="2" y="2" width="60" height="60" rx="12" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" />
+      <rect
+        x="2"
+        y="2"
+        width="60"
+        height="60"
+        rx="12"
+        fill="#77B9E8"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
       {cells}
     </g>
   );
@@ -237,7 +332,16 @@ function Simon() {
 function Stopwatch() {
   return (
     <g strokeLinejoin="round">
-      <rect x="27" y="3" width="10" height="7" rx="2" fill="#F15B91" stroke={EDGE} strokeWidth="2" />
+      <rect
+        x="27"
+        y="3"
+        width="10"
+        height="7"
+        rx="2"
+        fill="#F15B91"
+        stroke={EDGE}
+        strokeWidth="2"
+      />
       <circle cx="32" cy="36" r="24" fill="#F4C96B" stroke={EDGE} strokeWidth="2.5" />
       <circle cx="32" cy="36" r="17" fill="#FFF8EC" stroke={EDGE} strokeWidth="2" />
       <path d="M32 36V24" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
@@ -250,7 +354,17 @@ function Stopwatch() {
 function Hooded() {
   return (
     <g strokeLinejoin="round">
-      <rect x="6" y="6" width="52" height="52" rx="14" fill="#77B9E8" stroke={EDGE} strokeWidth="2.5" transform="rotate(6 32 32)" />
+      <rect
+        x="6"
+        y="6"
+        width="52"
+        height="52"
+        rx="14"
+        fill="#77B9E8"
+        stroke={EDGE}
+        strokeWidth="2.5"
+        transform="rotate(6 32 32)"
+      />
       {/* hooded figure */}
       <path
         d="M32 10c-11 0-18 9-18 20v22c0 4 3 6 6 6h24c3 0 6-2 6-6V30c0-11-7-20-18-20z"
@@ -264,7 +378,12 @@ function Hooded() {
       <ellipse cx="36.5" cy="31" rx="3" ry="3.6" fill="#F5F1FA" />
       <circle cx="28.6" cy="31.6" r="1.6" fill="#17151F" />
       <circle cx="37.6" cy="31.6" r="1.6" fill="#17151F" />
-      <path d="M50 8l2 4.5 4.5 2-4.5 2-2 4.5-2-4.5-4.5-2 4.5-2z" fill="#F15B91" stroke={EDGE} strokeWidth="1.5" />
+      <path
+        d="M50 8l2 4.5 4.5 2-4.5 2-2 4.5-2-4.5-4.5-2 4.5-2z"
+        fill="#F15B91"
+        stroke={EDGE}
+        strokeWidth="1.5"
+      />
     </g>
   );
 }
