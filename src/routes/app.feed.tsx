@@ -6,12 +6,13 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
+import { MessageCircle, MoreHorizontal, Pencil, Plus, Sticker, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
 import { EmptyState, PageBand, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { personOf } from "@/components/FeedUI";
 import { LazyVideo } from "@/components/LazyVideo";
+import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
 import { EditSheet, TagPicker, Tagged, withTag } from "@/components/SceneParts";
 import { meView, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
@@ -184,6 +185,7 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
   const [text, setText] = useState("");
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  const [gifOpen, setGifOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLInputElement>(null);
   const label = post.text ? "Reply" : "Comment";
@@ -202,124 +204,135 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
   const editC = post.comments.find((c) => c.id === editing);
 
   return (
-    <Sheet title={post.text ? "Replies" : "Comments"} onClose={onClose}>
-      <div ref={listRef} className="max-h-[52dvh] overflow-y-auto -mx-1 px-1" data-noswipe>
-        {post.comments.length === 0 ? (
-          <p className="meta text-center py-8">
-            No {word(post)}s yet. Say something. Only your 25 can read it.
-          </p>
-        ) : (
-          <ul>
-            {post.comments.map((c) => {
-              const p = personOf(c.by);
-              // Your own: edit or delete. On your scene: you can delete anyone's.
-              const canMenu = c.by === "me" || mine;
-              return (
-                <li
-                  key={c.id}
-                  className="flex gap-3 py-3"
-                  style={{ borderBottom: "1px solid var(--line)" }}
-                >
-                  <PersonLink
-                    id={c.by}
-                    username={p.username}
-                    label={p.name}
-                    className="inline-flex shrink-0 self-start"
+    <>
+      <Sheet title={post.text ? "Replies" : "Comments"} onClose={onClose}>
+        <div ref={listRef} className="max-h-[52dvh] overflow-y-auto -mx-1 px-1" data-noswipe>
+          {post.comments.length === 0 ? (
+            <p className="meta text-center py-8">
+              No {word(post)}s yet. Say something. Only your 25 can read it.
+            </p>
+          ) : (
+            <ul>
+              {post.comments.map((c) => {
+                const p = personOf(c.by);
+                // Your own: edit or delete. On your scene: you can delete anyone's.
+                const canMenu = c.by === "me" || mine;
+                return (
+                  <li
+                    key={c.id}
+                    className="flex gap-3 py-3"
+                    style={{ borderBottom: "1px solid var(--line)" }}
                   >
-                    <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
-                  </PersonLink>
-                  <div className="min-w-0 flex-1">
-                    <p style={{ fontSize: 14 }}>
-                      <span className="font-bold text-cream">{p.name}</span>{" "}
-                      <span className="meta">
-                        · {timeAgo(c.at)}
-                        {c.edited ? " · edited" : ""}
-                      </span>
-                    </p>
-                    <p
-                      className="text-cream"
-                      style={{
-                        fontSize: 15,
-                        lineHeight: 1.42,
-                        whiteSpace: "pre-wrap",
-                        overflowWrap: "anywhere",
-                      }}
+                    <PersonLink
+                      id={c.by}
+                      username={p.username}
+                      label={p.name}
+                      className="inline-flex shrink-0 self-start"
                     >
-                      <Tagged text={c.text} />
-                    </p>
-                  </div>
-                  {canMenu && (
-                    <button
-                      onClick={() => setMenuFor(c.id)}
-                      aria-label={`Options for this ${word(post)}`}
-                      className="w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)] shrink-0 self-start"
-                    >
-                      <MoreHorizontal size={17} />
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-      <div className="mt-3">
-        <TagPicker
-          text={text}
-          onPick={(h) => {
-            setText((t) => withTag(t, h));
-            boxRef.current?.focus();
+                      <Avatar src={p.avatar} initials={p.initials} color={p.color} size={34} />
+                    </PersonLink>
+                    <div className="min-w-0 flex-1">
+                      <p style={{ fontSize: 14 }}>
+                        <span className="font-bold text-cream">{p.name}</span>{" "}
+                        <span className="meta">
+                          · {timeAgo(c.at)}
+                          {c.edited ? " · edited" : ""}
+                        </span>
+                      </p>
+                      <p
+                        className="text-cream"
+                        style={{
+                          fontSize: 15,
+                          lineHeight: 1.42,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {isRich(c.text) ? <RichBubble value={c.text} /> : <Tagged text={c.text} />}
+                      </p>
+                    </div>
+                    {canMenu && (
+                      <button
+                        onClick={() => setMenuFor(c.id)}
+                        aria-label={`Options for this ${word(post)}`}
+                        className="w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)] shrink-0 self-start"
+                      >
+                        <MoreHorizontal size={17} />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        <div className="mt-3">
+          <TagPicker
+            text={text}
+            onPick={(h) => {
+              setText((t) => withTag(t, h));
+              boxRef.current?.focus();
+            }}
+          />
+        </div>
+        {/* Composer: your photo, a rounded box, and a clear pill button. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            send();
           }}
-        />
-      </div>
-      {/* Composer: your photo, a rounded box, and a clear pill button. */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-        className="flex items-center gap-2.5 pt-3"
-        style={{ borderTop: "1px solid var(--line)" }}
-      >
-        <Avatar src={me.avatar} initials={me.initials} size={34} />
-        <label htmlFor="thread-input" className="sr-only">
-          {label}
-        </label>
-        <input
-          id="thread-input"
-          ref={boxRef}
-          value={text}
-          onChange={(e) => setText(e.target.value.slice(0, 500))}
-          placeholder={post.text ? "Post your reply" : "Add a comment"}
-          className="flex-1 min-w-0 rounded-full px-4 outline-none"
-          style={{
-            minHeight: 42,
-            fontSize: 15,
-            background: "var(--fill)",
-            border: "1px solid var(--line)",
-            color: "var(--ink)",
-          }}
-          autoComplete="off"
-          enterKeyHint="send"
-        />
-        <button
-          type="submit"
-          disabled={!text.trim()}
-          className="shrink-0 rounded-full px-4 font-bold transition-opacity disabled:opacity-40"
-          style={{
-            minHeight: 38,
-            fontSize: 14,
-            background: "var(--lime)",
-            color: "var(--on-accent)",
-          }}
+          className="flex items-center gap-2.5 pt-3"
+          style={{ borderTop: "1px solid var(--line)" }}
         >
-          {label}
-        </button>
-      </form>
+          <Avatar src={me.avatar} initials={me.initials} size={34} />
+          <button
+            type="button"
+            onClick={() => setGifOpen(true)}
+            aria-label="Send a GIF or sticker"
+            className="w-9 h-9 -mx-1 shrink-0 rounded-full flex items-center justify-center hover:bg-[var(--fill)]"
+            style={{ color: "var(--lime)" }}
+          >
+            <Sticker size={20} />
+          </button>
+          <label htmlFor="thread-input" className="sr-only">
+            {label}
+          </label>
+          <input
+            id="thread-input"
+            ref={boxRef}
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 500))}
+            placeholder={post.text ? "Post your reply" : "Add a comment"}
+            className="flex-1 min-w-0 rounded-full px-4 outline-none"
+            style={{
+              minHeight: 42,
+              fontSize: 15,
+              background: "var(--fill)",
+              border: "1px solid var(--line)",
+              color: "var(--ink)",
+            }}
+            autoComplete="off"
+            enterKeyHint="send"
+          />
+          <button
+            type="submit"
+            disabled={!text.trim()}
+            className="shrink-0 rounded-full px-4 font-bold transition-opacity disabled:opacity-40"
+            style={{
+              minHeight: 38,
+              fontSize: 14,
+              background: "var(--lime)",
+              color: "var(--on-accent)",
+            }}
+          >
+            {label}
+          </button>
+        </form>
+      </Sheet>
       {menuC && (
         <Sheet title={`Your ${word(post)}`} onClose={() => setMenuFor(null)}>
           <div className="grid gap-2 pb-1">
-            {menuC.by === "me" && (
+            {menuC.by === "me" && !isRich(menuC.text) && (
               <button
                 onClick={() => {
                   setMenuFor(null);
@@ -351,7 +364,17 @@ function Thread({ post, onClose }: { post: Post; onClose: () => void }) {
           onClose={() => setEditing(null)}
         />
       )}
-    </Sheet>
+      {gifOpen && (
+        <GifPicker
+          onClose={() => setGifOpen(false)}
+          onPick={(ref) => {
+            setGifOpen(false);
+            buzz(8);
+            social.comment("post", post.id, ref);
+          }}
+        />
+      )}
+    </>
   );
 }
 
