@@ -1053,8 +1053,8 @@ const TABLE_PROPS: PropDef[] = [
     id: "spill",
     sprite: "winefallen",
     label: "Knocked-over wine glass",
-    x: 38,
-    y: 34,
+    x: 31,
+    y: 30,
     w: 0.17,
     rot: -6,
   },
@@ -1234,13 +1234,17 @@ function TableProp({
         <span
           style={{
             display: "block",
-            transformOrigin: kind === "wine" ? "50% 92%" : "50% 88%",
+            // Wine tips over on its base (the foot stays put), so the knocked-over
+            // glass lies exactly where it fell and a fresh one stands where it stood.
+            transformOrigin: kind === "wine" ? "49% 82%" : "50% 88%",
             transform:
               kind === "cup" && (st === "tipping" || st === "spilled" || st === "cleaning")
                 ? `rotate(${fallLeft ? -92 : 92}deg)`
                 : kind === "wine" && st === "tipping"
-                  ? "rotate(96deg)"
-                  : undefined,
+                  ? "rotate(118deg)"
+                  : fallenLook
+                    ? `translate(${FALLEN_SHIFT.x * base}px, ${FALLEN_SHIFT.y * base}px)`
+                    : undefined,
             transition:
               st === "tipping" ? "transform 0.5s cubic-bezier(0.55, 0, 0.85, 0.4)" : undefined,
             ...mask,
@@ -1283,6 +1287,12 @@ function TableProp({
 }
 
 /**
+ * The knocked-over wine picture is drawn shifted (× the upright glass's size) so
+ * its foot sits where the upright glass's foot was.
+ */
+const FALLEN_SHIFT = { x: 0.44, y: 0.41 };
+
+/**
  * Spilt drink: a puddle spreads out from where the glass's mouth landed, with
  * a few drops splashing out first. Wiped away (fades) while it's cleaned up.
  */
@@ -1300,9 +1310,12 @@ function Spill({
 }) {
   // Where the mouth ends up, as a share of the prop's box (cup falls to the right;
   // the knocked-over wine glass lies with its mouth bottom-right).
-  const at = kind === "cup" ? { x: left ? -0.28 : 1.28, y: 0.9 } : { x: 0.8, y: 0.8 };
-  const flip = left ? -1 : 1;
   const box = kind === "wine" ? base * 1.25 : base;
+  const at =
+    kind === "cup"
+      ? { x: left ? -0.28 : 1.28, y: 0.9 }
+      : { x: 0.8 + (FALLEN_SHIFT.x * base) / box, y: 0.8 + (FALLEN_SHIFT.y * base) / box };
+  const flip = left ? -1 : 1;
   const tone =
     kind === "cup"
       ? { fill: "rgba(240,176,48,0.88)", rim: "rgba(255,244,214,0.95)" }
