@@ -46,7 +46,7 @@ function GroupsSection() {
           No groups yet. Make one for the trip, the gang, the gossip.
         </p>
       ) : (
-        <ul className="mt-1">
+        <ul className="mt-1 chat-list">
           {groups.map((g) => {
             const last = st.msgs[g.id]?.at(-1);
             const n = unreadIn(st, g.id);
@@ -55,7 +55,7 @@ function GroupsSection() {
                 <Link
                   to="/app/group/$id"
                   params={{ id: g.id }}
-                  className="flex items-center gap-3 px-5 py-2.5 hover:bg-[var(--fill)]"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--fill)]"
                 >
                   <GroupFace avatar={g.avatar} emoji={g.emoji} size={48} />
                   <span className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ function Chats() {
             </label>
           </div>
 
-          <ul className="mt-2">
+          <ul className="mt-2 chat-list" style={{ ["--sep-left" as string]: "84px" }}>
             {rows.map(({ f, last }) => {
               const unread = s.unread[f.id] ?? 0;
               const typing = s.typing[f.id];
