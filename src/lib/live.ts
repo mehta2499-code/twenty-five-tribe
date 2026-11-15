@@ -161,7 +161,7 @@ async function upload(bucket: "media" | "snaps" | "avatars", source: string | Bl
   const path = `${myId}/${newId()}.${ext}`;
   const { error } = await supabase.storage
     .from(bucket)
-    .upload(path, blob, { contentType: blob.type || undefined });
+    .upload(path, blob, { contentType: blob.type || undefined, cacheControl: "31536000" });
   if (error) throw error;
   return path;
 }
@@ -211,7 +211,7 @@ async function uploadThumb(path: string, source: string | Blob) {
     const blob = await makeThumb(source);
     await supabase.storage
       .from("avatars")
-      .upload(thumbOf(path), blob, { contentType: "image/jpeg" });
+      .upload(thumbOf(path), blob, { contentType: "image/jpeg", cacheControl: "31536000" });
     noThumb.delete(path);
   } catch {
     // ignore
@@ -1473,7 +1473,7 @@ export async function uploadMediaAt(sub: string, blob: Blob, ext: string) {
   const path = `${myId}/${sub ? `${sub}/` : ""}${newId()}.${ext}`;
   const { error } = await supabase.storage
     .from("media")
-    .upload(path, blob, { contentType: blob.type || undefined });
+    .upload(path, blob, { contentType: blob.type || undefined, cacheControl: "31536000" });
   if (error) throw error;
   return path;
 }
