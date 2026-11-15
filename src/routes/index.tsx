@@ -470,6 +470,39 @@ const IOS_STEPS = [
   },
 ];
 
+const ANDROID_STEPS = [
+  { n: "1", t: "Open in Chrome", d: "Go to the25.world in Chrome (not Instagram or another app)." },
+  { n: "2", t: "Tap the menu", d: "The three dots ⋮ at the top right of the screen." },
+  { n: "3", t: "Add to Home screen", d: "Tap it (it may say Install app), then Add." },
+  {
+    n: "4",
+    t: "Open 25 from your Home screen",
+    d: "Sign in once, then turn on notifications. That's it.",
+  },
+];
+
+/** Numbered install steps, same look for iPhone and Android. */
+function Steps({ steps }: { steps: typeof IOS_STEPS }) {
+  return (
+    <ol className="mt-5 grid gap-4">
+      {steps.map((s) => (
+        <li key={s.n} className="flex gap-4">
+          <span
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-extrabold"
+            style={{ background: C.coral, color: C.navy, border: "2px solid #0B0A10" }}
+          >
+            {s.n}
+          </span>
+          <span>
+            <span className="block text-white font-bold">{s.t}</span>
+            <span className="block text-white/75 text-sm mt-0.5">{s.d}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function InstallSection() {
   return (
     <section className="px-6 py-28 md:py-36" style={{ background: C.navy }}>
@@ -489,43 +522,13 @@ function InstallSection() {
           <Reveal>
             <div className="glass rounded-3xl p-7 h-full">
               <p className="text-white font-extrabold text-xl"> iPhone</p>
-              <ol className="mt-5 grid gap-4">
-                {IOS_STEPS.map((s) => (
-                  <li key={s.n} className="flex gap-4">
-                    <span
-                      className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-extrabold"
-                      style={{ background: C.coral, color: C.navy, border: "2px solid #0B0A10" }}
-                    >
-                      {s.n}
-                    </span>
-                    <span>
-                      <span className="block text-white font-bold">{s.t}</span>
-                      <span className="block text-white/75 text-sm mt-0.5">{s.d}</span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
+              <Steps steps={IOS_STEPS} />
             </div>
           </Reveal>
           <Reveal delay={120}>
-            <div className="glass rounded-3xl p-7 h-full flex flex-col">
+            <div className="glass rounded-3xl p-7 h-full">
               <p className="text-white font-extrabold text-xl">Android</p>
-              <span
-                className="mt-5 self-start rounded-full px-4 py-1.5 font-extrabold text-sm"
-                style={{
-                  background: C.coral,
-                  color: C.navy,
-                  border: "2px solid #0B0A10",
-                  boxShadow: "3px 3px 0 #0B0A10",
-                  transform: "rotate(-3deg)",
-                }}
-              >
-                Coming soon
-              </span>
-              <p className="mt-5 text-white/80">
-                The Android app is on its way. Until then, open 25 in Chrome and tap ⋮ →{" "}
-                <b className="text-white">Add to Home screen</b>.
-              </p>
+              <Steps steps={ANDROID_STEPS} />
             </div>
           </Reveal>
         </div>
