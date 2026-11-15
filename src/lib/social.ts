@@ -1,5 +1,5 @@
 /**
- * Social layer for 25: chats, snaps + streaks, feed posts, reels and game scores.
+ * Social layer for 25: chats, scenes (posts) and game scores.
  * Client-side only for now. State lives in memory and is saved to localStorage,
  * so a real backend can later replace `load`/`save` without touching screens.
  */
@@ -84,7 +84,7 @@ export type Person = Friend & {
   username?: string;
   /** What they're listening to (set within the last 24h). */
   np?: NowPlaying;
-  /** They put you in their 25 too. Chats, snaps, streaks and games need this. */
+  /** They put you in their 25 too. Chats and games need this. */
   mutual?: boolean;
 };
 export type FriendRequest = {

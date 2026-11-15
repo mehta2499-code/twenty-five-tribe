@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Ban, Flag } from "lucide-react";
+import { Ban, Flag, LogOut, UserMinus } from "lucide-react";
 import { Sheet, Toast } from "@/components/SocialUI";
 import { account } from "@/lib/live";
 import { useSocial, type Person } from "@/lib/social";
@@ -19,13 +19,16 @@ const REASONS = [
 export function PersonMenu({ person, onClose }: { person: Person; onClose: () => void }) {
   const s = useSocial();
   const navigate = useNavigate();
-  const [view, setView] = useState<"menu" | "report" | "block">("menu");
+  const [view, setView] = useState<"menu" | "report" | "block" | "remove" | "leave">("menu");
   const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const first = person.name.split(" ")[0];
   const live = s.mode === "live";
+  // In your 25 (you seated them)? Did they seat you (you're in theirs)?
+  const inMine = s.people.some((p) => p.id === person.id);
+  const inTheirs = !!person.mutual || s.requests.some((r) => r.id === person.id);
 
   const run = async (fn: () => Promise<void>, done: string, leave = false) => {
     if (!live) return setToast("Sign in to use this.");
@@ -46,11 +49,31 @@ export function PersonMenu({ person, onClose }: { person: Person; onClose: () =>
 
   return (
     <Sheet
-      title={view === "report" ? `Report ${first}` : view === "block" ? `Block ${first}?` : person.name}
+      title={
+        view === "report"
+          ? `Report ${first}`
+          : view === "block"
+            ? `Block ${first}?`
+            : view === "remove"
+              ? `Remove ${first} from your 25?`
+              : view === "leave"
+                ? `Leave ${first}'s 25?`
+                : person.name
+      }
       onClose={onClose}
     >
       {view === "menu" && (
         <div className="grid gap-2.5">
+          {inMine && (
+            <button onClick={() => setView("remove")} className="btn-secondary justify-start gap-3">
+              <UserMinus size={18} aria-hidden="true" /> Remove from my 25
+            </button>
+          )}
+          {inTheirs && (
+            <button onClick={() => setView("leave")} className="btn-secondary justify-start gap-3">
+              <LogOut size={18} aria-hidden="true" /> Remove me from {first}'s 25
+            </button>
+          )}
           <button onClick={() => setView("report")} className="btn-secondary justify-start gap-3">
             <Flag size={18} aria-hidden="true" /> Report {first}
           </button>
@@ -66,7 +89,12 @@ export function PersonMenu({ person, onClose }: { person: Person; onClose: () =>
           <p className="text-cool text-sm">What's going on? Only the 25 team sees this.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {REASONS.map((r) => (
-              <button key={r} className="chip" aria-pressed={reason === r} onClick={() => setReason(r)}>
+              <button
+                key={r}
+                className="chip"
+                aria-pressed={reason === r}
+                onClick={() => setReason(r)}
+              >
                 {r}
               </button>
             ))}
@@ -94,11 +122,55 @@ export function PersonMenu({ person, onClose }: { person: Person; onClose: () =>
         </div>
       )}
 
+      {view === "remove" && (
+        <div>
+          <ul className="grid gap-2 text-sm text-cool">
+            <li>• {first}'s seat at your Table opens up.</li>
+            <li>• They aren't told. They can keep you in their 25.</li>
+            <li>• You can add them back any time (after the quiz).</li>
+          </ul>
+          <button
+            disabled={busy}
+            onClick={() =>
+              run(() => account.remove(person.id), `${first}'s seat is open again.`, true)
+            }
+            className="btn-danger w-full mt-4"
+          >
+            {busy ? "Removing…" : `Remove ${first}`}
+          </button>
+          <button onClick={() => setView("menu")} className="btn-quiet w-full mt-2">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {view === "leave" && (
+        <div>
+          <ul className="grid gap-2 text-sm text-cool">
+            <li>• You leave {first}'s Table.</li>
+            <li>• {first} is told you removed yourself.</li>
+            <li>• They can't add you again unless you add them first.</li>
+          </ul>
+          <button
+            disabled={busy}
+            onClick={() =>
+              run(() => account.leaveTheir25(person.id), `You've left ${first}'s 25.`, true)
+            }
+            className="btn-danger w-full mt-4"
+          >
+            {busy ? "Leaving…" : `Leave ${first}'s 25`}
+          </button>
+          <button onClick={() => setView("menu")} className="btn-quiet w-full mt-2">
+            Cancel
+          </button>
+        </div>
+      )}
+
       {view === "block" && (
         <div>
           <ul className="grid gap-2 text-sm text-cool">
             <li>• {first} leaves your 25, and you leave theirs.</li>
-            <li>• Chats, blinks and games with them stop.</li>
+            <li>• Chats and games with them stop.</li>
             <li>• They can't find you in search or seat you again.</li>
             <li>• They aren't told. You can unblock in Profile → Privacy.</li>
           </ul>
@@ -148,7 +220,9 @@ export function BlockedList() {
               <button
                 className="btn-quiet min-h-[38px] px-3 text-sm"
                 onClick={() =>
-                  void account.unblock(p.id).then(() => setList((l) => (l ?? []).filter((x) => x.id !== p.id)))
+                  void account
+                    .unblock(p.id)
+                    .then(() => setList((l) => (l ?? []).filter((x) => x.id !== p.id)))
                 }
               >
                 Unblock
@@ -172,14 +246,18 @@ export function DeleteAccount() {
   if (s.mode !== "live") return null;
   return (
     <>
-      <button onClick={() => setOpen(true)} className="btn-quiet w-full mt-3" style={{ color: "var(--pink)" }}>
+      <button
+        onClick={() => setOpen(true)}
+        className="btn-quiet w-full mt-3"
+        style={{ color: "var(--pink)" }}
+      >
         Delete my account
       </button>
       {open && (
         <Sheet title="Delete your account?" onClose={() => setOpen(false)}>
           <p className="text-cool text-sm leading-relaxed">
-            This deletes your profile, posts, reels, snaps, chats, streaks, scores and photos. Your
-            seats in other people's 25 go too. <b className="text-cream">This can't be undone.</b>
+            This deletes your profile, posts, chats, scores and photos. Your seats in other people's
+            25 go too. <b className="text-cream">This can't be undone.</b>
           </p>
           <label className="meta block mt-4" htmlFor="del-confirm">
             Type DELETE to confirm
@@ -191,7 +269,11 @@ export function DeleteAccount() {
             autoCapitalize="characters"
             className="input mt-1.5 w-full"
           />
-          {error && <p className="mt-2 text-sm" style={{ color: "var(--pink)" }}>{error}</p>}
+          {error && (
+            <p className="mt-2 text-sm" style={{ color: "var(--pink)" }}>
+              {error}
+            </p>
+          )}
           <button
             disabled={typed !== "DELETE" || busy}
             onClick={async () => {

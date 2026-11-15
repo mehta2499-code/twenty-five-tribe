@@ -53,7 +53,12 @@ import {
 import { Confetti, Sheet, Toast, buzz, clientOnly } from "@/components/SocialUI";
 import { friendsLoaded, useFriendsNow, type FriendNow } from "@/lib/status";
 import { WaffleMenu } from "@/components/WaffleMenu";
-import { ListeningBadge, NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
+import {
+  ListeningBadge,
+  NowPlayingCard,
+  NowPlayingPicker,
+  useNewSongs,
+} from "@/components/NowPlaying";
 import { cleanTitle, isListening, mainArtist } from "@/lib/music";
 import { Glyph3D, preloadSprites } from "@/components/Glyph3D";
 import { thisWeeksPacks } from "@/lib/data";
@@ -113,12 +118,9 @@ function layout(people: Person[], knowsMe: Record<string, Best>) {
   return out;
 }
 
-/** Friends worth showing at the table first: streaks, then who posted today. */
+/** Friends worth showing at the table first: who posted today. */
 function tableOrder(s: SocialState): Person[] {
   return [...seatedFriends()].sort((a, b) => {
-    const sa = s.streaks[a.id]?.count ?? 0;
-    const sb = s.streaks[b.id]?.count ?? 0;
-    if (sb !== sa) return sb - sa;
     return Number(b.postedToday) - Number(a.postedToday);
   });
 }
@@ -1093,9 +1095,9 @@ function PartyHat({ size }: { size: number }) {
 
 const DARES: { text: string; cta: string; to: string }[] = [
   {
-    text: "Blink your lunch to someone. No caption. Let them wonder.",
-    cta: "Send a blink",
-    to: "/app/snap",
+    text: "Post a photo of your lunch as a scene. No caption. Let them wonder.",
+    cta: "Post it",
+    to: "/app/scenes/new",
   },
   {
     text: "Text someone the first song that comes to mind. Nothing else.",
@@ -1109,15 +1111,15 @@ const DARES: { text: string; cta: string; to: string }[] = [
   },
   { text: "Top your table in today's game. Loser buys chai.", cta: "Play", to: "/app/games" },
   {
-    text: "Blink the view from where you're sitting right now.",
-    cta: "Send a blink",
-    to: "/app/snap",
+    text: "Share the view from where you're sitting right now.",
+    cta: "Post it",
+    to: "/app/scenes/new",
   },
   { text: "Ask someone 'what's the tea?' and nothing else.", cta: "Open chats", to: "/app/chats" },
   {
-    text: "Send an ugly selfie. Streaks were built on less.",
-    cta: "Send a blink",
-    to: "/app/snap",
+    text: "Send an ugly selfie to someone. Friendships were built on less.",
+    cta: "Open chats",
+    to: "/app/chats",
   },
   { text: "Finish all 3 tries of today's game before bed.", cta: "Play", to: "/app/games" },
   {
@@ -1482,6 +1484,8 @@ function Home() {
   const [spot, setSpot] = useState<number | null>(null);
   const [picked, setPicked] = useState<Person | null>(null);
   const [pickSong, setPickSong] = useState(false);
+  // Songs your 25 shared since you last looked (clears when you open it).
+  const newSongs = useNewSongs();
   const [confetti, setConfetti] = useState(0);
   const [rolling, setRolling] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -1554,7 +1558,6 @@ function Home() {
     );
   };
 
-  const streakCount = people.filter((f) => (s.streaks[f.id]?.count ?? 0) > 0).length;
   return (
     <div className="flex flex-col" style={{ height: "calc(100dvh - 8rem)" }}>
       <header className="topband px-4 pt-[max(1.1rem,calc(env(safe-area-inset-top)+0.85rem))] pb-6">
@@ -1609,11 +1612,7 @@ function Home() {
         topLeft={
           <button
             onClick={() => setPickSong(true)}
-            aria-label={
-              s.me?.np
-                ? `Listening to ${s.me.np.title}. Change song`
-                : "Share what you're listening to"
-            }
+            aria-label={`Listening now${newSongs ? `, ${newSongs} new` : ""}`}
             className="w-10 h-10 rounded-full flex items-center justify-center relative"
             style={{
               background: s.me?.np ? "rgba(193,239,98,0.16)" : "var(--fill)",
@@ -1623,6 +1622,21 @@ function Home() {
             }}
           >
             <Headphones size={21} aria-hidden="true" />
+            {newSongs > 0 && (
+              <span
+                aria-hidden="true"
+                className="pop absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
+                style={{
+                  background: "var(--pink)",
+                  color: "var(--on-dark-fill)",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  border: "2px solid var(--surface)",
+                }}
+              >
+                {newSongs > 9 ? "9+" : newSongs}
+              </span>
+            )}
           </button>
         }
         topRight={
@@ -1657,7 +1671,7 @@ function Home() {
           {
             at: 'a[aria-label="Add people"]',
             title: "Fill your seats",
-            body: "Add people you actually know. When you're in each other's 25, chats, blinks and games unlock.",
+            body: "Add people you actually know. When you're in each other's 25, chats and games unlock.",
           },
           {
             at: 'a[href="/app/drop"]',
@@ -1667,7 +1681,7 @@ function Home() {
           {
             at: 'nav[aria-label="Main"]',
             title: "Everything else",
-            body: "Your Table is the first tab, then Scenes, the Drop, Chats and Games. Blinks are in Chats. Swipe left and right to move between them.",
+            body: "Your Table is the first tab, then Scenes, the Drop, Chats and Games. Swipe left and right to move between them.",
           },
         ]}
       />

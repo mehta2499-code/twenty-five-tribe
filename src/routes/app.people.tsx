@@ -11,8 +11,7 @@ import { KnowThemQuiz } from "@/components/KnowThemQuiz";
 import { SuggestionCards } from "@/components/Suggestions";
 import { seatedFriends, useSocial, type Person } from "@/lib/social";
 
-const SUB =
-  "Seat anyone you know. They see your posts. Mutual seats unlock chats, blinks and games.";
+const SUB = "Seat anyone you know. They see your posts. Mutual seats unlock chats and games.";
 
 export const Route = createFileRoute("/app/people")({
   component: clientOnly(People),
@@ -128,8 +127,8 @@ function People() {
             <p className="heading mt-3">No seat without proof.</p>
             <p className="mt-1.5 text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
               To seat someone, guess their vibe-check answers. Get 4 of 7 right and they're in your
-              25: they see your posts. When they seat you back, it's mutual and chats, snaps and
-              games unlock.
+              25: they see your posts. When they seat you back, it's mutual and chats and games
+              unlock.
             </p>
             <button
               onClick={() =>
@@ -270,8 +269,8 @@ function People() {
             <Ico i={Eye} c={TONE.oneWay} size={18} /> They put you in their 25 · {incoming.length}
           </h2>
           <p className="meta mt-0.5">
-            You can see their posts. Seat them back to unlock chats, blinks and games. Don't know
-            them? Tap ✕ to remove yourself.
+            You can see their posts. Seat them back to unlock chats and games. Don't know them? Tap
+            ✕ to remove yourself.
           </p>
           <ul className="divide-y" style={{ borderColor: "var(--border-cool)" }}>
             {incoming.map((r) =>
@@ -346,7 +345,7 @@ function People() {
                 <li key={p.id} className="py-3 flex items-center gap-3">
                   <p className="flex-1 text-sm text-cream">
                     Take {p.name.split(" ")[0]} out of your 25? They stop seeing your posts
-                    {p.mutual ? ", and your chats and streak lock" : ""}.
+                    {p.mutual ? ", and your chats lock" : ""}.
                   </p>
                   <button onClick={() => setConfirmRemove(null)} className={`${pill} btn-quiet`}>
                     Keep

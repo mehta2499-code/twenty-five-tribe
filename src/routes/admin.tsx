@@ -323,7 +323,6 @@ function DailyChart({ rows }: { rows: Stats["daily"] }) {
 const FEATURES: [string, string][] = [
   ["quizzes", "Quizzes completed"],
   ["quizzes_started", "Quizzes started"],
-  ["blinks", "Blinks sent"],
   ["posts", "Posts"],
   ["games", "Games started"],
   ["leaderboard_views", "Leaderboard views"],

@@ -5,12 +5,12 @@ import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Cake, Eye, Flame, Handshake, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Cake, Eye, Handshake, MoreHorizontal } from "lucide-react";
 import { PersonMenu } from "@/components/Safety";
 import { bdayLabel, daysUntil, useBirthdays } from "@/lib/birthdays";
 import { Avatar } from "@/components/Avatar";
 import { clientOnly } from "@/components/SocialUI";
-import { friendById, isMutual, streakStatus, useSocial } from "@/lib/social";
+import { friendById, isMutual, useSocial } from "@/lib/social";
 import { GAMES } from "@/components/ArcadeGames";
 import { dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
 
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/app/seat/$id")({
   component: clientOnly(LiveSeat),
 });
 
-/** A real person at your table: who they are, your streak, and what you can do together. */
+/** A real person at your table: who they are and what you can do together. */
 function LiveSeat() {
   const { id } = Route.useParams();
   const s = useSocial();
@@ -38,7 +38,6 @@ function LiveSeat() {
       </div>
     );
   }
-  const st = streakStatus(s.streaks[id]);
   const inMine = s.mode !== "live" || s.people.some((p) => p.id === id);
   const mutual = isMutual(f) && inMine;
   const posts =
@@ -150,31 +149,16 @@ function LiveSeat() {
         </p>
       </header>
 
-      <div className="px-5 -mt-5 relative grid grid-cols-3 gap-3">
+      <div className="px-5 -mt-5 relative grid grid-cols-2 gap-3">
         {[
-          {
-            n: st.count ? (
-              <>
-                <Ico i={Flame} c={TONE.streak} size={18} /> {st.count}
-              </>
-            ) : (
-              "–"
-            ),
-            l: st.atRisk ? "blink today!" : "blink streak",
-          },
           { n: String((s.chats[id] ?? []).length), l: "messages" },
-          { n: String(posts), l: "posts" },
+          { n: String(posts), l: "scenes" },
         ].map((x) => (
           <div key={x.l} className="card-editorial py-3 text-center">
             <p className="font-bold text-cream tabular-nums" style={{ fontSize: 20 }}>
               {x.n}
             </p>
-            <p
-              className="text-xs"
-              style={{
-                color: x.l === "blink today!" ? "var(--accent-ember)" : "var(--text-muted)",
-              }}
-            >
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               {x.l}
             </p>
           </div>
@@ -186,8 +170,8 @@ function LiveSeat() {
           <p className="font-bold text-cream">{inMine ? "Waiting on them" : "Your move"}</p>
           <p className="meta mt-1">
             {inMine
-              ? `${f.name.split(" ")[0]} can see your posts. Chats, blinks and games unlock when they seat you back.`
-              : `You can see ${f.name.split(" ")[0]}'s posts. Seat them back to unlock chats, blinks and games.`}
+              ? `${f.name.split(" ")[0]} can see your posts. Chats and games unlock when they seat you back.`
+              : `You can see ${f.name.split(" ")[0]}'s posts. Seat them back to unlock chats and games.`}
           </p>
           {!inMine && (
             <Link to="/app/people" className="btn-primary mt-3 px-5">
@@ -197,16 +181,9 @@ function LiveSeat() {
         </div>
       )}
 
-      <div className={`px-5 mt-6 grid grid-cols-2 gap-3 ${mutual ? "" : "hidden"}`}>
+      <div className={`px-5 mt-6 grid gap-3 ${mutual ? "" : "hidden"}`}>
         <Link to="/app/chat/$id" params={{ id }} className="btn-bronze py-3.5 text-center">
           Message
-        </Link>
-        <Link
-          to="/app/snap"
-          search={{ to: id }}
-          className="rounded-full py-3.5 text-center font-semibold card-editorial"
-        >
-          Send a blink
         </Link>
       </div>
 

@@ -3,11 +3,12 @@
  * headphones + floating notes worn by a face at the Table.
  */
 import { useEffect, useState } from "react";
-import { ExternalLink, Headphones, Search, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ExternalLink, Headphones, Music, Search, X } from "lucide-react";
 import { Sheet } from "@/components/SocialUI";
 import { Glyph3D } from "@/components/Glyph3D";
 import {
   cleanTitle,
+  isListening,
   hoursLeft,
   mainArtist,
   searchSpotify,
@@ -15,7 +16,8 @@ import {
   spotifyEmbed,
   type Track,
 } from "@/lib/music";
-import { useSocial, type NowPlaying } from "@/lib/social";
+import { useSocial, type NowPlaying, type Person } from "@/lib/social";
+import { Avatar } from "@/components/Avatar";
 
 /** Spotify's official compact player for one track. */
 export function SpotifyPlayer({ id, title }: { id: string; title: string }) {
@@ -52,7 +54,7 @@ function Art({ src, size }: { src: string | null; size: number }) {
       className="shrink-0 flex items-center justify-center"
       style={{ width: size, height: size, borderRadius: size * 0.22, background: "var(--fill)" }}
     >
-      <Glyph3D name="headphones" size={Math.round(size * 0.7)} />
+      <Music size={Math.round(size * 0.42)} style={{ color: "var(--ink-3)" }} aria-hidden="true" />
     </span>
   );
 }
@@ -116,13 +118,50 @@ function SpotifyDot() {
   );
 }
 
-/** Search Spotify and share a song with your 25 for 24 hours. */
-export function NowPlayingPicker({ onClose }: { onClose: () => void }) {
+// ---------- New songs badge (no push notifications) ----------
+const SEEN_KEY = "tf.music.seen";
+const seenAt = () => {
+  try {
+    return Number(localStorage.getItem(SEEN_KEY) ?? 0);
+  } catch {
+    return 0;
+  }
+};
+/** Songs your 25 shared since you last opened Listening now. */
+export function useNewSongs() {
   const s = useSocial();
+  const since = seenAt();
+  return s.people.filter((p) => isListening(p) && p.np!.at > since).length;
+}
+function markSeen() {
+  try {
+    localStorage.setItem(SEEN_KEY, String(Date.now()));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Listening now: what everyone in your 25 is playing (tap to play it here),
+ * your own song, and search to share a new one for 24 hours.
+ */
+export function NowPlayingPicker({
+  onClose,
+  start = "list",
+}: {
+  onClose: () => void;
+  /** Open on everyone's songs, or straight on search. */
+  start?: "list" | "search";
+}) {
+  const s = useSocial();
+  const [view, setView] = useState<"list" | "search">(start);
   const [q, setQ] = useState("");
   const [list, setList] = useState<Track[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [fresh] = useState(seenAt);
+  useEffect(() => markSeen(), []);
 
   useEffect(() => {
     setErr(null);
@@ -143,7 +182,8 @@ export function NowPlayingPicker({ onClose }: { onClose: () => void }) {
     setBusy(t?.id ?? "stop");
     try {
       await setNowPlaying(t);
-      onClose();
+      setQ("");
+      setView("list");
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -152,91 +192,198 @@ export function NowPlayingPicker({ onClose }: { onClose: () => void }) {
   };
 
   const mine = s.me?.np;
+  const friends: Person[] = s.people
+    .filter((p) => isListening(p))
+    .sort((a, b) => b.np!.at - a.np!.at);
+
+  if (view === "search")
+    return (
+      <Sheet title="Share a song" onClose={onClose} center>
+        <button
+          onClick={() => setView("list")}
+          className="flex items-center gap-1.5 meta -mt-1 mb-2"
+          style={{ fontSize: 13.5 }}
+        >
+          <ArrowLeft size={16} aria-hidden="true" /> Listening now
+        </button>
+        <label className="field" htmlFor="np-search">
+          <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
+          <input
+            id="np-search"
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search a song or artist"
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              aria-label="Clear search"
+              className="text-faint"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </label>
+        <div className="mt-2 max-h-[42dvh] overflow-y-auto -mx-1 px-1" data-noswipe>
+          {err && <p className="meta text-center mt-6">{err}</p>}
+          {!err && list === null && (
+            <p className="meta text-center mt-6 mb-2">
+              Find a song to share. It stays on your face at the Table for 24 hours.
+            </p>
+          )}
+          {!err && list?.length === 0 && <p className="meta text-center mt-6">No songs found.</p>}
+          <ul className="grid gap-1">
+            {(list ?? []).map((t) => (
+              <li key={t.id}>
+                <button
+                  onClick={() => void pick(t)}
+                  disabled={!!busy}
+                  className="menu-row w-full flex items-center gap-3 rounded-[16px] p-2 text-left"
+                >
+                  <Art src={t.image} size={46} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-semibold truncate">{cleanTitle(t.name)}</span>
+                    <span className="block meta truncate">{mainArtist(t.artists)}</span>
+                  </span>
+                  <span
+                    className="shrink-0 rounded-full px-3 py-1 text-[12.5px] font-bold"
+                    style={{
+                      background: "rgba(193,239,98,0.16)",
+                      color: "var(--lime)",
+                      border: "1px solid rgba(193,239,98,0.35)",
+                    }}
+                  >
+                    {busy === t.id ? "…" : mine?.id === t.id ? "Sharing" : "Share"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p
+          className="meta text-center mt-3 flex items-center justify-center gap-1.5"
+          style={{ fontSize: 11.5 }}
+        >
+          <SpotifyDot /> Songs from Spotify
+        </p>
+      </Sheet>
+    );
+
   return (
     <Sheet title="Listening now" onClose={onClose} center>
-      {mine ? (
-        <div className="card p-3 flex items-center gap-3">
-          <Art src={mine.image} size={48} />
-          <span className="flex-1 min-w-0">
-            <span
-              className="block text-[11px] font-bold uppercase"
-              style={{ color: "var(--lime)", letterSpacing: "0.08em" }}
-            >
-              Sharing now · {hoursLeft({ np: mine })}h left
-            </span>
-            <span className="block font-semibold truncate">{cleanTitle(mine.title)}</span>
-            <span className="block meta truncate">{mainArtist(mine.artist)}</span>
-          </span>
-          <button
-            onClick={() => void pick(null)}
-            disabled={!!busy}
-            className="btn-secondary px-3 min-h-[34px] text-[13px]"
-          >
-            <X size={14} aria-hidden="true" /> Stop
-          </button>
-        </div>
-      ) : (
-        <p className="meta">
-          Share a song with your 25. It shows on your face at the Table for 24 hours.
-        </p>
-      )}
-      <label className="field mt-3" htmlFor="np-search">
-        <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
-        <input
-          id="np-search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={mine ? "Change song…" : "Search a song or artist"}
-          autoComplete="off"
-          enterKeyHint="search"
-        />
-        {q && (
-          <button
-            type="button"
-            onClick={() => setQ("")}
-            aria-label="Clear search"
-            className="text-faint"
-          >
-            <X size={16} />
-          </button>
-        )}
-      </label>
-      <div className="mt-2 max-h-[40dvh] overflow-y-auto -mx-1 px-1" data-noswipe>
-        {err && <p className="meta text-center mt-6">{err}</p>}
-        {!err && list === null && (
-          <div className="flex flex-col items-center text-center mt-6 mb-2">
-            <Glyph3D name="headphones" size={56} animate fps={2} />
-            <p className="meta mt-2">What's on repeat today?</p>
-          </div>
-        )}
-        {!err && list?.length === 0 && <p className="meta text-center mt-6">No songs found.</p>}
-        <ul className="grid gap-1">
-          {(list ?? []).map((t) => (
-            <li key={t.id}>
-              <button
-                onClick={() => void pick(t)}
-                disabled={!!busy}
-                className="menu-row w-full flex items-center gap-3 rounded-[16px] p-2 text-left"
+      <div className="max-h-[62dvh] overflow-y-auto -mx-1 px-1" data-noswipe>
+        {/* You */}
+        {mine ? (
+          <div className="card p-3 flex items-center gap-3">
+            <Art src={mine.image} size={48} />
+            <span className="flex-1 min-w-0">
+              <span
+                className="block text-[11px] font-bold uppercase"
+                style={{ color: "var(--lime)", letterSpacing: "0.08em" }}
               >
-                <Art src={t.image} size={46} />
-                <span className="flex-1 min-w-0">
-                  <span className="block font-semibold truncate">{cleanTitle(t.name)}</span>
-                  <span className="block meta truncate">{mainArtist(t.artists)}</span>
-                </span>
-                <span
-                  className="shrink-0 rounded-full px-3 py-1 text-[12.5px] font-bold"
-                  style={{
-                    background: "rgba(193,239,98,0.16)",
-                    color: "var(--lime)",
-                    border: "1px solid rgba(193,239,98,0.35)",
-                  }}
-                >
-                  {busy === t.id ? "…" : mine?.id === t.id ? "Sharing" : "Share"}
-                </span>
+                You · {hoursLeft({ np: mine })}h left
+              </span>
+              <span className="block font-semibold truncate">{cleanTitle(mine.title)}</span>
+              <span className="block meta truncate">{mainArtist(mine.artist)}</span>
+            </span>
+            <span className="flex flex-col gap-1.5 shrink-0">
+              <button
+                onClick={() => setView("search")}
+                className="btn-secondary px-3 min-h-[32px] text-[12.5px]"
+              >
+                Change
               </button>
-            </li>
-          ))}
-        </ul>
+              <button
+                onClick={() => void pick(null)}
+                disabled={!!busy}
+                className="btn-quiet px-3 min-h-[28px] text-[12.5px]"
+              >
+                Stop
+              </button>
+            </span>
+          </div>
+        ) : (
+          <button onClick={() => setView("search")} className="btn-primary w-full">
+            <Search size={17} aria-hidden="true" /> Share what you're listening to
+          </button>
+        )}
+
+        {/* Your 25 */}
+        <p
+          className="text-[11.5px] font-bold uppercase mt-5 mb-2"
+          style={{ color: "var(--ink-3)", letterSpacing: "0.08em" }}
+        >
+          Your 25 · {friends.length} listening
+        </p>
+        {friends.length === 0 ? (
+          <p className="meta py-4 text-center">Nobody's sharing a song right now.</p>
+        ) : (
+          <ul className="grid gap-1.5">
+            {friends.map((f) => {
+              const np = f.np!;
+              const open = playing === f.id;
+              const isNew = np.at > fresh;
+              return (
+                <li
+                  key={f.id}
+                  className="rounded-[18px] overflow-hidden"
+                  style={{ background: open ? "var(--fill)" : undefined }}
+                >
+                  <button
+                    onClick={() => setPlaying(open ? null : f.id)}
+                    aria-expanded={open}
+                    aria-label={`${f.name} is listening to ${cleanTitle(np.title)}. ${open ? "Hide player" : "Play"}`}
+                    className="menu-row w-full flex items-center gap-3 p-2 text-left rounded-[18px]"
+                  >
+                    <span className="relative shrink-0">
+                      <Art src={np.image} size={46} />
+                      <span className="absolute -bottom-1 -right-1">
+                        <Avatar src={f.avatar} initials={f.initials} color={f.color} size={22} />
+                      </span>
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-1.5 meta" style={{ fontSize: 12 }}>
+                        {f.name.split(" ")[0]}
+                        {isNew && (
+                          <span
+                            className="rounded-full px-1.5 font-bold"
+                            style={{
+                              background: "var(--lime)",
+                              color: "var(--on-accent)",
+                              fontSize: 10,
+                            }}
+                          >
+                            NEW
+                          </span>
+                        )}
+                      </span>
+                      <span className="block font-semibold truncate">{cleanTitle(np.title)}</span>
+                      <span className="block meta truncate">{mainArtist(np.artist)}</span>
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      aria-hidden="true"
+                      className="shrink-0 transition-transform"
+                      style={{
+                        color: "var(--ink-3)",
+                        transform: open ? "rotate(180deg)" : undefined,
+                      }}
+                    />
+                  </button>
+                  {open && (
+                    <div className="px-2 pb-2">
+                      <SpotifyPlayer id={np.id} title={np.title} />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
       <p
         className="meta text-center mt-3 flex items-center justify-center gap-1.5"

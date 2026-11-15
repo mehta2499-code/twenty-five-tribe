@@ -1,19 +1,11 @@
 import { Tour } from "@/components/Tour";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Camera, MessageCircle, Search, UserPlus, Users } from "lucide-react";
+import { MessageCircle, Search, UserPlus, Users } from "lucide-react";
 import { GroupFace } from "@/components/GroupFace";
 import { Avatar } from "@/components/Avatar";
-import {
-  EmptyState,
-  PageBand,
-  Section,
-  SkeletonRows,
-  SnapViewer,
-  StreakBadge,
-  clientOnly,
-} from "@/components/SocialUI";
-import { mutualFriends, timeAgo, useSocial, type ChatMessage, type Snap } from "@/lib/social";
+import { EmptyState, PageBand, SkeletonRows, clientOnly } from "@/components/SocialUI";
+import { mutualFriends, timeAgo, useSocial, type ChatMessage } from "@/lib/social";
 import { FriendPicker, Sheet, Toast } from "@/components/SocialUI";
 import { useNavigate } from "@tanstack/react-router";
 import { createGroup, member, unreadIn, useGroups } from "@/lib/groups";
@@ -161,7 +153,7 @@ function preview(m?: ChatMessage, typing?: boolean) {
   if (typing) return "Typing…";
   if (!m) return "No messages yet";
   const who = m.from === "me" ? "You: " : "";
-  if (m.snapId) return m.from === "me" ? "You sent a blink" : "Sent you a blink";
+  if (m.snapId) return m.from === "me" ? "You sent a photo" : "Sent you a photo";
   if (m.sharedPostId?.startsWith("wordup:"))
     return `${m.from === "me" ? "You: " : ""}Word Up result`;
   if (m.sharedPostId?.startsWith("game:")) return m.text ?? `${who}game invite`;
@@ -189,9 +181,7 @@ function TabBadge({ n }: { n: number }) {
 
 function Chats() {
   const s = useSocial();
-  const newBlinks = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me")).length;
   const [q, setQ] = useState("");
-  const [viewing, setViewing] = useState<Snap | null>(null);
   const everyone = mutualFriends();
   const term = q.trim().toLowerCase();
   const gs = useGroups();
@@ -227,8 +217,6 @@ function Chats() {
     [s.people, s.chats, term],
   );
 
-  const unopened = s.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me"));
-
   return (
     <div className="pb-6">
       <Tour
@@ -239,42 +227,9 @@ function Chats() {
             title: "Private and group chats",
             body: "Chats open once you're in each other's 25. No randoms, ever. Make groups with people from your 25.",
           },
-          {
-            at: 'a[aria-label="New blink"]',
-            title: "Send a Blink",
-            body: "A photo or note that disappears after one look.",
-          },
         ]}
       />
-      <PageBand
-        ring
-        title="Chats"
-        sub="Mutual seats only. No randoms in your DMs."
-        actions={
-          <Link
-            to="/app/snap"
-            search={{ to: undefined }}
-            aria-label={newBlinks ? `Blinks, ${newBlinks} new` : "Blinks"}
-            className="btn-secondary relative gap-1.5 px-3.5 min-h-[40px]"
-          >
-            <Camera size={18} aria-hidden="true" /> Blinks
-            {newBlinks > 0 && (
-              <span
-                className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
-                style={{
-                  background: "var(--pink)",
-                  color: "var(--on-dark-fill)",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  border: "2px solid var(--surface)",
-                }}
-              >
-                {newBlinks > 99 ? "99+" : newBlinks}
-              </span>
-            )}
-          </Link>
-        }
-      />
+      <PageBand ring title="Chats" sub="Mutual seats only. No randoms in your DMs." />
 
       <div className="px-5 mt-1 mb-2">
         <div className="segmented w-full" role="tablist" aria-label="Chats">
@@ -316,48 +271,6 @@ function Chats() {
         />
       ) : (
         <>
-          {unopened.length > 0 && (
-            <Section title="New blinks" aside={`${unopened.length} to open`} className="mt-2">
-              <ul className="flex gap-3 overflow-x-auto px-5 pb-1 no-scrollbar">
-                {unopened.map((snap) => {
-                  const f = everyone.find((x) => x.id === snap.from);
-                  if (!f) return null;
-                  return (
-                    <li key={snap.id}>
-                      <button
-                        onClick={() => setViewing(snap)}
-                        className="flex flex-col items-center w-16"
-                        aria-label={`Open blink from ${f.name}`}
-                      >
-                        <span
-                          className="rounded-full p-[2.5px]"
-                          style={{
-                            background: "linear-gradient(135deg, var(--accent-2), var(--hot))",
-                          }}
-                        >
-                          <span
-                            className="block rounded-full p-[2px]"
-                            style={{ background: "var(--page)" }}
-                          >
-                            <Avatar
-                              src={f.avatar || undefined}
-                              initials={f.initials}
-                              color={f.color}
-                              size={52}
-                            />
-                          </span>
-                        </span>
-                        <span className="mt-1.5 text-[13px] text-cream truncate w-full text-center">
-                          {f.name.split(" ")[0]}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Section>
-          )}
-
           <div className="px-5 mt-3">
             <label className="field" htmlFor="chat-search">
               <Search size={18} className="text-faint shrink-0" aria-hidden="true" />
@@ -396,7 +309,6 @@ function Chats() {
                         >
                           {f.name}
                         </span>
-                        <StreakBadge friendId={f.id} />
                       </div>
                       <p
                         className="truncate mt-0.5"
@@ -441,8 +353,6 @@ function Chats() {
           </ul>
         </>
       )}
-
-      {viewing && <SnapViewer snap={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }

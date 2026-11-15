@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { GifPicker, RichBubble, isRich, sendRichToFriend } from "@/components/GifPicker";
 import { Avatar } from "@/components/Avatar";
-import { SnapViewer, StreakBadge, Toast, clientOnly } from "@/components/SocialUI";
+import { Toast, clientOnly } from "@/components/SocialUI";
 import {
   EarlierButton,
   GrowingInput,
@@ -37,7 +37,6 @@ import {
   social,
   useSocial,
   type ChatMessage,
-  type Snap,
 } from "@/lib/social";
 
 export const Route = createFileRoute("/app/chat/$id")({
@@ -66,7 +65,6 @@ function ChatThread() {
   const s = useSocial();
   const f = friendById(id);
   const [text, setText] = useState("");
-  const [viewing, setViewing] = useState<Snap | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const [gifOpen, setGifOpen] = useState(false);
@@ -97,7 +95,7 @@ function ChatThread() {
         {f && (
           <p className="text-cool mt-2 text-[15px] leading-relaxed">
             {theySeatedMe
-              ? "They put you in their 25. Seat them back and you can chat and blink."
+              ? "They put you in their 25. Seat them back and you can chat."
               : "You seated them, but they haven't seated you back yet. Chats unlock when it's mutual."}
           </p>
         )}
@@ -161,7 +159,6 @@ function ChatThread() {
                 <span className="font-semibold text-cream truncate" style={{ fontSize: 16 }}>
                   {f.name}
                 </span>
-                <StreakBadge friendId={id} />
               </div>
               <p
                 className="truncate"
@@ -170,14 +167,6 @@ function ChatThread() {
                 {statusLine}
               </p>
             </div>
-          </Link>
-          <Link
-            to="/app/snap"
-            search={{ to: id }}
-            aria-label={`Send ${firstName} a snap`}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-bronze hover:bg-[var(--fill)]"
-          >
-            <Camera size={21} />
           </Link>
         </header>
 
@@ -207,7 +196,6 @@ function ChatThread() {
                   const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
                   const grouped =
                     prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
-                  const snap = m.snapId ? s.snaps.find((x) => x.id === m.snapId) : undefined;
                   const [shareKind, shareId] = m.sharedPostId?.split(":") ?? [];
                   const rich = isRich(m.sharedPostId);
                   const shared =
@@ -266,25 +254,12 @@ function ChatThread() {
                                   {m.text}
                                 </p>
                               )}
-                            {m.snapId &&
-                              (mine ? (
-                                <p className="flex items-center gap-2 font-semibold text-sm">
-                                  <Camera size={16} aria-hidden="true" /> Blink
-                                  {snap?.openedBy.includes(id) ? " · opened" : " sent"}
-                                </p>
-                              ) : snap && !snap.openedBy.includes("me") ? (
-                                <button
-                                  onClick={() => setViewing(snap)}
-                                  className="flex items-center gap-2 font-semibold text-sm"
-                                  style={{ color: "var(--coral-deep)" }}
-                                >
-                                  <Camera size={16} aria-hidden="true" /> New blink · tap to view
-                                </button>
-                              ) : (
-                                <p className="flex items-center gap-2 text-sm text-faint">
-                                  <Camera size={16} aria-hidden="true" /> Blink opened
-                                </p>
-                              ))}
+                            {/* Old Blinks (the feature is gone): just a quiet note. */}
+                            {m.snapId && (
+                              <p className="flex items-center gap-2 text-sm text-faint">
+                                <Camera size={16} aria-hidden="true" /> Blink (no longer available)
+                              </p>
+                            )}
                             {shared && (
                               <Link to="/app/feed" className="block my-0.5">
                                 {shared.image ? (
@@ -454,7 +429,6 @@ function ChatThread() {
           />
         )}
       </div>
-      {viewing && <SnapViewer snap={viewing} onClose={() => setViewing(null)} />}
       {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
     </div>
   );

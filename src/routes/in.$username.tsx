@@ -217,7 +217,9 @@ function InMy25() {
                 </p>
               ) : live && theyHaveMe && iHaveThem ? (
                 <div className="text-center">
-                  <span className="sticker"><Ico i={Handshake} size={13} /> mutual</span>
+                  <span className="sticker">
+                    <Ico i={Handshake} size={13} /> mutual
+                  </span>
                   <p className="heading mt-3">You're in each other's 25.</p>
                   <Link
                     to="/app/chat/$id"
@@ -229,13 +231,13 @@ function InMy25() {
                 </div>
               ) : live && iHaveThem ? (
                 <div className="text-center">
-                  <span className="sticker sun"><Ico i={Eye} size={13} /> not yet</span>
-                  <p className="heading mt-3">
-                    {first} is in your 25. You're not in theirs… yet.
-                  </p>
+                  <span className="sticker sun">
+                    <Ico i={Eye} size={13} /> not yet
+                  </span>
+                  <p className="heading mt-3">{first} is in your 25. You're not in theirs… yet.</p>
                   <p className="meta mt-2">
-                    {done ? `${first} just got pinged. ` : ""}When they seat you back, chats and snaps
-                    unlock.
+                    {done ? `${first} just got pinged. ` : ""}When they seat you back, chats and
+                    games unlock.
                   </p>
                   <Link to="/app/people" className="btn-secondary w-full mt-5">
                     See your 25
@@ -250,7 +252,15 @@ function InMy25() {
                   {live && (
                     <div className="text-center mb-5">
                       <span className={`sticker ${theyHaveMe ? "" : "pink"}`}>
-                        {theyHaveMe ? <><Ico i={Check} size={13} /> YES</> : <><Ico i={Eye} size={13} /> not yet</>}
+                        {theyHaveMe ? (
+                          <>
+                            <Ico i={Check} size={13} /> YES
+                          </>
+                        ) : (
+                          <>
+                            <Ico i={Eye} size={13} /> not yet
+                          </>
+                        )}
                       </span>
                       <p className="heading mt-3">
                         {theyHaveMe

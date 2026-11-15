@@ -18,7 +18,6 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as InUsernameRouteImport } from './routes/in.$username'
-import { Route as AppSnapRouteImport } from './routes/app.snap'
 import { Route as AppRecapRouteImport } from './routes/app.recap'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppPrivacyRouteImport } from './routes/app.privacy'
@@ -84,11 +83,6 @@ const InUsernameRoute = InUsernameRouteImport.update({
   id: '/in/$username',
   path: '/in/$username',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AppSnapRoute = AppSnapRouteImport.update({
-  id: '/snap',
-  path: '/snap',
-  getParentRoute: () => AppRoute,
 } as any)
 const AppRecapRoute = AppRecapRouteImport.update({
   id: '/recap',
@@ -213,7 +207,6 @@ export interface FileRoutesByFullPath {
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recap': typeof AppRecapRoute
-  '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
   '/app/card/$id': typeof AppCardIdRoute
@@ -244,7 +237,6 @@ export interface FileRoutesByTo {
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recap': typeof AppRecapRoute
-  '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app': typeof AppIndexRoute
   '/app/card/$id': typeof AppCardIdRoute
@@ -277,7 +269,6 @@ export interface FileRoutesById {
   '/app/privacy': typeof AppPrivacyRoute
   '/app/profile': typeof AppProfileRoute
   '/app/recap': typeof AppRecapRoute
-  '/app/snap': typeof AppSnapRoute
   '/in/$username': typeof InUsernameRoute
   '/app/': typeof AppIndexRoute
   '/app/card/$id': typeof AppCardIdRoute
@@ -311,7 +302,6 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/profile'
     | '/app/recap'
-    | '/app/snap'
     | '/in/$username'
     | '/app/'
     | '/app/card/$id'
@@ -342,7 +332,6 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/profile'
     | '/app/recap'
-    | '/app/snap'
     | '/in/$username'
     | '/app'
     | '/app/card/$id'
@@ -374,7 +363,6 @@ export interface FileRouteTypes {
     | '/app/privacy'
     | '/app/profile'
     | '/app/recap'
-    | '/app/snap'
     | '/in/$username'
     | '/app/'
     | '/app/card/$id'
@@ -463,13 +451,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/in/$username'
       preLoaderRoute: typeof InUsernameRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/app/snap': {
-      id: '/app/snap'
-      path: '/snap'
-      fullPath: '/app/snap'
-      preLoaderRoute: typeof AppSnapRouteImport
-      parentRoute: typeof AppRoute
     }
     '/app/recap': {
       id: '/app/recap'
@@ -626,7 +607,6 @@ interface AppRouteChildren {
   AppPrivacyRoute: typeof AppPrivacyRoute
   AppProfileRoute: typeof AppProfileRoute
   AppRecapRoute: typeof AppRecapRoute
-  AppSnapRoute: typeof AppSnapRoute
   AppIndexRoute: typeof AppIndexRoute
   AppCardIdRoute: typeof AppCardIdRoute
   AppChatIdRoute: typeof AppChatIdRoute
@@ -648,7 +628,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppPrivacyRoute: AppPrivacyRoute,
   AppProfileRoute: AppProfileRoute,
   AppRecapRoute: AppRecapRoute,
-  AppSnapRoute: AppSnapRoute,
   AppIndexRoute: AppIndexRoute,
   AppCardIdRoute: AppCardIdRoute,
   AppChatIdRoute: AppChatIdRoute,

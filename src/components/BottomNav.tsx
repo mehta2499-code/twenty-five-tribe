@@ -15,7 +15,6 @@ export function BottomNav() {
   const { pathname } = useLocation();
   const social = useSocial();
   const unread = Object.values(social.unread).reduce((a, b) => a + b, 0);
-  const newSnaps = social.snaps.filter((x) => x.from !== "me" && !x.openedBy.includes("me")).length;
 
   return (
     <nav
@@ -29,8 +28,7 @@ export function BottomNav() {
             pathname.startsWith(to) ||
             (to === "/app/home" &&
               (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat")));
-          // Blinks live under Chats now, so new ones count there.
-          const badge = to === "/app/chats" ? unread + newSnaps : 0;
+          const badge = to === "/app/chats" ? unread : 0;
           const color = active ? "var(--lime)" : "var(--ink-2)";
           return (
             <li key={to}>

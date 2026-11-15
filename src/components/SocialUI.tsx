@@ -10,15 +10,7 @@ import {
 import { Link, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Check, Flame, Hourglass, Lock, X, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import {
-  friendById,
-  meView,
-  mutualFriends,
-  social,
-  streakStatus,
-  useSocial,
-  type Snap,
-} from "@/lib/social";
+import { friendById, meView, mutualFriends, social, useSocial, type Snap } from "@/lib/social";
 
 // ---------- Layout ----------
 
@@ -271,7 +263,6 @@ export function FriendPicker({
   onClose,
   onPick,
   single = false,
-  showStreaks = false,
   note,
   only,
 }: {
@@ -282,7 +273,6 @@ export function FriendPicker({
   onClose: () => void;
   onPick: (ids: string[]) => void;
   single?: boolean;
-  showStreaks?: boolean;
   note?: string;
 }) {
   const s = useSocial();
@@ -299,7 +289,7 @@ export function FriendPicker({
         <EmptyState
           icon={Lock}
           title="No mutual seats yet"
-          body="Chats, blinks and games unlock when you're in each other's 25. Seat your people and get them to seat you back."
+          body="Chats and games unlock when you're in each other's 25. Seat your people and get them to seat you back."
           action={
             <Link to="/app/people" className="btn-primary px-5">
               Find your people
@@ -324,7 +314,6 @@ export function FriendPicker({
           <div className="grid grid-cols-4 gap-x-2 gap-y-4">
             {people.map((f) => {
               const on = picked.includes(f.id);
-              const st = streakStatus(s.streaks[f.id]);
               return (
                 <button
                   key={f.id}
@@ -358,7 +347,6 @@ export function FriendPicker({
                   <span className="mt-1.5 text-[13px] text-cream truncate w-full text-center">
                     {f.name.split(" ")[0]}
                   </span>
-                  {showStreaks && st.count > 0 && <StreakBadge friendId={f.id} size={12} />}
                 </button>
               );
             })}
@@ -384,148 +372,6 @@ export function FriendPicker({
 }
 
 // ---------- Snaps ----------
-
-/** Full-screen snap with a countdown. It's gone once the timer ends or you tap. */
-export function SnapViewer({ snap, onClose }: { snap: Snap; onClose: () => void }) {
-  const [left, setLeft] = useState(snap.seconds);
-  const closed = useRef(false);
-  const sender = snap.from === "me" ? null : friendById(snap.from);
-
-  const done = () => {
-    if (closed.current) return;
-    closed.current = true;
-    if (snap.from !== "me") social.openSnap(snap.id);
-    onClose();
-  };
-
-  useEffect(() => {
-    if (left <= 0) return done();
-    const t = setTimeout(() => setLeft((n) => n - 1), 1000);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [left]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && done();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div
-      className="fixed inset-0 z-[70] flex flex-col"
-      style={{ background: "#000" }}
-      onClick={done}
-      role="dialog"
-      aria-label={`Blink from ${sender?.name ?? "you"}`}
-    >
-      <div className="absolute top-0 inset-x-0 z-10 px-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div
-          className="h-1 rounded-full overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.25)" }}
-        >
-          <div
-            className="h-full"
-            style={{
-              background: "#fff",
-              width: `${(left / snap.seconds) * 100}%`,
-              transition: "width 1s linear",
-            }}
-          />
-        </div>
-        <div className="flex items-center gap-3 mt-3 text-white">
-          <Avatar
-            src={sender ? sender.avatar || undefined : meView().avatar}
-            initials={sender?.initials ?? meView().initials}
-            color={sender?.color}
-            size={34}
-          />
-          <span className="font-semibold" style={{ fontSize: 15 }}>
-            {sender?.name ?? "You"}
-          </span>
-          <span className="ml-auto tabular-nums text-sm opacity-90">{left}s</span>
-          <button
-            aria-label="Close"
-            onClick={done}
-            className="w-9 h-9 rounded-full flex items-center justify-center"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      </div>
-      <div
-        className="flex-1 relative overflow-hidden flex items-center justify-center"
-        style={{ background: snap.bg ?? "#000" }}
-      >
-        {snap.image && (
-          <>
-            {/* Whole photo, never cropped; a blurred copy fills the rest of the screen. */}
-            <img
-              loading="lazy"
-              decoding="async"
-              src={snap.image}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover scale-110"
-              style={{ filter: "blur(28px) brightness(0.6)" }}
-            />
-            <img
-              loading="lazy"
-              decoding="async"
-              src={snap.image}
-              alt=""
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-          </>
-        )}
-        {snap.caption && (
-          <p
-            className="relative text-center font-semibold px-5 py-3 mx-6 text-white"
-            style={{
-              fontSize: snap.image ? 20 : 30,
-              lineHeight: 1.3,
-              textShadow: "0 2px 12px rgba(0,0,0,0.35)",
-              background: snap.image ? "rgba(0,0,0,0.45)" : "transparent",
-              borderRadius: 16,
-            }}
-          >
-            {snap.caption}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Snap streak: flame and count; amber with an hourglass when it ends today. */
-export function StreakBadge({ friendId, size = 13 }: { friendId: string; size?: number }) {
-  const s = useSocial();
-  const st = streakStatus(s.streaks[friendId]);
-  if (!st.count) return null;
-  const color = st.atRisk ? "var(--amber)" : "var(--ink-2)";
-  return (
-    <span
-      className="inline-flex items-center gap-0.5 tabular-nums font-semibold whitespace-nowrap"
-      style={{ fontSize: size, color }}
-      title={
-        st.atRisk ? "Send them a blink today to keep your streak" : `${st.count}-day blink streak`
-      }
-      aria-label={st.atRisk ? `${st.count}-day streak, ends today` : `${st.count}-day streak`}
-    >
-      <Flame
-        size={size + 1}
-        fill={st.atRisk ? "var(--amber)" : "#E8743B"}
-        color={st.atRisk ? "var(--amber)" : "#E8743B"}
-        aria-hidden="true"
-      />
-      {st.count}
-      {st.atRisk && <Hourglass size={size} aria-hidden="true" />}
-    </span>
-  );
-}
-
-// ---------- Feedback ----------
 
 export function Toast({ text, onDone }: { text: string; onDone: () => void }) {
   useEffect(() => {
@@ -622,7 +468,7 @@ export function demoOnly<P extends object>(Screen: ComponentType<P>, title: stri
         />
         <ul className="px-5 grid gap-2">
           {[
-            { to: "/app/chats" as const, label: "Chats and blinks" },
+            { to: "/app/chats" as const, label: "Chats" },
             { to: "/app/feed" as const, label: "Scenes" },
             { to: "/app/games" as const, label: "Games" },
           ].map((l) => (

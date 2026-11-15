@@ -253,7 +253,7 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       return {
         Icon: Handshake,
         tone: "var(--lime)",
-        text: `${who} seated you back. Chats and blinks unlocked.`,
+        text: `${who} seated you back. Chats unlocked.`,
       };
     case "like":
       return {

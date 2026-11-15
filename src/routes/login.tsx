@@ -3,11 +3,12 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus } from "lucide-react";
-import { account, initLive } from "@/lib/live";
+import { account, initLive, passwordProblem } from "@/lib/live";
 import { fileToImage, useSocial } from "@/lib/social";
 import { clientOnly } from "@/components/SocialUI";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { PhotoCropper } from "@/components/PhotoCropper";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -42,6 +43,8 @@ function Login() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
+  /** A photo waiting to be cropped. */
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
@@ -127,7 +130,7 @@ function Login() {
         setPasswordSet(true);
         if (needsCode) {
           setCode("");
-          setNotice("We emailed you an 8-digit code. Enter it to claim your seat.");
+          setNotice("We emailed you a 6-digit code. Enter it to claim your seat.");
           setStep("code");
           setResendIn(45);
           return;
@@ -159,11 +162,32 @@ function Login() {
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(passwordProblem(error.message));
       setResetSent(true);
+      setCode("");
       setNotice(
-        "If an account uses that email, a password reset link is on its way. Check your inbox and spam folder.",
+        "If an account uses that email, we've sent a 6-digit code (and a link). Check your inbox and spam folder.",
       );
+    });
+
+  /** Reset with the code from the email (the link in it works too). */
+  const verifyResetCode = () =>
+    act(async () => {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: code.trim(),
+        type: "recovery",
+      });
+      if (error)
+        throw new Error(
+          /expired|invalid/i.test(error.message)
+            ? "That code didn't work. Check it, or send a new one."
+            : error.message,
+        );
+      setNotice(null);
+      setPassword("");
+      setConfirmPassword("");
+      setStep("reset");
     });
 
   const saveNewPassword = () =>
@@ -171,12 +195,22 @@ function Login() {
       if (password.length < 8) throw new Error("Use at least 8 characters for your password.");
       if (password !== confirmPassword) throw new Error("Those passwords don’t match yet.");
       const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(passwordProblem(error.message));
       setNotice("Password updated. You’re all set.");
       setPassword("");
       setConfirmPassword("");
       setStep("email");
     });
+
+  // Errors show right under the button you pressed, not at the bottom of the page.
+  const errorBox = error ? (
+    <p
+      role="alert"
+      className="rounded-2xl px-4 py-3 bg-[rgba(214,62,98,0.12)] text-[#F08AA3] border border-[rgba(214,62,98,0.35)] font-semibold text-sm"
+    >
+      {error}
+    </p>
+  ) : null;
 
   const field = "input";
   const primary = "btn-primary w-full";
@@ -268,6 +302,9 @@ function Login() {
                 required
               />
             )}
+            {isSignup && password.length > 0 && (
+              <PasswordChecks password={password} confirm={confirmPassword} />
+            )}
             <button
               type="submit"
               disabled={
@@ -314,6 +351,7 @@ function Login() {
                 {isSignup ? "Sign in" : "Create an account"}
               </button>
             </p>
+            {errorBox}
           </form>
         )}
 
@@ -338,24 +376,24 @@ function Login() {
               Check your email.
             </p>
             <p className="text-cool" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              Enter the 8-digit code we sent to{" "}
+              Enter the 6-digit code we sent to{" "}
               <span className="font-semibold text-cream">{email}</span>.
             </p>
             <label htmlFor="login-code" className="sr-only">
-              8-digit code
+              6-digit code
             </label>
             <input
               id="login-code"
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={8}
-              placeholder="12345678"
+              placeholder="123456"
               autoFocus
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               className={`${field} text-center tracking-[0.5em] text-2xl font-bold`}
             />
-            <button type="submit" disabled={busy || code.length < 8} className={primary}>
+            <button type="submit" disabled={busy || code.length < 6} className={primary}>
               {busy ? "Checking…" : "Verify email"}
             </button>
             <p className="text-center text-sm text-faint">
@@ -371,6 +409,7 @@ function Login() {
             >
               {resendIn > 0 ? `Send a new code in ${resendIn}s` : "Send a new code"}
             </button>
+            {errorBox}
           </form>
         )}
 
@@ -433,7 +472,8 @@ function Login() {
                   }
                   try {
                     setError(null);
-                    setAvatar(await fileToImage(f, 600));
+                    // Open the cropper on a larger copy so zooming stays sharp.
+                    setCropSrc(await fileToImage(f, 1600));
                   } catch {
                     setError("That photo couldn’t be opened. Try a different image.");
                   }
@@ -512,6 +552,7 @@ function Login() {
             >
               {busy ? "Saving…" : "Pull up a chair"}
             </button>
+            {errorBox}
           </form>
         )}
 
@@ -527,7 +568,7 @@ function Login() {
               A fresh key for your seat.
             </p>
             <p className="text-white/85" style={{ fontSize: 15, lineHeight: 1.5 }}>
-              Enter your email and we’ll send a secure password reset link.
+              Enter your email and we’ll send a code to reset your password.
             </p>
             <Input
               aria-label="Email"
@@ -539,9 +580,47 @@ function Login() {
               className={field}
               required
             />
-            <button type="submit" disabled={busy || resetSent} className={primary}>
-              {busy ? "Sending…" : resetSent ? "Link sent" : "Send reset link"}
-            </button>
+            {!resetSent ? (
+              <button type="submit" disabled={busy} className={primary}>
+                {busy ? "Sending…" : "Send reset code"}
+              </button>
+            ) : (
+              <>
+                <label htmlFor="reset-code" className="text-sm font-semibold">
+                  6-digit code from the email
+                </label>
+                <input
+                  id="reset-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={8}
+                  placeholder="123456"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  className={`${field} text-center tracking-[0.5em] text-2xl font-bold`}
+                />
+                <button
+                  type="button"
+                  onClick={() => void verifyResetCode()}
+                  disabled={busy || code.length < 6}
+                  className={primary}
+                >
+                  {busy ? "Checking…" : "Continue"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetSent(false);
+                    void sendReset();
+                  }}
+                  disabled={busy}
+                  className="text-sm font-semibold text-white/90"
+                >
+                  Send a new code
+                </button>
+              </>
+            )}
+            {errorBox}
           </form>
         )}
 
@@ -578,6 +657,9 @@ function Login() {
               minLength={8}
               required
             />
+            {password.length > 0 && (
+              <PasswordChecks password={password} confirm={confirmPassword} />
+            )}
             <button
               type="submit"
               disabled={busy || password.length < 8 || password !== confirmPassword}
@@ -585,6 +667,7 @@ function Login() {
             >
               {busy ? "Saving…" : "Save new password"}
             </button>
+            {errorBox}
           </form>
         )}
 
@@ -597,17 +680,41 @@ function Login() {
           </p>
         )}
 
-        {error && (
-          <p
-            role="alert"
-            className="mt-4 rounded-2xl px-4 py-3 bg-[rgba(214,62,98,0.12)] text-[#F08AA3] border border-[rgba(214,62,98,0.35)] font-semibold text-sm"
-          >
-            {error}
-          </p>
-        )}
-
         <p className="mt-auto pt-10 text-center text-white/80 text-xs">Everyone else is noise.</p>
       </div>
+      {cropSrc && (
+        <PhotoCropper
+          src={cropSrc}
+          onCancel={() => setCropSrc(null)}
+          onDone={(url) => {
+            setAvatar(url);
+            setCropSrc(null);
+          }}
+        />
+      )}
     </main>
+  );
+}
+
+/** Live checklist under a new password: what's done, what's still needed. */
+function PasswordChecks({ password, confirm }: { password: string; confirm: string }) {
+  const rules = [
+    { ok: password.length >= 8, text: "At least 8 characters" },
+    { ok: confirm.length > 0 && password === confirm, text: "Both passwords match" },
+  ];
+  return (
+    <ul className="grid gap-1 -mt-1 text-sm" aria-label="Password requirements">
+      {rules.map((r) => (
+        <li
+          key={r.text}
+          className="flex items-center gap-2"
+          style={{ color: r.ok ? "#C1EF62" : "rgba(255,255,255,0.7)" }}
+        >
+          <span aria-hidden="true">{r.ok ? "✓" : "○"}</span>
+          {r.text}
+          <span className="sr-only">{r.ok ? "(done)" : "(not yet)"}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

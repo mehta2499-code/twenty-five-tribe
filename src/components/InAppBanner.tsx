@@ -1,4 +1,4 @@
-/** Slide-down banner for new messages and snaps while you're in the app. */
+/** Slide-down banner for new messages and activity while you're in the app. */
 import { openLink } from "@/lib/activity";
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";

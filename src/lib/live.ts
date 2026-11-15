@@ -137,6 +137,28 @@ const typingTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 function fail(message: string) {
   _set((s) => ({ ...s, error: message }));
 }
+/** Supabase's password rules, in plain words (so people know what to fix). */
+export function passwordProblem(msg: string) {
+  const needs: string[] = [];
+  const m = /at least one character of each:([^.]*)/i.exec(msg);
+  if (m) {
+    const sets = m[1];
+    if (/abcdefghijklmnopqrstuvwxyz/.test(sets)) needs.push("a lowercase letter");
+    if (/ABCDEFGHIJKLMNOPQRSTUVWXYZ/.test(sets)) needs.push("an uppercase letter");
+    if (/0123456789/.test(sets)) needs.push("a number");
+    if (/[!@#$%^&*]/.test(sets)) needs.push("a symbol (like ! @ # $)");
+  }
+  const len = /at least (\d+) characters/i.exec(msg)?.[1];
+  if (len) needs.unshift(`at least ${len} characters`);
+  if (needs.length)
+    return `Your password needs ${needs.join(", ").replace(/, ([^,]*)$/, " and $1")}.`;
+  if (/weak|easy to guess|pwned|leaked|known/i.test(msg))
+    return "That password is too common and easy to guess. Try a different one.";
+  if (/same.*(old|previous)|different from the old/i.test(msg))
+    return "Your new password has to be different from your old one.";
+  return msg;
+}
+
 function friendly(e: unknown) {
   const msg = (e as { message?: string })?.message ?? String(e);
   if (isNetworkError(e))
@@ -144,8 +166,7 @@ function friendly(e: unknown) {
   if (/seats taken/i.test(msg)) return msg;
   if (/duplicate key.*username|profiles_username_key|username.*unique/i.test(msg))
     return "That username is taken. Try another.";
-  if (/invalid.*password|password.*(weak|short|length)/i.test(msg))
-    return "Use a stronger password with at least 8 characters.";
+  if (/password/i.test(msg) && !/invalid login/i.test(msg)) return passwordProblem(msg);
   if (/error sending .*email|smtp/i.test(msg))
     return "We couldn't send your code right now. Try again in a minute.";
   if (/rate limit|too many|only request this after/i.test(msg))
@@ -368,7 +389,7 @@ async function loadAll() {
     }
     people.sort((a, b) => a.name.localeCompare(b.name));
 
-    const [messages, inbox, sent, streakRows, postRows, scoreRows] = await Promise.all([
+    const [messages, postRows, scoreRows] = await Promise.all([
       run(
         supabase
           .from("messages")
@@ -377,30 +398,6 @@ async function loadAll() {
           .order("created_at", { ascending: false })
           .limit(1500)
           .returns<MessageRow[]>(),
-      ),
-      run(
-        supabase
-          .from("snap_recipients")
-          .select("*")
-          .eq("recipient", me)
-          .is("opened_at", null)
-          .returns<SnapRecipientRow[]>(),
-      ),
-      run(
-        supabase
-          .from("snaps")
-          .select("*")
-          .eq("sender", me)
-          .order("created_at", { ascending: false })
-          .limit(60)
-          .returns<SnapRow[]>(),
-      ),
-      run(
-        supabase
-          .from("streaks")
-          .select("*")
-          .or(`user_a.eq.${me},user_b.eq.${me}`)
-          .returns<StreakRow[]>(),
       ),
       run(
         supabase
@@ -431,70 +428,10 @@ async function loadAll() {
         .then(() => {});
     }
 
-    // Snaps: unopened ones sent to me, plus the ones I sent (to show "opened")
-    const inboxSnaps = inbox.length
-      ? await run(
-          supabase
-            .from("snaps")
-            .select("*")
-            .in(
-              "id",
-              inbox.map((r) => r.snap_id),
-            )
-            .returns<SnapRow[]>(),
-        )
-      : [];
-    const sentRecipients = sent.length
-      ? await run(
-          supabase
-            .from("snap_recipients")
-            .select("*")
-            .in(
-              "snap_id",
-              sent.map((x) => x.id),
-            )
-            .returns<SnapRecipientRow[]>(),
-        )
-      : [];
-    // Clean up: my sent snaps everyone has opened lose their file for good.
-    for (const x of sent) {
-      if (!x.image_path) continue;
-      const rs = sentRecipients.filter((r) => r.snap_id === x.id);
-      if (rs.length && rs.every((r) => r.opened_at)) {
-        void deleteSnapFile(x.id, x.image_path);
-        x.image_path = null;
-      }
-    }
-    const snapUrls = await signed(
-      "snaps",
-      [...inboxSnaps, ...sent].map((x) => x.image_path ?? ""),
-    );
-    const snaps: Snap[] = [
-      ...inboxSnaps.map((x) => toSnap(x, ["me"], [], snapUrls)),
-      ...sent.map((x) => {
-        const rs = sentRecipients.filter((r) => r.snap_id === x.id);
-        return toSnap(
-          x,
-          rs.map((r) => r.recipient),
-          rs.filter((r) => r.opened_at).map((r) => r.recipient),
-          snapUrls,
-        );
-      }),
-    ].sort((a, b) => b.at - a.at);
-
-    // Streaks: a streak is alive if it counted today or yesterday.
-    const today = dayKey();
-    const yesterday = dayKey(Date.now() - 86_400_000);
+    // Blinks and streaks are gone (dropped features).
+    const snaps: Snap[] = [];
     const streaks: Record<string, Streak> = {};
-    for (const r of streakRows) {
-      const other = r.user_a === me ? r.user_b : r.user_a;
-      const alive = r.counted_day === today || r.counted_day === yesterday;
-      streaks[other] = {
-        count: alive ? r.count : 0,
-        lastSentDay: r.counted_day, // "at risk" = today hasn't counted yet
-        lastGotDay: r.user_a === me ? r.b_last : r.a_last,
-      };
-    }
+    const today = dayKey();
 
     // Posts and reels
     const postIds = postRows.map((p) => p.id);
@@ -755,7 +692,7 @@ function subscribe() {
               _set((s) => ({
                 ...s,
                 notice: back
-                  ? `${name} seated you back. Chats and blinks unlocked.`
+                  ? `${name} seated you back. Chats unlocked.`
                   : `${name} put you in their 25.`,
               }));
             });
@@ -765,36 +702,6 @@ function subscribe() {
     )
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "quiz_attempts" }, () =>
       scheduleReload(800),
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "snap_recipients" },
-      ({ eventType, new: row }) => {
-        const r = row as Partial<SnapRecipientRow>;
-        if (eventType === "INSERT" && r.recipient === me && r.snap_id) {
-          void supabase
-            .from("snaps")
-            .select("sender")
-            .eq("id", r.snap_id)
-            .maybeSingle<{ sender: string }>()
-            .then(({ data }) => {
-              const f = data ? friendById(data.sender) : undefined;
-              showBanner({
-                id: `snap-${r.snap_id}`,
-                title: f?.name ?? "New blink",
-                body: "Sent you a blink. Open before it vanishes.",
-                to: "/app/snap",
-                avatar: f?.avatar || undefined,
-                initials: f?.initials ?? "?",
-                color: f?.color,
-              });
-            });
-        }
-        scheduleReload();
-      },
-    )
-    .on("postgres_changes", { event: "*", schema: "public", table: "streaks" }, () =>
-      scheduleReload(),
     )
     .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () =>
       scheduleReload(),

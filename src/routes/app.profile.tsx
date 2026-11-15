@@ -1,3 +1,4 @@
+import { PhotoCropper } from "@/components/PhotoCropper";
 import { NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
 import { Glyph3D } from "@/components/Glyph3D";
 import { KnowsBest } from "@/components/QuizBadges";
@@ -112,11 +113,21 @@ function Profile() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoState, setPhotoState] = useState<string | null>(null);
   const [confirmOut, setConfirmOut] = useState(false);
+  // Pick a photo → crop it → upload.
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const changePhoto = async (file?: File) => {
     if (!file) return;
+    try {
+      setCropSrc(await fileToImage(file, 1600));
+    } catch {
+      setPhotoState("That photo couldn't be opened. Try a different image.");
+    }
+  };
+  const savePhoto = async (url: string) => {
+    setCropSrc(null);
     setPhotoState("Uploading…");
     try {
-      await account.updateAvatar(await fileToImage(file, 600));
+      await account.updateAvatar(url);
       setPhotoState("Photo updated.");
     } catch (e) {
       setPhotoState((e as Error).message);
@@ -126,6 +137,13 @@ function Profile() {
   return (
     <div className="pb-6">
       <PageBand title="You" back />
+      {cropSrc && (
+        <PhotoCropper
+          src={cropSrc}
+          onCancel={() => setCropSrc(null)}
+          onDone={(u) => void savePhoto(u)}
+        />
+      )}
       <section className="px-5 flex items-center gap-4">
         <div className="relative shrink-0">
           <Avatar
@@ -153,7 +171,10 @@ function Profile() {
                 type="file"
                 accept="image/*"
                 hidden
-                onChange={(e) => void changePhoto(e.target.files?.[0])}
+                onChange={(e) => {
+                  void changePhoto(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
               />
             </>
           )}
@@ -182,7 +203,7 @@ function Profile() {
             </span>
           </button>
         )}
-        {pickSong && <NowPlayingPicker onClose={() => setPickSong(false)} />}
+        {pickSong && <NowPlayingPicker start="search" onClose={() => setPickSong(false)} />}
       </section>
       {photoState && (
         <p className="px-5 mt-2 text-sm text-cool" role="status">

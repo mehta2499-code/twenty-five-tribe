@@ -103,16 +103,6 @@ export function FeedGlyph({ size = 22, active }: G) {
   );
 }
 
-/** Blink: an eye that closes (one look, then gone). */
-export function BlinkGlyph({ size = 26 }: G) {
-  return (
-    <svg {...base(size)} strokeWidth={2.3}>
-      <path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
-    </svg>
-  );
-}
-
 /** Drop: a camera with a spark (one real photo, same time for everyone). */
 export function DropGlyph({ size = 26 }: G) {
   return (

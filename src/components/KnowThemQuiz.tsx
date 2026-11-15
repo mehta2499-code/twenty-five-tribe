@@ -266,7 +266,7 @@ export function KnowThemQuiz({
                   demo ? (
                     "That's how it works. In the real app, this unlocks their seat."
                   ) : actionLabel === "Seat them back" ? (
-                    "Mutual. Chats, blinks and games unlocked."
+                    "Mutual. Chats and games unlocked."
                   ) : (
                     <EmojiText text="They're in your 25 now. They'll get pinged 👀" />
                   )

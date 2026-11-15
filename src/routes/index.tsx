@@ -351,8 +351,8 @@ function Landing() {
               },
               {
                 icon: "↯",
-                tag: "Blinks & Streaks",
-                line: "Photos that disappear after one look. Keep the streak alive.",
+                tag: "The Drop",
+                line: "Once a day, at a surprise time, everyone posts one real photo. Ten minutes. Go.",
               },
               {
                 icon: "✦",
