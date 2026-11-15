@@ -139,10 +139,12 @@ function Table({
   onSpotDone,
   topLeft,
   topRight,
+  bottomRight,
 }: {
   /** Buttons pinned to the top corners of the table area (music, add people). */
   topLeft?: React.ReactNode;
   topRight?: React.ReactNode;
+  bottomRight?: React.ReactNode;
   people: Person[];
   spot: number | null;
   rolling: boolean;
@@ -208,7 +210,7 @@ function Table({
     return () => ro.disconnect();
   }, []);
   const W = Math.max(200, Math.min(box.w, 440, box.h));
-  const H = Math.max(W, Math.min(box.h, W * 1.4));
+  const H = Math.max(W, Math.min(box.h, W * 1.7));
   // Everyone gets the same size face; smaller only when the table gets full.
   const ra = (W * SEAT_R) / 100;
   const rb = (H * SEAT_R) / 100;
@@ -492,6 +494,7 @@ function Table({
     >
       {topLeft && <div className="absolute left-4 top-2 z-[5]">{topLeft}</div>}
       {topRight && <div className="absolute right-4 top-2 z-[5]">{topRight}</div>}
+      {bottomRight && <div className="absolute right-4 bottom-2 z-[5]">{bottomRight}</div>}
       <div className="relative" style={{ width: W, height: H }}>
         {/* The table itself: a big glass oval the closest ring sits around. */}
         <div
@@ -1875,9 +1878,8 @@ function Home() {
             <UserPlus size={22} strokeWidth={2.4} aria-hidden="true" />
           </Link>
         }
+        bottomRight={<PollsButton />}
       />
-
-      <TodayTiles />
 
       <PushPrompt />
       <Tour
@@ -1920,5 +1922,47 @@ function Home() {
         <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
       )}
     </div>
+  );
+}
+
+/** Weekly Polls, as a round button in the table's corner: picks left as a badge. */
+function PollsButton() {
+  const [voted, setVoted] = useState<number | null>(null);
+  const [newPolls] = useState(() => !seen("polls"));
+  useEffect(() => {
+    void myVotesThisWeek()
+      .then((v) => setVoted(Object.keys(v).length))
+      .catch(() => setVoted(0));
+  }, []);
+  const left = voted === null ? 0 : Math.max(0, PER_WEEK - voted);
+  return (
+    <Link
+      to="/app/polls"
+      aria-label={left ? `Weekly Polls, ${left} picks left` : "Weekly Polls"}
+      className={`w-10 h-10 rounded-full flex items-center justify-center relative ${left && newPolls ? "pulse-pink" : ""}`}
+      style={{
+        background: "var(--fill)",
+        border: "var(--bd)",
+        boxShadow: "var(--pop)",
+        color: "var(--ink)",
+      }}
+    >
+      <Vote size={20} aria-hidden="true" />
+      {left > 0 && (
+        <span
+          aria-hidden="true"
+          className="pop absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
+          style={{
+            background: "var(--pink)",
+            color: "var(--on-dark-fill)",
+            fontSize: 11,
+            fontWeight: 800,
+            border: "2px solid var(--surface)",
+          }}
+        >
+          {left}
+        </span>
+      )}
+    </Link>
   );
 }
