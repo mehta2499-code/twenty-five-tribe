@@ -1791,6 +1791,7 @@ function ActivityBell() {
 // ---------- Screen ----------
 
 function Home() {
+  const pollsLeft = usePollsLeft();
   const s = useSocial();
   const people = tableOrder(s);
   const [adding, setAdding] = useState(false);
@@ -1986,8 +1987,11 @@ function Home() {
             <UserPlus size={22} strokeWidth={2.4} aria-hidden="true" />
           </Link>
         }
-        bottomRight={<PollsButton />}
+        bottomRight={pollsLeft === 0 ? <PollsButton /> : undefined}
       />
+
+      {/* Picks left this week: a full Weekly Polls bar. Done: just the corner button. */}
+      {pollsLeft !== null && pollsLeft > 0 && <PollsBar left={pollsLeft} />}
 
       <PushPrompt />
       <Tour
@@ -2030,6 +2034,49 @@ function Home() {
         <AddMomentSheet onClose={() => setAdding(false)} onConfirm={() => setAdding(false)} />
       )}
     </div>
+  );
+}
+
+/** Picks left in this week's polls (null while loading). */
+function usePollsLeft() {
+  const [voted, setVoted] = useState<number | null>(null);
+  useEffect(() => {
+    void myVotesThisWeek()
+      .then((v) => setVoted(Object.keys(v).length))
+      .catch(() => setVoted(PER_WEEK));
+  }, []);
+  return voted === null ? null : Math.max(0, PER_WEEK - voted);
+}
+
+/** Weekly Polls while you still have picks: a full bar under the table. */
+function PollsBar({ left }: { left: number }) {
+  return (
+    <section className="px-5 mt-2" aria-label="Weekly Polls">
+      <Link
+        to="/app/polls"
+        className="pulse-pink rounded-[22px] px-4 py-3 flex items-center gap-3"
+        style={{
+          background: "var(--pink)",
+          color: "var(--on-accent)",
+          border: "var(--bd)",
+          boxShadow: "var(--pop-sm)",
+        }}
+      >
+        <span
+          className="w-9 h-9 shrink-0 flex items-center justify-center"
+          style={{ background: "var(--on-accent)", color: "var(--pink)", borderRadius: 14 }}
+        >
+          <Vote size={19} strokeWidth={2.4} aria-hidden="true" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-extrabold text-[15px] leading-tight">Weekly Polls</span>
+          <span className="block text-[12.5px] font-bold opacity-80 truncate">
+            {left} pick{left === 1 ? "" : "s"} left this week
+          </span>
+        </span>
+        <ChevronRight size={20} aria-hidden="true" />
+      </Link>
+    </section>
   );
 }
 

@@ -52,7 +52,7 @@ export function BottomNav() {
                 className="flex flex-col items-center justify-end gap-0.5 pt-1.5 pb-1 min-h-[56px]"
               >
                 <span
-                  className={`relative flex items-center justify-center w-12 h-8 rounded-xl ${dropDot === "now" ? "wiggle" : dropDot === "missed" ? "pulse-lime" : ""}`}
+                  className={`relative flex items-center justify-center w-12 h-8 rounded-xl ${dropDot ? "pulse-lime" : ""}`}
                   style={{
                     background: active ? "rgba(193, 239, 98, 0.14)" : "transparent",
                     color,
