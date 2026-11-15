@@ -13,7 +13,7 @@ import { EmptyState, PageBand, Sheet, Toast, buzz, clientOnly } from "@/componen
 import { personOf } from "@/components/FeedUI";
 import { LazyVideo } from "@/components/LazyVideo";
 import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
-import { EditSheet, TagPicker, Tagged, withTag } from "@/components/SceneParts";
+import { EditSheet, PollView, TagPicker, Tagged, withTag } from "@/components/SceneParts";
 import { meView, social, timeAgo, useSocial, type Post } from "@/lib/social";
 
 export const Route = createFileRoute("/app/feed")({
@@ -96,6 +96,7 @@ function SceneRow({
             </p>
           )}
         </button>
+        {post.poll && <PollView postId={post.id} poll={post.poll} />}
         {!post.text && (
           <div
             className="mt-2.5 rounded-2xl overflow-hidden select-none"

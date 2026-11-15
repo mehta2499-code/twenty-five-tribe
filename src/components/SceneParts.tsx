@@ -1,11 +1,11 @@
 /** Shared pieces of Scenes: @tags in text, the tag picker, and the edit sheet. */
 import { Fragment, useState } from "react";
-import { Megaphone } from "lucide-react";
+import { Check, Megaphone } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
-import { Sheet } from "@/components/SocialUI";
+import { Sheet, buzz } from "@/components/SocialUI";
 import { mentionQuery } from "@/lib/groups";
-import { useSocial, type Person } from "@/lib/social";
+import { social, useSocial, type Person, type Poll } from "@/lib/social";
 
 export const MAX_CHARS = 280;
 
@@ -175,5 +175,118 @@ export function EditSheet({
         </button>
       </div>
     </Sheet>
+  );
+}
+
+// ---------- Polls ----------
+/**
+ * A scene's poll. Before you vote: the options (tap one; on multiple choice,
+ * tick several and press Vote). After: bars with percentages and your picks.
+ */
+export function PollView({ postId, poll }: { postId: string; poll: Poll }) {
+  const [picked, setPicked] = useState<number[]>([]);
+  const voted = poll.mine.length > 0;
+  const total = poll.counts.reduce((a, b) => a + b, 0);
+  const vote = (opts: number[]) => {
+    if (!opts.length) return;
+    buzz(12);
+    social.votePoll(postId, opts);
+    setPicked([]);
+  };
+  return (
+    <div className="mt-2.5 grid gap-2" role="group" aria-label="Poll">
+      {poll.options.map((o, i) => {
+        const n = poll.counts[i] ?? 0;
+        const pct = total ? Math.round((n / total) * 100) : 0;
+        const mine = poll.mine.includes(i);
+        if (voted)
+          return (
+            <div
+              key={i}
+              className="relative overflow-hidden rounded-xl px-3.5 py-2.5 flex items-center gap-2"
+              style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+              aria-label={`${o}: ${pct}%${mine ? ", your vote" : ""}`}
+            >
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 left-0 transition-[width] duration-500"
+                style={{
+                  width: `${pct}%`,
+                  background: mine ? "rgba(193,239,98,0.28)" : "rgba(255,255,255,0.08)",
+                }}
+              />
+              <span
+                className="relative flex-1 min-w-0 truncate font-semibold text-cream"
+                style={{ fontSize: 14.5 }}
+              >
+                {o}
+              </span>
+              {mine && (
+                <Check
+                  size={15}
+                  className="relative shrink-0"
+                  style={{ color: "var(--lime)" }}
+                  aria-hidden="true"
+                />
+              )}
+              <span className="relative tabular-nums font-bold shrink-0" style={{ fontSize: 13.5 }}>
+                {pct}%
+              </span>
+            </div>
+          );
+        const on = picked.includes(i);
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() =>
+              poll.multi ? setPicked((p) => (on ? p.filter((x) => x !== i) : [...p, i])) : vote([i])
+            }
+            aria-pressed={poll.multi ? on : undefined}
+            className="rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left font-semibold transition-colors"
+            style={{
+              fontSize: 14.5,
+              color: "var(--lime)",
+              border: `1.5px solid ${on ? "var(--lime)" : "rgba(193,239,98,0.45)"}`,
+              background: on ? "rgba(193,239,98,0.12)" : "transparent",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className={`shrink-0 w-[18px] h-[18px] flex items-center justify-center ${poll.multi ? "rounded-md" : "rounded-full"}`}
+              style={{
+                border: "1.5px solid currentColor",
+                background: on ? "var(--lime)" : "transparent",
+              }}
+            >
+              {on && <Check size={12} strokeWidth={3} style={{ color: "var(--on-accent)" }} />}
+            </span>
+            <span className="flex-1 min-w-0 truncate">{o}</span>
+          </button>
+        );
+      })}
+      <div className="flex items-center gap-2 meta" style={{ fontSize: 12.5 }}>
+        <span>
+          {poll.voters} vote{poll.voters === 1 ? "" : "s"}
+          {poll.multi ? " · Multiple choice" : ""}
+        </span>
+        {!voted && poll.multi && (
+          <button
+            type="button"
+            disabled={!picked.length}
+            onClick={() => vote(picked)}
+            className="ml-auto rounded-full px-4 font-bold disabled:opacity-40"
+            style={{
+              minHeight: 32,
+              background: "var(--lime)",
+              color: "var(--on-accent)",
+              fontSize: 13,
+            }}
+          >
+            Vote
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

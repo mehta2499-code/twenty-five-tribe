@@ -5,7 +5,7 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AtSign, ImagePlus, X } from "lucide-react";
+import { AtSign, BarChart3, ImagePlus, Plus, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { AudienceNote, clientOnly } from "@/components/SocialUI";
 import { MAX_CHARS, TagPicker, withTag } from "@/components/SceneParts";
@@ -29,6 +29,9 @@ function NewScene() {
   const [text, setText] = useState("");
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState<{ file: File; url: string } | null>(null);
+  // A poll: 2-4 options, single or multiple choice (text scenes only).
+  const [poll, setPoll] = useState<{ options: string[]; multi: boolean } | null>(null);
+  const pollReady = !poll || poll.options.filter((o) => o.trim()).length >= 2;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,7 +51,9 @@ function NewScene() {
   };
 
   const left = MAX_CHARS - text.length;
-  const canPost = (text.trim().length > 0 || !!image || !!video) && left >= 0;
+  const canPost =
+    (poll ? text.trim().length > 0 && pollReady : text.trim().length > 0 || !!image || !!video) &&
+    left >= 0;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--page)" }}>
@@ -69,7 +74,17 @@ function NewScene() {
           <button
             disabled={!canPost}
             onClick={() => {
-              social.addPost(image ?? "", text, video?.file);
+              social.addPost(
+                poll ? "" : (image ?? ""),
+                text,
+                poll ? undefined : video?.file,
+                poll
+                  ? {
+                      options: poll.options.map((o) => o.trim()).filter(Boolean),
+                      multi: poll.multi,
+                    }
+                  : undefined,
+              );
               try {
                 sessionStorage.setItem("tf.scene.posted", "1");
               } catch {
@@ -101,12 +116,94 @@ function NewScene() {
                 autoFocus
                 value={text}
                 onChange={(e) => setText(e.target.value.slice(0, MAX_CHARS + 20))}
-                placeholder={image || video ? "Add a caption (optional)" : "What's happening?"}
+                placeholder={
+                  poll
+                    ? "Ask a question"
+                    : image || video
+                      ? "Add a caption (optional)"
+                      : "What's happening?"
+                }
                 rows={2}
                 className="w-full resize-none bg-transparent outline-none text-cream pt-2"
                 style={{ fontSize: 18, lineHeight: 1.4 }}
               />
               <TagPicker text={text} onPick={put} />
+              {poll && (
+                <div
+                  className="mt-1 mb-2 rounded-2xl p-3 grid gap-2"
+                  style={{ border: "1px solid var(--line)" }}
+                >
+                  {poll.options.map((o, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        value={o}
+                        onChange={(e) =>
+                          setPoll((p) =>
+                            p
+                              ? {
+                                  ...p,
+                                  options: p.options.map((x, k) =>
+                                    k === i ? e.target.value.slice(0, 40) : x,
+                                  ),
+                                }
+                              : p,
+                          )
+                        }
+                        aria-label={`Option ${i + 1}`}
+                        placeholder={`Option ${i + 1}`}
+                        className="input flex-1"
+                        style={{ minHeight: 42 }}
+                      />
+                      {poll.options.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPoll((p) =>
+                              p ? { ...p, options: p.options.filter((_, k) => k !== i) } : p,
+                            )
+                          }
+                          aria-label={`Remove option ${i + 1}`}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {poll.options.length < 4 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPoll((p) => (p ? { ...p, options: [...p.options, ""] } : p))
+                      }
+                      className="flex items-center gap-1.5 font-semibold self-start px-1"
+                      style={{ color: "var(--lime)", fontSize: 14 }}
+                    >
+                      <Plus size={16} aria-hidden="true" /> Add option
+                    </button>
+                  )}
+                  <label
+                    className="flex items-center justify-between gap-3 pt-1"
+                    style={{ fontSize: 14 }}
+                  >
+                    <span className="text-cream font-semibold">Allow multiple answers</span>
+                    <input
+                      type="checkbox"
+                      checked={poll.multi}
+                      onChange={(e) => setPoll((p) => (p ? { ...p, multi: e.target.checked } : p))}
+                      className="w-5 h-5 accent-[#C1EF62]"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setPoll(null)}
+                    className="meta self-start px-1"
+                    style={{ fontSize: 13 }}
+                  >
+                    Remove poll
+                  </button>
+                </div>
+              )}
               {(image || video) && (
                 <div
                   className="relative mt-1 rounded-2xl overflow-hidden"
@@ -185,10 +282,28 @@ function NewScene() {
               type="button"
               onClick={() => fileRef.current?.click()}
               aria-label="Add a photo or video"
+              disabled={!!poll}
               className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--fill)]"
               style={{ color: "var(--lime)" }}
             >
               <ImagePlus size={21} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImage(null);
+                setVideo(null);
+                setPoll((p) => (p ? null : { options: ["", ""], multi: false }));
+              }}
+              aria-label={poll ? "Remove poll" : "Add a poll"}
+              aria-pressed={!!poll}
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--fill)]"
+              style={{
+                color: "var(--lime)",
+                background: poll ? "rgba(193,239,98,0.14)" : undefined,
+              }}
+            >
+              <BarChart3 size={21} />
             </button>
             <button
               type="button"

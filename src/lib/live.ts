@@ -17,6 +17,7 @@ import {
   weekKey,
   type ChatMessage,
   type Comment,
+  type Poll,
   type FriendRequest,
   type GameId,
   type Me,
@@ -103,7 +104,10 @@ type PostRow = {
   caption: string;
   created_at: string;
   edited_at?: string | null;
+  poll_options?: string[] | null;
+  poll_multi?: boolean;
 };
+type VoteRow = { post_id: string; user_id: string; option: number };
 type LikeRow = { post_id: string; user_id: string };
 type CommentRow = {
   id: string;
@@ -435,7 +439,7 @@ async function loadAll() {
 
     // Posts and reels
     const postIds = postRows.map((p) => p.id);
-    const [likes, comments] = postIds.length
+    const [likes, comments, votes] = postIds.length
       ? await Promise.all([
           run(
             supabase
@@ -452,8 +456,27 @@ async function loadAll() {
               .order("created_at")
               .returns<CommentRow[]>(),
           ),
+          run(
+            supabase
+              .from("post_poll_votes" as never)
+              .select("post_id,user_id,option")
+              .in("post_id", postIds)
+              .returns<VoteRow[]>(),
+          ).catch(() => [] as VoteRow[]),
         ])
-      : [[], []];
+      : [[], [], []];
+    // Poll results per scene: counts, your picks, how many voted.
+    const pollFor = (p: PostRow): Poll | undefined => {
+      if (!p.poll_options?.length) return undefined;
+      const vs = (votes as VoteRow[]).filter((v) => v.post_id === p.id);
+      return {
+        options: p.poll_options,
+        multi: !!p.poll_multi,
+        counts: p.poll_options.map((_, i) => vs.filter((v) => v.option === i).length),
+        mine: vs.filter((v) => v.user_id === me).map((v) => v.option),
+        voters: new Set(vs.map((v) => v.user_id)).size,
+      };
+    };
     const mediaUrls = await signed(
       "media",
       postRows.map((p) => p.media_path ?? ""),
@@ -514,7 +537,7 @@ async function loadAll() {
       // Reels are gone: videos are just posts now.
       posts.push(
         p.media_type === "text"
-          ? { ...base, image: "", text: true }
+          ? { ...base, image: "", text: true, poll: pollFor(p) }
           : p.media_type === "video"
             ? { ...base, image: "", video: url, mediaPath: p.media_path ?? undefined }
             : { ...base, image: url, mediaPath: p.media_path ?? undefined },
@@ -711,6 +734,9 @@ function subscribe() {
     )
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_comments" }, () =>
       scheduleReload(),
+    )
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "post_poll_votes" }, () =>
+      scheduleReload(800),
     )
     .subscribe();
 
@@ -1275,7 +1301,42 @@ registerLive({
       });
   },
 
-  addPost(image: string, caption: string, video?: Blob) {
+  votePoll(postId: string, options: number[]) {
+    const before = _get().posts.find((p) => p.id === postId);
+    if (!myId || !before?.poll || before.poll.mine.length || !options.length) return;
+    const poll = before.poll;
+    patch((s) => ({
+      ...s,
+      posts: s.posts.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              poll: {
+                ...poll,
+                mine: options,
+                voters: poll.voters + 1,
+                counts: poll.counts.map((c, i) => (options.includes(i) ? c + 1 : c)),
+              },
+            }
+          : p,
+      ),
+    }));
+    void supabase
+      .from("post_poll_votes" as never)
+      .insert(options.map((option) => ({ post_id: postId, user_id: myId, option })) as never)
+      .then(({ error }) => {
+        if (!error) return;
+        fail(`Your vote didn't go through. ${friendly(error)}`);
+        patch((s) => ({ ...s, posts: s.posts.map((p) => (p.id === postId ? before : p)) }));
+      });
+  },
+
+  addPost(
+    image: string,
+    caption: string,
+    video?: Blob,
+    poll?: { options: string[]; multi: boolean },
+  ) {
     if (!myId) return;
     const textOnly = !image && !video;
     track("post_created", { video: !!video, text: textOnly });
@@ -1289,6 +1350,10 @@ registerLive({
           id,
           by: "me",
           text: textOnly,
+          poll:
+            textOnly && poll
+              ? { ...poll, counts: poll.options.map(() => 0), mine: [], voters: 0 }
+              : undefined,
           image: video ? "" : image,
           video: preview,
           caption: caption.trim(),
@@ -1316,6 +1381,9 @@ registerLive({
               media_path,
               media_type: textOnly ? "text" : video ? "video" : "image",
               caption: caption.trim(),
+              ...(textOnly && poll
+                ? { poll_options: poll.options.map((o) => o.trim()), poll_multi: poll.multi }
+                : {}),
             })
             .select(),
         );

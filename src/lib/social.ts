@@ -36,6 +36,18 @@ export type Streak = {
   lastGotDay: string | null;
 };
 
+export type Poll = {
+  options: string[];
+  /** Several answers allowed. */
+  multi: boolean;
+  /** Votes per option. */
+  counts: number[];
+  /** Options you picked (empty = you haven't voted). */
+  mine: number[];
+  /** How many people voted. */
+  voters: number;
+};
+
 export type Comment = { id: string; by: "me" | string; text: string; at: number; edited?: boolean };
 export type Post = {
   id: string;
@@ -49,6 +61,8 @@ export type Post = {
   text?: boolean;
   /** The words were changed after posting. */
   edited?: boolean;
+  /** A poll on a text scene. */
+  poll?: Poll;
   caption: string;
   at: number;
   likes: string[]; // friendIds + "me"
@@ -715,11 +729,17 @@ const demo = {
     set((s) => ({ ...s, posts: s.posts.filter((p) => p.id !== postId) }));
   },
 
-  addPost(image: string, caption: string, video?: Blob) {
+  addPost(
+    image: string,
+    caption: string,
+    video?: Blob,
+    poll?: { options: string[]; multi: boolean },
+  ) {
     const post: Post = {
       id: uid(),
       by: "me",
       text: !image && !video,
+      poll: poll ? { ...poll, counts: poll.options.map(() => 0), mine: [], voters: 0 } : undefined,
       image: video ? "" : image,
       video: video ? URL.createObjectURL(video) : undefined,
       caption: caption.trim(),
@@ -777,6 +797,26 @@ const demo = {
             reels: s.reels.map((r) => (r.id === id ? { ...r, comments: [...r.comments, c] } : r)),
           },
     );
+  },
+
+  /** Vote in a scene's poll (one option, or several on multiple choice). */
+  votePoll(postId: string, options: number[]) {
+    set((s) => ({
+      ...s,
+      posts: s.posts.map((p) =>
+        p.id === postId && p.poll && !p.poll.mine.length
+          ? {
+              ...p,
+              poll: {
+                ...p.poll,
+                mine: options,
+                voters: p.poll.voters + 1,
+                counts: p.poll.counts.map((c, i) => (options.includes(i) ? c + 1 : c)),
+              },
+            }
+          : p,
+      ),
+    }));
   },
 
   /** Change the words of your own scene. */
