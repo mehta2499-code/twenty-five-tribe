@@ -164,7 +164,6 @@ function Table({
     () => (s.mode === "live" ? quiz.knowsMe : demoScores(seated)),
     [s.mode, quiz.knowsMe, seated],
   );
-  const seats = layout(seated, scores);
   // Anyone doing something right now (playing, on the Drop, dancing to a song)
   // gets up from their seat and comes onto the table, in a ring around the dice.
   const busy = seated
@@ -174,12 +173,18 @@ function Table({
     })
     .filter((i) => i >= 0)
     .slice(0, 8);
-  const places = seats.map((p, i) => {
+  // Everyone still in their seat spreads out evenly, so no seat is left empty.
+  const sittingIdx = seated.map((_, i) => i).filter((i) => !busy.includes(i));
+  const sittingSeats = layout(
+    sittingIdx.map((i) => seated[i]),
+    scores,
+  );
+  const places = seated.map((_, i) => {
     const k = busy.indexOf(i);
-    if (k < 0) return p;
+    if (k < 0) return sittingSeats[sittingIdx.indexOf(i)];
     const a =
       -Math.PI / 2 + (k * 2 * Math.PI) / busy.length + (busy.length === 2 ? Math.PI / 2 : 0);
-    return { ...p, x: 50 + Math.cos(a) * 19, y: 50 + Math.sin(a) * 23 };
+    return { x: 50 + Math.cos(a) * 19, y: 50 + Math.sin(a) * 23, ring: 0 as const };
   });
 
   // An oval that fills the space it's given: as wide as it can be (up to 440px),
@@ -502,24 +507,6 @@ function Table({
 
         {/* The spread: pizza slices, red cups, wine (one knocked over). Tap one to jiggle it. */}
         {measured && TABLE_PROPS.map((p) => <TableProp key={p.id} prop={p} width={W} />)}
-
-        {/* Empty chairs left by people who came onto the table. */}
-        {busy.map((i) => (
-          <span
-            key={`chair-${seated[i].id}`}
-            aria-hidden="true"
-            className="absolute rounded-full"
-            style={{
-              left: `${seats[i].x}%`,
-              top: `${seats[i].y}%`,
-              width: faceSize * 0.8,
-              height: faceSize * 0.8,
-              transform: "translate(-50%, -50%)",
-              border: "2px dashed rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.03)",
-            }}
-          />
-        ))}
 
         {/* Friends */}
         {seated.map((f, i) => {
