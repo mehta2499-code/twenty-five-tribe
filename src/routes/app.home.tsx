@@ -565,7 +565,7 @@ function Table({
                 zIndex: lit ? 3 : busy.includes(i) ? 2 : 1,
                 transition: "left 0.9s cubic-bezier(.2,.8,.2,1), top 0.9s cubic-bezier(.2,.8,.2,1)",
               }}
-              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${f.postedToday ? ", posted today" : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
+              aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
             >
               <span className="flex flex-col items-center" style={lean}>
                 {!isListening(f) && bdayDays !== undefined && <PartyHat size={size} />}
@@ -586,23 +586,6 @@ function Table({
                     <Avatar src={f.avatar} initials={f.initials} color={f.color} size={size} />
                   </span>
                   {now && <LiveBadge now={now} small={small} />}
-                  {f.postedToday && (
-                    <span
-                      className="absolute rounded-full flex items-center justify-center"
-                      style={{
-                        top: -3,
-                        right: -3,
-                        width: small ? 14 : 18,
-                        height: small ? 14 : 18,
-                        background: "var(--pink)",
-                        color: "var(--on-accent)",
-                        border: "2px solid var(--bg, #14121A)",
-                      }}
-                      aria-hidden="true"
-                    >
-                      <Camera size={small ? 8 : 10} strokeWidth={3} />
-                    </span>
-                  )}
                   {oneWay && (
                     <span
                       className="absolute rounded-full flex items-center justify-center"
