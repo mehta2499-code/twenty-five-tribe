@@ -76,8 +76,6 @@ export const Route = createFileRoute("/app/home")({
 
 /** Up to 25 people at the table; the quiz decides who sits at its head. */
 const SEATS = 25;
-/** Where faces sit around the table (% of the table area from the centre). */
-const SEAT_R = 41;
 
 function ringFor(b?: Best): 0 | 1 | 2 {
   if (!b || !b.total) return 2;
@@ -95,28 +93,47 @@ function demoScores(people: Person[]): Record<string, Best> {
   return out;
 }
 
+/** The table top's inset inside the table box (a pill shape: rounded ends). */
+const TABLE_INSET = 0.18;
+
 /**
- * Everyone sits in one neat ring around the table. The best-knowing friends
- * (7/7, then 5–6/7) take the head of the table at the top; then seats fill
- * alternately right and left of it. `ring` is the quiz tier (0 best, 2 rest).
+ * Everyone sits the same distance from the table's edge: seats follow the
+ * table's own outline (a pill), pushed out by a fixed gap, and are spaced
+ * evenly along it, starting at the top. Returns % of the table box.
  */
-function layout(people: Person[], knowsMe: Record<string, Best>) {
-  const n = people.length;
-  const ranked = people
-    .map((p, i) => ({ i, tier: ringFor(knowsMe[p.id]) }))
-    .sort((a, b) => a.tier - b.tier || a.i - b.i);
-  // Slot order: top centre, then right, left, right, left…
-  const slots: number[] = [0];
-  for (let k = 1; slots.length < n; k++) {
-    slots.push(k);
-    if (slots.length < n) slots.push(n - k);
-  }
-  const out: { x: number; y: number; ring: 0 | 1 | 2 }[] = [];
-  ranked.forEach(({ i, tier }, r) => {
-    const angle = (slots[r] / Math.max(n, 1)) * Math.PI * 2 - Math.PI / 2;
-    out[i] = { x: 50 + SEAT_R * Math.cos(angle), y: 50 + SEAT_R * Math.sin(angle), ring: tier };
-  });
-  return out;
+function seatPath(n: number, W: number, H: number, face: number) {
+  const tw = W * (1 - 2 * TABLE_INSET);
+  const th = H * (1 - 2 * TABLE_INSET);
+  const r = Math.min(tw, th) / 2;
+  // The box is always at least as tall as it is wide, so the straight sides are upright.
+  const L = Math.max(0, th - tw);
+  const R = r + face / 2 + 7;
+  const P = 2 * L + 2 * Math.PI * R;
+  const cx = W / 2;
+  const cy = H / 2;
+  const h = L / 2;
+  // Walk the outline clockwise from the top centre.
+  const at = (d: number) => {
+    const qa = (Math.PI * R) / 2;
+    let x: number, y: number;
+    if (d < qa) {
+      const t = -Math.PI / 2 + d / R;
+      [x, y] = [cx + R * Math.cos(t), cy - h + R * Math.sin(t)];
+    } else if ((d -= qa) < L) {
+      [x, y] = [cx + R, cy - h + d];
+    } else if ((d -= L) < Math.PI * R) {
+      const t = d / R;
+      [x, y] = [cx + R * Math.cos(t), cy + h + R * Math.sin(t)];
+    } else if ((d -= Math.PI * R) < L) {
+      [x, y] = [cx - R, cy + h - d];
+    } else {
+      d -= L;
+      const t = Math.PI + d / R;
+      [x, y] = [cx + R * Math.cos(t), cy - h + R * Math.sin(t)];
+    }
+    return { x: (x / W) * 100, y: (y / H) * 100, ring: 2 as const };
+  };
+  return Array.from({ length: n }, (_, k) => at((k * P) / Math.max(n, 1)));
 }
 
 /** Friends worth showing at the table first: who posted today. */
@@ -169,29 +186,6 @@ function Table({
     () => (s.mode === "live" ? quiz.knowsMe : demoScores(seated)),
     [s.mode, quiz.knowsMe, seated],
   );
-  // Anyone doing something right now (playing, on the Drop, dancing to a song)
-  // gets up from their seat and comes onto the table, in a ring around the dice.
-  const busy = seated
-    .map((f, i) => {
-      const n = live.get(f.id);
-      return (n?.here && n.doing) || isListening(f) ? i : -1;
-    })
-    .filter((i) => i >= 0)
-    .slice(0, 8);
-  // Everyone still in their seat spreads out evenly, so no seat is left empty.
-  const sittingIdx = seated.map((_, i) => i).filter((i) => !busy.includes(i));
-  const sittingSeats = layout(
-    sittingIdx.map((i) => seated[i]),
-    scores,
-  );
-  const places = seated.map((_, i) => {
-    const k = busy.indexOf(i);
-    if (k < 0) return sittingSeats[sittingIdx.indexOf(i)];
-    const a =
-      -Math.PI / 2 + (k * 2 * Math.PI) / busy.length + (busy.length === 2 ? Math.PI / 2 : 0);
-    return { x: 50 + Math.cos(a) * 19, y: 50 + Math.sin(a) * 23, ring: 0 as const };
-  });
-
   // An oval that fills the space it's given: as wide as it can be (up to 440px),
   // up to 1.4× as tall as it is wide. Faces scale with it, so it fits any screen.
   const boxRef = useRef<HTMLElement>(null);
@@ -213,12 +207,51 @@ function Table({
   const W = Math.max(200, Math.min(box.w, 440, box.h));
   const H = Math.max(W, Math.min(box.h, W * 1.7));
   // Everyone gets the same size face; smaller only when the table gets full.
-  const ra = (W * SEAT_R) / 100;
-  const rb = (H * SEAT_R) / 100;
-  const perimeter = Math.PI * (3 * (ra + rb) - Math.sqrt((3 * ra + rb) * (ra + 3 * rb)));
+  // (Measured along the seat line, which runs a fixed gap outside the table.)
+  const seatLine = (() => {
+    const tw = W * (1 - 2 * TABLE_INSET);
+    const th = H * (1 - 2 * TABLE_INSET);
+    return 2 * Math.max(0, th - tw) + 2 * Math.PI * (tw / 2 + 30);
+  })();
   const faceSize = Math.round(
-    Math.min(46, Math.max(30, (perimeter / Math.max(seated.length, 1)) * 0.8)),
+    Math.min(46, Math.max(30, (seatLine / Math.max(people.slice(0, SEATS).length, 1)) * 0.8)),
   );
+  // Anyone doing something right now (playing, on the Drop, dancing to a song)
+  // gets up from their seat and comes onto the table, in a ring around the dice.
+  const busy = seated
+    .map((f, i) => {
+      const n = live.get(f.id);
+      return (n?.here && n.doing) || isListening(f) ? i : -1;
+    })
+    .filter((i) => i >= 0)
+    .slice(0, 8);
+  // Everyone still in their seat spreads out evenly, so no seat is left empty.
+  const sittingIdx = seated.map((_, i) => i).filter((i) => !busy.includes(i));
+  const sittingSeats = seatPath(sittingIdx.length, W, H, faceSize);
+  const places = seated.map((_, i) => {
+    const k = busy.indexOf(i);
+    if (k < 0) return sittingSeats[sittingIdx.indexOf(i)];
+    const a =
+      -Math.PI / 2 + (k * 2 * Math.PI) / busy.length + (busy.length === 2 ? Math.PI / 2 : 0);
+    return { x: 50 + Math.cos(a) * 19, y: 50 + Math.sin(a) * 23, ring: 0 as const };
+  }); // A birthday cake sits on the table's edge, right in front of that person's seat.
+  const cakeAt = (i: number) => {
+    const tw = W * (1 - 2 * TABLE_INSET);
+    const th = H * (1 - 2 * TABLE_INSET);
+    const r = tw / 2;
+    const h = Math.max(0, th - tw) / 2;
+    const into = r - W * 0.1; // how far from the middle: just inside the rim
+    const px = (places[i].x / 100) * W - W / 2;
+    const py = (places[i].y / 100) * H - H / 2;
+    let x: number, y: number;
+    if (Math.abs(py) <= h) [x, y] = [Math.sign(px) * into, py];
+    else {
+      const oy = Math.sign(py) * h;
+      const d = Math.hypot(px, py - oy) || 1;
+      [x, y] = [(px / d) * into, oy + ((py - oy) / d) * into];
+    }
+    return { x: ((x + W / 2) / W) * 100, y: ((y + H / 2) / H) * 100 };
+  };
 
   // Is a prop under someone on the table (or a birthday cake)? Then it's cleared away.
   const blocked = (p: PropDef) => {
@@ -227,11 +260,7 @@ function Table({
       Math.hypot(((p.x - x) / 100) * W, ((p.y - y) / 100) * H) < room + r * 0.8;
     return (
       busy.some((i) => near(places[i].x, places[i].y, faceSize / 2 + 8)) ||
-      seated.some(
-        (f, i) =>
-          bdayIn.get(f.id) === 0 &&
-          near(50 + (places[i].x - 50) * 0.66, 50 + (places[i].y - 50) * 0.66, W * 0.075),
-      )
+      seated.some((f, i) => bdayIn.get(f.id) === 0 && near(cakeAt(i).x, cakeAt(i).y, W * 0.075))
     );
   };
   // Birthdays in the next 7 days get a party hat.
@@ -549,8 +578,8 @@ function Table({
                   id: `cake-${f.id}`,
                   sprite: "cake",
                   label: `Birthday cake for ${f.name}`,
-                  x: 50 + (places[i].x - 50) * 0.66,
-                  y: 50 + (places[i].y - 50) * 0.66,
+                  x: cakeAt(i).x,
+                  y: cakeAt(i).y,
                   w: 0.15,
                 }}
               />
