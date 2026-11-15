@@ -68,7 +68,6 @@ export const VOICE = {
     header: "you",
     seeingMe: "how your people see you",
     quietly: "quietly happening",
-    footer: "No score. Friendship was never a number.",
   },
 
   emptyChair: {

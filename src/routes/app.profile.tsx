@@ -289,7 +289,6 @@ function Profile() {
         )}
         <DeleteAccount />
       </div>
-      <p className="text-center meta mt-6">{VOICE.you.footer}</p>
     </div>
   );
 }
