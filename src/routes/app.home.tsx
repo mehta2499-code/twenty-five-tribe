@@ -1680,7 +1680,7 @@ function Home() {
           {
             at: 'nav[aria-label="Main"]',
             title: "Everything else",
-            body: "Tap the big button to come back to your Table. The Drop, Scenes, Chats and Games are around it; Blinks are in Chats. Swipe left and right to move between them.",
+            body: "Your Table is the first tab, then Scenes, the Drop, Chats and Games. Blinks are in Chats. Swipe left and right to move between them.",
           },
         ]}
       />
