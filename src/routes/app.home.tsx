@@ -2052,10 +2052,10 @@ function usePollsLeft() {
 /** Weekly Polls while you still have picks: a full bar under the table. */
 function PollsBar({ left }: { left: number }) {
   return (
-    <section className="px-5 mt-2" aria-label="Weekly Polls">
+    <section className="px-5 mt-1 flex justify-center" aria-label="Weekly Polls">
       <Link
         to="/app/polls"
-        className="pulse-pink rounded-[22px] px-4 py-3 flex items-center gap-3"
+        className="pulse-pink rounded-full pl-1.5 pr-3.5 py-1.5 inline-flex items-center gap-2"
         style={{
           background: "var(--pink)",
           color: "var(--on-accent)",
@@ -2064,18 +2064,14 @@ function PollsBar({ left }: { left: number }) {
         }}
       >
         <span
-          className="w-9 h-9 shrink-0 flex items-center justify-center"
-          style={{ background: "var(--on-accent)", color: "var(--pink)", borderRadius: 14 }}
+          className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center"
+          style={{ background: "var(--on-accent)", color: "var(--pink)" }}
         >
-          <BarChart3 size={19} strokeWidth={2.4} aria-hidden="true" />
+          <BarChart3 size={15} strokeWidth={2.6} aria-hidden="true" />
         </span>
-        <span className="flex-1 min-w-0">
-          <span className="block font-extrabold text-[15px] leading-tight">Weekly Polls</span>
-          <span className="block text-[12.5px] font-bold opacity-80 truncate">
-            {left} pick{left === 1 ? "" : "s"} left this week
-          </span>
-        </span>
-        <ChevronRight size={20} aria-hidden="true" />
+        <span className="font-extrabold text-[14px] whitespace-nowrap">Weekly Polls</span>
+        <span className="text-[12.5px] font-bold opacity-75 whitespace-nowrap">· {left} left</span>
+        <ChevronRight size={16} strokeWidth={2.6} aria-hidden="true" />
       </Link>
     </section>
   );
