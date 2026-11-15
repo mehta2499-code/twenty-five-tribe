@@ -30,6 +30,7 @@ import { useQuizBadges, type Best } from "@/lib/quiz";
 import { AddMomentSheet } from "@/components/AddMomentSheet";
 import { FRIENDS, ME, RELATIONSHIP_MOMENTS } from "@/lib/data";
 import {
+  dayKey,
   friendById,
   mutualFriends,
   seatedFriends,
@@ -509,6 +510,25 @@ function Table({
         {/* The spread: pizza slices, red cups, wine (one knocked over). Tap one to jiggle it. */}
         {measured && TABLE_PROPS.map((p) => <TableProp key={p.id} prop={p} width={W} />)}
 
+        {/* Birthday today: a cake on the table in front of their seat. */}
+        {measured &&
+          seated.map((f, i) =>
+            bdayIn.get(f.id) === 0 ? (
+              <TableProp
+                key={`cake-${f.id}`}
+                width={W}
+                prop={{
+                  id: `cake-${f.id}`,
+                  sprite: "cake",
+                  label: `Birthday cake for ${f.name}`,
+                  x: 50 + (places[i].x - 50) * 0.66,
+                  y: 50 + (places[i].y - 50) * 0.66,
+                  w: 0.15,
+                }}
+              />
+            ) : null,
+          )}
+
         {/* Friends */}
         {seated.map((f, i) => {
           const { x, y } = places[i];
@@ -954,7 +974,7 @@ function Confetti3D({ at }: { at: { x: number; y: number } }) {
 /** Snacks and drinks on the table (our Blender renders). x/y are % of the table box. */
 const TABLE_PROPS: {
   id: string;
-  sprite: "pizzaslice" | "wine" | "winefallen" | "redcup";
+  sprite: "pizzaslice" | "wine" | "winefallen" | "redcup" | "cake";
   label: string;
   x: number;
   y: number;
@@ -1474,6 +1494,23 @@ function Home() {
   // Songs your 25 shared since you last looked (clears when you open it).
   const newSongs = useNewSongs();
   const [confetti, setConfetti] = useState(0);
+  // Your birthday: confetti the first time you open the app that day.
+  const myBday = useBirthdays().find((b) => b.id === "me");
+  useEffect(() => {
+    if (!myBday || daysUntil(myBday) !== 0) return;
+    const key = `tf.bday.confetti.${dayKey()}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+    } catch {
+      // ignore
+    }
+    const t = setTimeout(() => {
+      setConfetti((n) => n + 1);
+      buzz(40);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [myBday]);
   const [rolling, setRolling] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
