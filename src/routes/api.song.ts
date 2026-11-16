@@ -238,24 +238,46 @@ export async function gameSongs(cat: string, n: number, skip: Set<string>): Prom
   return out;
 }
 
-/** Type-ahead: songs matching what's been typed (Deezer search). */
-export async function searchSongs(q: string): Promise<PoolSong[]> {
+/**
+ * Type-ahead: songs matching what's been typed (Deezer search), best matches
+ * first. Null if Deezer couldn't be reached (so nothing empty gets cached).
+ */
+export async function searchSongs(q: string): Promise<PoolSong[] | null> {
   const body = await dz<{
     data?: { id: number; title: string; title_short?: string; artist?: { name: string } }[];
-  }>(`/search?limit=12&q=${encodeURIComponent(q)}`);
+  }>(`/search?limit=25&q=${encodeURIComponent(q)}`);
+  if (!body) return null;
+  const want = norm(q);
+  const words = want.split(" ").filter(Boolean);
+  // How well a song matches: the title starts with it, then every typed word
+  // starts a word of the title, then the artist matches. Anything else goes.
+  const fit = (title: string, artist: string) => {
+    const t = norm(title);
+    const tw = t.split(" ");
+    if (t.startsWith(want)) return 0;
+    if (words.every((w) => tw.some((x) => x.startsWith(w)))) return 1;
+    const both = `${t} ${norm(artist)}`.split(" ");
+    if (words.every((w) => both.some((x) => x.startsWith(w)))) return 2;
+    return -1;
+  };
   const seen = new Set<string>();
-  const out: PoolSong[] = [];
-  for (const t of body?.data ?? []) {
+  const out: (PoolSong & { fit: number; i: number })[] = [];
+  (body.data ?? []).forEach((t, i) => {
     const title = tidy(t.title_short || t.title);
-    const k = `${norm(title)}|${norm(t.artist?.name ?? "")}`;
-    if (seen.has(k) || ALT_VERSION.test(t.title)) continue;
+    const artist = t.artist?.name ?? "";
+    const k = `${norm(title)}|${norm(artist)}`;
+    const f = fit(title, artist);
+    if (f < 0 || seen.has(k) || ALT_VERSION.test(t.title)) return;
     seen.add(k);
-    out.push({ id: String(t.id), title, artist: t.artist?.name ?? "" });
-  }
-  return out.slice(0, 7);
+    out.push({ id: String(t.id), title, artist, fit: f, i });
+  });
+  return out
+    .sort((a, b) => a.fit - b.fit || a.i - b.i)
+    .slice(0, 7)
+    .map(({ id, title, artist }) => ({ id, title, artist }));
 }
 
-export async function byId(id: string): Promise<SongHit | null> {
+async function byId(id: string): Promise<SongHit | null> {
   const t = await dz<{
     title: string;
     title_short?: string;
@@ -298,8 +320,12 @@ export const Route = createFileRoute("/api/song")({
           const c = searches.get(k);
           if (c && Date.now() - c.at < 6 * 3_600_000) return json(c.songs);
           const songs = await searchSongs(search);
-          if (searches.size > 5000) searches.clear();
-          searches.set(k, { at: Date.now(), songs });
+          // Deezer didn't answer: say so (the app falls back to its own list).
+          if (!songs) return json({ error: "Search is down." }, 502, "no-store");
+          if (songs.length) {
+            if (searches.size > 5000) searches.clear();
+            searches.set(k, { at: Date.now(), songs });
+          }
           return json(songs);
         }
         const id = u.searchParams.get("id");

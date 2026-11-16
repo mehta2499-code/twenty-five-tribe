@@ -221,30 +221,36 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
   return out;
 }
 
-/** Type-ahead while guessing: any song on Deezer (backup list if offline). */
+/** Type-ahead while guessing: any song on Deezer, plus the built-in list. */
 const searchCache = new Map<string, EarSong[]>();
 export async function searchSongs(q: string, cat: EarCat): Promise<EarSong[]> {
   const key = q.trim().toLowerCase();
   if (key.length < 2) return [];
   const hit = searchCache.get(key);
   if (hit) return hit;
+  // Songs from the built-in list whose title or artist has words starting with what's typed.
+  const words = norm(key).split(" ").filter(Boolean);
+  const local = (Object.keys(BACKUP) as EarCat[])
+    .sort((a, b) => (a === cat ? -1 : b === cat ? 1 : 0))
+    .flatMap(backupFor)
+    .filter((s) => {
+      const hay = `${norm(s.title)} ${norm(s.artist)}`.split(" ");
+      return words.length > 0 && words.every((w) => hay.some((x) => x.startsWith(w)));
+    });
+  let found: EarSong[] = [];
   try {
     const r = await fetch(`/api/song?q=${encodeURIComponent(key)}`, {
       headers: await authHeader(),
       signal: AbortSignal.timeout(5000),
     });
-    if (r.ok) {
-      const songs = (await r.json()) as EarSong[];
-      searchCache.set(key, songs);
-      return songs;
-    }
+    if (r.ok) found = (await r.json()) as EarSong[];
   } catch {
-    // backup below
+    // the built-in list still helps
   }
-  const words = key.split(/\s+/);
-  return backupFor(cat)
-    .filter((s) => words.every((w) => `${s.title} ${s.artist}`.toLowerCase().includes(w)))
-    .slice(0, 6);
+  const seen = new Set(found.map((s) => norm(s.title)));
+  const out = [...found, ...local.filter((s) => !seen.has(norm(s.title)))].slice(0, 6);
+  if (found.length) searchCache.set(key, out);
+  return out;
 }
 
 export type Preview = {
@@ -282,6 +288,39 @@ export async function loadPreview(s: EarSong): Promise<Preview | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * A song's clip, downloaded whole onto the phone (a 30s preview is ~0.5 MB) so
+ * every play starts instantly: no buffering when you skip and hear more.
+ * Falls back to streaming if the download doesn't finish in time.
+ * Kept per song, so the next song can be fetched while you play this one.
+ */
+const clips = new Map<string, Promise<Preview | null>>();
+export function loadClip(s: EarSong): Promise<Preview | null> {
+  let run = clips.get(s.id);
+  if (!run) {
+    run = loadPreview(s).then(async (p) => {
+      if (!p) return null;
+      try {
+        const r = await fetch(p.url, { signal: AbortSignal.timeout(12000) });
+        if (!r.ok) return p;
+        const blob = await r.blob();
+        return { ...p, url: URL.createObjectURL(blob) };
+      } catch {
+        return p;
+      }
+    });
+    // A failed lookup can be tried again later.
+    run.then((p) => !p && clips.delete(s.id));
+    if (clips.size > 40) {
+      const [old] = clips.keys();
+      void clips.get(old)?.then((p) => p?.url.startsWith("blob:") && URL.revokeObjectURL(p.url));
+      clips.delete(old);
+    }
+    clips.set(s.id, run);
+  }
+  return run;
 }
 
 // ---------- Backup lists (big, safe hits) ----------

@@ -21,7 +21,7 @@ import {
   SONGS_PER_GAME,
   cleanTitle,
   isRight,
-  loadPreview,
+  loadClip,
   pickGameSongs,
   searchSongs,
   type EarCat,
@@ -319,10 +319,14 @@ export function EarwormPlay({
   useEffect(() => {
     let alive = true;
     setPreview(undefined);
-    void loadPreview(song).then((p) => alive && setPreview(p));
+    void loadClip(song).then((p) => alive && setPreview(p));
+    // Get the next one ready too.
+    const nextSong = songs[k + 1];
+    if (nextSong) void loadClip(nextSong);
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song]);
   // A clip that won't load: skip it (no points lost).
   useEffect(() => {
@@ -337,18 +341,27 @@ export function EarwormPlay({
     audio.current?.pause();
     setPlaying(false);
   };
+  const starting = useRef(false);
   const play = (seconds: number) => {
     const a = audio.current;
     if (!a || !preview) return;
     if (playing) return stop();
+    // Already starting: a second tap shouldn't queue another play.
+    if (starting.current) return;
+    starting.current = true;
+    a.pause();
     a.currentTime = 0;
     stopAt.current = seconds;
     void a.play().then(
       () => {
+        starting.current = false;
         setStartedAt(performance.now());
         setPlaying(true);
       },
-      () => setPlaying(false),
+      () => {
+        starting.current = false;
+        setPlaying(false);
+      },
     );
   };
   // Stop exactly at the end of the clip.
