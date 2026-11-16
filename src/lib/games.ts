@@ -213,7 +213,7 @@ export async function startWordChallenge(friend: Person, word: string) {
   return id;
 }
 
-/** Earworm challenge: everyone gets the same songs; highest score wins. */
+/** Name That Tune challenge: everyone gets the same songs; highest score wins. */
 export async function startEarworm(
   friends: Person[],
   cat: EarCat,
@@ -237,12 +237,12 @@ export async function startEarworm(
   await invite(
     friends.map((f) => f.id),
     id,
-    `🎧 Earworm: name ${songs.length} ${name} songs from a tiny clip (${level}). Same songs as me. Beat my score.`,
+    `🎧 Name That Tune: guess ${songs.length} ${name} songs from a tiny clip (${level}). Same songs as me. Beat my score.`,
   );
   return id;
 }
 
-/** Save my Earworm score on top of the latest version (others finish at the same time). */
+/** Save my Name That Tune score on top of the latest version (others finish at the same time). */
 export async function saveEarworm(id: string, meId: string, result: EarState["results"][string]) {
   return changeLatest<EarState>(id, (cur) => {
     if (cur.results[meId]) return null;

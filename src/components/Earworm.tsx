@@ -1,5 +1,5 @@
 /**
- * Earworm: hear a tiny clip, name the song. Each skip or wrong guess plays a
+ * Name That Tune: hear a tiny clip, name the song. Each skip or wrong guess plays a
  * longer clip; naming it sooner scores more. 5 songs a game, solo or against
  * your 25 (same songs for everyone).
  */
@@ -61,7 +61,7 @@ export function EarwormSetup({
       />
     );
   return (
-    <Sheet title="Earworm" onClose={onClose}>
+    <Sheet title="Name That Tune" onClose={onClose}>
       <p className="meta -mt-1 mb-4">Hear a tiny clip. Name the song. Popular hits only.</p>
       <div className="grid grid-cols-3 gap-2" role="group" aria-label="Songs">
         {CATS.map((c) => (
@@ -132,11 +132,13 @@ function ClipBar({
   stage,
   playing,
   startedAt,
+  tone,
 }: {
   stages: number[];
   stage: number;
   playing: boolean;
   startedAt: number;
+  tone: string;
 }) {
   const total = stages[stages.length - 1];
   const [t, setT] = useState(0);
@@ -152,34 +154,33 @@ function ClipBar({
   }, [playing, startedAt, stage, stages]);
   const pct = (s: number) => `${(s / total) * 100}%`;
   return (
-    <div>
+    <div aria-hidden="true">
       <div
-        className="relative h-4 rounded-full overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.08)" }}
+        className="relative h-2 rounded-full overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.07)" }}
       >
-        {/* Unlocked so far */}
         <span
-          className="absolute inset-y-0 left-0"
-          style={{ width: pct(stages[stage]), background: "rgba(184,242,92,0.28)" }}
+          className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-300"
+          style={{ width: pct(stages[stage]), background: `${tone}55` }}
         />
-        {/* Playing now */}
-        <span className="absolute inset-y-0 left-0" style={{ width: pct(t), background: LIME }} />
+        <span
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ width: pct(t), background: LIME }}
+        />
         {stages.slice(0, -1).map((s) => (
           <span
             key={s}
-            aria-hidden="true"
-            className="absolute inset-y-0 w-px"
-            style={{ left: pct(s), background: "rgba(0,0,0,0.5)" }}
+            className="absolute inset-y-0 w-[2px]"
+            style={{ left: pct(s), background: "#09080D" }}
           />
         ))}
       </div>
-      <div className="relative h-4 mt-1">
-        <span
-          className="absolute -translate-x-1/2 font-mono font-bold"
-          style={{ left: pct(stages[stage]), fontSize: 11, color: LIME }}
-        >
-          {stages[stage]}s
-        </span>
+      <div
+        className="mt-1.5 flex justify-between tabular-nums"
+        style={{ fontSize: 10.5, color: "rgba(255,255,255,0.35)" }}
+      >
+        <span>0s</span>
+        <span>{total}s</span>
       </div>
     </div>
   );
@@ -334,53 +335,69 @@ export function EarwormPlay({
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, #1B2A12 0%, #0B0E0A 60%)" }}
+      style={{
+        background: `radial-gradient(120% 70% at 50% -10%, ${meta.tone}40 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)`,
+      }}
     >
       {preview && <audio ref={audio} src={preview.url} preload="auto" />}
-      <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8 flex flex-col min-h-full">
+      <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col min-h-full">
+        {/* Top: close · title · score */}
         <header className="flex items-center justify-between">
           <button
             onClick={onClose}
             aria-label="Leave"
-            className="w-10 h-10 -ml-2 flex items-center justify-center"
-            style={{ color: "rgba(255,255,255,0.7)" }}
+            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center"
+            style={{ color: "rgba(255,255,255,0.65)" }}
           >
             <X size={22} />
           </button>
-          <span className="text-center">
+          <span className="text-center leading-tight">
             <span
-              className="block font-black tracking-tight"
-              style={{ fontSize: 20, color: "#fff" }}
+              className="block font-extrabold tracking-tight"
+              style={{ fontSize: 16, color: "#fff" }}
             >
-              earworm
+              Name That Tune
             </span>
-            <span className="block font-bold" style={{ fontSize: 11.5, color: meta.tone }}>
-              {meta.emoji} {title ?? meta.name} · {level}
+            <span
+              className="block font-semibold capitalize"
+              style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)" }}
+            >
+              {title ?? meta.name} · {level}
             </span>
           </span>
-          <span className="font-black tabular-nums" style={{ fontSize: 16, color: LIME }}>
+          <span
+            className="min-w-[44px] text-center rounded-full px-2.5 py-1 font-black tabular-nums"
+            style={{ fontSize: 14, background: "rgba(255,255,255,0.08)", color: LIME }}
+            aria-label={`Score ${score}`}
+          >
             {score}
           </span>
         </header>
 
-        {/* Song dots */}
-        <div className="mt-4 flex gap-1.5" aria-label={`Song ${k + 1} of ${songs.length}`}>
+        {/* Songs in this game */}
+        <div
+          className="mt-4 flex items-center justify-center gap-2"
+          aria-label={`Song ${k + 1} of ${songs.length}`}
+        >
           {songs.map((_, i) => {
             const d = done[i];
+            const now = i === k && !reveal;
             return (
               <span
                 key={i}
-                className="flex-1 h-1.5 rounded-full"
+                className="rounded-full transition-all"
                 style={{
+                  width: now ? 22 : 8,
+                  height: 8,
                   background: d
                     ? d.got >= 0
                       ? LIME
                       : d.got === -2
-                        ? "#555"
+                        ? "rgba(255,255,255,0.25)"
                         : "#FF5A6E"
-                    : i === k
-                      ? "rgba(255,255,255,0.6)"
-                      : "rgba(255,255,255,0.15)",
+                    : now
+                      ? "#fff"
+                      : "rgba(255,255,255,0.18)",
                 }}
               />
             );
@@ -398,62 +415,110 @@ export function EarwormPlay({
           />
         ) : (
           <>
-            <div className="mt-8">
-              <ClipBar stages={stages} stage={stage} playing={playing} startedAt={startedAt} />
-            </div>
-
-            <div className="mt-6 flex items-center justify-center gap-5">
+            {/* The record: tap to hear the clip */}
+            <div className="mt-8 flex flex-col items-center">
               <button
                 onClick={() => play(stages[stage])}
                 disabled={!preview}
                 aria-label={playing ? "Stop" : `Play ${stages[stage]} seconds`}
-                className="w-32 h-32 rounded-full flex items-center justify-center disabled:opacity-40 transition-transform active:scale-95"
-                style={{
-                  background: LIME,
-                  color: "#0B0E0A",
-                  boxShadow: playing
-                    ? "0 0 0 10px rgba(184,242,92,0.18), 0 0 40px rgba(184,242,92,0.5)"
-                    : "0 12px 30px rgba(184,242,92,0.25)",
-                }}
+                className="relative rounded-full disabled:opacity-60 active:scale-[0.97] transition-transform"
+                style={{ width: 236, height: 236 }}
               >
-                {preview === undefined ? (
+                <span
+                  aria-hidden="true"
+                  className={`absolute inset-0 rounded-full ${playing ? "vinyl-spin" : ""}`}
+                  style={{
+                    background:
+                      "repeating-radial-gradient(circle at 50% 50%, #151318 0 2px, #1D1B21 2px 4px), #18161B",
+                    boxShadow: playing
+                      ? `0 0 0 6px ${meta.tone}33, 0 20px 60px rgba(0,0,0,0.7), 0 0 60px ${meta.tone}44`
+                      : "0 20px 60px rgba(0,0,0,0.7)",
+                  }}
+                >
+                  {/* label */}
                   <span
-                    className="w-8 h-8 rounded-full border-4 border-black/30 border-t-black animate-spin"
-                    aria-label="Loading"
+                    className="absolute rounded-full"
+                    style={{
+                      inset: "33%",
+                      background: `radial-gradient(circle at 35% 30%, #fff8 0%, transparent 45%), ${meta.tone}`,
+                    }}
                   />
-                ) : playing ? (
-                  <Pause size={52} fill="currentColor" />
-                ) : (
-                  <Play size={56} fill="currentColor" style={{ marginLeft: 6 }} />
-                )}
+                  <span
+                    className="absolute rounded-full"
+                    style={{ inset: "47.5%", background: "#09080D" }}
+                  />
+                  {/* shine */}
+                  <span
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background:
+                        "conic-gradient(from 30deg, transparent 0 15%, rgba(255,255,255,0.07) 20%, transparent 30% 65%, rgba(255,255,255,0.05) 70%, transparent 80%)",
+                    }}
+                  />
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{
+                      background: "rgba(9,8,13,0.55)",
+                      backdropFilter: "blur(6px)",
+                      WebkitBackdropFilter: "blur(6px)",
+                      color: "#fff",
+                    }}
+                  >
+                    {preview === undefined ? (
+                      <span
+                        className="w-6 h-6 rounded-full border-[3px] border-white/25 border-t-white animate-spin"
+                        aria-label="Loading"
+                      />
+                    ) : playing ? (
+                      <Pause size={28} fill="currentColor" />
+                    ) : (
+                      <Play size={30} fill="currentColor" style={{ marginLeft: 4 }} />
+                    )}
+                  </span>
+                </span>
               </button>
-              <span className="font-mono font-black" style={{ fontSize: 26, color: LIME }}>
-                {stages[stage]}s
-              </span>
+              <p
+                className="mt-5 font-semibold"
+                style={{ fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}
+              >
+                {preview === null
+                  ? "Couldn't load this one. Next song…"
+                  : playing
+                    ? "Listen…"
+                    : `Tap the record · ${stages[stage]}s clip`}
+              </p>
             </div>
-            {preview === null && (
-              <p className="text-center meta mt-3">Couldn't load this one. Next song…</p>
-            )}
+
+            <div className="mt-6">
+              <ClipBar
+                stages={stages}
+                stage={stage}
+                playing={playing}
+                startedAt={startedAt}
+                tone={meta.tone}
+              />
+            </div>
 
             {/* Wrong guesses so far */}
             {guesses.length > 0 && (
-              <ul className="mt-6 grid gap-1.5">
+              <div className="mt-4 flex flex-wrap gap-1.5 justify-center">
                 {guesses.map((g, i) => (
-                  <li
+                  <span
                     key={i}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2"
+                    className="inline-flex items-center gap-1 rounded-full pl-2 pr-2.5 py-1 max-w-full"
                     style={{
-                      background: "rgba(255,90,110,0.1)",
-                      border: "1px solid rgba(255,90,110,0.3)",
+                      background: "rgba(255,90,110,0.12)",
+                      color: "#FF8A98",
+                      fontSize: 12.5,
                     }}
                   >
-                    <X size={15} style={{ color: "#FF5A6E" }} aria-hidden="true" />
-                    <span className="truncate" style={{ fontSize: 14 }}>
-                      {g}
-                    </span>
-                  </li>
+                    <X size={12} aria-hidden="true" />
+                    <span className="truncate">{g}</span>
+                  </span>
                 ))}
-              </ul>
+              </div>
             )}
 
             {/* Guess */}
@@ -461,27 +526,31 @@ export function EarwormPlay({
               {suggestions.length > 0 && (
                 <ul
                   className="mb-2 rounded-2xl overflow-hidden"
-                  style={{ background: "#1A2016", border: "1px solid rgba(255,255,255,0.1)" }}
+                  style={{
+                    background: "rgba(28,26,34,0.96)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: "0 -10px 30px rgba(0,0,0,0.4)",
+                  }}
                   role="listbox"
                   aria-label="Songs"
                 >
-                  {suggestions.map((s) => (
+                  {suggestions.map((s, i) => (
                     <li key={s.id}>
                       <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => guess(s.title)}
-                        className="w-full text-left px-3.5 py-2.5 flex flex-col"
-                        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+                        className="w-full text-left px-4 py-2.5 flex flex-col active:bg-white/5"
+                        style={{ borderTop: i ? "1px solid rgba(255,255,255,0.05)" : undefined }}
                       >
                         <span
-                          className="font-bold truncate"
+                          className="font-semibold truncate"
                           style={{ fontSize: 14.5, color: "#fff" }}
                         >
                           {cleanTitle(s.title)}
                         </span>
                         <span
                           className="truncate"
-                          style={{ fontSize: 12.5, color: "rgba(255,255,255,0.55)" }}
+                          style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}
                         >
                           {s.artist}
                         </span>
@@ -490,23 +559,27 @@ export function EarwormPlay({
                   ))}
                 </ul>
               )}
-              <div key={shake} className={`flex gap-2 ${shake ? "ear-shake" : ""}`}>
-                <label
-                  className="flex-1 min-w-0 flex items-center gap-2 rounded-2xl px-3.5"
-                  style={{
-                    background: "#1A2016",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    minHeight: 52,
-                  }}
-                >
-                  <Search size={18} aria-hidden="true" style={{ color: "rgba(255,255,255,0.5)" }} />
+              <div
+                key={shake}
+                className={`flex items-center gap-2 rounded-[20px] p-1.5 ${shake ? "ear-shake" : ""}`}
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <label className="flex-1 min-w-0 flex items-center gap-2 pl-2.5">
+                  <Search
+                    size={18}
+                    aria-hidden="true"
+                    style={{ color: "rgba(255,255,255,0.45)" }}
+                  />
                   <input
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && guess(suggestions[0]?.title ?? text)}
                     placeholder="Name that song"
                     aria-label="Name that song"
-                    className="flex-1 min-w-0 bg-transparent outline-none"
+                    className="flex-1 min-w-0 bg-transparent outline-none py-2.5"
                     style={{ fontSize: 16, color: "#fff" }}
                     autoComplete="off"
                   />
@@ -516,24 +589,24 @@ export function EarwormPlay({
                     wrong(
                       stage + 1 >= stages.length
                         ? "Skipped"
-                        : `Skipped (+${stages[stage + 1] - stages[stage]}s)`,
+                        : `Skipped (+${+(stages[stage + 1] - stages[stage]).toFixed(1)}s)`,
                     )
                   }
-                  className="shrink-0 rounded-2xl px-4 flex items-center gap-1.5 font-extrabold"
-                  style={{ border: `1.5px solid ${LIME}`, color: LIME, minHeight: 52 }}
+                  className="shrink-0 rounded-2xl px-3.5 h-11 flex items-center gap-1.5 font-bold"
+                  style={{ background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 14 }}
                 >
-                  <SkipForward size={17} aria-hidden="true" />{" "}
+                  <SkipForward size={16} aria-hidden="true" />{" "}
                   {stage + 1 >= stages.length ? "Give up" : "Skip"}
                 </button>
               </div>
-              <div className="mt-3 flex justify-between items-center">
-                <span className="meta" style={{ fontSize: 12 }}>
-                  Song {k + 1} of {songs.length} · {POINTS[stage]} pts if you get it now
+              <div className="mt-2.5 flex justify-between items-center px-1">
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+                  Worth <b style={{ color: LIME }}>{POINTS[stage]}</b> now
                 </span>
                 <button
                   onClick={() => finishSong(-1)}
-                  className="meta font-bold"
-                  style={{ fontSize: 12.5 }}
+                  className="font-semibold"
+                  style={{ fontSize: 12.5, color: "rgba(255,255,255,0.55)" }}
                 >
                   Give up
                 </button>
@@ -561,74 +634,94 @@ function RevealCard({
   audio: React.RefObject<HTMLAudioElement | null>;
 }) {
   const p = d.preview;
+  const ok = d.got >= 0;
   return (
-    <div className="mt-8 flex-1 flex flex-col items-center text-center ear-pop">
-      <span
-        className="rounded-full px-3 py-1 font-black"
-        style={{
-          background: d.got >= 0 ? LIME : "rgba(255,90,110,0.18)",
-          color: d.got >= 0 ? "#14200A" : "#FF8090",
-          fontSize: 13,
-        }}
-      >
-        {d.got >= 0
-          ? `Got it in ${STAGES_LABEL(d)} · +${POINTS[d.got]}`
-          : d.got === -2
-            ? "Skipped (didn't load)"
-            : "Missed it"}
-      </span>
-      <span className="mt-5 relative">
-        {p?.cover ? (
+    <div className="mt-6 flex-1 flex flex-col items-center text-center ear-pop">
+      <div className="relative w-full flex justify-center pt-4 pb-2">
+        {/* the cover, softly glowing behind itself */}
+        {p?.cover && (
           <img
             src={p.cover}
             alt=""
-            className="w-56 h-56 rounded-3xl object-cover"
-            style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.6)" }}
+            aria-hidden="true"
+            className="absolute top-6 w-52 h-52 rounded-full object-cover"
+            style={{ filter: "blur(40px) saturate(1.4)", opacity: 0.55 }}
           />
-        ) : (
-          <span
-            className="w-56 h-56 rounded-3xl flex items-center justify-center"
-            style={{ background: "#1A2016", fontSize: 64 }}
-          >
-            🎵
-          </span>
         )}
-        {p && (
-          <button
-            onClick={onPlayFull}
-            aria-label={playing ? "Stop" : "Play the clip"}
-            className="absolute -bottom-4 -right-4 w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: LIME, color: "#0B0E0A", boxShadow: "0 8px 20px rgba(0,0,0,0.5)" }}
-          >
-            {playing ? (
-              <Pause size={24} fill="currentColor" />
-            ) : (
-              <Play size={24} fill="currentColor" style={{ marginLeft: 3 }} />
-            )}
-          </button>
-        )}
-      </span>
-      <p className="mt-7 font-black" style={{ fontSize: 26, color: "#fff", lineHeight: 1.1 }}>
+        <span className="relative">
+          {p?.cover ? (
+            <img
+              src={p.cover}
+              alt=""
+              className="w-60 h-60 rounded-[28px] object-cover"
+              style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.65)" }}
+            />
+          ) : (
+            <span
+              className="w-60 h-60 rounded-[28px] flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.06)", fontSize: 64 }}
+            >
+              🎵
+            </span>
+          )}
+          {p && (
+            <button
+              onClick={onPlayFull}
+              aria-label={playing ? "Stop" : "Play the clip"}
+              className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full flex items-center justify-center"
+              style={{
+                background: "#fff",
+                color: "#09080D",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.5)",
+              }}
+            >
+              {playing ? (
+                <Pause size={22} fill="currentColor" />
+              ) : (
+                <Play size={22} fill="currentColor" style={{ marginLeft: 3 }} />
+              )}
+            </button>
+          )}
+        </span>
+      </div>
+      <p
+        className="mt-9 font-extrabold tracking-tight"
+        style={{ fontSize: 25, color: "#fff", lineHeight: 1.15 }}
+      >
         {cleanTitle(p?.title ?? d.song.title)}
       </p>
-      <p className="mt-1 font-semibold" style={{ fontSize: 16, color: "rgba(255,255,255,0.65)" }}>
+      <p className="mt-1" style={{ fontSize: 15.5, color: "rgba(255,255,255,0.6)" }}>
         {p?.artist ?? d.song.artist}
       </p>
+      <span
+        className="mt-4 rounded-full px-3.5 py-1.5 font-bold"
+        style={{
+          background: ok ? "rgba(184,242,92,0.14)" : "rgba(255,90,110,0.12)",
+          color: ok ? LIME : "#FF8A98",
+          fontSize: 13,
+        }}
+      >
+        {ok
+          ? `Got it in ${STAGES_LABEL(d)} · +${POINTS[d.got]}`
+          : d.got === -2
+            ? "Skipped · didn't load"
+            : "Missed this one"}
+      </span>
       {p?.link && (
         <a
           href={p.link}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-1 meta"
-          style={{ fontSize: 12.5 }}
+          className="mt-3 inline-flex items-center gap-1"
+          style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)" }}
         >
-          Listen to the full song <ExternalLink size={12} aria-hidden="true" />
+          Full song on Deezer <ExternalLink size={12} aria-hidden="true" />
         </a>
       )}
       <button
         onClick={onNext}
-        className="mt-auto w-full rounded-2xl font-black"
-        style={{ background: LIME, color: "#14200A", minHeight: 56, fontSize: 17 }}
+        className="mt-auto w-full rounded-2xl font-extrabold"
+        style={{ background: "#fff", color: "#09080D", minHeight: 54, fontSize: 16 }}
       >
         {last ? "See your score" : "Next song"}
       </button>
@@ -653,10 +746,13 @@ export function EarwormSummary({
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, #1B2A12 0%, #0B0E0A 60%)" }}
+      style={{
+        background:
+          "radial-gradient(120% 60% at 50% -10%, rgba(184,242,92,0.16) 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)",
+      }}
     >
       <div className="mx-auto w-full max-w-md px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-8">
-        <p className="label-caps text-center">earworm</p>
+        <p className="label-caps text-center">name that tune</p>
         <p
           className="text-center font-black mt-2"
           style={{ fontSize: 64, color: LIME, lineHeight: 1 }}
@@ -759,20 +855,23 @@ export function EarwormStandings({
   if (!waiting.length)
     return (
       <GameOverBoard
-        game={`Earworm · ${cat.name}`}
+        game={`Name That Tune · ${cat.name}`}
         rows={rows}
-        roast={{ game: "Earworm", detail: cat.name }}
+        roast={{ game: "Name That Tune", detail: cat.name }}
         onClose={onClose}
       />
     );
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      style={{ background: "radial-gradient(ellipse at 50% 0%, #1B2A12 0%, #0B0E0A 60%)" }}
+      style={{
+        background:
+          "radial-gradient(120% 60% at 50% -10%, rgba(184,242,92,0.16) 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)",
+      }}
     >
       <div className="mx-auto w-full max-w-md px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-8">
         <header className="flex items-center justify-between">
-          <span className="label-caps">earworm · {cat.name}</span>
+          <span className="label-caps">name that tune · {cat.name}</span>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -872,7 +971,7 @@ export function SoloEarworm({
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ background: "#0B0E0A" }}
+        style={{ background: "#09080D" }}
       >
         <p className="meta">Picking songs…</p>
       </div>

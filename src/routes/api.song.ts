@@ -1,5 +1,5 @@
 /**
- * Earworm's song server.
+ * Name That Tune's song server.
  *   /api/song?pool=bollywood|punjabi|english — the big list of popular songs for
  *     a category, built from Deezer's public hit playlists (most popular first,
  *     up to 1,000), refreshed daily.
@@ -60,7 +60,9 @@ function same(t: string, wantT: string) {
 
 async function deezer(title: string, artist: string): Promise<SongHit | null> {
   for (const q of [`track:"${title}" artist:"${artist}"`, `${title} ${artist}`]) {
-    const r = await fetch(`https://api.deezer.com/search?limit=10&q=${encodeURIComponent(q)}`);
+    const r = await fetch(`https://api.deezer.com/search?limit=10&q=${encodeURIComponent(q)}`, {
+      signal: AbortSignal.timeout(7000),
+    });
     if (!r.ok) continue;
     const body = (await r.json()) as {
       data?: {
@@ -89,6 +91,7 @@ async function deezer(title: string, artist: string): Promise<SongHit | null> {
 async function itunes(title: string, artist: string): Promise<SongHit | null> {
   const r = await fetch(
     `https://itunes.apple.com/search?media=music&entity=song&limit=10&country=IN&term=${encodeURIComponent(`${title} ${artist}`)}`,
+    { signal: AbortSignal.timeout(7000) },
   );
   if (!r.ok) return null;
   const body = (await r.json()) as {
@@ -158,7 +161,7 @@ const building = new Map<string, Promise<PoolSong[]>>();
 
 async function dz<T>(path: string): Promise<T | null> {
   try {
-    const r = await fetch(`https://api.deezer.com${path}`);
+    const r = await fetch(`https://api.deezer.com${path}`, { signal: AbortSignal.timeout(7000) });
     if (!r.ok) return null;
     const body = (await r.json()) as T & { error?: unknown };
     return body.error ? null : body;
@@ -177,16 +180,30 @@ async function buildPool(cat: string): Promise<PoolSong[]> {
     artist?: { name: string };
   };
   const seen = new Map<string, Track>();
-  for (const q of POOL_QUERIES[cat]) {
-    const lists = await dz<{ data?: { id: number; nb_tracks?: number; fans?: number }[] }>(
-      `/search/playlist?limit=6&q=${encodeURIComponent(q)}`,
-    );
-    const pick = (lists?.data ?? [])
-      .filter((l) => (l.nb_tracks ?? 0) >= 25)
-      .sort((a, b) => (b.fans ?? 0) - (a.fans ?? 0))
-      .slice(0, 3);
-    for (const l of pick) {
-      const tracks = await dz<{ data?: Track[] }>(`/playlist/${l.id}/tracks?limit=200`);
+  // All the playlist searches at once, then all their tracks at once.
+  const found = await Promise.all(
+    POOL_QUERIES[cat].map((q) =>
+      dz<{ data?: { id: number; nb_tracks?: number; fans?: number }[] }>(
+        `/search/playlist?limit=6&q=${encodeURIComponent(q)}`,
+      ),
+    ),
+  );
+  const ids = [
+    ...new Set(
+      found.flatMap((lists) =>
+        (lists?.data ?? [])
+          .filter((l) => (l.nb_tracks ?? 0) >= 25)
+          .sort((a, b) => (b.fans ?? 0) - (a.fans ?? 0))
+          .slice(0, 3)
+          .map((l) => l.id),
+      ),
+    ),
+  ];
+  const lists = await Promise.all(
+    ids.map((id) => dz<{ data?: Track[] }>(`/playlist/${id}/tracks?limit=200`)),
+  );
+  for (const tracks of lists) {
+    {
       for (const t of tracks?.data ?? []) {
         if (!t.preview || !t.artist?.name) continue;
         const name = t.title_short || t.title;
@@ -210,11 +227,21 @@ async function pool(cat: string) {
   if (p && Date.now() - p.at < 24 * 3_600_000 && p.songs.length) return p.songs;
   let run = building.get(cat);
   if (!run) {
-    run = buildPool(cat).finally(() => building.delete(cat));
+    run = buildPool(cat)
+      .then((songs) => {
+        if (songs.length) pools.set(cat, { at: Date.now(), songs });
+        return songs;
+      })
+      .catch(() => [] as PoolSong[])
+      .finally(() => building.delete(cat));
     building.set(cat, run);
   }
-  const songs = await run;
-  if (songs.length) pools.set(cat, { at: Date.now(), songs });
+  // Don't keep anyone waiting: if it isn't built in a few seconds, answer with
+  // what we had (or nothing, and the app uses its backup list) while it finishes.
+  const songs = await Promise.race([
+    run,
+    new Promise<PoolSong[]>((r) => setTimeout(() => r([]), 4000)),
+  ]);
   return songs.length ? songs : (p?.songs ?? []);
 }
 

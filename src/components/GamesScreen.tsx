@@ -148,7 +148,7 @@ function YourGames({ meId }: { meId: string }) {
             const e = g.state as EarState;
             yourTurn = !e.results[meId];
             const left = g.players.filter((p) => !e.results[p]).length;
-            title = `Earworm · ${e.songs.length} songs`;
+            title = `Name That Tune · ${e.songs.length} songs`;
             status = yourTurn ? "Your turn" : `Waiting for ${left}`;
           } else if (g.kind === "chess") {
             const c = g.state as ChessState;
@@ -462,8 +462,8 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
               light
               Icon={Music}
               art="earworm"
-              sticker="NEW · NAME THAT SONG"
-              title="Earworm"
+              sticker="NEW · GUESS THE SONG"
+              title="Name That Tune"
               line="A tiny clip. Name the song. Bollywood, Punjabi or English hits. Skip for more, but it costs you."
               tilt={-0.6}
               onClick={() => (live ? setEar(true) : setToast("Sign in to play."))}

@@ -1,5 +1,5 @@
 /**
- * Earworm: name the song from a tiny clip. Each skip (or wrong guess) plays a
+ * Name That Tune: name the song from a tiny clip. Each skip (or wrong guess) plays a
  * longer clip. Bollywood, Punjabi or English; popular songs only (the server
  * builds big pools from Deezer's hit playlists; the lists here are a backup).
  */
@@ -70,7 +70,10 @@ export async function loadPool(cat: EarCat): Promise<EarSong[]> {
   const hit = poolCache.get(cat);
   if (hit) return hit;
   try {
-    const r = await fetch(`/api/song?pool=${cat}`, { headers: await authHeader() });
+    const r = await fetch(`/api/song?pool=${cat}`, {
+      headers: await authHeader(),
+      signal: AbortSignal.timeout(6000),
+    });
     if (r.ok) {
       const songs = (await r.json()) as EarSong[];
       if (songs.length >= 50) {
@@ -86,7 +89,7 @@ export async function loadPool(cat: EarCat): Promise<EarSong[]> {
     title,
     artist,
   }));
-  poolCache.set(cat, backup);
+  // The big list isn't ready yet: play from the backup now (and ask again next game).
   return backup;
 }
 
@@ -132,7 +135,10 @@ export async function loadPreview(s: EarSong): Promise<Preview | null> {
     ? `t=${encodeURIComponent(s.title)}&a=${encodeURIComponent(s.artist)}`
     : `id=${encodeURIComponent(s.id)}`;
   try {
-    const r = await fetch(`/api/song?${q}`, { headers: await authHeader() });
+    const r = await fetch(`/api/song?${q}`, {
+      headers: await authHeader(),
+      signal: AbortSignal.timeout(8000),
+    });
     if (!r.ok) return null;
     const h = (await r.json()) as {
       preview: string;
