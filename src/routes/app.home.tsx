@@ -1,4 +1,5 @@
 import { Tour } from "@/components/Tour";
+import { sfx } from "@/lib/sfx";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SeatLogo } from "@/components/Logo";
@@ -1908,6 +1909,7 @@ function Home() {
     if (!seated.length || rolling) return;
     setRolling(true);
     setPicked(null);
+    sfx.dice(450);
     const target = Math.floor(Math.random() * seated.length);
     const hops = seated.length * 2 + target + 1;
     let t = 0;
@@ -1918,6 +1920,7 @@ function Home() {
         setTimeout(() => {
           setSpot(idx);
           buzz(6);
+          sfx.tick(h);
         }, t),
       );
     }
@@ -1926,6 +1929,7 @@ function Home() {
         setSpot(target);
         setConfetti((c) => c + 1);
         buzz(30);
+        sfx.land();
       }, t + 120),
       setTimeout(() => {
         setRolling(false);

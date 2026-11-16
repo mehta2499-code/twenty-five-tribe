@@ -5,6 +5,8 @@ import { Bot, Flag, House, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, withRanks } from "@/components/Leaderboard";
+import { sfx, useGameMusic } from "@/lib/sfx";
+import { SoundToggle } from "@/components/SoundToggle";
 import { mutualFriends, useSocial, type Person } from "@/lib/social";
 import {
   COLOR_HEX,
@@ -488,6 +490,24 @@ export function LudoTable({
 }) {
   const [menu, setMenu] = useState(false);
   const [rolling, setRolling] = useState(false);
+  useGameMusic(state.phase !== "over");
+  // Other players' dice and every pawn move make a sound too.
+  const diceKey = state.dice !== null ? `${state.turn}-${state.dice}-${state.turnStartedAt}` : "";
+  useEffect(() => {
+    if (diceKey && state.turn !== mine) sfx.dice(400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diceKey]);
+  const tokenKey = state.tokens.flat().join(",");
+  const firstTokens = useRef(true);
+  useEffect(() => {
+    if (firstTokens.current) {
+      firstTokens.current = false;
+      return;
+    }
+    const d = state.last?.dice ?? 1;
+    for (let i = 0; i < Math.min(d, 6); i++) setTimeout(() => sfx.step(i), i * 110);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenKey]);
   // Show the final leaderboard a beat after the game ends.
   const [over, setOver] = useState(false);
   useEffect(() => {
@@ -510,6 +530,7 @@ export function LudoTable({
     if (!lastCaptureKey) return;
     setFlash((n) => n + 1);
     buzz(state.last?.player === mine ? 25 : 60);
+    sfx.capture();
     const t = setTimeout(() => setFlash(0), 1300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -523,6 +544,7 @@ export function LudoTable({
     if (!myTurn || state.phase !== "roll" || rolling) return;
     setRolling(true);
     buzz(15);
+    sfx.dice(600);
     setTimeout(() => {
       setRolling(false);
       onRoll();
@@ -544,8 +566,8 @@ export function LudoTable({
     <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
       <div className="mx-auto w-full max-w-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8">
         <header className="flex items-center justify-between">
-          <span className="heading" style={{ fontSize: 20 }}>
-            Ludo
+          <span className="heading flex items-center gap-1" style={{ fontSize: 20 }}>
+            Ludo <SoundToggle />
           </span>
           <button
             onClick={() =>

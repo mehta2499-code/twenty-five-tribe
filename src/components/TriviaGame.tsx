@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { sfx, useGameMusic } from "@/lib/sfx";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, buzz } from "@/components/SocialUI";
@@ -29,6 +30,7 @@ export function TriviaGame({
   opponent?: Opponent;
   onFinish?: (score: number, total: number) => void;
 }) {
+  useGameMusic();
   const s = useSocial();
   const me = s.me ?? { name: "You", avatar: ME.avatar, initials: ME.initials };
   const [questions] = useState(() => {
@@ -69,7 +71,8 @@ export function TriviaGame({
     if (i === q.answer) {
       setScore((n) => n + 1);
       buzz(10);
-    }
+      sfx.good();
+    } else sfx.bad();
     setTimeout(() => {
       if (idx + 1 >= questions.length) setDone(true);
       else {

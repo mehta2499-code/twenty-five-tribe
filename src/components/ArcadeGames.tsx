@@ -1,4 +1,6 @@
 import { useDoing } from "@/lib/status";
+import { sfx, useGameMusic } from "@/lib/sfx";
+import { SoundToggle } from "@/components/SoundToggle";
 import { Glyph3D } from "@/components/Glyph3D";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -128,14 +130,18 @@ function GameFrame({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  useGameMusic();
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background animate-soft-in">
       <div className="mx-auto w-full max-w-md flex flex-col h-full px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-6">
         <header className="flex items-center justify-between">
           <span className="label-caps">{title}</span>
-          <button onClick={onClose} aria-label="Close game" className="text-cool">
-            <X size={22} />
-          </button>
+          <span className="flex items-center gap-1">
+            <SoundToggle />
+            <button onClick={onClose} aria-label="Close game" className="text-cool">
+              <X size={22} />
+            </button>
+          </span>
         </header>
         <div className="flex items-end justify-between mt-6">
           <div>
@@ -220,6 +226,7 @@ function TapRush({ onFinish, onClose }: RoundProps) {
   const hit = () => {
     if (over) return;
     if (!started) setStarted(true);
+    sfx.pop(score);
     setScore((n) => n + 1);
     setPos({ x: 10 + Math.random() * 80, y: 10 + Math.random() * 80 });
   };

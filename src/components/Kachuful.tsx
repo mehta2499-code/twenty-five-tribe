@@ -1,4 +1,6 @@
 import { Glyph3D } from "@/components/Glyph3D";
+import { SoundToggle } from "@/components/SoundToggle";
+import { useGameMusic } from "@/lib/sfx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HelpCircle, ListOrdered, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -242,6 +244,7 @@ export function KachufulBoard({
   onPlayAgain?: () => void;
   note?: string;
 }) {
+  useGameMusic();
   const [scoresOpen, setScoresOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -357,6 +360,7 @@ export function KachufulBoard({
             >
               <HelpCircle size={18} />
             </button>
+            <SoundToggle />
             <button
               onClick={() => setScoresOpen(true)}
               aria-label="Scorecard"

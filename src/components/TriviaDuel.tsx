@@ -6,6 +6,7 @@
  * and the host's phone calls each question so both screens move together.
  * Each phone saves its own final score to the game when the duel ends.
  */
+import { sfx, useGameMusic } from "@/lib/sfx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +58,7 @@ export function TriviaDuel({
   onPlayLater: () => void;
   onClose: () => void;
 }) {
+  useGameMusic();
   const questions = useMemo(
     () => buildRound(pack.id, seed).slice(0, DUEL_QUESTIONS),
     [pack.id, seed],
@@ -214,6 +216,8 @@ export function TriviaDuel({
       i === questions.length - 1,
     );
     buzz(correct ? 15 : 50);
+    if (correct) sfx.good();
+    else sfx.bad();
     setMine((m) => ({ ...m, [i]: { choice, correct, points } }));
     send({ t: "ans", from: me.id, i, choice, correct, points });
   };

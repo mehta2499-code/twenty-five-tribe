@@ -6,7 +6,8 @@
  */
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { sfx } from "@/lib/sfx";
 import { Flame, Shuffle } from "lucide-react";
 import { Confetti, Sheet } from "@/components/SocialUI";
 import { friendById, social } from "@/lib/social";
@@ -285,6 +286,9 @@ export function GameOverBoard({
   const winners = rows.filter((r) => r.rank === 1);
   const shown = rows.length === 2 ? winners : rows;
   const iWon = winners.some((r) => r.me);
+  useEffect(() => {
+    if (iWon) sfx.win();
+  }, [iWon]);
   const title =
     headline ??
     (winners.length > 1
