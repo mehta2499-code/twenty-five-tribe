@@ -3,6 +3,7 @@
  * Tap a piece to see where it can go, tap a square to move. The board turns
  * for whoever is playing black.
  */
+import { ChessPiece } from "@/components/ChessPieces";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
@@ -39,15 +40,6 @@ import {
 } from "@/lib/chess";
 import { meView, mutualFriends, type Person } from "@/lib/social";
 
-// Solid glyphs for both sides, coloured with CSS (text style, never emoji).
-const GLYPH: Record<string, string> = {
-  k: "♚︎",
-  q: "♛︎",
-  r: "♜︎",
-  b: "♝︎",
-  n: "♞︎",
-  p: "♟︎",
-};
 const LIGHT = "#EDEED2";
 const DARK = "#769457";
 
@@ -60,26 +52,7 @@ export type ChessSide = {
 };
 
 function Piece({ p, size }: { p: string; size: number }) {
-  const white = colorOf(p) === "w";
-  return (
-    <span
-      aria-hidden="true"
-      className="block select-none leading-none"
-      style={{
-        fontSize: size,
-        fontFamily:
-          '"Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols 2", "DejaVu Sans", serif',
-        color: white ? "#FFFFFF" : "#1A1530",
-        WebkitTextStroke: white ? "1.4px #1A1530" : "1px rgba(255,255,255,0.35)",
-        filter: white
-          ? "drop-shadow(0 2px 1.5px rgba(0,0,0,0.45))"
-          : "drop-shadow(0 2px 1.5px rgba(0,0,0,0.5))",
-        transform: "translateY(-3%)",
-      }}
-    >
-      {GLYPH[p.toLowerCase()]}
-    </span>
-  );
+  return <ChessPiece p={p} size={size} />;
 }
 
 const NAMES: Record<string, string> = {
@@ -164,7 +137,7 @@ export function ChessBoard({
       role="grid"
       aria-label="Chess board"
     >
-      <div className="grid grid-cols-8 w-full h-full">
+      <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
         {order.map((i, k) => {
           const dark = (Math.floor(i / 8) + (i % 8)) % 2 === 1;
           const p = state.board[i];
@@ -177,7 +150,7 @@ export function ChessBoard({
               key={i}
               onClick={() => tap(i)}
               aria-label={`${sq(i)}${p !== "." ? `, ${colorOf(p) === "w" ? "white" : "black"} ${NAMES[p.toLowerCase()]}` : ""}`}
-              className="relative flex items-center justify-center"
+              className="relative flex items-center justify-center min-h-0 min-w-0 overflow-visible"
               style={{
                 background: dark ? DARK : LIGHT,
                 boxShadow:
@@ -191,7 +164,7 @@ export function ChessBoard({
               {/* Coordinates on the edge squares. */}
               {f === 0 && (
                 <span
-                  className="absolute left-0.5 top-0 font-bold"
+                  className="absolute left-0.5 top-0 font-bold z-[3] pointer-events-none"
                   style={{ fontSize: cell * 0.2, color: dark ? LIGHT : DARK }}
                 >
                   {8 - Math.floor(i / 8)}
@@ -199,7 +172,7 @@ export function ChessBoard({
               )}
               {r === 7 && (
                 <span
-                  className="absolute right-1 bottom-0 font-bold"
+                  className="absolute right-1 bottom-0 font-bold z-[3] pointer-events-none"
                   style={{ fontSize: cell * 0.2, color: dark ? LIGHT : DARK }}
                 >
                   {"abcdefgh"[i % 8]}
@@ -217,7 +190,7 @@ export function ChessBoard({
               )}
               {p !== "." && (
                 <span key={`${i}-${state.san.length}`} className="relative z-[1]" style={slide(i)}>
-                  <Piece p={p} size={cell * 0.82} />
+                  <Piece p={p} size={cell * 0.94} />
                 </span>
               )}
               {isTarget &&
