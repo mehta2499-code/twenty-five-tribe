@@ -8,16 +8,9 @@ import { Flag, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Ico } from "@/components/Ico";
 import { Leaderboard, withRanks, type LeaderRow } from "@/components/Leaderboard";
+import { DayResults, wordDay } from "@/components/DayResults";
 import { friendById, meView, useSocial } from "@/lib/social";
-import {
-  addDays,
-  dayRanking,
-  thisWeek,
-  today,
-  useDaily,
-  weekDays,
-  type WordResult,
-} from "@/lib/daily";
+import { addDays, dayRanking, thisWeek, today, useDaily, weekDays } from "@/lib/daily";
 import { track } from "@/lib/track";
 
 /** Points for 1st, 2nd, 3rd… each day; everyone else who played gets 2. */
@@ -35,15 +28,6 @@ function person(id: string) {
     initials: f?.initials ?? "?",
     color: f?.color,
   };
-}
-
-/** Word Up points for one day: fewest guesses first; didn't solve it = 2 for playing. */
-function wordDay(results: Record<string, WordResult> | undefined) {
-  const out: Record<string, number> = {};
-  const list = Object.entries(results ?? {}).sort((a, b) => a[1].guesses - b[1].guesses);
-  for (const { r, rank } of withRanks(list, ([, w]) => w.guesses))
-    out[r[0]] = r[1].guesses > 6 ? 2 : RANK_PTS(rank);
-  return out;
 }
 
 type Lifetime = { user_id: string; daily_points: number; word_points?: number };
@@ -85,7 +69,13 @@ const VIEWS: [View, string][] = [
   ["overall", "Overall"],
 ];
 
-export function Scoreboard() {
+export function Scoreboard({
+  onPlayDaily,
+  onPlayWord,
+}: {
+  onPlayDaily?: () => void;
+  onPlayWord?: () => void;
+} = {}) {
   const d = useDaily();
   useEffect(() => track("leaderboard_viewed"), []);
   const [view, setView] = useState<View>("daily");
@@ -101,7 +91,7 @@ export function Scoreboard() {
     const days = view === "daily" ? [day] : weekDays(thisWeek()).filter((k) => k <= day);
     for (const k of days) {
       for (const r of dayRanking(d, k)) add(r.id, r.points);
-      for (const [id, n] of Object.entries(wordDay(d.words[k]))) add(id, n);
+      for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
     }
   }
   const sorted = Object.entries(totals)
@@ -142,12 +132,19 @@ export function Scoreboard() {
           </button>
         ))}
       </div>
-      <p className="meta text-center mt-3" style={{ fontSize: 12.5 }}>
+      <p
+        className={`meta text-center mt-3 ${view === "daily" ? "hidden" : ""}`}
+        style={{ fontSize: 12.5 }}
+      >
         Daily game + Word Up
         {view === "daily" ? " · today" : view === "weekly" ? " · this week" : " · all-time"}
       </p>
 
-      {rows.length === 0 ? (
+      {view === "daily" ? (
+        <div className="mt-5">
+          <DayResults onPlayDaily={onPlayDaily} onPlayWord={onPlayWord} />
+        </div>
+      ) : rows.length === 0 ? (
         <div className="card mt-6 p-6 text-center">
           <Flag
             size={44}

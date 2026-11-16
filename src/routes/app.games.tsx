@@ -602,7 +602,7 @@ function Games() {
         </>
       ) : (
         <>
-          <Scoreboard />
+          <Scoreboard onPlayDaily={() => setDaily(true)} onPlayWord={() => setWordDaily(true)} />
         </>
       )}
 
