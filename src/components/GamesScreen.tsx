@@ -146,10 +146,20 @@ function YourGames({ meId }: { meId: string }) {
               : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6`;
           } else if (g.kind === "earworm") {
             const e = g.state as EarState;
-            yourTurn = !e.results[meId];
-            const left = g.players.filter((p) => !e.results[p]).length;
             title = `Name That Tune · ${e.songs.length} songs`;
-            status = yourTurn ? "Your turn" : `Waiting for ${left}`;
+            if (e.mode === "live") {
+              const out = e.left?.includes(meId);
+              yourTurn = !out;
+              status = out
+                ? "You left"
+                : e.startAt
+                  ? "Live now · jump back in"
+                  : "Waiting room · join";
+            } else {
+              yourTurn = !e.results[meId];
+              const left = g.players.filter((p) => !e.results[p]).length;
+              status = yourTurn ? "Your turn" : `Waiting for ${left}`;
+            }
           } else if (g.kind === "chess") {
             const c = g.state as ChessState;
             const mine = c.white === meId ? "w" : "b";

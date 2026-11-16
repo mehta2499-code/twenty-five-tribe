@@ -20,6 +20,7 @@ import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
 import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
+import { liveActive, liveResults } from "@/lib/earworm";
 import {
   leave as pokerLeave,
   newPoker,
@@ -223,7 +224,16 @@ export async function startEarworm(
   track("game_started", { game: "earworm" });
   const me = myId();
   const id = uuid();
-  const state: EarState = { cat, level, songs, results: {} };
+  // Live: everyone plays the same song at the same time. Starts in a waiting room.
+  const state: EarState = {
+    cat,
+    level,
+    songs,
+    results: {},
+    mode: "live",
+    joined: [me],
+    picks: {},
+  };
   const { error } = await supabase.from("games").insert({
     id,
     kind: "earworm",
@@ -237,7 +247,7 @@ export async function startEarworm(
   await invite(
     friends.map((f) => f.id),
     id,
-    `🎧 Name That Tune: guess ${songs.length} ${name} songs from a tiny clip (${level}). Same songs as me. Beat my score.`,
+    `🎧 Name That Tune live: ${songs.length} ${name} songs, we all hear them together. Join me now!`,
   );
   return id;
 }
@@ -248,6 +258,45 @@ export async function saveEarworm(id: string, meId: string, result: EarState["re
     if (cur.results[meId]) return null;
     return { state: { ...cur, results: { ...cur.results, [meId]: result } } };
   });
+}
+
+// ---------- Name That Tune live ----------
+/** Step into a live game (from the waiting room or mid-game, to pick up where it is). */
+export function joinEarworm(id: string, meId: string) {
+  return changeLatest<EarState>(id, (cur) =>
+    (cur.joined ?? []).includes(meId) || (cur.left ?? []).includes(meId)
+      ? null
+      : { state: { ...cur, joined: [...(cur.joined ?? []), meId] } },
+  );
+}
+/** Start the songs (anyone in the waiting room can, once two are in). */
+export function startLiveEarworm(id: string, at: number) {
+  return changeLatest<EarState>(id, (cur) =>
+    cur.startAt ? null : { state: { ...cur, startAt: at } },
+  );
+}
+/** My answer for song k. */
+export function pickEarworm(id: string, meId: string, k: number, got: number) {
+  return changeLatest<EarState>(id, (cur) => {
+    const mine = [...(cur.picks?.[meId] ?? [])];
+    if (mine[k] != null) return null;
+    while (mine.length < k) mine.push(null);
+    mine[k] = got;
+    return { state: { ...cur, picks: { ...(cur.picks ?? {}), [meId]: mine } } };
+  });
+}
+/** Everyone's answered song k: move on now instead of waiting out the timer. */
+export function endSongEarly(id: string, k: number, at: number) {
+  return changeLatest<EarState>(id, (cur) =>
+    cur.ends?.[k] ? null : { state: { ...cur, ends: { ...(cur.ends ?? {}), [k]: at } } },
+  );
+}
+/** The last song is over: save everyone's scores. */
+export function finishLiveEarworm(id: string, players: string[]) {
+  return changeLatest<EarState>(id, (cur) => ({
+    state: { ...cur, results: liveResults(cur, players) },
+    status: "done",
+  }));
 }
 
 /** Challenge a friend to chess (colours picked at random). */
@@ -358,7 +407,14 @@ export async function quitGame(g: GameRow, meId: string) {
         cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },
       );
     } else if (g.kind === "earworm") {
-      // Nothing to undo: it just leaves Your games.
+      // Live: you're out (the rest play on). If nobody's left, it ends.
+      await changeLatest<EarState>(g.id, (cur) => {
+        if (cur.mode !== "live" || (cur.left ?? []).includes(meId)) return null;
+        const next = { ...cur, left: [...(cur.left ?? []), meId] };
+        return liveActive(next).length
+          ? { state: next }
+          : { state: { ...next, results: liveResults(next, g.players) }, status: "done" };
+      });
     } else if (g.kind === "chess") {
       await changeLatest<ChessState>(g.id, (cur) =>
         cur.result

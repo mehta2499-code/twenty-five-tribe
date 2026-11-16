@@ -255,7 +255,23 @@ function GameCard({
     <section className="mt-6">
       {/* The game: big art on a bright card, name on a sticker. */}
       <div
-        className="relative rounded-[28px] overflow-hidden"
+        {...(play
+          ? {
+              role: "button",
+              tabIndex: 0,
+              "aria-label": `${play.label} ${name}`,
+              onClick: play.onClick,
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  play.onClick();
+                }
+              },
+            }
+          : {})}
+        className={`relative rounded-[28px] overflow-hidden ${
+          play ? "cursor-pointer active:scale-[0.98] transition-transform" : ""
+        }`}
         style={{
           height: 200,
           background: bg,
@@ -285,8 +301,8 @@ function GameCard({
           </span>
         </div>
         {play && (
-          <button
-            onClick={play.onClick}
+          <span
+            aria-hidden="true"
             className="absolute left-3 top-3 flex items-center gap-1 rounded-full pl-1.5 pr-3 py-1 font-extrabold"
             style={{
               background: "rgba(10,10,16,0.55)",
@@ -303,7 +319,7 @@ function GameCard({
               <Play size={11} fill="currentColor" aria-hidden="true" />
             </span>
             {play.label}
-          </button>
+          </span>
         )}
         {timer && (
           <span

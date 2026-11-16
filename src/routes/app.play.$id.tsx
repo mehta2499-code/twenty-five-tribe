@@ -60,9 +60,27 @@ import {
   startHand,
   type PokerState,
 } from "@/lib/poker";
-import { inviteToPoker, saveEarworm, startChess } from "@/lib/games";
-import { EarwormPlay, EarwormStandings } from "@/components/Earworm";
-import type { EarState } from "@/lib/earworm";
+import {
+  endSongEarly,
+  finishLiveEarworm,
+  inviteToPoker,
+  joinEarworm,
+  pickEarworm,
+  quitGame,
+  saveEarworm,
+  startChess,
+  startLiveEarworm,
+} from "@/lib/games";
+import { EarwormLobby, EarwormPlay, EarwormStandings, type LiveCtl } from "@/components/Earworm";
+import {
+  COUNTDOWN_MS,
+  liveActive,
+  liveAt,
+  liveResults,
+  serverNow,
+  syncClock,
+  type EarState,
+} from "@/lib/earworm";
 
 export const Route = createFileRoute("/app/play/$id")({
   component: clientOnly(PlayScreen),
@@ -161,12 +179,18 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
         ).then(() => leaveGame(id));
       quitNote = "You forfeit and the other player wins.";
     }
+  } else if (game.status === "playing" && game.kind === "earworm") {
+    const st = game.state as EarState;
+    if (st.mode === "live" && !st.left?.includes(meId)) {
+      quit = () => void quitGame(game, meId).then(() => leaveGame(id));
+      quitNote = "You're out of this game. The others play on.";
+    }
   }
   const close = quit ? () => setLeaving(true) : onClose;
 
   const board =
     game.kind === "earworm" ? (
-      <OnlineEarworm live={live as Live<EarState>} meId={meId} onClose={onClose} />
+      <OnlineEarworm live={live as Live<EarState>} meId={meId} onClose={close} />
     ) : game.kind === "chess" ? (
       <OnlineChess live={live as Live<ChessState>} meId={meId} onClose={onClose} />
     ) : game.kind === "poker" ? (
@@ -215,7 +239,11 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
           gameId={id}
           meId={meId}
           myName={_get().me?.name ?? "You"}
-          spot={game.kind === "kachuful" || game.kind === "word" ? "side" : "corner"}
+          spot={
+            game.kind === "kachuful" || game.kind === "word" || game.kind === "earworm"
+              ? "side"
+              : "corner"
+          }
         />
       )}
     </>
@@ -756,7 +784,121 @@ function OnlinePoker({
   );
 }
 
-function OnlineEarworm({
+function OnlineEarworm(props: { live: Live<EarState>; meId: string; onClose: () => void }) {
+  const st = props.live.game?.state;
+  return st?.mode === "live" ? <LiveEarworm {...props} /> : <ChallengeEarworm {...props} />;
+}
+
+/** Live: everyone hears the same song at the same time, on a shared timer. */
+function LiveEarworm({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<EarState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game } = live;
+  const [now, setNow] = useState(serverNow());
+  useEffect(() => {
+    void syncClock().then(() => setNow(serverNow()));
+    const t = setInterval(() => setNow(serverNow()), 250);
+    return () => clearInterval(t);
+  }, []);
+  // Realtime can drop (phone locked, app in the background): check in now and then too.
+  const reload = live.reload;
+  useEffect(() => {
+    const t = setInterval(() => void reload(), 4000);
+    const back = () => document.visibilityState === "visible" && void reload();
+    document.addEventListener("visibilitychange", back);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", back);
+    };
+  }, [reload]);
+  const st = game?.state;
+  const id = game?.id ?? "";
+  const players = game?.players ?? [];
+  // Opening it puts you in (and brings you back in after stepping out).
+  const out = !!st?.left?.includes(meId);
+  const inIt = !!st?.joined?.includes(meId);
+  useEffect(() => {
+    if (st && !inIt && !out && game?.status === "playing")
+      void joinEarworm(id, meId).then(() => reload());
+  }, [st, inIt, out, id, meId, game?.status]);
+  const at = st ? liveAt(st, now) : null;
+  const active = st ? liveActive(st) : [];
+  // Everyone still in has answered: move on without waiting out the clock.
+  const k = at && (at.phase === "song" || at.phase === "reveal") ? at.k : -1;
+  const allIn =
+    !!st &&
+    at?.phase === "song" &&
+    active.length > 0 &&
+    active.every((p) => st.picks?.[p]?.[k] != null);
+  useEffect(() => {
+    if (allIn) void endSongEarly(id, k, serverNow()).then(() => reload());
+  }, [allIn, id, k]);
+  // The last song's over: save everyone's scores (whoever gets there first).
+  const over = at?.phase === "over";
+  useEffect(() => {
+    if (over && game?.status === "playing") void finishLiveEarworm(id, players);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [over, id]);
+
+  if (!game || !st || !at) return null;
+  const inGame = players.filter((p) => st.joined?.includes(p));
+  if (over || game.status === "done" || out) {
+    // Everyone sees the final board at the same moment.
+    const results = game.status === "done" ? st.results : liveResults(st, players);
+    return (
+      <EarwormStandings
+        st={{ ...st, results }}
+        players={inGame.filter((p) => results[p])}
+        meId={meId}
+        onClose={onClose}
+      />
+    );
+  }
+  if (at.phase === "lobby" || at.phase === "countdown")
+    return (
+      <EarwormLobby
+        st={st}
+        players={players}
+        meId={meId}
+        countdown={at.phase === "countdown" ? at.endsAt - now : null}
+        onStart={() => void startLiveEarworm(id, serverNow() + COUNTDOWN_MS).then(() => reload())}
+        onClose={onClose}
+      />
+    );
+  const ctl: LiveCtl = {
+    gameId: id,
+    k: at.k,
+    phase: at.phase,
+    endsAt: at.endsAt,
+    now,
+    players: inGame.map((p) => {
+      const f = friendById(p);
+      return {
+        id: p,
+        name: f?.name.split(" ")[0] ?? "Someone",
+        avatar: f?.avatar || undefined,
+        initials: f?.initials ?? "?",
+        color: f?.color,
+        me: p === meId,
+        out: !!st.left?.includes(p),
+        picks: st.picks?.[p] ?? [],
+      };
+    }),
+    onPick: (k, got) => void pickEarworm(id, meId, k, got).then(() => reload()),
+  };
+  return (
+    <EarwormPlay cat={st.cat} level={st.level} songs={st.songs} onClose={onClose} live={ctl} />
+  );
+}
+
+/** Older games: each played on their own, scores compared at the end. */
+function ChallengeEarworm({
   live,
   meId,
   onClose,

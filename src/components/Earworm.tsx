@@ -14,6 +14,8 @@ import {
   CATS,
   POINTS,
   STAGES,
+  SONG_SECS,
+  REVEAL_MS,
   TIER_NAME,
   tierOf,
   SONGS_PER_GAME,
@@ -120,7 +122,7 @@ export function EarwormSetup({
           className="btn-primary disabled:opacity-50"
           style={{ minHeight: 54 }}
         >
-          Challenge your 25
+          Play live with your 25
         </button>
         <button onClick={() => onSolo(cat, level)} className="btn-secondary">
           Play solo
@@ -193,6 +195,32 @@ function ClipBar({
 // ---------- One game ----------
 type Done = { song: EarSong; preview: Preview | null; got: number; guesses: string[] };
 
+/** A player in a live game, and their answer per song. */
+export type LivePlayer = {
+  id: string;
+  name: string;
+  avatar?: string;
+  initials: string;
+  color?: string;
+  me: boolean;
+  out: boolean;
+  picks: (number | null)[];
+};
+/** Live game: the song and timer come from the shared clock, not from this phone. */
+export type LiveCtl = {
+  gameId: string;
+  k: number;
+  phase: "song" | "reveal";
+  endsAt: number;
+  now: number;
+  players: LivePlayer[];
+  onPick: (k: number, got: number) => void;
+};
+const clock = (ms: number) => {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
+
 export function EarwormPlay({
   cat,
   level,
@@ -200,15 +228,18 @@ export function EarwormPlay({
   title,
   onFinish,
   onClose,
+  live,
 }: {
   cat: EarCat;
   level: EarLevel;
   songs: EarSong[];
   title?: string;
-  onFinish: (r: EarResult, done: Done[]) => void;
+  onFinish?: (r: EarResult, done: Done[]) => void;
   onClose: () => void;
+  live?: LiveCtl;
 }) {
-  const [k, setK] = useState(0);
+  const [soloK, setK] = useState(0);
+  const k = live ? live.k : soloK;
   const tier = tierOf(level, k);
   const stages = STAGES[tier];
   const [stage, setStage] = useState(0);
@@ -225,6 +256,48 @@ export function EarwormPlay({
   const stopAt = useRef(0);
   const song = songs[k];
   const meta = CATS.find((c) => c.id === cat)!;
+  const mine = live?.players.find((p) => p.me)?.picks;
+  const gotAt = (i: number) => (live ? (mine?.[i] ?? undefined) : done[i]?.got);
+
+  // Live: a new song for everyone. Start it fresh (or where you left it, if you
+  // stepped out and came back); show the answer if you'd already given one.
+  const saveKey = live ? `tf.ntt.${live.gameId}` : "";
+  useEffect(() => {
+    if (!live) return;
+    stop();
+    setText("");
+    let st = 0;
+    let gs: string[] = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(saveKey) ?? "null");
+      if (saved?.k === k) {
+        st = saved.stage ?? 0;
+        gs = saved.guesses ?? [];
+      }
+    } catch {
+      // ignore
+    }
+    setStage(st);
+    setGuesses(gs);
+    const had = mine?.[k];
+    setReveal(had != null ? { song: songs[k], preview: null, got: had, guesses: gs } : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live?.k]);
+  // Live: remember how far you got on this song, in case you step out.
+  useEffect(() => {
+    if (!live) return;
+    try {
+      localStorage.setItem(saveKey, JSON.stringify({ k, stage, guesses }));
+    } catch {
+      // ignore
+    }
+  }, [live, saveKey, k, stage, guesses]);
+  // Live: time's up and you hadn't got it.
+  const timeUp = !!live && live.phase === "reveal";
+  useEffect(() => {
+    if (timeUp && !reveal && mine?.[k] == null) finishSong(-1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeUp, reveal]);
 
   // Type-ahead: search as they type (a short pause first, so not every key).
   useEffect(() => {
@@ -299,14 +372,19 @@ export function EarwormPlay({
       buzz(30);
     } else if (got === -1) sfx.bad();
     setReveal(d);
-    setDone((x) => [...x, d]);
+    setDone((x) => {
+      const y = [...x];
+      y[k] = d;
+      return y;
+    });
+    live?.onPick(k, got);
   };
   const next = () => {
     stop();
     const all = done;
     if (k + 1 >= songs.length) {
       const got = all.map((d) => (d.got === -2 ? -1 : d.got));
-      onFinish(
+      onFinish?.(
         {
           score: all.reduce((a, d) => a + (d.got >= 0 ? POINTS[d.got] : 0), 0),
           got,
@@ -331,12 +409,14 @@ export function EarwormPlay({
     else setStage(stage + 1);
   };
   const guess = (g: string) => {
-    if (!g.trim() || reveal) return;
+    if (!g.trim() || reveal || timeUp) return;
     if (isRight(g, song)) finishSong(stage);
     else wrong(g);
   };
 
-  const score = done.reduce((a, d) => a + (d.got >= 0 ? POINTS[d.got] : 0), 0);
+  const score = live
+    ? (mine ?? []).reduce<number>((a, g) => a + (g != null && g >= 0 ? POINTS[g] : 0), 0)
+    : done.reduce((a, d) => a + (d && d.got >= 0 ? POINTS[d.got] : 0), 0);
 
   return (
     <div
@@ -387,7 +467,8 @@ export function EarwormPlay({
           aria-label={`Song ${k + 1} of ${songs.length}`}
         >
           {songs.map((_, i) => {
-            const d = done[i];
+            const g = gotAt(i);
+            const d = g == null ? undefined : { got: g };
             const now = i === k && !reveal;
             return (
               <span
@@ -411,14 +492,30 @@ export function EarwormPlay({
           })}
         </div>
 
+        {live && (
+          <LiveTimer
+            left={live.endsAt - live.now}
+            total={live.phase === "song" ? SONG_SECS[tier] * 1000 : REVEAL_MS}
+            label={
+              live.phase === "song"
+                ? null
+                : k + 1 >= songs.length
+                  ? "Final scores in"
+                  : "Next song in"
+            }
+            tone={meta.tone}
+          />
+        )}
+
         {reveal ? (
           <RevealCard
-            d={reveal}
+            d={{ ...reveal, preview: reveal.preview ?? preview ?? null }}
             last={k + 1 >= songs.length}
             onNext={next}
             audio={audio}
             onPlayFull={() => play(30)}
             playing={playing}
+            footer={live && <LiveBoard live={live} k={k} />}
           />
         ) : (
           <>
@@ -632,6 +729,7 @@ function RevealCard({
   onNext,
   onPlayFull,
   playing,
+  footer,
 }: {
   d: Done;
   last: boolean;
@@ -639,6 +737,7 @@ function RevealCard({
   onPlayFull: () => void;
   playing: boolean;
   audio: React.RefObject<HTMLAudioElement | null>;
+  footer?: React.ReactNode;
 }) {
   const p = d.preview;
   const ok = d.got >= 0;
@@ -725,16 +824,113 @@ function RevealCard({
           Full song on Deezer <ExternalLink size={12} aria-hidden="true" />
         </a>
       )}
-      <button
-        onClick={onNext}
-        className="mt-auto w-full rounded-2xl font-extrabold"
-        style={{ background: "#fff", color: "#09080D", minHeight: 54, fontSize: 16 }}
-      >
-        {last ? "See your score" : "Next song"}
-      </button>
+      {footer ?? (
+        <button
+          onClick={onNext}
+          className="mt-auto w-full rounded-2xl font-extrabold"
+          style={{ background: "#fff", color: "#09080D", minHeight: 54, fontSize: 16 }}
+        >
+          {last ? "See your score" : "Next song"}
+        </button>
+      )}
     </div>
   );
 }
+/** Live: the shared countdown for this song (or until the next one). */
+function LiveTimer({
+  left,
+  total,
+  label,
+  tone,
+}: {
+  left: number;
+  total: number;
+  label: string | null;
+  tone: string;
+}) {
+  const pct = Math.max(0, Math.min(1, left / total));
+  const low = !label && left < 10_000;
+  return (
+    <div className="mt-4 flex items-center gap-3" aria-live="off">
+      <div
+        className="flex-1 h-1.5 rounded-full overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.08)" }}
+      >
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${pct * 100}%`,
+            background: low ? "#FF5A6E" : label ? "rgba(255,255,255,0.4)" : tone,
+            transition: "width 250ms linear",
+          }}
+        />
+      </div>
+      <span
+        className="font-black tabular-nums shrink-0"
+        style={{ fontSize: 14, color: low ? "#FF5A6E" : "rgba(255,255,255,0.8)" }}
+      >
+        {label ? `${label} ${Math.max(0, Math.ceil(left / 1000))}` : clock(left)}
+      </span>
+    </div>
+  );
+}
+
+/** Live: how everyone did on this song (fills in as they answer). */
+function LiveBoard({ live, k }: { live: LiveCtl; k: number }) {
+  const rows = live.players
+    .map((p) => ({ p, g: p.picks[k] }))
+    .sort((a, b) => {
+      const sa = a.g != null && a.g >= 0 ? POINTS[a.g] : -1;
+      const sb = b.g != null && b.g >= 0 ? POINTS[b.g] : -1;
+      return sb - sa;
+    });
+  const waiting = live.players.filter((p) => !p.out && p.picks[k] == null).length;
+  return (
+    <div className="mt-auto pt-6 w-full">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-1.5 text-left">
+        {rows.map(({ p, g }) => (
+          <li
+            key={p.id}
+            className="flex items-center gap-2.5 rounded-xl px-2.5 py-2"
+            style={{ background: p.me ? "rgba(184,242,92,0.08)" : "rgba(255,255,255,0.05)" }}
+          >
+            <Avatar src={p.avatar} initials={p.initials} color={p.color} size={28} />
+            <span
+              className="flex-1 min-w-0 truncate font-semibold"
+              style={{ color: "#fff", fontSize: 14 }}
+            >
+              {p.me ? "You" : p.name}
+            </span>
+            <span
+              className="shrink-0 font-bold tabular-nums"
+              style={{
+                fontSize: 13,
+                color:
+                  g != null && g >= 0 ? LIME : g != null ? "#FF8A98" : "rgba(255,255,255,0.45)",
+              }}
+            >
+              {g != null && g >= 0
+                ? `+${POINTS[g]}`
+                : g != null
+                  ? "Missed"
+                  : p.out
+                    ? "Left"
+                    : live.phase === "song"
+                      ? "Guessing…"
+                      : "Missed"}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {live.phase === "song" && waiting > 0 && (
+        <p className="mt-3 text-center" style={{ fontSize: 12.5, color: "rgba(255,255,255,0.5)" }}>
+          Waiting for {waiting} more · next song when everyone's in or time's up
+        </p>
+      )}
+    </div>
+  );
+}
+
 const STAGES_LABEL = (d: Done) => `${d.guesses.length + 1} ${d.guesses.length ? "tries" : "try"}`;
 
 // ---------- Results ----------
@@ -992,5 +1188,131 @@ export function SoloEarworm({
       onClose={onClose}
       onFinish={(r, done) => setEnd({ r, done })}
     />
+  );
+}
+
+// ---------- Live: the waiting room ----------
+export function EarwormLobby({
+  st,
+  players,
+  meId,
+  countdown,
+  onStart,
+  onClose,
+}: {
+  st: EarState;
+  players: string[];
+  meId: string;
+  /** ms until song 1, once someone's pressed start. */
+  countdown: number | null;
+  onStart: () => void;
+  onClose: () => void;
+}) {
+  const cat = CATS.find((c) => c.id === st.cat)!;
+  const joined = st.joined ?? [];
+  const left = st.left ?? [];
+  const ready = joined.filter((p) => !left.includes(p));
+  const [starting, setStarting] = useState(false);
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto"
+      style={{
+        background: `radial-gradient(120% 70% at 50% -10%, ${cat.tone}40 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)`,
+      }}
+    >
+      <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col min-h-full">
+        <header className="flex items-center justify-between">
+          <button
+            onClick={onClose}
+            aria-label="Leave"
+            className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center"
+            style={{ color: "rgba(255,255,255,0.65)" }}
+          >
+            <X size={22} />
+          </button>
+          <span className="label-caps">name that tune · live</span>
+          <span className="w-10" />
+        </header>
+
+        {countdown != null ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <p className="label-caps">first song in</p>
+            <p
+              key={Math.ceil(countdown / 1000)}
+              className="font-black ear-pop"
+              style={{ fontSize: 120, color: LIME, lineHeight: 1 }}
+            >
+              {Math.max(1, Math.ceil(countdown / 1000))}
+            </p>
+            <p className="mt-3" style={{ color: "rgba(255,255,255,0.6)" }}>
+              Tap the record to hear each clip
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="mt-8 text-center">
+              <p style={{ fontSize: 54 }} aria-hidden="true">
+                {cat.emoji}
+              </p>
+              <p className="font-black mt-2" style={{ fontSize: 26, color: "#fff" }}>
+                {cat.name} · {st.level === "mix" ? "Mix" : TIER_NAME[st.level]}
+              </p>
+              <p className="mt-1" style={{ fontSize: 14, color: "rgba(255,255,255,0.6)" }}>
+                {st.songs.length} songs · everyone hears the same song at the same time
+              </p>
+            </div>
+            <p className="label-caps mt-8 mb-2">who's here</p>
+            <ul className="grid grid-cols-[minmax(0,1fr)] gap-2">
+              {players.map((id) => {
+                const f = friendById(id);
+                const isIn = ready.includes(id);
+                return (
+                  <li
+                    key={id}
+                    className="flex items-center gap-3 rounded-2xl pl-3 pr-4 py-2.5 mr-12"
+                    style={{ background: "rgba(255,255,255,0.05)", opacity: isIn ? 1 : 0.55 }}
+                  >
+                    <Avatar
+                      src={f?.avatar || undefined}
+                      initials={f?.initials ?? "?"}
+                      color={f?.color}
+                      size={36}
+                    />
+                    <span className="flex-1 min-w-0 truncate font-bold" style={{ color: "#fff" }}>
+                      {id === meId ? "You" : (f?.name ?? "Someone")}
+                    </span>
+                    <span
+                      className="shrink-0 font-semibold"
+                      style={{ fontSize: 13, color: isIn ? LIME : "rgba(255,255,255,0.5)" }}
+                    >
+                      {isIn ? "In" : left.includes(id) ? "Left" : "Invited…"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-auto pt-8">
+              <button
+                onClick={() => {
+                  setStarting(true);
+                  onStart();
+                }}
+                disabled={ready.length < 2 || starting}
+                className="w-full rounded-2xl font-black disabled:opacity-50"
+                style={{ background: LIME, color: "#14200A", minHeight: 54, fontSize: 16 }}
+              >
+                {ready.length < 2 ? "Waiting for someone to join…" : `Start · ${ready.length} in`}
+              </button>
+              <p
+                className="mt-2.5 text-center"
+                style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)" }}
+              >
+                Anyone who joins later jumps in at the current song.
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

@@ -34,6 +34,7 @@ import { Route as ApiSpotifyRouteImport } from './routes/api.spotify'
 import { Route as ApiSongAudioRouteImport } from './routes/api.song-audio'
 import { Route as ApiSongRouteImport } from './routes/api.song'
 import { Route as ApiPushRouteImport } from './routes/api.push'
+import { Route as ApiNowRouteImport } from './routes/api.now'
 import { Route as ApiGifRouteImport } from './routes/api.gif'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
 import { Route as AppScenesNewRouteImport } from './routes/app.scenes.new'
@@ -167,6 +168,11 @@ const ApiPushRoute = ApiPushRouteImport.update({
   path: '/api/push',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiNowRoute = ApiNowRouteImport.update({
+  id: '/api/now',
+  path: '/api/now',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGifRoute = ApiGifRouteImport.update({
   id: '/api/gif',
   path: '/api/gif',
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
+  '/api/now': typeof ApiNowRoute
   '/api/push': typeof ApiPushRoute
   '/api/song': typeof ApiSongRoute
   '/api/song-audio': typeof ApiSongAudioRoute
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
+  '/api/now': typeof ApiNowRoute
   '/api/push': typeof ApiPushRoute
   '/api/song': typeof ApiSongRoute
   '/api/song-audio': typeof ApiSongAudioRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/vibe': typeof VibeRoute
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
+  '/api/now': typeof ApiNowRoute
   '/api/push': typeof ApiPushRoute
   '/api/song': typeof ApiSongRoute
   '/api/song-audio': typeof ApiSongAudioRoute
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/vibe'
     | '/walkthrough'
     | '/api/gif'
+    | '/api/now'
     | '/api/push'
     | '/api/song'
     | '/api/song-audio'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/vibe'
     | '/walkthrough'
     | '/api/gif'
+    | '/api/now'
     | '/api/push'
     | '/api/song'
     | '/api/song-audio'
@@ -383,6 +394,7 @@ export interface FileRouteTypes {
     | '/vibe'
     | '/walkthrough'
     | '/api/gif'
+    | '/api/now'
     | '/api/push'
     | '/api/song'
     | '/api/song-audio'
@@ -418,6 +430,7 @@ export interface RootRouteChildren {
   VibeRoute: typeof VibeRoute
   WalkthroughRoute: typeof WalkthroughRoute
   ApiGifRoute: typeof ApiGifRoute
+  ApiNowRoute: typeof ApiNowRoute
   ApiPushRoute: typeof ApiPushRoute
   ApiSongRoute: typeof ApiSongRoute
   ApiSongAudioRoute: typeof ApiSongAudioRoute
@@ -602,6 +615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/now': {
+      id: '/api/now'
+      path: '/api/now'
+      fullPath: '/api/now'
+      preLoaderRoute: typeof ApiNowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/gif': {
       id: '/api/gif'
       path: '/api/gif'
@@ -709,6 +729,7 @@ const rootRouteChildren: RootRouteChildren = {
   VibeRoute: VibeRoute,
   WalkthroughRoute: WalkthroughRoute,
   ApiGifRoute: ApiGifRoute,
+  ApiNowRoute: ApiNowRoute,
   ApiPushRoute: ApiPushRoute,
   ApiSongRoute: ApiSongRoute,
   ApiSongAudioRoute: ApiSongAudioRoute,

@@ -20,7 +20,19 @@ export type EarState = {
   cat: EarCat;
   level: EarLevel;
   songs: EarSong[];
+  /** Final scores (written when everyone's done / the live game ends). */
   results: Record<string, EarResult>;
+  /** "live": everyone hears the same song at the same time, on a timer. */
+  mode?: "live";
+  /** Live: who's in (opened the game), and who quit. */
+  joined?: string[];
+  left?: string[];
+  /** Live: when song 1 starts (server time, ms). Unset while in the waiting room. */
+  startAt?: number;
+  /** Live: songs that ended early because everyone had answered (server ms). */
+  ends?: Record<number, number>;
+  /** Live: each player's answer per song (clip index, -1 missed, -2 didn't load). */
+  picks?: Record<string, (number | null)[]>;
 };
 
 export const CATS: { id: EarCat; name: string; emoji: string; tone: string }[] = [
@@ -49,6 +61,80 @@ export const TIER_NAME: Record<EarTier, string> = {
 /** The difficulty of song number k (0-based) in a game. */
 export const tierOf = (level: EarLevel, k: number): EarTier =>
   level === "mix" ? MIX_TIERS[Math.min(k, MIX_TIERS.length - 1)] : level;
+/** Live games: seconds to name each song, by how hard it is. */
+export const SONG_SECS: Record<EarTier, number> = {
+  easy: 60,
+  medium: 50,
+  hard: 45,
+  insane: 40,
+  impossible: 30,
+};
+/** Live games: the answer is shown to everyone for this long between songs. */
+export const REVEAL_MS = 7000;
+/** Live games: 3-2-1 before song 1. */
+export const COUNTDOWN_MS = 4000;
+
+export type LiveAt =
+  | { phase: "lobby" }
+  | { phase: "countdown"; endsAt: number }
+  | { phase: "song" | "reveal"; k: number; endsAt: number }
+  | { phase: "over" };
+/** Where a live game is right now: which song, and when this part ends. */
+export function liveAt(st: EarState, now: number): LiveAt {
+  if (!st.startAt) return { phase: "lobby" };
+  if (now < st.startAt) return { phase: "countdown", endsAt: st.startAt };
+  let t = st.startAt;
+  for (let k = 0; k < st.songs.length; k++) {
+    const full = t + SONG_SECS[tierOf(st.level, k)] * 1000;
+    const early = st.ends?.[k];
+    const end = early && early < full ? Math.max(t, early) : full;
+    if (now < end) return { phase: "song", k, endsAt: end };
+    if (now < end + REVEAL_MS) return { phase: "reveal", k, endsAt: end + REVEAL_MS };
+    t = end + REVEAL_MS;
+  }
+  return { phase: "over" };
+}
+/** Who's still playing a live game. */
+export const liveActive = (st: EarState) =>
+  (st.joined ?? []).filter((p) => !(st.left ?? []).includes(p));
+/** Final results from everyone's answers (songs with no answer count as missed). */
+export function liveResults(st: EarState, players: string[]): Record<string, EarResult> {
+  const out: Record<string, EarResult> = {};
+  for (const p of players) {
+    if (!(st.joined ?? []).includes(p)) continue;
+    const picks = st.picks?.[p] ?? [];
+    const got = st.songs.map((_, k) => {
+      const g = picks[k];
+      return g == null || g < 0 ? -1 : g;
+    });
+    out[p] = { score: got.reduce((a, g) => a + (g >= 0 ? POINTS[g] : 0), 0), got, at: 0 };
+  }
+  return out;
+}
+
+/** Server time (ms), so everyone's song changes at the same moment. */
+let offset = 0;
+let synced: Promise<void> | null = null;
+export function syncClock() {
+  synced ??= (async () => {
+    const tries: { off: number; rtt: number }[] = [];
+    for (let i = 0; i < 3; i++) {
+      try {
+        const t0 = Date.now();
+        const r = await fetch("/api/now", { cache: "no-store" });
+        const { now } = (await r.json()) as { now: number };
+        const t1 = Date.now();
+        tries.push({ off: now - (t0 + t1) / 2, rtt: t1 - t0 });
+      } catch {
+        // keep the phone's clock
+      }
+    }
+    if (tries.length) offset = tries.sort((a, b) => a.rtt - b.rtt)[0].off;
+  })();
+  return synced;
+}
+export const serverNow = () => Date.now() + offset;
+
 /** Points for naming it on each clip. */
 export const POINTS = [100, 80, 60, 40, 25, 10];
 export const SONGS_PER_GAME = 5;
