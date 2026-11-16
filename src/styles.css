@@ -863,3 +863,29 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 .day-art-float { display: inline-block; animation: day-art-float 3.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .day-art-float { animation: none; } }
+
+/* Chess: the piece that just moved slides into place. */
+@keyframes piece-slide {
+  from { transform: translate(var(--dx), var(--dy)); }
+  to { transform: none; }
+}
+
+/* Poker table */
+.poker-btn {
+  min-height: 52px;
+  border-radius: 16px;
+  font-weight: 900;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+}
+.poker-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35); }
+@keyframes card-flip { from { transform: rotateY(90deg) scale(0.9); opacity: 0.4; } to { transform: none; opacity: 1; } }
+.card-flip { animation: card-flip 0.35s ease-out both; }
+@keyframes chips-in { from { transform: translateY(8px) scale(0.8); opacity: 0; } to { transform: none; opacity: 1; } }
+.chips-in { animation: chips-in 0.25s ease-out both; }
+@keyframes win-pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: none; } }
+.win-pop { animation: win-pop 0.45s cubic-bezier(.3,1.4,.5,1) both; }
+@media (prefers-reduced-motion: reduce) { .card-flip, .chips-in, .win-pop { animation: none; } }

@@ -208,6 +208,43 @@ export const sfx = {
   bad() {
     play(() => tone(220, 0.25, { type: "square", gain: 0.06, slide: 140 }));
   },
+  /** A chess piece set down on wood. */
+  knock() {
+    play(() => {
+      noise(0.05, { gain: 0.3, freq: 1300, q: 3 });
+      tone(240, 0.08, { type: "sine", gain: 0.18, slide: 150 });
+    });
+  },
+  /** A capture: a heavier knock. */
+  take() {
+    play(() => {
+      noise(0.07, { gain: 0.42, freq: 900, q: 2 });
+      tone(180, 0.12, { type: "triangle", gain: 0.2, slide: 90 });
+      noise(0.04, { at: 0.05, gain: 0.2, freq: 2400, q: 4 });
+    });
+  },
+  /** Check! */
+  check() {
+    play(() => {
+      tone(988, 0.12, { type: "square", gain: 0.06 });
+      tone(1319, 0.2, { type: "square", gain: 0.05, at: 0.1 });
+    });
+  },
+  /** Chips pushed into the pot. */
+  chips(n = 3) {
+    play(() => {
+      for (let i = 0; i < n; i++) {
+        noise(0.03, { at: i * 0.045, gain: 0.25, freq: 4200 + Math.random() * 1500, q: 6 });
+        tone(2600 + Math.random() * 600, 0.03, { type: "sine", gain: 0.04, at: i * 0.045 });
+      }
+    });
+  },
+  /** A card dealt / turned over. */
+  card(n = 1) {
+    play(() => {
+      for (let i = 0; i < n; i++) noise(0.06, { at: i * 0.09, gain: 0.2, freq: 3000, q: 0.7 });
+    });
+  },
   /** You won: a little fanfare. */
   win() {
     play(() => {

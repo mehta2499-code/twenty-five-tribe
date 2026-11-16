@@ -18,6 +18,13 @@ import {
 } from "@/lib/kachuful";
 import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
+import { newChess, type ChessState } from "@/lib/chess";
+import {
+  leave as pokerLeave,
+  newPoker,
+  standUp as pokerStandUp,
+  type PokerState,
+} from "@/lib/poker";
 
 export type TriviaState = {
   pack: string;
@@ -46,9 +53,11 @@ export type WordState = {
 export const hideWord = (w: string) => btoa([...w].reverse().join(""));
 export const revealWord = (h: string) => [...atob(h)].reverse().join("");
 
-export type GameRow<S = KState | TriviaState | WordState | LudoState | ImpState> = {
+export type GameRow<
+  S = KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState,
+> = {
   id: string;
-  kind: "kachuful" | "trivia" | "word" | "ludo" | "imposter";
+  kind: "kachuful" | "trivia" | "word" | "ludo" | "imposter" | "chess" | "poker";
   host: string;
   players: string[];
   status: "playing" | "done";
@@ -203,6 +212,73 @@ export async function startWordChallenge(friend: Person, word: string) {
   return id;
 }
 
+/** Challenge a friend to chess (colours picked at random). */
+export async function startChess(friend: Person) {
+  track("game_started", { game: "chess" });
+  const me = myId();
+  const id = uuid();
+  const iAmWhite = Math.random() < 0.5;
+  const state = newChess(iAmWhite ? me : friend.id, iAmWhite ? friend.id : me);
+  const { error } = await supabase
+    .from("games")
+    .insert({ id, kind: "chess", host: me, players: [me, friend.id], state, version: 0 });
+  if (error) throw new Error(error.message);
+  await invite(
+    [friend.id],
+    id,
+    iAmWhite ? "Chess? I'm white, opening now. ♟️" : "Chess? You're white. Your move. ♟️",
+  );
+  return id;
+}
+
+/** Open a poker table: the host picks seats, buy-in and blinds, then invites friends. */
+export async function startPoker(
+  friends: Person[],
+  opts: { maxSeats: number; buyIn: number; sb: number; bb: number; rise: boolean },
+) {
+  track("game_started", { game: "poker" });
+  const me = _get().me!;
+  const state = newPoker([{ id: me.id, name: me.name, avatar: me.avatar, initials: me.initials }], {
+    stack: opts.buyIn,
+    sb: opts.sb,
+    bb: opts.bb,
+    maxSeats: opts.maxSeats,
+    rise: opts.rise,
+    lobby: true,
+  });
+  const id = uuid();
+  const { error } = await supabase.from("games").insert({
+    id,
+    kind: "poker",
+    host: me.id,
+    players: [me.id, ...friends.map((f) => f.id)],
+    state,
+    version: 0,
+  });
+  if (error) throw new Error(error.message);
+  await invite(
+    friends.map((f) => f.id),
+    id,
+    `Poker night 🃏 No-limit Hold'em, ${opts.maxSeats} seats, buy-in ${opts.buyIn}, blinds ${opts.sb}/${opts.bb}. Take a seat.`,
+  );
+  return id;
+}
+
+/** Invite more of your 25 to a poker table that hasn't started. */
+export async function inviteToPoker(
+  id: string,
+  friendIds: string[],
+  opts: { buyIn: number; sb: number; bb: number },
+) {
+  if (!friendIds.length) return;
+  await supabase.rpc("add_game_players" as never, { p_id: id, p_players: friendIds } as never);
+  await invite(
+    friendIds,
+    id,
+    `Poker night 🃏 Buy-in ${opts.buyIn}, blinds ${opts.sb}/${opts.bb}. Take a seat.`,
+  );
+}
+
 /** Take yourself off a game after quitting (it leaves "Your games"). */
 export async function leaveGame(id: string) {
   await supabase.rpc("leave_game" as never, { p_id: id } as never);
@@ -243,6 +319,27 @@ export async function quitGame(g: GameRow, meId: string) {
       await changeLatest<TriviaState>(g.id, (cur) =>
         cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },
       );
+    } else if (g.kind === "chess") {
+      await changeLatest<ChessState>(g.id, (cur) =>
+        cur.result
+          ? null
+          : {
+              state: {
+                ...cur,
+                result: { winner: cur.white === meId ? "b" : "w", reason: "resign" },
+              },
+              status: "done",
+            },
+      );
+    } else if (g.kind === "poker") {
+      await changeLatest<PokerState>(g.id, (cur) => {
+        if (cur.phase === "lobby")
+          return g.host === meId
+            ? { state: cur, status: "done" }
+            : { state: pokerStandUp(cur, meId) };
+        const next = pokerLeave(cur, meId);
+        return { state: next, status: next.phase === "over" ? "done" : undefined };
+      });
     } else if (g.kind === "imposter") {
       await changeLatest<ImpState>(g.id, (cur) => {
         // The host leaving, or a round in progress: the party ends.

@@ -8,6 +8,8 @@ export type ArtKind =
   | "word"
   | "mystery"
   | "imposter"
+  | "chess"
+  | "poker"
   | "tap-rush"
   | "quick-math"
   | "colour-clash"
@@ -31,6 +33,8 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "word" && <Tiles />}
       {kind === "mystery" && <Mystery />}
       {kind === "imposter" && <Hooded />}
+      {kind === "chess" && <ChessArt />}
+      {kind === "poker" && <PokerArt />}
       {kind === "tap-rush" && <Target />}
       {kind === "quick-math" && <MathTiles />}
       {kind === "colour-clash" && <PaletteArt />}
@@ -384,6 +388,98 @@ function Hooded() {
         stroke={EDGE}
         strokeWidth="1.5"
       />
+    </g>
+  );
+}
+
+function ChessArt() {
+  // A knight and a pawn on a little board corner.
+  return (
+    <g strokeLinejoin="round">
+      <rect
+        x="6"
+        y="40"
+        width="52"
+        height="16"
+        rx="4"
+        fill="#8571C9"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <rect x="6" y="40" width="13" height="16" rx="2" fill="#E7E2F7" />
+      <rect x="32" y="40" width="13" height="16" fill="#E7E2F7" />
+      <rect
+        x="6"
+        y="40"
+        width="52"
+        height="16"
+        rx="4"
+        fill="none"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <path
+        d="M20 42 h22 v-4 h-3 c0-7 2-10 2-16 c0-8-6-14-15-14 l-2 4 l-6 6 l2 4 l5-2 c1 3-4 6-6 11 c-1 3 0 5 3 7 h-2 z"
+        fill="#FFF8EC"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <circle cx="27" cy="16" r="1.8" fill={EDGE} />
+      <path
+        d="M44 42 h12 l-2-5 h-2 l-1-7 a4.5 4.5 0 1 0-4 0 l-1 7 h-2 z"
+        fill="#1A1530"
+        stroke={EDGE}
+        strokeWidth="2"
+      />
+    </g>
+  );
+}
+
+function PokerArt() {
+  const card = (x: number, r: number, rank: string, suit: string, red: boolean) => (
+    <g transform={`rotate(${r} ${x + 13} 44)`}>
+      <rect
+        x={x}
+        y="10"
+        width="26"
+        height="36"
+        rx="5"
+        fill="#FFF8EC"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <text
+        x={x + 5}
+        y="22"
+        fontSize="11"
+        fontWeight="900"
+        fill={red ? "#E0294A" : EDGE}
+        fontFamily="system-ui"
+      >
+        {rank}
+      </text>
+      <text
+        x={x + 15}
+        y="40"
+        fontSize="15"
+        textAnchor="middle"
+        fill={red ? "#E0294A" : EDGE}
+        fontFamily="system-ui"
+      >
+        {suit}
+      </text>
+    </g>
+  );
+  return (
+    <g strokeLinejoin="round">
+      {card(10, -14, "A", "♠", false)}
+      {card(26, 10, "K", "♥", true)}
+      <g transform="translate(40 44)">
+        <ellipse cx="9" cy="10" rx="11" ry="5" fill="#2F7BE0" stroke={EDGE} strokeWidth="2" />
+        <ellipse cx="9" cy="6" rx="11" ry="5" fill="#E2506A" stroke={EDGE} strokeWidth="2" />
+        <ellipse cx="9" cy="2" rx="11" ry="5" fill="#F4C96B" stroke={EDGE} strokeWidth="2" />
+        <ellipse cx="9" cy="2" rx="5" ry="2.2" fill="none" stroke="#FFF8EC" strokeWidth="1.5" />
+      </g>
     </g>
   );
 }

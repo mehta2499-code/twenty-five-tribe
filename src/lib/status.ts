@@ -172,5 +172,7 @@ const GAME_NAMES: Record<string, string> = {
   trivia: "Trivia",
   word: "Word Up",
   imposter: "Imposter",
+  chess: "Chess",
+  poker: "Poker",
 };
 export const gameLabel = (kind: string) => GAME_NAMES[kind] ?? "a game";

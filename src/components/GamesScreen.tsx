@@ -1,8 +1,13 @@
 import { Tour } from "@/components/Tour";
+import { ChessLobby, LocalChess } from "@/components/Chess";
+import { PokerSetup } from "@/components/Poker";
+import type { ChessState } from "@/lib/chess";
+import type { PokerState } from "@/lib/poker";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ChevronRight,
+  Crown,
   CircleHelp,
   X,
   Dices,
@@ -47,6 +52,8 @@ import {
   inviteToDuel,
   quitGame,
   startLudo,
+  startChess,
+  startPoker,
   startParty,
   startTriviaChallenge,
   startWordChallenge,
@@ -133,6 +140,24 @@ function YourGames({ meId }: { meId: string }) {
             status = guessing
               ? `Your turn · ${w.guesses.length}/6`
               : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6`;
+          } else if (g.kind === "chess") {
+            const c = g.state as ChessState;
+            const mine = c.white === meId ? "w" : "b";
+            yourTurn = c.turn === mine && !c.result;
+            title = `Chess vs ${others[0]?.name.split(" ")[0] ?? "a friend"}`;
+            status = yourTurn ? "Your move" : "Their move";
+          } else if (g.kind === "poker") {
+            const pk = g.state as PokerState;
+            yourTurn = pk.phase === "betting" && pk.seats[pk.toAct]?.id === meId;
+            title = `Hold'em · ${pk.seats.length}/${pk.maxSeats} seats`;
+            status =
+              pk.phase === "lobby"
+                ? pk.seats.some((p) => p.id === meId)
+                  ? "Waiting to deal"
+                  : "Take your seat"
+                : yourTurn
+                  ? "Your turn"
+                  : `Hand ${pk.handNo}`;
           } else if (g.kind === "imposter") {
             const p = g.state as ImpState;
             yourTurn =
@@ -355,6 +380,9 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [toast, setToast] = useState<string | null>(null);
   const [packs, setPacks] = useState(false);
   const [ludo, setLudo] = useState(false);
+  const [chess, setChess] = useState(false);
+  const [chessBot, setChessBot] = useState<{ level: 1 | 2 | 3; color: "w" | "b" } | null>(null);
+  const [poker, setPoker] = useState(false);
   const [soloLudo, setSoloLudo] = useState<number | null>(null);
   const [wordMenu, setWordMenu] = useState(false);
 
@@ -412,6 +440,28 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           {live && <YourGames meId={s.me!.id} />}
 
           <section className="px-5 mt-6 grid grid-cols-2 gap-3.5" aria-label="All games">
+            <GameTile
+              tone="#1E7F4C"
+              light
+              Icon={Spade}
+              art="poker"
+              sticker="2–9 · NO LIMIT"
+              title="Hold'em"
+              line="Your table, your buy-in, your blinds. Bluff your 25."
+              tilt={-1.4}
+              onClick={() => (live ? setPoker(true) : setToast("Sign in to open a table."))}
+            />
+            <GameTile
+              tone="#8571C9"
+              light
+              Icon={Crown}
+              art="chess"
+              sticker="1 VS 1 · BOT"
+              title="Chess"
+              line="Take on your 25, or the bot on Easy, Medium or Hard."
+              tilt={1.3}
+              onClick={() => setChess(true)}
+            />
             <GameTile
               tone="#2B2736"
               light
@@ -482,6 +532,46 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         </>
       )}
 
+      {chess && (
+        <ChessLobby
+          onClose={() => setChess(false)}
+          onBot={(level, color) => {
+            setChess(false);
+            setChessBot({ level, color });
+          }}
+          onFriend={async (f) => {
+            setChess(false);
+            if (!live) return setToast("Sign in to challenge a friend.");
+            try {
+              const id = await startChess(f);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
+      {chessBot && (
+        <LocalChess
+          level={chessBot.level}
+          color={chessBot.color}
+          onClose={() => setChessBot(null)}
+        />
+      )}
+      {poker && (
+        <PokerSetup
+          onClose={() => setPoker(false)}
+          onOpen={async (friends, opts) => {
+            setPoker(false);
+            try {
+              const id = await startPoker(friends, opts);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
       {ludo && (
         <LudoLobby
           onClose={() => setLudo(false)}

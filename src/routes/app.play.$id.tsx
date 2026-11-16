@@ -47,6 +47,20 @@ import { _get, friendById, useSocial } from "@/lib/social";
 import { GameChat } from "@/components/GameChat";
 import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
+import { ChessTable } from "@/components/Chess";
+import { PokerTable, PokerWaiting } from "@/components/Poker";
+import { makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
+import {
+  act as pokerAct,
+  beginPoker,
+  foldAway,
+  joinPoker,
+  leave as leavePoker,
+  standUp,
+  startHand,
+  type PokerState,
+} from "@/lib/poker";
+import { inviteToPoker, startChess } from "@/lib/games";
 
 export const Route = createFileRoute("/app/play/$id")({
   component: clientOnly(PlayScreen),
@@ -74,7 +88,9 @@ function PlayScreen() {
 type Live<S> = ReturnType<typeof useGame<S>>;
 
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
-  const live = useGame<KState | TriviaState | WordState | LudoState | ImpState>(id);
+  const live = useGame<
+    KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState
+  >(id);
   const { game, error } = live;
   // Your 25 see you playing at the Table.
   useDoing(game ? { doing: "game", detail: gameLabel(game.kind), ref: `game:${id}` } : null);
@@ -147,7 +163,11 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   const close = quit ? () => setLeaving(true) : onClose;
 
   const board =
-    game.kind === "imposter" ? (
+    game.kind === "chess" ? (
+      <OnlineChess live={live as Live<ChessState>} meId={meId} onClose={onClose} />
+    ) : game.kind === "poker" ? (
+      <OnlinePoker live={live as Live<PokerState>} meId={meId} onClose={onClose} />
+    ) : game.kind === "imposter" ? (
       <ImposterGame game={game as GameRow<ImpState>} meId={meId} onClose={onClose} />
     ) : game.kind === "word" ? (
       <OnlineWord live={live as Live<WordState>} meId={meId} onClose={close} />
@@ -568,6 +588,155 @@ function OnlineLudo({
           const r = resign(cur, mine);
           return { state: r, status: r.phase === "over" ? "done" : undefined };
         }).then(() => leaveGame(game.id));
+      }}
+      onClose={onClose}
+    />
+  );
+}
+
+function OnlineChess({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<ChessState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game, save } = live;
+  const navigate = useNavigate();
+  const s = useSocial();
+  if (!game) return null;
+  const st = game.state;
+  const me = st.white === meId ? "w" : "b";
+  const otherId = me === "w" ? st.black : st.white;
+  const other = friendById(otherId);
+  const done = (next: ChessState) => void save(next, next.result ? "done" : undefined);
+  return (
+    <ChessTable
+      state={st}
+      me={me}
+      you={{
+        id: meId,
+        name: s.me?.name ?? "You",
+        avatar: s.me?.avatar,
+        initials: s.me?.initials ?? "YO",
+      }}
+      them={{
+        id: otherId,
+        name: other?.name ?? "Your friend",
+        avatar: other?.avatar || undefined,
+        initials: other?.initials ?? "?",
+        color: other?.color,
+      }}
+      onMove={(m) => {
+        const next = makeMove(st, m);
+        if (next) done(next);
+      }}
+      onResign={() =>
+        void changeLatest<ChessState>(game.id, (cur) =>
+          cur.result ? null : { state: resignChess(cur, me), status: "done" },
+        )
+      }
+      onOfferDraw={() => void save({ ...st, drawOffer: me })}
+      onAcceptDraw={() =>
+        done({ ...st, drawOffer: undefined, result: { winner: null, reason: "agreed" } })
+      }
+      onClose={onClose}
+      onPlayAgain={
+        other
+          ? () =>
+              void startChess(other).then((id) => navigate({ to: "/app/play/$id", params: { id } }))
+          : undefined
+      }
+    />
+  );
+}
+
+function OnlinePoker({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<PokerState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game, save } = live;
+  const s = useSocial();
+  if (!game) return null;
+  const st = game.state;
+  const commit = (next: PokerState | null) =>
+    next && void save(next, next.phase === "over" ? "done" : undefined);
+  const isHost = game.host === meId;
+
+  if (st.phase === "lobby") {
+    if (game.status === "done")
+      return (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
+          <h2 className="font-display" style={{ fontSize: 28 }}>
+            Table closed
+          </h2>
+          <p className="mt-3 text-cool">The host closed this table before the first hand.</p>
+          <button onClick={onClose} className="mt-8 btn-primary px-8">
+            Back to games
+          </button>
+        </div>
+      );
+    return (
+      <PokerWaiting
+        s={st}
+        meId={meId}
+        isHost={isHost}
+        invited={game.players.filter((p) => p !== game.host)}
+        onSit={() =>
+          commit(
+            joinPoker(st, {
+              id: meId,
+              name: s.me?.name ?? "Player",
+              avatar: s.me?.avatar,
+              initials: s.me?.initials ?? "?",
+            }),
+          )
+        }
+        onStart={() => commit(beginPoker(st))}
+        onInvite={(ids) =>
+          void inviteToPoker(game.id, ids, { buyIn: st.startStack, sb: st.sb, bb: st.bb }).then(
+            () => live.reload(),
+          )
+        }
+        onLeave={() => {
+          if (isHost)
+            void changeLatest<PokerState>(game.id, (cur) =>
+              cur.phase === "lobby" ? { state: cur, status: "done" } : null,
+            );
+          else if (st.seats.some((p) => p.id === meId))
+            void changeLatest<PokerState>(game.id, (cur) =>
+              cur.phase === "lobby" ? { state: standUp(cur, meId) } : null,
+            );
+          onClose();
+        }}
+      />
+    );
+  }
+
+  return (
+    <PokerTable
+      s={st}
+      meId={meId}
+      hostId={game.host}
+      onAction={(a) => {
+        const mine = st.seats.findIndex((p) => p.id === meId);
+        commit(pokerAct(st, mine, a));
+      }}
+      onNextHand={() => st.phase === "showdown" && commit(startHand(st))}
+      onFoldAway={() => commit(foldAway(st))}
+      onLeave={() => {
+        void changeLatest<PokerState>(game.id, (cur) => {
+          const next = leavePoker(cur, meId);
+          return { state: next, status: next.phase === "over" ? "done" : undefined };
+        }).then(() => leaveGame(game.id));
+        onClose();
       }}
       onClose={onClose}
     />
