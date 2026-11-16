@@ -21,6 +21,10 @@ export type GMsg = {
   at: number;
   /** A poll ("ref" is "poll"; the question is "text"). */
   poll?: Poll;
+  /** The message this one replies to. */
+  replyTo?: string;
+  /** Deleted for everyone by the sender. */
+  deleted?: boolean;
 };
 export type Group = {
   id: string;
@@ -131,7 +135,7 @@ async function load(me: string) {
         supabase
           .from("group_messages")
           .select(
-            "id,group_id,sender,body,shared_ref,created_at,poll_options,poll_multi" as "id,group_id,sender,body,shared_ref,created_at",
+            "id,group_id,sender,body,shared_ref,created_at,poll_options,poll_multi,reply_to,deleted" as "id,group_id,sender,body,shared_ref,created_at",
           )
           .in("group_id", ids)
           .order("created_at", { ascending: false })
@@ -162,6 +166,8 @@ async function load(me: string) {
       created_at: string;
       poll_options?: string[] | null;
       poll_multi?: boolean;
+      reply_to?: string | null;
+      deleted?: boolean | null;
     }[]
   ).reverse())
     (msgs[r.group_id] ??= []).push({
@@ -170,6 +176,8 @@ async function load(me: string) {
       text: r.body ?? undefined,
       ref: r.shared_ref ?? undefined,
       at: Date.parse(r.created_at),
+      replyTo: r.reply_to ?? undefined,
+      deleted: !!r.deleted || undefined,
       poll: r.poll_options?.length
         ? {
             options: r.poll_options,
@@ -320,6 +328,12 @@ export function useGroups() {
           { event: "DELETE", schema: "public", table: "group_members" },
           reload,
         )
+        // A message deleted for everyone.
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "group_messages" },
+          reload,
+        )
         .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, reload)
         .on("postgres_changes", { event: "*", schema: "public", table: "group_poll_votes" }, reload)
         .subscribe();
@@ -433,15 +447,44 @@ function pushLocal(groupId: string, m: GMsg) {
   set((s) => ({ ...s, msgs: { ...s.msgs, [groupId]: [...(s.msgs[groupId] ?? []), m] } }));
 }
 
-export async function sendToGroup(groupId: string, text: string) {
+export async function sendToGroup(groupId: string, text: string, replyTo?: string) {
   const t = text.trim();
   if (!t) return;
   const id = uuid();
-  pushLocal(groupId, { id, from: "me", text: t, at: Date.now() });
+  pushLocal(groupId, { id, from: "me", text: t, at: Date.now(), replyTo });
   if (!mine()) return;
-  const { error } = await supabase
-    .from("group_messages")
-    .insert({ id, group_id: groupId, sender: _get().me!.id, body: t });
+  const { error } = await supabase.from("group_messages").insert({
+    id,
+    group_id: groupId,
+    sender: _get().me!.id,
+    body: t,
+    ...(replyTo ? { reply_to: replyTo } : {}),
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Delete your own group message for everyone. */
+export async function deleteGroupMessage(groupId: string, msgId: string) {
+  set((s) => ({
+    ...s,
+    msgs: {
+      ...s.msgs,
+      [groupId]: (s.msgs[groupId] ?? []).map((m) =>
+        m.id === msgId
+          ? {
+              ...m,
+              text: undefined,
+              ref: undefined,
+              poll: undefined,
+              replyTo: undefined,
+              deleted: true,
+            }
+          : m,
+      ),
+    },
+  }));
+  if (!mine()) return;
+  const { error } = await supabase.rpc("delete_group_message" as never, { p_id: msgId } as never);
   if (error) throw new Error(error.message);
 }
 

@@ -8,9 +8,26 @@ import {
   dayLabel,
 } from "@/components/ChatChrome";
 import { useEffect, useRef, useState } from "react";
-import { BarChart3, ImagePlus, Megaphone, Plus, Trash2, Users, X } from "lucide-react";
+import { BarChart3, ImagePlus, Megaphone, Plus, Star, Trash2, Users, X } from "lucide-react";
+import {
+  DeleteSheet,
+  DeletedNote,
+  ForwardSheet,
+  JumpToLatest,
+  Quote,
+  ReplyBar,
+  fileFromMessage,
+  hideForMe,
+  jumpTo,
+  messageActions,
+  snippetOf,
+  toggleStar,
+  useChatPrefs,
+  type ForwardTarget,
+} from "@/components/MessageActions";
+import { account } from "@/lib/live";
 import { PollView } from "@/components/SceneParts";
-import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
+import { GifPicker, RichBubble, isRich, sendRichToFriend } from "@/components/GifPicker";
 import { GroupFace } from "@/components/GroupFace";
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
@@ -23,11 +40,14 @@ import {
   Reactable,
   VoicePlayer,
   parseMedia,
+  sendMedia,
+  sendVoice,
 } from "@/components/ChatExtras";
-import { dayKey, mutualFriends } from "@/lib/social";
+import { dayKey, mutualFriends, social } from "@/lib/social";
 import {
   addMembers,
   deleteGroup,
+  deleteGroupMessage,
   leaveGroup,
   markSeen,
   member,
@@ -72,6 +92,12 @@ function GroupThread() {
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [gifOpen, setGifOpen] = useState(false);
+  // Long-press actions.
+  const prefs = useChatPrefs();
+  type M = (typeof st.msgs)[string][number];
+  const [replyTo, setReplyTo] = useState<M | null>(null);
+  const [forwarding, setForwarding] = useState<M | null>(null);
+  const [deleting, setDeleting] = useState<M | null>(null);
   // New poll being written, and the poll whose votes are open.
   const [draft, setDraft] = useState<{ q: string; options: string[]; multi: boolean } | null>(null);
   const [votesFor, setVotesFor] = useState<string | null>(null);
@@ -98,8 +124,34 @@ function GroupThread() {
     const t = text;
     setText("");
     boxRef.current?.focus();
-    void sendToGroup(id, t).catch((e) => setToast((e as Error).message));
+    void sendToGroup(id, t, replyTo?.id).catch((e) => setToast((e as Error).message));
+    setReplyTo(null);
   };
+  const byId = new Map(msgs.map((m) => [m.id, m]));
+  const whoName = (m: M) => (m.from === "me" ? "You" : member(m.from, st).name.split(" ")[0]);
+  const whoColor = (m: M) => (m.from === "me" ? "var(--lime)" : tone(m.from));
+  const reply = (m: M) => {
+    setReplyTo(m);
+    boxRef.current?.focus();
+  };
+  const forwardTargets: ForwardTarget[] = [
+    ...mutualFriends().map((p) => ({
+      id: p.id,
+      kind: "friend" as const,
+      name: p.name,
+      avatar: p.avatar || undefined,
+      initials: p.initials,
+      color: p.color,
+    })),
+    ...st.groups.map((x) => ({
+      id: x.id,
+      kind: "group" as const,
+      name: x.name,
+      avatar: x.avatar,
+      initials: x.emoji,
+      emoji: x.emoji,
+    })),
+  ];
   // My latest message gets a "Seen by …" line (tap it to see everyone).
   const lastMine = msgs.reduce((k, m, i) => (m.from === "me" ? i : k), -1);
   const seenLine = (m: (typeof msgs)[number]) => {
@@ -165,181 +217,245 @@ function GroupThread() {
           </button>
         </ChatHeader>
 
-        <div
-          ref={logRef}
-          className="relative flex-1 overflow-y-auto px-2 pb-3 pt-2"
-          role="log"
-          aria-live="polite"
-        >
-          {msgs.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-8">
-              <GroupFace avatar={g.avatar} emoji={g.emoji} size={96} />
-              <p className="heading mt-3">{g.name}</p>
-              <p className="meta mt-1">Say something. Someone has to go first.</p>
-            </div>
-          ) : (
-            <>
-              {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
-              <ol>
-                {msgs.slice(recent.start).map((m, j) => {
-                  const i = recent.start + j;
-                  const mine = m.from === "me";
-                  const prev = msgs[i - 1];
-                  const next = msgs[i + 1];
-                  const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
-                  const sameRun = (a?: typeof m, b?: typeof m) =>
-                    !!a &&
-                    !!b &&
-                    a.from === b.from &&
-                    dayKey(a.at) === dayKey(b.at) &&
-                    b.at - a.at < 5 * 60_000;
-                  const grouped = sameRun(prev, m);
-                  const tail = !sameRun(m, next);
-                  const who = member(m.from, st);
-                  const rich = !m.poll && isRich(m.ref);
-                  const plainText =
-                    !m.poll && !rich && !m.ref?.startsWith("voice:") && !parseMedia(m.ref);
-                  const mentioned =
-                    !mine &&
-                    !!m.text &&
-                    splitMentions(m.text, everyone).some((x) => x.who?.id === "me");
-                  return (
-                    <li key={m.id}>
-                      {newDay && <DayPill label={dayLabel(m.at)} />}
-                      <div
-                        className={`flex items-end gap-1.5 ${mine ? "justify-end pr-1.5" : "justify-start"} ${grouped ? "mt-0.5" : "mt-2"}`}
-                      >
-                        {!mine && (
-                          <span className="w-8 shrink-0 mr-1">
-                            {/* Their photo beside the last message of a run, like WhatsApp. */}
-                            {tail && (
-                              <PersonLink id={m.from} username={who.username} label={who.name}>
-                                <Avatar
-                                  src={who.avatar}
-                                  initials={who.initials}
-                                  color={who.color}
-                                  size={30}
-                                />
-                              </PersonLink>
-                            )}
-                          </span>
-                        )}
-                        <Reactable id={m.id} mine={mine}>
-                          <Bubble
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          <JumpToLatest logId="group-log" />
+          <div
+            ref={logRef}
+            id="group-log"
+            className="relative flex-1 overflow-y-auto px-2 pb-3 pt-2"
+            role="log"
+            aria-live="polite"
+          >
+            {msgs.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center px-8">
+                <GroupFace avatar={g.avatar} emoji={g.emoji} size={96} />
+                <p className="heading mt-3">{g.name}</p>
+                <p className="meta mt-1">Say something. Someone has to go first.</p>
+              </div>
+            ) : (
+              <>
+                {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
+                <ol>
+                  {msgs.slice(recent.start).map((m, j) => {
+                    if (prefs.hidden.includes(m.id)) return null;
+                    const i = recent.start + j;
+                    const mine = m.from === "me";
+                    const prev = msgs[i - 1];
+                    const next = msgs[i + 1];
+                    const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
+                    const sameRun = (a?: typeof m, b?: typeof m) =>
+                      !!a &&
+                      !!b &&
+                      a.from === b.from &&
+                      dayKey(a.at) === dayKey(b.at) &&
+                      b.at - a.at < 5 * 60_000;
+                    const grouped = sameRun(prev, m);
+                    const tail = !sameRun(m, next);
+                    const who = member(m.from, st);
+                    const rich = !m.deleted && !m.poll && isRich(m.ref);
+                    const plainText =
+                      !m.deleted &&
+                      !m.poll &&
+                      !rich &&
+                      !m.ref?.startsWith("voice:") &&
+                      !parseMedia(m.ref);
+                    const quoted = m.replyTo ? byId.get(m.replyTo) : undefined;
+                    const starred = prefs.starred.includes(m.id);
+                    const media = rich || !!m.ref?.startsWith("voice:") || !!parseMedia(m.ref);
+                    const mentioned =
+                      !mine &&
+                      !!m.text &&
+                      splitMentions(m.text, everyone).some((x) => x.who?.id === "me");
+                    return (
+                      <li key={m.id}>
+                        {newDay && <DayPill label={dayLabel(m.at)} />}
+                        <div
+                          className={`flex items-end gap-1.5 ${mine ? "justify-end pr-1.5" : "justify-start"} ${grouped ? "mt-0.5" : "mt-2"}`}
+                        >
+                          {!mine && (
+                            <span className="w-8 shrink-0 mr-1">
+                              {/* Their photo beside the last message of a run, like WhatsApp. */}
+                              {tail && (
+                                <PersonLink id={m.from} username={who.username} label={who.name}>
+                                  <Avatar
+                                    src={who.avatar}
+                                    initials={who.initials}
+                                    color={who.color}
+                                    size={30}
+                                  />
+                                </PersonLink>
+                              )}
+                            </span>
+                          )}
+                          <Reactable
+                            id={m.id}
                             mine={mine}
-                            tail={tail}
-                            inline={plainText}
-                            bare={rich}
-                            ring={mentioned ? "var(--sun)" : undefined}
-                            width={m.poll ? 280 : undefined}
-                            meta={
-                              <span className="tabular-nums" style={{ fontSize: 11 }}>
-                                {clock(m.at)}
-                              </span>
+                            onReply={m.deleted ? undefined : () => reply(m)}
+                            actions={() =>
+                              messageActions({
+                                text: m.poll ? undefined : m.text,
+                                starred,
+                                mine,
+                                deleted: m.deleted,
+                                canForward: plainText || media,
+                                onReply: () => reply(m),
+                                onForward: () => setForwarding(m),
+                                onStar: () => toggleStar(m.id),
+                                onReport: () =>
+                                  void account
+                                    .report(
+                                      m.from,
+                                      "Group message",
+                                      snippetOf(m.text, m.ref).slice(0, 900),
+                                    )
+                                    .then(() => setToast("Reported. Thanks, we'll look into it."))
+                                    .catch((e) => setToast((e as Error).message)),
+                                onDeleteMine: () => setDeleting(m),
+                                onDeleteForMe: () => setDeleting(m),
+                              })
                             }
                           >
-                            {/* Sender's name on the first message of a run, in their colour. */}
-                            {!mine && !grouped && !rich && (
-                              <p
-                                className="text-[13px] font-extrabold px-1 mb-0.5"
-                                style={{ color: tone(m.from) }}
-                              >
-                                {who.name.split(" ")[0]}
-                              </p>
-                            )}
-                            {m.poll ? (
-                              <div>
+                            <Bubble
+                              mine={mine}
+                              tail={tail}
+                              inline={plainText || !!m.deleted}
+                              bare={rich && !quoted}
+                              ring={mentioned ? "var(--sun)" : undefined}
+                              width={m.poll ? 280 : undefined}
+                              meta={
+                                <>
+                                  {starred && (
+                                    <Star size={11} fill="currentColor" aria-label="Starred" />
+                                  )}
+                                  <span className="tabular-nums" style={{ fontSize: 11 }}>
+                                    {clock(m.at)}
+                                  </span>
+                                </>
+                              }
+                            >
+                              {/* Sender's name on the first message of a run, in their colour. */}
+                              {!mine && !grouped && !rich && (
                                 <p
-                                  className="flex items-center gap-1.5 meta font-bold"
-                                  style={{ fontSize: 11.5 }}
+                                  className="text-[13px] font-extrabold px-1 mb-0.5"
+                                  style={{ color: tone(m.from) }}
                                 >
-                                  <BarChart3 size={13} aria-hidden="true" /> Poll
+                                  {who.name.split(" ")[0]}
                                 </p>
-                                <p
-                                  className="font-bold text-cream mt-1"
+                              )}
+                              {quoted && (
+                                <Quote
+                                  name={whoName(quoted)}
+                                  color={whoColor(quoted)}
+                                  text={snippetOf(quoted.text, quoted.ref, quoted.deleted)}
+                                  onTap={() => jumpTo(quoted.id)}
+                                />
+                              )}
+                              {m.deleted ? (
+                                <DeletedNote mine={mine} />
+                              ) : m.poll ? (
+                                <div>
+                                  <p
+                                    className="flex items-center gap-1.5 meta font-bold"
+                                    style={{ fontSize: 11.5 }}
+                                  >
+                                    <BarChart3 size={13} aria-hidden="true" /> Poll
+                                  </p>
+                                  <p
+                                    className="font-bold text-cream mt-1"
+                                    style={{
+                                      fontSize: 15.5,
+                                      lineHeight: 1.35,
+                                      overflowWrap: "anywhere",
+                                    }}
+                                  >
+                                    {m.text}
+                                  </p>
+                                  <PollView
+                                    postId={m.id}
+                                    poll={m.poll}
+                                    onVote={(o) =>
+                                      void voteGroupPoll(id, m.id, o).catch((e) =>
+                                        setToast((e as Error).message),
+                                      )
+                                    }
+                                    onShowVotes={() => setVotesFor(m.id)}
+                                  />
+                                </div>
+                              ) : isRich(m.ref) ? (
+                                <RichBubble value={m.ref} />
+                              ) : m.ref?.startsWith("voice:") ? (
+                                <VoicePlayer value={m.ref} mine={mine} />
+                              ) : parseMedia(m.ref) ? (
+                                <MediaBubble value={m.ref!} />
+                              ) : (
+                                <span
                                   style={{
-                                    fontSize: 15.5,
+                                    fontSize: 16,
                                     lineHeight: 1.35,
+                                    whiteSpace: "pre-wrap",
                                     overflowWrap: "anywhere",
                                   }}
                                 >
-                                  {m.text}
-                                </p>
-                                <PollView
-                                  postId={m.id}
-                                  poll={m.poll}
-                                  onVote={(o) =>
-                                    void voteGroupPoll(id, m.id, o).catch((e) =>
-                                      setToast((e as Error).message),
-                                    )
-                                  }
-                                  onShowVotes={() => setVotesFor(m.id)}
-                                />
-                              </div>
-                            ) : isRich(m.ref) ? (
-                              <RichBubble value={m.ref} />
-                            ) : m.ref?.startsWith("voice:") ? (
-                              <VoicePlayer value={m.ref} mine={mine} />
-                            ) : parseMedia(m.ref) ? (
-                              <MediaBubble value={m.ref!} />
-                            ) : (
-                              <span
-                                style={{
-                                  fontSize: 16,
-                                  lineHeight: 1.35,
-                                  whiteSpace: "pre-wrap",
-                                  overflowWrap: "anywhere",
-                                }}
-                              >
-                                {splitMentions(m.text ?? "", everyone).map((x, k) =>
-                                  x.who ? (
-                                    <b
-                                      key={k}
-                                      className="rounded px-0.5"
-                                      style={
-                                        x.who.id === "me"
-                                          ? {
-                                              background: "var(--sun)",
-                                              color: "var(--on-dark-fill)",
-                                            }
-                                          : {
-                                              color: mine ? "inherit" : tone(x.who.id),
-                                              textDecoration: mine ? "underline" : undefined,
-                                            }
-                                      }
-                                    >
-                                      {x.text}
-                                    </b>
-                                  ) : (
-                                    <span key={k}>{x.text}</span>
-                                  ),
-                                )}
-                              </span>
-                            )}
-                          </Bubble>
-                        </Reactable>
-                      </div>
-                      {i === lastMine && seenLine(m) && (
-                        <div className="flex justify-end mt-1">
-                          <button
-                            type="button"
-                            onClick={() => setSeenFor(m)}
-                            className="meta text-[12px] px-1"
-                            aria-label={`${seenLine(m)}. Show who has seen it`}
-                          >
-                            {seenLine(m)}
-                          </button>
+                                  {splitMentions(m.text ?? "", everyone).map((x, k) =>
+                                    x.who ? (
+                                      <b
+                                        key={k}
+                                        className="rounded px-0.5"
+                                        style={
+                                          x.who.id === "me"
+                                            ? {
+                                                background: "var(--sun)",
+                                                color: "var(--on-dark-fill)",
+                                              }
+                                            : {
+                                                color: mine ? "inherit" : tone(x.who.id),
+                                                textDecoration: mine ? "underline" : undefined,
+                                              }
+                                        }
+                                      >
+                                        {x.text}
+                                      </b>
+                                    ) : (
+                                      <span key={k}>{x.text}</span>
+                                    ),
+                                  )}
+                                </span>
+                              )}
+                            </Bubble>
+                          </Reactable>
                         </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            </>
-          )}
+                        {i === lastMine && seenLine(m) && (
+                          <div className="flex justify-end mt-1">
+                            <button
+                              type="button"
+                              onClick={() => setSeenFor(m)}
+                              className="meta text-[12px] px-1"
+                              aria-label={`${seenLine(m)}. Show who has seen it`}
+                            >
+                              {seenLine(m)}
+                            </button>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </>
+            )}
+          </div>
         </div>
 
         <Composer
+          replyBar={
+            replyTo && (
+              <ReplyBar
+                name={whoName(replyTo)}
+                color={whoColor(replyTo)}
+                text={snippetOf(replyTo.text, replyTo.ref)}
+                onCancel={() => setReplyTo(null)}
+              />
+            )
+          }
           value={text}
           onChange={setText}
           onSend={send}
@@ -687,6 +803,48 @@ function GroupThread() {
           onPick={(ref) => {
             setGifOpen(false);
             void sendGroupRich(id, ref).catch((err) => setToast((err as Error).message));
+          }}
+        />
+      )}
+      {deleting && (
+        <DeleteSheet
+          mine={deleting.from === "me" && !deleting.deleted}
+          onForMe={() => hideForMe(deleting.id)}
+          onForEveryone={() =>
+            void deleteGroupMessage(id, deleting.id).catch((e) => setToast((e as Error).message))
+          }
+          onClose={() => setDeleting(null)}
+        />
+      )}
+      {forwarding && (
+        <ForwardSheet
+          targets={forwardTargets}
+          onClose={() => setForwarding(null)}
+          onSend={async (to) => {
+            const m = forwarding;
+            const ref = m.ref ?? "";
+            const file = /^(img|vid|voice):/.test(ref) ? await fileFromMessage(m.id) : null;
+            const secs = Number(ref.split("|")[1]) || 1;
+            for (const t of to) {
+              try {
+                if (t.kind === "friend") {
+                  if (file && ref.startsWith("voice:")) await sendVoice(t.id, file, secs);
+                  else if (file) await sendMedia(t.id, file);
+                  else if (isRich(ref)) await sendRichToFriend(t.id, ref);
+                  else if (m.text) social.sendMessage(t.id, m.text);
+                } else {
+                  if (file && ref.startsWith("voice:")) await sendGroupVoice(t.id, file, secs);
+                  else if (file) await sendGroupMedia(t.id, file);
+                  else if (isRich(ref)) await sendGroupRich(t.id, ref);
+                  else if (m.text) await sendToGroup(t.id, m.text);
+                }
+              } catch (e) {
+                setToast((e as Error).message);
+              }
+            }
+            setToast(
+              to.length === 1 ? `Forwarded to ${to[0].name}` : `Forwarded to ${to.length} chats`,
+            );
           }}
         />
       )}

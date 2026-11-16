@@ -1,4 +1,6 @@
 /** Chat extras: emoji reactions, voice notes. Used by 1:1 and group chats. */
+import { MessageMenu, type MsgAction } from "@/components/MessageActions";
+import { Reply as ReplyIcon } from "lucide-react";
 import { LazyVideo } from "@/components/LazyVideo";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Mic, Pause, Play, Square, Trash2 } from "lucide-react";
@@ -91,70 +93,107 @@ export async function react(msgId: string, emoji: string | null) {
   else await supabase.from("reactions").delete().eq("msg_id", msgId).eq("user_id", s.me.id);
 }
 
-/** Wraps a message bubble: double-tap for ❤️, long-press for the emoji bar. */
+/**
+ * Wraps a message bubble. Double-tap for ❤️; long-press (or right-click) to
+ * lift it out with reactions and actions; swipe right to reply.
+ */
 export function Reactable({
   id,
   mine,
   children,
+  actions,
+  onReply,
 }: {
   id: string;
   mine: boolean;
   children: React.ReactNode;
+  /** Reply, Forward, Copy… shown under the lifted message. */
+  actions?: () => MsgAction[];
+  onReply?: () => void;
 }) {
   const all = useReactions();
   const here = all[id] ?? {};
   const myEmoji = here.me;
-  const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState<DOMRect | null>(null);
   const press = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTap = useRef(0);
+  const bubble = useRef<HTMLDivElement>(null);
+  // Swipe to reply.
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const [dx, setDx] = useState(0);
+  const swiping = useRef(false);
 
   const counts = Object.values(here).reduce<Record<string, number>>((a, e) => {
     a[e] = (a[e] ?? 0) + 1;
     return a;
   }, {});
+  const open = () => {
+    if (!bubble.current) return;
+    setMenu(bubble.current.getBoundingClientRect());
+    buzz(15);
+  };
+  const cancelPress = () => {
+    if (press.current) clearTimeout(press.current);
+    press.current = null;
+  };
 
   return (
-    <div className={`relative flex flex-col max-w-[80%] ${mine ? "items-end" : "items-start"}`}>
-      {open && (
-        <div
-          className={`absolute -top-12 z-10 flex gap-1 rounded-full px-2 py-1.5 pop ${mine ? "right-0" : "left-0"}`}
+    <div
+      id={`msg-${id}`}
+      className={`relative flex flex-col max-w-[80%] rounded-[20px] ${mine ? "items-end" : "items-start"}`}
+    >
+      {onReply && dx > 8 && (
+        <span
+          aria-hidden="true"
+          className="absolute top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center"
           style={{
-            background: "var(--surface)",
-            border: "var(--bd)",
-            boxShadow: "var(--pop)",
+            left: -40,
+            background: "rgba(38,35,47,0.9)",
+            color: "#fff",
+            opacity: Math.min(1, dx / 56),
+            transform: `translateY(-50%) scale(${0.6 + Math.min(0.4, dx / 140)})`,
           }}
-          role="menu"
         >
-          {REACTIONS.map((e) => (
-            <button
-              key={e}
-              role="menuitem"
-              aria-label={`React ${e}`}
-              onClick={() => {
-                void react(id, myEmoji === e ? null : e);
-                setOpen(false);
-                buzz(10);
-              }}
-              className="w-9 h-9 rounded-full text-xl flex items-center justify-center active:scale-90"
-              style={{ background: myEmoji === e ? "var(--fill-2)" : "transparent" }}
-            >
-              <span style={{ fontSize: 26, lineHeight: 1 }}>{e}</span>
-            </button>
-          ))}
-        </div>
+          <ReplyIcon size={16} />
+        </span>
       )}
       <div
-        onPointerDown={() => {
-          press.current = setTimeout(() => {
-            setOpen(true);
-            buzz(15);
-          }, 420);
+        ref={bubble}
+        onPointerDown={(e) => {
+          start.current = { x: e.clientX, y: e.clientY };
+          swiping.current = false;
+          press.current = setTimeout(open, 420);
         }}
-        onPointerUp={() => press.current && clearTimeout(press.current)}
-        onPointerLeave={() => press.current && clearTimeout(press.current)}
+        onPointerMove={(e) => {
+          if (!start.current) return;
+          const mx = e.clientX - start.current.x;
+          const my = e.clientY - start.current.y;
+          if (Math.abs(mx) > 8 || Math.abs(my) > 8) cancelPress();
+          if (!onReply) return;
+          if (!swiping.current && mx > 12 && Math.abs(mx) > Math.abs(my) * 1.5)
+            swiping.current = true;
+          if (swiping.current) setDx(Math.max(0, Math.min(80, mx)));
+        }}
+        onPointerUp={() => {
+          cancelPress();
+          if (swiping.current && dx > 56) {
+            buzz(12);
+            onReply?.();
+          }
+          swiping.current = false;
+          start.current = null;
+          setDx(0);
+        }}
+        onPointerCancel={() => {
+          cancelPress();
+          swiping.current = false;
+          start.current = null;
+          setDx(0);
+        }}
+        onPointerLeave={cancelPress}
         onContextMenu={(e) => {
           e.preventDefault();
-          setOpen(true);
+          open();
         }}
         onClick={() => {
           const now = Date.now();
@@ -163,18 +202,29 @@ export function Reactable({
             buzz(10);
           }
           lastTap.current = now;
-          if (open) setOpen(false);
         }}
         className="max-w-full"
-        style={{ touchAction: "manipulation", WebkitUserSelect: "none", userSelect: "none" }}
+        style={{
+          touchAction: "pan-y",
+          WebkitUserSelect: "none",
+          userSelect: "none",
+          WebkitTouchCallout: "none",
+          transform: dx ? `translateX(${dx}px)` : undefined,
+          transition: dx ? undefined : "transform 0.2s ease",
+          visibility: menu ? "hidden" : undefined,
+        }}
       >
         {children}
       </div>
       {Object.keys(counts).length > 0 && (
         <button
-          onClick={() => setOpen((o) => !o)}
-          className="-mt-1.5 px-1.5 rounded-full text-[13px] flex gap-0.5 items-center relative"
-          style={{ background: "var(--surface)", border: "1.5px solid var(--edge)" }}
+          onClick={open}
+          className="-mt-1.5 px-1.5 py-0.5 rounded-full text-[13px] flex gap-0.5 items-center relative"
+          style={{
+            background: "#2E2B38",
+            border: "2px solid #0B0A0D",
+            [mine ? "marginRight" : "marginLeft"]: 10,
+          }}
           aria-label="Reactions"
         >
           {Object.entries(counts).map(([e, n]) => (
@@ -184,6 +234,17 @@ export function Reactable({
             </span>
           ))}
         </button>
+      )}
+      {menu && (
+        <MessageMenu
+          rect={menu}
+          mine={mine}
+          preview={children}
+          myEmoji={myEmoji}
+          onReact={(e) => void react(id, e)}
+          actions={actions?.() ?? []}
+          onClose={() => setMenu(null)}
+        />
       )}
     </div>
   );

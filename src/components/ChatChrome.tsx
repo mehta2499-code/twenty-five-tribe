@@ -210,6 +210,7 @@ export function Composer({
   onVoice,
   onUnavailable,
   above,
+  replyBar,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -225,6 +226,8 @@ export function Composer({
   onUnavailable: (why: string) => void;
   /** Pop-ups that sit just above the composer (the @mention picker). */
   above?: React.ReactNode;
+  /** "Replying to…", shown above the message box. */
+  replyBar?: React.ReactNode;
 }) {
   const pickRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
@@ -243,7 +246,7 @@ export function Composer({
         e.preventDefault();
         onSend();
       }}
-      className="relative z-[2] flex items-end gap-1 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
+      className="relative z-[2] flex flex-wrap items-end gap-1 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))]"
       style={{
         background: "rgba(14,13,18,0.86)",
         backdropFilter: "blur(18px) saturate(1.4)",
@@ -252,6 +255,7 @@ export function Composer({
       }}
     >
       {above}
+      {replyBar && <div className="basis-full min-w-0 msg-lift">{replyBar}</div>}
       <button
         type="button"
         onClick={() => setMenu(true)}
@@ -272,7 +276,7 @@ export function Composer({
       />
       {/* The message box, a pill with the sticker button inside. */}
       <div
-        className="flex-1 min-w-0 flex items-end rounded-[22px]"
+        className="flex-1 basis-0 min-w-0 flex items-end rounded-[22px]"
         style={{ background: "#2A2733", border: "1px solid rgba(255,255,255,0.06)" }}
       >
         <GrowingInput

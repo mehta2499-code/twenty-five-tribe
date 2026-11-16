@@ -77,6 +77,8 @@ type MessageRow = {
   created_at: string;
   delivered_at: string | null;
   read_at: string | null;
+  reply_to?: string | null;
+  deleted?: boolean | null;
 };
 type SnapRow = {
   id: string;
@@ -605,6 +607,8 @@ function toChat(m: MessageRow): ChatMessage {
     sharedPostId: m.shared_ref ?? undefined,
     at: ts(m.created_at),
     status: mine ? status : undefined,
+    replyTo: m.reply_to ?? undefined,
+    deleted: !!m.deleted || undefined,
   };
 }
 function toSnap(x: SnapRow, to: string[], openedBy: string[], urls: Record<string, string>): Snap {
@@ -691,12 +695,14 @@ function subscribe() {
       { event: "UPDATE", schema: "public", table: "messages" },
       ({ new: row }) => {
         const m = row as MessageRow;
-        if (m.sender !== me) return;
+        if (m.sender !== me && m.recipient !== me) return;
+        // Read ticks on yours; "deleted" on either side.
+        const other = m.sender === me ? m.recipient : m.sender;
         _set((s) => ({
           ...s,
           chats: {
             ...s.chats,
-            [m.recipient]: (s.chats[m.recipient] ?? []).map((x) => (x.id === m.id ? toChat(m) : x)),
+            [other]: (s.chats[other] ?? []).map((x) => (x.id === m.id ? toChat(m) : x)),
           },
         }));
       },
@@ -1108,7 +1114,7 @@ function patch(fn: (s: SocialState) => SocialState) {
 
 registerLive({
   /** Send a message; `ref` attaches a card (e.g. "wordup:2026-11-07"). */
-  sendMessage(friendId: string, text: string, ref?: string) {
+  sendMessage(friendId: string, text: string, ref?: string, replyTo?: string) {
     const t = text.trim();
     if (!t || !myId) return;
     const id = newId();
@@ -1118,16 +1124,40 @@ registerLive({
         ...s.chats,
         [friendId]: [
           ...(s.chats[friendId] ?? []),
-          { id, from: "me", text: t, sharedPostId: ref, at: Date.now(), status: "sent" },
+          { id, from: "me", text: t, sharedPostId: ref, replyTo, at: Date.now(), status: "sent" },
         ],
       },
     }));
     void supabase
       .from("messages")
-      .insert({ id, sender: myId, recipient: friendId, body: t, shared_ref: ref ?? null })
+      .insert({
+        id,
+        sender: myId,
+        recipient: friendId,
+        body: t,
+        shared_ref: ref ?? null,
+        ...(replyTo ? { reply_to: replyTo } : {}),
+      })
       .then(({ error }) => {
         if (error) fail(friendly(error));
       });
+  },
+
+  deleteMessage(friendId: string, msgId: string) {
+    patch((s) => ({
+      ...s,
+      chats: {
+        ...s.chats,
+        [friendId]: (s.chats[friendId] ?? []).map((m) =>
+          m.id === msgId
+            ? { ...m, text: undefined, sharedPostId: undefined, replyTo: undefined, deleted: true }
+            : m,
+        ),
+      },
+    }));
+    void supabase.rpc("delete_message" as never, { p_id: msgId } as never).then(({ error }) => {
+      if (error) fail(friendly(error));
+    });
   },
 
   markRead(friendId: string) {

@@ -900,3 +900,10 @@ button, a, [role="button"] { touch-action: manipulation; }
 @keyframes vinyl-spin { to { transform: rotate(360deg); } }
 .vinyl-spin { animation: vinyl-spin 2.4s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .vinyl-spin { animation: none; } }
+
+/* Chat: a message lifted out by long-press, and the glow after jumping to a quoted one. */
+@keyframes msg-lift { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+.msg-lift { animation: msg-lift 0.18s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes msg-flash { 0%, 100% { background: transparent; } 25%, 60% { background: rgba(193, 239, 98, 0.22); } }
+.msg-flash { animation: msg-flash 1.4s ease both; }
+@media (prefers-reduced-motion: reduce) { .msg-lift, .msg-flash { animation: none; } }

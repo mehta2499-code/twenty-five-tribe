@@ -16,6 +16,10 @@ export type ChatMessage = {
   sharedPostId?: string;
   at: number;
   status?: MsgStatus;
+  /** The message this one replies to. */
+  replyTo?: string;
+  /** Deleted for everyone by the sender. */
+  deleted?: boolean;
 };
 
 export type Snap = {
@@ -682,7 +686,7 @@ function markStatus(friendId: string, status: MsgStatus) {
 
 // ---------- Actions ----------
 const demo = {
-  sendMessage(friendId: string, text: string, ref?: string) {
+  sendMessage(friendId: string, text: string, ref?: string, replyTo?: string) {
     const t = text.trim();
     if (!t) return;
     set((s) => ({
@@ -691,11 +695,34 @@ const demo = {
         ...s.chats,
         [friendId]: [
           ...(s.chats[friendId] ?? []),
-          { id: uid(), from: "me", text: t, sharedPostId: ref, at: Date.now(), status: "sent" },
+          {
+            id: uid(),
+            from: "me",
+            text: t,
+            sharedPostId: ref,
+            replyTo,
+            at: Date.now(),
+            status: "sent",
+          },
         ],
       },
     }));
     simulateReply(friendId, t);
+  },
+
+  /** Delete your own message for everyone. */
+  deleteMessage(friendId: string, msgId: string) {
+    set((s) => ({
+      ...s,
+      chats: {
+        ...s.chats,
+        [friendId]: (s.chats[friendId] ?? []).map((m) =>
+          m.id === msgId
+            ? { ...m, text: undefined, sharedPostId: undefined, replyTo: undefined, deleted: true }
+            : m,
+        ),
+      },
+    }));
   },
 
   markRead(friendId: string) {
