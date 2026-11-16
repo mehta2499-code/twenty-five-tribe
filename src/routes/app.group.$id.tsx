@@ -1,18 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft,
-  BarChart3,
-  ImagePlus,
-  Megaphone,
-  Paperclip,
-  Plus,
-  Send,
-  Sticker,
-  Trash2,
-  Users,
-  X,
-} from "lucide-react";
+  Bubble,
+  ChatHeader,
+  ChatWallpaper,
+  Composer,
+  DayPill,
+  dayLabel,
+} from "@/components/ChatChrome";
+import { useEffect, useRef, useState } from "react";
+import { BarChart3, ImagePlus, Megaphone, Plus, Trash2, Users, X } from "lucide-react";
 import { PollView } from "@/components/SceneParts";
 import { GifPicker, RichBubble, isRich } from "@/components/GifPicker";
 import { GroupFace } from "@/components/GroupFace";
@@ -21,13 +17,11 @@ import { PersonLink } from "@/components/PersonLink";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import {
   EarlierButton,
-  GrowingInput,
   useRecent,
   useStickToBottom,
   MediaBubble,
   Reactable,
   VoicePlayer,
-  VoiceRecorder,
   parseMedia,
 } from "@/components/ChatExtras";
 import { dayKey, mutualFriends } from "@/lib/social";
@@ -77,7 +71,6 @@ function GroupThread() {
   const [seenFor, setSeenFor] = useState<(typeof msgs)[number] | null>(null);
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const attachRef = useRef<HTMLInputElement>(null);
   const [gifOpen, setGifOpen] = useState(false);
   // New poll being written, and the poll whose votes are open.
   const [draft, setDraft] = useState<{ q: string; options: string[]; multi: boolean } | null>(null);
@@ -152,42 +145,29 @@ function GroupThread() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--page)" }}>
-      <div className="mx-auto w-full max-w-md flex flex-col h-full app-column">
-        <header
-          className="flex items-center gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2"
-          style={{
-            borderBottom: "1px solid var(--line)",
-            background: "var(--band-bg)",
-            boxShadow: "0 8px 22px rgba(0,0,0,0.3)",
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <button
-            onClick={() => navigate({ to: "/app/chats" })}
-            aria-label="Back to chats"
-            className="w-10 h-10 rounded-full flex items-center justify-center text-cool"
-          >
-            <ArrowLeft size={22} />
-          </button>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#0B0A0D" }}>
+      <div className="relative mx-auto w-full max-w-md flex flex-col h-full app-column overflow-hidden">
+        <ChatWallpaper />
+        <ChatHeader onBack={() => navigate({ to: "/app/chats" })}>
           <button
             onClick={() => setInfo(true)}
-            className="flex items-center gap-3 flex-1 min-w-0 text-left"
+            className="flex items-center gap-2.5 flex-1 min-w-0 text-left px-1 py-0.5"
           >
             <GroupFace avatar={g.avatar} emoji={g.emoji} size={40} />
             <span className="min-w-0">
-              <span className="block font-semibold text-cream truncate">{g.name}</span>
-              <span className="block meta truncate">
+              <span className="block font-bold text-cream truncate" style={{ fontSize: 17 }}>
+                {g.name}
+              </span>
+              <span className="block truncate" style={{ fontSize: 12.5, color: "var(--ink-3)" }}>
                 {g.members.map((m) => member(m, st).name.split(" ")[0]).join(", ")}
               </span>
             </span>
           </button>
-        </header>
+        </ChatHeader>
 
         <div
           ref={logRef}
-          className="flex-1 overflow-y-auto px-3 py-4"
+          className="relative flex-1 overflow-y-auto px-2 pb-3 pt-2"
           role="log"
           aria-live="polite"
         >
@@ -200,68 +180,68 @@ function GroupThread() {
           ) : (
             <>
               {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
-              <ol className="space-y-1.5">
+              <ol>
                 {msgs.slice(recent.start).map((m, j) => {
                   const i = recent.start + j;
                   const mine = m.from === "me";
                   const prev = msgs[i - 1];
+                  const next = msgs[i + 1];
                   const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
-                  const grouped =
-                    prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
+                  const sameRun = (a?: typeof m, b?: typeof m) =>
+                    !!a &&
+                    !!b &&
+                    a.from === b.from &&
+                    dayKey(a.at) === dayKey(b.at) &&
+                    b.at - a.at < 5 * 60_000;
+                  const grouped = sameRun(prev, m);
+                  const tail = !sameRun(m, next);
                   const who = member(m.from, st);
+                  const rich = !m.poll && isRich(m.ref);
+                  const plainText =
+                    !m.poll && !rich && !m.ref?.startsWith("voice:") && !parseMedia(m.ref);
+                  const mentioned =
+                    !mine &&
+                    !!m.text &&
+                    splitMentions(m.text, everyone).some((x) => x.who?.id === "me");
                   return (
                     <li key={m.id}>
-                      {newDay && (
-                        <p className="text-center meta my-3" style={{ fontSize: 12 }}>
-                          {new Date(m.at).toLocaleDateString([], {
-                            day: "numeric",
-                            month: "short",
-                          })}
-                        </p>
-                      )}
+                      {newDay && <DayPill label={dayLabel(m.at)} />}
                       <div
-                        className={`flex items-end gap-2 ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
+                        className={`flex items-end gap-1.5 ${mine ? "justify-end pr-1.5" : "justify-start"} ${grouped ? "mt-0.5" : "mt-2"}`}
                       >
                         {!mine && (
-                          <span className="w-7 shrink-0">
-                            {/* Their photo on every message. */}
-                            <PersonLink id={m.from} username={who.username} label={who.name}>
-                              <Avatar
-                                src={who.avatar}
-                                initials={who.initials}
-                                color={who.color}
-                                size={28}
-                              />
-                            </PersonLink>
+                          <span className="w-8 shrink-0 mr-1">
+                            {/* Their photo beside the last message of a run, like WhatsApp. */}
+                            {tail && (
+                              <PersonLink id={m.from} username={who.username} label={who.name}>
+                                <Avatar
+                                  src={who.avatar}
+                                  initials={who.initials}
+                                  color={who.color}
+                                  size={30}
+                                />
+                              </PersonLink>
+                            )}
                           </span>
                         )}
                         <Reactable id={m.id} mine={mine}>
-                          <div
-                            className="px-3.5 py-2"
-                            style={{
-                              background: mine && !m.poll ? "var(--accent)" : "var(--surface)",
-                              width: m.poll ? 270 : undefined,
-                              maxWidth: "100%",
-                              border: m.poll
-                                ? "1px solid var(--line)"
-                                : mine
-                                  ? "1px solid transparent"
-                                  : m.text &&
-                                      splitMentions(m.text, everyone).some(
-                                        (x) => x.who?.id === "me",
-                                      )
-                                    ? "2px solid var(--sun)"
-                                    : "1px solid var(--line)",
-                              color: mine && !m.poll ? "var(--on-accent)" : "var(--ink)",
-                              borderRadius: 20,
-                              borderBottomRightRadius: mine ? 6 : 18,
-                              borderBottomLeftRadius: mine ? 18 : 6,
-                            }}
+                          <Bubble
+                            mine={mine}
+                            tail={tail}
+                            inline={plainText}
+                            bare={rich}
+                            ring={mentioned ? "var(--sun)" : undefined}
+                            width={m.poll ? 280 : undefined}
+                            meta={
+                              <span className="tabular-nums" style={{ fontSize: 11 }}>
+                                {clock(m.at)}
+                              </span>
+                            }
                           >
-                            {/* Sender's name on every message, in their own colour. */}
-                            {!mine && (
+                            {/* Sender's name on the first message of a run, in their colour. */}
+                            {!mine && !grouped && !rich && (
                               <p
-                                className="text-[12px] font-extrabold mb-0.5"
+                                className="text-[13px] font-extrabold px-1 mb-0.5"
                                 style={{ color: tone(m.from) }}
                               >
                                 {who.name.split(" ")[0]}
@@ -303,10 +283,10 @@ function GroupThread() {
                             ) : parseMedia(m.ref) ? (
                               <MediaBubble value={m.ref!} />
                             ) : (
-                              <p
+                              <span
                                 style={{
-                                  fontSize: 15,
-                                  lineHeight: 1.4,
+                                  fontSize: 16,
+                                  lineHeight: 1.35,
                                   whiteSpace: "pre-wrap",
                                   overflowWrap: "anywhere",
                                 }}
@@ -334,15 +314,9 @@ function GroupThread() {
                                     <span key={k}>{x.text}</span>
                                   ),
                                 )}
-                              </p>
+                              </span>
                             )}
-                            <p
-                              className="text-right tabular-nums"
-                              style={{ fontSize: 11.5, opacity: 0.7 }}
-                            >
-                              {clock(m.at)}
-                            </p>
-                          </div>
+                          </Bubble>
                         </Reactable>
                       </div>
                       {i === lastMine && seenLine(m) && (
@@ -365,128 +339,76 @@ function GroupThread() {
           )}
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
-          className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-          style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
-        >
-          {(picks.length > 0 || showAll) && (
-            <ul
-              className="absolute left-3 right-3 bottom-full mb-2 rounded-2xl overflow-hidden py-1 z-10"
-              style={{
-                background: "var(--surface)",
-                border: "var(--bd)",
-                boxShadow: "var(--pop)",
-              }}
-              role="listbox"
-              aria-label="Mention someone"
-            >
-              {showAll && (
-                <li>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={pickAll}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[var(--fill)]"
-                  >
-                    <span
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ background: "var(--pink)", color: "var(--on-accent)" }}
-                    >
-                      <Megaphone size={16} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-bold text-cream">@all</span>
-                      <span className="block meta truncate">Notify everyone in the group</span>
-                    </span>
-                  </button>
-                </li>
+        <Composer
+          value={text}
+          onChange={setText}
+          onSend={send}
+          inputRef={boxRef}
+          label={`Message ${g.name}`}
+          onFile={(file) =>
+            void sendGroupMedia(id, file).catch((err) => setToast((err as Error).message))
+          }
+          onGif={() => setGifOpen(true)}
+          onPoll={() => setDraft({ q: "", options: ["", ""], multi: false })}
+          onVoice={(blob, secs) =>
+            void sendGroupVoice(id, blob, secs).catch((e) => setToast((e as Error).message))
+          }
+          onUnavailable={(why) => setToast(why)}
+          above={
+            <>
+              {(picks.length > 0 || showAll) && (
+                <ul
+                  className="absolute left-3 right-3 bottom-full mb-2 rounded-2xl overflow-hidden py-1 z-10"
+                  style={{
+                    background: "var(--surface)",
+                    border: "var(--bd)",
+                    boxShadow: "var(--pop)",
+                  }}
+                  role="listbox"
+                  aria-label="Mention someone"
+                >
+                  {showAll && (
+                    <li>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={pickAll}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[var(--fill)]"
+                      >
+                        <span
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ background: "var(--pink)", color: "var(--on-accent)" }}
+                        >
+                          <Megaphone size={16} aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block font-bold text-cream">@all</span>
+                          <span className="block meta truncate">Notify everyone in the group</span>
+                        </span>
+                      </button>
+                    </li>
+                  )}
+                  {picks.map((m) => (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickMention(m)}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[var(--fill)]"
+                      >
+                        <Avatar src={m.avatar} initials={m.initials} color={m.color} size={32} />
+                        <span className="min-w-0">
+                          <span className="block font-bold text-cream truncate">{m.name}</span>
+                          <span className="block meta truncate">@{m.username}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
-              {picks.map((m) => (
-                <li key={m.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => pickMention(m)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[var(--fill)]"
-                  >
-                    <Avatar src={m.avatar} initials={m.initials} color={m.color} size={32} />
-                    <span className="min-w-0">
-                      <span className="block font-bold text-cream truncate">{m.name}</span>
-                      <span className="block meta truncate">@{m.username}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <button
-            type="button"
-            onClick={() => attachRef.current?.click()}
-            aria-label="Send a photo or video"
-            className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
-          >
-            <Paperclip size={21} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setGifOpen(true)}
-            aria-label="Send a GIF or sticker"
-            className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
-          >
-            <Sticker size={21} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setDraft({ q: "", options: ["", ""], multi: false })}
-            aria-label="Make a poll"
-            className="w-9 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
-          >
-            <BarChart3 size={21} />
-          </button>
-          <input
-            ref={attachRef}
-            type="file"
-            accept="image/*,video/*"
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file)
-                void sendGroupMedia(id, file).catch((err) => setToast((err as Error).message));
-            }}
-          />
-          <GrowingInput
-            value={text}
-            onChange={setText}
-            onSend={send}
-            inputRef={boxRef}
-            label={`Message ${g.name}`}
-          />
-          {text.trim() ? (
-            <button
-              type="submit"
-              aria-label="Send"
-              // Keep the keyboard up: the tap shouldn't take focus from the text box.
-              onPointerDown={(e) => e.preventDefault()}
-              onMouseDown={(e) => e.preventDefault()}
-              className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
-              style={{ background: "var(--accent)", color: "var(--on-accent)" }}
-            >
-              <Send size={19} />
-            </button>
-          ) : (
-            <VoiceRecorder
-              onSend={(blob, secs) =>
-                void sendGroupVoice(id, blob, secs).catch((e) => setToast((e as Error).message))
-              }
-              onUnavailable={(why) => setToast(why)}
-            />
-          )}
-        </form>
+            </>
+          }
+        />
       </div>
 
       {seenFor && (

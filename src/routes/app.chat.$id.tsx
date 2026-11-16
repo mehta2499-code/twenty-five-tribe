@@ -1,30 +1,25 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Camera, Check, CheckCheck, Image as ImageIcon, Lock, Spade, Type } from "lucide-react";
 import {
-  ArrowLeft,
-  Camera,
-  Check,
-  CheckCheck,
-  Image as ImageIcon,
-  Lock,
-  Paperclip,
-  Send,
-  Spade,
-  Sticker,
-  Type,
-} from "lucide-react";
+  BUBBLE_THEM,
+  Bubble,
+  ChatHeader,
+  ChatWallpaper,
+  Composer,
+  DayPill,
+  dayLabel,
+} from "@/components/ChatChrome";
 import { GifPicker, RichBubble, isRich, sendRichToFriend } from "@/components/GifPicker";
 import { Avatar } from "@/components/Avatar";
 import { Toast, clientOnly } from "@/components/SocialUI";
 import {
   EarlierButton,
-  GrowingInput,
   useRecent,
   useStickToBottom,
   MediaBubble,
   Reactable,
   VoicePlayer,
-  VoiceRecorder,
   sendMedia,
   sendVoice,
 } from "@/components/ChatExtras";
@@ -47,17 +42,10 @@ function Ticks({ status }: { status?: ChatMessage["status"] }) {
   const common = { size: 15, "aria-hidden": true } as const;
   if (status === "sent") return <Check {...common} style={{ opacity: 0.75 }} />;
   if (status === "delivered") return <CheckCheck {...common} style={{ opacity: 0.75 }} />;
-  return <CheckCheck {...common} style={{ color: "#1F5FA8" }} />;
+  return <CheckCheck {...common} style={{ color: "var(--lime)" }} />;
 }
 const statusLabel = (s?: ChatMessage["status"]) =>
   s === "sent" ? "Sent" : s === "delivered" ? "Delivered" : "Read";
-
-function dayLabel(at: number) {
-  const k = dayKey(at);
-  if (k === dayKey()) return "Today";
-  if (k === dayKey(Date.now() - 86_400_000)) return "Yesterday";
-  return new Date(at).toLocaleDateString([], { day: "numeric", month: "short" });
-}
 
 function ChatThread() {
   const { id } = Route.useParams();
@@ -66,7 +54,6 @@ function ChatThread() {
   const f = friendById(id);
   const [text, setText] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
-  const attachRef = useRef<HTMLInputElement>(null);
   const [gifOpen, setGifOpen] = useState(false);
   const msgs = s.chats[id] ?? [];
   const typing = s.typing[id];
@@ -128,51 +115,42 @@ function ChatThread() {
         ? "Active today"
         : "In your 25";
 
+  const unreadElsewhere = Object.entries(s.unread)
+    .filter(([k]) => k !== id)
+    .reduce((n, [, v]) => n + (v || 0), 0);
+  const list = msgs.slice(recent.start);
+  // A run: back-to-back messages from the same person, a few minutes apart.
+  const sameRun = (a?: ChatMessage, b?: ChatMessage) =>
+    !!a && !!b && a.from === b.from && dayKey(a.at) === dayKey(b.at) && b.at - a.at < 5 * 60_000;
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--page)" }}>
-      <div className="mx-auto w-full max-w-md flex flex-col h-full app-column">
-        <header
-          className="flex items-center gap-2 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2"
-          style={{
-            borderBottom: "1px solid var(--line)",
-            background: "var(--band-bg)",
-            boxShadow: "0 8px 22px rgba(0,0,0,0.3)",
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <button
-            onClick={() => navigate({ to: "/app/chats" })}
-            aria-label="Back to chats"
-            className="w-10 h-10 rounded-full flex items-center justify-center text-cool hover:bg-[var(--fill)]"
-          >
-            <ArrowLeft size={22} />
-          </button>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#0B0A0D" }}>
+      <div className="relative mx-auto w-full max-w-md flex flex-col h-full app-column overflow-hidden">
+        <ChatWallpaper />
+        <ChatHeader onBack={() => navigate({ to: "/app/chats" })} unread={unreadElsewhere}>
           <Link
             to="/app/seat/$id"
             params={{ id }}
-            className="flex items-center gap-3 flex-1 min-w-0 rounded-xl px-1 py-1 hover:bg-[var(--fill)]"
+            className="flex items-center gap-2.5 flex-1 min-w-0 rounded-xl px-1 py-0.5"
           >
             <Avatar src={f.avatar || undefined} initials={f.initials} color={f.color} size={40} />
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-cream truncate" style={{ fontSize: 16 }}>
-                  {f.name}
-                </span>
-              </div>
+              <p className="font-bold text-cream truncate" style={{ fontSize: 17 }}>
+                {f.name}
+              </p>
               <p
                 className="truncate"
-                style={{ fontSize: 13, color: typing ? "var(--mint)" : "var(--ink-3)" }}
+                style={{ fontSize: 12.5, color: typing ? "var(--lime)" : "var(--ink-3)" }}
               >
                 {statusLine}
               </p>
             </div>
           </Link>
-        </header>
+        </ChatHeader>
 
         <div
           ref={logRef}
-          className="flex-1 overflow-y-auto px-3 py-4"
+          className="relative flex-1 overflow-y-auto px-3 pb-3 pt-2"
           role="log"
           aria-live="polite"
           aria-label={`Conversation with ${f.name}`}
@@ -181,56 +159,63 @@ function ChatThread() {
             <div className="h-full flex flex-col items-center justify-center text-center px-8">
               <Avatar src={f.avatar || undefined} initials={f.initials} color={f.color} size={72} />
               <p className="heading mt-4">Start a chat with {firstName}</p>
-              <p className="mt-2 flex items-center gap-1.5 meta">
+              <p
+                className="mt-3 flex items-center gap-1.5 rounded-xl px-3 py-1.5"
+                style={{ fontSize: 12.5, background: "rgba(30,28,38,0.92)", color: "#E9D27A" }}
+              >
                 <Lock size={13} aria-hidden="true" /> Only you and {firstName} can see this chat.
               </p>
             </div>
           ) : (
             <>
               {recent.hasMore && <EarlierButton onClick={recent.showMore} />}
-              <ol className="space-y-1.5">
-                {msgs.slice(recent.start).map((m, j) => {
+              <ol>
+                {list.map((m, j) => {
                   const i = recent.start + j;
                   const mine = m.from === "me";
                   const prev = msgs[i - 1];
+                  const next = msgs[i + 1];
                   const newDay = !prev || dayKey(prev.at) !== dayKey(m.at);
-                  const grouped =
-                    prev && !newDay && prev.from === m.from && m.at - prev.at < 5 * 60_000;
+                  const grouped = sameRun(prev, m);
+                  const tail = !sameRun(m, next);
                   const [shareKind, shareId] = m.sharedPostId?.split(":") ?? [];
                   const rich = isRich(m.sharedPostId);
                   const shared =
-                    shareKind === "post"
+                    shareKind === "post" || shareKind === "reel"
                       ? s.posts.find((p) => p.id === shareId)
-                      : shareKind === "reel"
-                        ? s.posts.find((p) => p.id === shareId)
-                        : undefined;
+                      : undefined;
+                  const plainText =
+                    !!m.text &&
+                    !rich &&
+                    !shared &&
+                    !m.snapId &&
+                    !shareKind?.startsWith("game") &&
+                    !["wordup", "voice", "img", "vid"].includes(shareKind ?? "");
+                  const meta = (
+                    <>
+                      <span className="tabular-nums" style={{ fontSize: 11 }}>
+                        {clock(m.at)}
+                      </span>
+                      {mine && (
+                        <span aria-label={statusLabel(m.status)} className="inline-flex">
+                          <Ticks status={m.status} />
+                        </span>
+                      )}
+                    </>
+                  );
                   return (
                     <li key={m.id}>
-                      {newDay && (
-                        <p className="text-center meta my-3" style={{ fontSize: 12 }}>
-                          {dayLabel(m.at)}
-                        </p>
-                      )}
+                      {newDay && <DayPill label={dayLabel(m.at)} />}
                       <div
-                        className={`flex ${mine ? "justify-end" : "justify-start"} ${grouped ? "" : "mt-2"}`}
+                        className={`flex ${mine ? "justify-end pr-1.5" : "justify-start pl-1.5"} ${grouped ? "mt-0.5" : "mt-2"}`}
                       >
                         <Reactable id={m.id} mine={mine}>
-                          <div
-                            className={rich ? "" : "px-3.5 py-2"}
-                            style={
-                              rich
-                                ? undefined
-                                : {
-                                    background: mine ? "var(--blue-deep)" : "var(--surface)",
-                                    border: mine
-                                      ? "1px solid transparent"
-                                      : "1px solid var(--line)",
-                                    color: mine ? "var(--on-accent)" : "var(--ink)",
-                                    borderRadius: 20,
-                                    borderBottomRightRadius: mine ? 6 : 18,
-                                    borderBottomLeftRadius: mine ? 18 : 6,
-                                  }
-                            }
+                          <Bubble
+                            mine={mine}
+                            tail={tail}
+                            meta={meta}
+                            inline={plainText}
+                            bare={rich}
                           >
                             {rich && <RichBubble value={m.sharedPostId} />}
                             {shareKind === "voice" && (
@@ -239,24 +224,21 @@ function ChatThread() {
                             {(shareKind === "img" || shareKind === "vid") && (
                               <MediaBubble value={m.sharedPostId!} />
                             )}
-                            {m.text &&
-                              !shareKind?.startsWith("game") &&
-                              shareKind !== "wordup" &&
-                              !["voice", "img", "vid"].includes(shareKind ?? "") && (
-                                <p
-                                  style={{
-                                    fontSize: 15,
-                                    lineHeight: 1.4,
-                                    whiteSpace: "pre-wrap",
-                                    overflowWrap: "anywhere",
-                                  }}
-                                >
-                                  {m.text}
-                                </p>
-                              )}
+                            {plainText && (
+                              <span
+                                style={{
+                                  fontSize: 16,
+                                  lineHeight: 1.35,
+                                  whiteSpace: "pre-wrap",
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                {m.text}
+                              </span>
+                            )}
                             {/* Old Blinks (the feature is gone): just a quiet note. */}
                             {m.snapId && (
-                              <p className="flex items-center gap-2 text-sm text-faint">
+                              <p className="flex items-center gap-2 text-sm text-faint px-1">
                                 <Camera size={16} aria-hidden="true" /> Blink (no longer available)
                               </p>
                             )}
@@ -273,56 +255,43 @@ function ChatThread() {
                                 ) : (
                                   <span
                                     className="w-52 max-w-full aspect-square rounded-xl flex items-center justify-center"
-                                    style={{
-                                      background: mine ? "rgba(255,255,255,0.15)" : "var(--fill)",
-                                    }}
+                                    style={{ background: "rgba(255,255,255,0.08)" }}
                                   >
                                     <ImageIcon size={28} aria-hidden="true" />
                                   </span>
                                 )}
                                 {shared.caption && (
-                                  <p className="mt-1.5 text-[13px] line-clamp-2 w-52 max-w-full">
+                                  <p className="mt-1.5 text-[13px] line-clamp-2 w-52 max-w-full px-1">
                                     {shared.caption}
                                   </p>
                                 )}
                               </Link>
                             )}
                             {shareKind === "wordup" && m.text && (
-                              <WordUpCard text={m.text} day={shareId} mine={mine} />
+                              <div className="px-1">
+                                <WordUpCard text={m.text} day={shareId} mine={mine} />
+                              </div>
                             )}
                             {shareKind === "game" && shareId && (
-                              <>
+                              <div className="px-1 pt-0.5">
                                 {m.text && (
-                                  <p style={{ fontSize: 15, lineHeight: 1.4 }}>{m.text}</p>
+                                  <p style={{ fontSize: 15.5, lineHeight: 1.4 }}>{m.text}</p>
                                 )}
                                 <Link
                                   to="/app/play/$id"
                                   params={{ id: shareId }}
                                   className="mt-2 flex items-center justify-center gap-2 rounded-xl min-h-[40px] px-3 font-semibold text-sm"
                                   style={{
-                                    background: mine ? "rgba(23,19,12,0.12)" : "var(--fill)",
-                                    color: mine ? "var(--on-accent)" : "var(--accent)",
+                                    background: "rgba(255,255,255,0.1)",
+                                    color: "var(--lime)",
                                   }}
                                 >
                                   <Spade size={16} aria-hidden="true" />{" "}
                                   {mine ? "Open game" : "Join game"}
                                 </Link>
-                              </>
+                              </div>
                             )}
-                            <div
-                              className="flex items-center justify-end gap-1 mt-0.5"
-                              style={{ color: mine ? "rgba(23,19,12,0.7)" : "var(--ink-3)" }}
-                            >
-                              <span className="tabular-nums" style={{ fontSize: 11.5 }}>
-                                {clock(m.at)}
-                              </span>
-                              {mine && (
-                                <span aria-label={statusLabel(m.status)} className="inline-flex">
-                                  <Ticks status={m.status} />
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          </Bubble>
                         </Reactable>
                       </div>
                     </li>
@@ -332,10 +301,10 @@ function ChatThread() {
             </>
           )}
           {typing && (
-            <div className="flex justify-start mt-2">
+            <div className="flex justify-start mt-2 pl-1.5">
               <div
-                className="px-4 py-3 rounded-2xl flex gap-1"
-                style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+                className="relative px-4 py-3 flex gap-1"
+                style={{ background: BUBBLE_THEM, borderRadius: 18, borderBottomLeftRadius: 4 }}
                 aria-label={`${firstName} is typing`}
               >
                 {[0, 1, 2].map((i) => (
@@ -350,75 +319,24 @@ function ChatThread() {
           )}
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
+        <Composer
+          inputId="chat-input"
+          value={text}
+          onChange={(v) => {
+            setText(v);
+            if (live) sendTyping(id);
           }}
-          className="relative flex items-end gap-2 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-          style={{ borderTop: "1px solid var(--line)", background: "var(--surface)" }}
-        >
-          <button
-            type="button"
-            onClick={() => attachRef.current?.click()}
-            aria-label="Send a photo or video"
-            className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
-          >
-            <Paperclip size={21} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setGifOpen(true)}
-            aria-label="Send a GIF or sticker"
-            className="w-10 h-12 shrink-0 rounded-full flex items-center justify-center text-cool"
-          >
-            <Sticker size={21} />
-          </button>
-          <input
-            ref={attachRef}
-            type="file"
-            accept="image/*,video/*"
-            hidden
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void sendMedia(id, file).catch((err) => setNotice((err as Error).message));
-            }}
-          />
-          <label htmlFor="chat-input" className="sr-only">
-            Message {f.name}
-          </label>
-          <GrowingInput
-            id="chat-input"
-            value={text}
-            onChange={(v) => {
-              setText(v);
-              if (live) sendTyping(id);
-            }}
-            onSend={send}
-            label={`Message ${firstName}`}
-          />
-          {text.trim() ? (
-            <button
-              type="submit"
-              aria-label="Send"
-              // Keep the keyboard up: the tap shouldn't take focus from the text box.
-              onPointerDown={(e) => e.preventDefault()}
-              onMouseDown={(e) => e.preventDefault()}
-              className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center"
-              style={{ background: "var(--accent)", color: "var(--on-accent)" }}
-            >
-              <Send size={19} />
-            </button>
-          ) : (
-            <VoiceRecorder
-              onSend={(blob, secs) =>
-                void sendVoice(id, blob, secs).catch((e) => setNotice((e as Error).message))
-              }
-              onUnavailable={(why) => setNotice(why)}
-            />
-          )}
-        </form>
+          onSend={send}
+          label={`Message ${firstName}`}
+          onFile={(file) =>
+            void sendMedia(id, file).catch((err) => setNotice((err as Error).message))
+          }
+          onGif={() => setGifOpen(true)}
+          onVoice={(blob, secs) =>
+            void sendVoice(id, blob, secs).catch((e) => setNotice((e as Error).message))
+          }
+          onUnavailable={(why) => setNotice(why)}
+        />
         {gifOpen && (
           <GifPicker
             onClose={() => setGifOpen(false)}

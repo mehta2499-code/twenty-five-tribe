@@ -535,10 +535,13 @@ export function GrowingInput({
   label,
   id,
   inputRef,
+  bare,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
+  /** No box of its own (it sits inside the chat composer's pill). */
+  bare?: boolean;
   /** Read out by screen readers (no placeholder text is shown in the box). */
   label: string;
   id?: string;
@@ -551,7 +554,7 @@ export function GrowingInput({
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
   }, [value]);
   const touch = typeof window !== "undefined" && matchMedia("(pointer: coarse)").matches;
   return (
@@ -568,8 +571,16 @@ export function GrowingInput({
         }
       }}
       aria-label={label}
-      className="input flex-1 resize-none py-3 leading-snug"
-      style={{ borderRadius: 24, minHeight: 48, maxHeight: 128, overflowY: "auto" }}
+      className={
+        bare
+          ? "flex-1 min-w-0 resize-none bg-transparent outline-none border-0 pl-4 pr-1 py-[9px] leading-snug"
+          : "input flex-1 resize-none py-3 leading-snug"
+      }
+      style={
+        bare
+          ? { minHeight: 40, maxHeight: 132, overflowY: "auto", fontSize: 16, color: "var(--ink)" }
+          : { borderRadius: 24, minHeight: 48, maxHeight: 128, overflowY: "auto" }
+      }
       autoComplete="off"
     />
   );
