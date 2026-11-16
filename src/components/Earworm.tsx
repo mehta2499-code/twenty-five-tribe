@@ -3,7 +3,7 @@
  * longer clip; naming it sooner scores more. 5 songs a game, solo or against
  * your 25 (same songs for everyone).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ExternalLink, Pause, Play, Search, SkipForward, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, buzz } from "@/components/SocialUI";
@@ -24,6 +24,9 @@ import {
   loadClip,
   pickGameSongs,
   searchSongs,
+  loadNames,
+  matchSongs,
+  allBackup,
   type EarCat,
   type EarLevel,
   type EarResult,
@@ -247,7 +250,6 @@ export function EarwormPlay({
   const [reveal, setReveal] = useState<Done | null>(null);
   const [done, setDone] = useState<Done[]>([]);
   const [preview, setPreview] = useState<Preview | null | undefined>(undefined);
-  const [suggestions, setSuggestions] = useState<EarSong[]>([]);
   const [text, setText] = useState("");
   const [playing, setPlaying] = useState(false);
   const [startedAt, setStartedAt] = useState(0);
@@ -299,22 +301,54 @@ export function EarwormPlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeUp, reveal]);
 
-  // Type-ahead: search as they type (a short pause first, so not every key).
+  // Everything worth guessing in this category, on the phone: the category's
+  // hits, this game's songs (so the answer is always there, among ~1,000
+  // others) and the built-in list.
+  const [names, setNames] = useState<EarSong[]>([]);
+  useEffect(() => {
+    let alive = true;
+    void loadNames(cat).then((list) => alive && setNames(list));
+    return () => {
+      alive = false;
+    };
+  }, [cat]);
+  const guessList = useMemo(() => [...names, ...songs, ...allBackup()], [names, songs]);
+  // Type-ahead: instant from the list on the phone, then anything else Deezer
+  // finds is added below after a short pause.
+  const [extra, setExtra] = useState<EarSong[]>([]);
   useEffect(() => {
     const q = text.trim();
-    if (q.length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    setExtra([]);
+    if (q.length < 2) return;
     let alive = true;
     const t = setTimeout(() => {
-      void searchSongs(q, cat).then((r) => alive && setSuggestions(r.slice(0, 6)));
-    }, 220);
+      void searchSongs(q).then((r) => alive && setExtra(r));
+    }, 300);
     return () => {
       alive = false;
       clearTimeout(t);
     };
-  }, [text, cat]);
+  }, [text]);
+  // Enter: what you typed, if it's a song's exact name; otherwise the top suggestion.
+  const enterPick = () => {
+    const typed = text.trim().toLowerCase();
+    const exact = [...suggestions, ...guessList].find(
+      (s) => cleanTitle(s.title).toLowerCase() === typed,
+    );
+    return exact ? exact.title : (suggestions[0]?.title ?? text);
+  };
+  const suggestions = useMemo(() => {
+    const q = text.trim();
+    if (q.length < 1) return [];
+    const local = matchSongs(guessList, q, 6);
+    const seen = new Set(local.map((s) => s.title.toLowerCase()));
+    const more = matchSongs(
+      extra.filter((s) => !seen.has(s.title.toLowerCase())),
+      q,
+      6 - Math.min(local.length, 4),
+    );
+    return [...local.slice(0, 4), ...more, ...local.slice(4)].slice(0, 6);
+  }, [text, guessList, extra]);
   // Load this song's clip.
   useEffect(() => {
     let alive = true;
@@ -693,7 +727,7 @@ export function EarwormPlay({
                   <input
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && guess(suggestions[0]?.title ?? text)}
+                    onKeyDown={(e) => e.key === "Enter" && guess(enterPick())}
                     placeholder="Name that song"
                     aria-label="Name that song"
                     className="flex-1 min-w-0 bg-transparent outline-none py-2.5"

@@ -173,9 +173,13 @@ const tidy = (t: string) =>
   t
     .replace(/\s*[([](from|feat\.?|ft\.?|with)\b.*$/i, "")
     .replace(/\s+-\s+(from|feat).*$/i, "")
+    .replace(/\s*[([]bonus track[)\]]/gi, "")
     .trim() || t;
 
-const tops = new Map<number, { at: number; songs: (PoolSong & { rank: number })[] }>();
+const tops = new Map<
+  number,
+  { at: number; songs: (PoolSong & { rank: number; own: boolean })[] }
+>();
 /** An artist's most popular songs (their Deezer top tracks), cached for a day. */
 async function artistTop(id: number) {
   const c = tops.get(id);
@@ -189,13 +193,11 @@ async function artistTop(id: number) {
       preview?: string;
       artist?: { id: number; name: string };
     }[];
-  }>(`/artist/${id}/top?limit=25`);
+  }>(`/artist/${id}/top?limit=100`);
   const songs = (body?.data ?? [])
     .filter(
       (t) =>
         t.preview &&
-        // Their own songs, not ones they only feature on.
-        t.artist?.id === id &&
         !ALT_VERSION.test(`${t.title} ${t.title_short ?? ""}`) &&
         !OFF_TOPIC.test(t.title),
     )
@@ -204,6 +206,8 @@ async function artistTop(id: number) {
       title: tidy(t.title_short || t.title),
       artist: t.artist?.name ?? "",
       rank: t.rank ?? 0,
+      // Their own song, not one they only feature on.
+      own: t.artist?.id === id,
     }));
   if (songs.length) tops.set(id, { at: Date.now(), songs });
   return songs;
@@ -227,6 +231,7 @@ export async function gameSongs(cat: string, n: number, skip: Set<string>): Prom
     for (const songs of batch) {
       if (out.length >= n) break;
       const pool = songs
+        .filter((s) => s.own)
         .slice(0, 12)
         .filter((s) => s.rank >= floor && !skip.has(s.id) && !seenTitles.has(norm(s.title)));
       if (!pool.length) continue;
@@ -236,6 +241,62 @@ export async function gameSongs(cat: string, n: number, skip: Set<string>): Prom
     }
   }
   return out;
+}
+
+/**
+ * Everything worth guessing in a category: the top songs of all its artists
+ * (~1,000 hits). The app keeps this on the phone and searches it as you type,
+ * so suggestions are instant and the answer is always in there.
+ */
+const names = new Map<string, { at: number; songs: PoolSong[] }>();
+const namesRun = new Map<string, Promise<PoolSong[]>>();
+async function buildNames(cat: string): Promise<PoolSong[]> {
+  const ids = ARTISTS[cat] ?? [];
+  const out: (PoolSong & { rank: number })[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < ids.length; i += 10) {
+    // Ten artists at a time, gently (Deezer allows ~50 requests per 5 seconds).
+    const lists = await Promise.all(
+      ids.slice(i, i + 10).map((id) => artistTop(id).catch(() => [])),
+    );
+    for (const songs of lists)
+      for (const s of songs) {
+        const k = norm(s.title);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(s);
+      }
+    if (i + 10 < ids.length) await new Promise((r) => setTimeout(r, 1100));
+  }
+  // Most popular first, so the songs people mean come up top.
+  return out
+    .sort((a, b) => b.rank - a.rank)
+    .map(({ id, title, artist }) => ({ id, title, artist }));
+}
+/** Build the guess lists in the background soon after the server starts. */
+let warmed = false;
+function warmUp() {
+  if (warmed) return;
+  warmed = true;
+  void (async () => {
+    for (const cat of Object.keys(ARTISTS)) await categoryNames(cat).catch(() => []);
+  })();
+}
+export async function categoryNames(cat: string): Promise<PoolSong[]> {
+  const c = names.get(cat);
+  if (c && Date.now() - c.at < 24 * 3_600_000) return c.songs;
+  let run = namesRun.get(cat);
+  if (!run) {
+    run = buildNames(cat)
+      .then((songs) => {
+        if (songs.length > 50) names.set(cat, { at: Date.now(), songs });
+        return songs;
+      })
+      .finally(() => namesRun.delete(cat));
+    namesRun.set(cat, run);
+  }
+  // Answer with yesterday's list right away if we have one; otherwise wait.
+  return c?.songs ?? run;
 }
 
 /**
@@ -312,6 +373,15 @@ export const Route = createFileRoute("/api/song")({
           );
           const songs = await gameSongs(game, n, skip);
           return json(songs, 200, "no-store");
+        }
+        warmUp();
+        const namesOf = u.searchParams.get("names");
+        if (namesOf) {
+          if (!ARTISTS[namesOf]) return json({ error: "Unknown category." }, 400, "no-store");
+          const songs = await categoryNames(namesOf);
+          return songs.length
+            ? json(songs, 200, "private, max-age=21600")
+            : json({ error: "Not ready." }, 503, "no-store");
         }
         const search = (u.searchParams.get("q") ?? "").trim().slice(0, 60);
         if (search) {

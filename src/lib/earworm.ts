@@ -221,37 +221,105 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
   return out;
 }
 
-/** Type-ahead while guessing: any song on Deezer, plus the built-in list. */
+/**
+ * The songs worth guessing in a category (~1,000 hits), kept on the phone for a
+ * day so suggestions appear instantly as you type.
+ */
+const namesMem = new Map<EarCat, Promise<EarSong[]>>();
+export function loadNames(cat: EarCat): Promise<EarSong[]> {
+  let run = namesMem.get(cat);
+  if (run) return run;
+  const key = `tf.ntt.names.${cat}`;
+  let saved: { at: number; songs: EarSong[] } | null = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(key) ?? "null");
+  } catch {
+    // ignore
+  }
+  const fresh = async () => {
+    try {
+      const r = await fetch(`/api/song?names=${cat}`, {
+        headers: await authHeader(),
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!r.ok) return null;
+      const songs = (await r.json()) as EarSong[];
+      try {
+        localStorage.setItem(key, JSON.stringify({ at: Date.now(), songs }));
+      } catch {
+        // full: fine, we still have it in memory
+      }
+      return songs;
+    } catch {
+      return null;
+    }
+  };
+  if (saved?.songs?.length) {
+    // Use what's on the phone now; refresh it in the background once a day.
+    if (Date.now() - saved.at > 24 * 3_600_000) void fresh();
+    run = Promise.resolve(saved.songs);
+  } else {
+    run = fresh().then((s) => {
+      if (!s) namesMem.delete(cat);
+      return s ?? [];
+    });
+  }
+  namesMem.set(cat, run);
+  return run;
+}
+
+/** Best matches first: the exact title, then the title starts with it, then every typed word starts a word. */
+export function matchSongs(list: EarSong[], q: string, max = 6): EarSong[] {
+  const want = norm(q);
+  const words = want.split(" ").filter(Boolean);
+  if (!words.length) return [];
+  const seen = new Set<string>();
+  const hits: { s: EarSong; f: number }[] = [];
+  for (const s of list) {
+    const t = norm(s.title);
+    const k = `${t}|${norm(s.artist)}`;
+    if (seen.has(k)) continue;
+    const tw = t.split(" ");
+    let f = -1;
+    if (t === want) f = 0;
+    else if (t.startsWith(want)) f = 1;
+    else if (words.every((w) => tw.some((x) => x.startsWith(w)))) f = 1.5;
+    else {
+      const both = [...tw, ...norm(s.artist).split(" ")];
+      if (words.every((w) => both.some((x) => x.startsWith(w)))) f = 2;
+    }
+    if (f < 0) continue;
+    seen.add(k);
+    hits.push({ s, f });
+  }
+  return hits
+    .sort((a, b) => a.f - b.f)
+    .slice(0, max)
+    .map((h) => h.s);
+}
+
+/** Type-ahead extra: anything on Deezer (for songs outside the list). */
 const searchCache = new Map<string, EarSong[]>();
-export async function searchSongs(q: string, cat: EarCat): Promise<EarSong[]> {
+export async function searchSongs(q: string): Promise<EarSong[]> {
   const key = q.trim().toLowerCase();
   if (key.length < 2) return [];
   const hit = searchCache.get(key);
   if (hit) return hit;
-  // Songs from the built-in list whose title or artist has words starting with what's typed.
-  const words = norm(key).split(" ").filter(Boolean);
-  const local = (Object.keys(BACKUP) as EarCat[])
-    .sort((a, b) => (a === cat ? -1 : b === cat ? 1 : 0))
-    .flatMap(backupFor)
-    .filter((s) => {
-      const hay = `${norm(s.title)} ${norm(s.artist)}`.split(" ");
-      return words.length > 0 && words.every((w) => hay.some((x) => x.startsWith(w)));
-    });
-  let found: EarSong[] = [];
   try {
     const r = await fetch(`/api/song?q=${encodeURIComponent(key)}`, {
       headers: await authHeader(),
       signal: AbortSignal.timeout(5000),
     });
-    if (r.ok) found = (await r.json()) as EarSong[];
+    if (!r.ok) return [];
+    const found = (await r.json()) as EarSong[];
+    if (found.length) searchCache.set(key, found);
+    return found;
   } catch {
-    // the built-in list still helps
+    return [];
   }
-  const seen = new Set(found.map((s) => norm(s.title)));
-  const out = [...found, ...local.filter((s) => !seen.has(norm(s.title)))].slice(0, 6);
-  if (found.length) searchCache.set(key, out);
-  return out;
 }
+/** Every built-in song (all categories), as a last-resort guess list. */
+export const allBackup = (): EarSong[] => (Object.keys(BACKUP) as EarCat[]).flatMap(backupFor);
 
 export type Preview = {
   url: string;
