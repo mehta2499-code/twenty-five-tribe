@@ -1844,31 +1844,6 @@ function Home() {
   const [pickSong, setPickSong] = useState(false);
   // Songs your 25 shared since you last looked (clears when you open it).
   const newSongs = useNewSongs();
-  // First open of the day: the newest song someone in your 25 is sharing
-  // spins on the headphones button, with a bubble. Tap it to listen.
-  const [teaseDay, setTeaseDay] = useState(() => {
-    try {
-      return localStorage.getItem("tf.song.teased") ?? "";
-    } catch {
-      return "";
-    }
-  });
-  const dismissTeaser = () => {
-    const d = new Date().toISOString().slice(0, 10);
-    setTeaseDay(d);
-    try {
-      localStorage.setItem("tf.song.teased", d);
-    } catch {
-      // ignore
-    }
-  };
-  const [listenTo, setListenTo] = useState<Person | null>(null);
-  const teaser =
-    teaseDay === new Date().toISOString().slice(0, 10)
-      ? null
-      : (people
-          .filter((p) => isListening(p))
-          .sort((a, b) => (b.np?.at ?? 0) - (a.np?.at ?? 0))[0] ?? null);
   const [confetti, setConfetti] = useState(0);
   // Your birthday: confetti the first time you open the app that day.
   const myBday = useBirthdays().find((b) => b.id === "me");
@@ -2015,44 +1990,34 @@ function Home() {
         onPickedShown={() => setPicked(null)}
         onSpotDone={() => setSpot(null)}
         topLeft={
-          teaser ? (
-            <SongTeaser
-              f={teaser}
-              onOpen={() => {
-                dismissTeaser();
-                setListenTo(teaser);
-              }}
-            />
-          ) : (
-            <button
-              onClick={() => setPickSong(true)}
-              aria-label={`Listening now${newSongs ? `, ${newSongs} new` : ""}`}
-              className="w-10 h-10 rounded-full flex items-center justify-center relative"
-              style={{
-                background: s.me?.np ? "rgba(193,239,98,0.16)" : "var(--fill)",
-                border: s.me?.np ? "1px solid rgba(193,239,98,0.5)" : "var(--bd)",
-                boxShadow: "var(--pop)",
-                color: s.me?.np ? "var(--lime)" : "var(--ink)",
-              }}
-            >
-              <Headphones size={21} aria-hidden="true" />
-              {newSongs > 0 && (
-                <span
-                  aria-hidden="true"
-                  className="pop absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
-                  style={{
-                    background: "var(--pink)",
-                    color: "var(--on-dark-fill)",
-                    fontSize: 11,
-                    fontWeight: 800,
-                    border: "2px solid var(--surface)",
-                  }}
-                >
-                  {newSongs > 9 ? "9+" : newSongs}
-                </span>
-              )}
-            </button>
-          )
+          <button
+            onClick={() => setPickSong(true)}
+            aria-label={`Listening now${newSongs ? `, ${newSongs} new` : ""}`}
+            className="w-10 h-10 rounded-full flex items-center justify-center relative"
+            style={{
+              background: s.me?.np ? "rgba(193,239,98,0.16)" : "var(--fill)",
+              border: s.me?.np ? "1px solid rgba(193,239,98,0.5)" : "var(--bd)",
+              boxShadow: "var(--pop)",
+              color: s.me?.np ? "var(--lime)" : "var(--ink)",
+            }}
+          >
+            <Headphones size={21} aria-hidden="true" />
+            {newSongs > 0 && (
+              <span
+                aria-hidden="true"
+                className="pop absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center tabular-nums"
+                style={{
+                  background: "var(--pink)",
+                  color: "var(--on-dark-fill)",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  border: "2px solid var(--surface)",
+                }}
+              >
+                {newSongs > 9 ? "9+" : newSongs}
+              </span>
+            )}
+          </button>
         }
         topRight={
           <Link
@@ -2104,15 +2069,6 @@ function Home() {
       />
 
       <Confetti fire={confetti} />
-      {listenTo?.np && (
-        <Sheet
-          title={`${listenTo.name.split(" ")[0]}'s song`}
-          onClose={() => setListenTo(null)}
-          center
-        >
-          <NowPlayingCard np={listenTo.np} bare />
-        </Sheet>
-      )}
       {pickSong && (
         <NowPlayingPicker
           onClose={() => {
@@ -2206,59 +2162,5 @@ function PollsButton() {
         </span>
       )}
     </Link>
-  );
-}
-
-/** The headphones button, dressed up with a friend's newest song (first open of the day). */
-function SongTeaser({ f, onOpen }: { f: Person; onOpen: () => void }) {
-  const np = f.np!;
-  return (
-    <button
-      onClick={onOpen}
-      className="flex items-center gap-2 text-left song-tease-in"
-      aria-label={`${f.name.split(" ")[0]} is listening to ${np.title}. Tap to listen`}
-    >
-      <span className="relative shrink-0 w-12 h-12">
-        <span aria-hidden="true" className="absolute -inset-1.5 rounded-full song-ring" />
-        <span
-          className="absolute inset-0 rounded-full overflow-hidden song-spin"
-          style={{ border: "2px solid var(--lime)", background: "#111" }}
-        >
-          {np.image ? (
-            <img src={np.image} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="w-full h-full flex items-center justify-center">
-              <Headphones size={20} aria-hidden="true" />
-            </span>
-          )}
-          {/* the vinyl's centre hole */}
-          <span
-            aria-hidden="true"
-            className="absolute left-1/2 top-1/2 w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full"
-            style={{ background: "var(--page)", border: "1.5px solid rgba(255,255,255,0.6)" }}
-          />
-        </span>
-        <span className="absolute -bottom-1 -right-1">
-          <Avatar src={f.avatar} initials={f.initials} color={f.color} size={20} />
-        </span>
-      </span>
-      <span
-        className="lg rounded-2xl rounded-tl-md px-3 py-1.5 max-w-[190px]"
-        style={{ boxShadow: "var(--pop)" }}
-      >
-        <span className="block font-bold truncate" style={{ fontSize: 12.5 }}>
-          {f.name.split(" ")[0]} is on
-        </span>
-        <span
-          className="block font-extrabold truncate"
-          style={{ fontSize: 13.5, color: "var(--lime)" }}
-        >
-          {cleanTitle(np.title)}
-        </span>
-        <span className="flex items-center gap-1 meta" style={{ fontSize: 11.5 }}>
-          ▶ Tap to listen
-        </span>
-      </span>
-    </button>
   );
 }
