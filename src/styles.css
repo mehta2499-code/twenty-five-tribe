@@ -863,3 +863,15 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 .day-art-float { display: inline-block; animation: day-art-float 3.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .day-art-float { animation: none; } }
+
+/* Table: a friend's newest song on the headphones button. */
+@keyframes song-spin { to { transform: rotate(360deg); } }
+.song-spin { animation: song-spin 6s linear infinite; }
+@keyframes song-ring {
+  0% { box-shadow: 0 0 0 0 rgba(193,239,98,0.55); }
+  100% { box-shadow: 0 0 0 14px rgba(193,239,98,0); }
+}
+.song-ring { animation: song-ring 1.6s ease-out infinite; }
+@keyframes song-tease-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.song-tease-in { animation: song-tease-in 0.4s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .song-spin, .song-ring { animation: none; } }
