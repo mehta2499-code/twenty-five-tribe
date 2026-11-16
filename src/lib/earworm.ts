@@ -6,7 +6,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type EarCat = "bollywood" | "punjabi" | "english";
-export type EarLevel = "easy" | "medium" | "hard";
+export type EarLevel = "easy" | "medium" | "hard" | "mix";
+/** How hard one song is. Mix mode climbs through all five. */
+export type EarTier = "easy" | "medium" | "hard" | "insane" | "impossible";
 export type EarSong = { id: string; title: string; artist: string };
 export type EarResult = {
   score: number;
@@ -28,11 +30,25 @@ export const CATS: { id: EarCat; name: string; emoji: string; tone: string }[] =
 ];
 
 /** Clip lengths (seconds) for each try, by difficulty. */
-export const STAGES: Record<EarLevel, number[]> = {
+export const STAGES: Record<EarTier, number[]> = {
   easy: [1, 2, 4, 7, 11, 16],
   medium: [0.5, 1, 2, 4, 8, 15],
   hard: [0.1, 0.5, 1, 2, 4, 8],
+  insane: [0.1, 0.3, 0.6, 1, 2, 4],
+  impossible: [0.1, 0.2, 0.3, 0.5, 1, 2],
 };
+/** Mix mode: song 1 is easy, song 5 is impossible. */
+export const MIX_TIERS: EarTier[] = ["easy", "medium", "hard", "insane", "impossible"];
+export const TIER_NAME: Record<EarTier, string> = {
+  easy: "Easy",
+  medium: "Medium",
+  hard: "Hard",
+  insane: "Insane",
+  impossible: "Impossible",
+};
+/** The difficulty of song number k (0-based) in a game. */
+export const tierOf = (level: EarLevel, k: number): EarTier =>
+  level === "mix" ? MIX_TIERS[Math.min(k, MIX_TIERS.length - 1)] : level;
 /** Points for naming it on each clip. */
 export const POINTS = [100, 80, 60, 40, 25, 10];
 export const SONGS_PER_GAME = 5;

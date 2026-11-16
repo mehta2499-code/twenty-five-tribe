@@ -14,6 +14,8 @@ import {
   CATS,
   POINTS,
   STAGES,
+  TIER_NAME,
+  tierOf,
   SONGS_PER_GAME,
   cleanTitle,
   isRight,
@@ -91,7 +93,7 @@ export function EarwormSetup({
         role="group"
         aria-label="Difficulty"
       >
-        {(["easy", "medium", "hard"] as const).map((l) => (
+        {(["easy", "medium", "hard", "mix"] as const).map((l) => (
           <button
             key={l}
             onClick={() => setLevel(l)}
@@ -107,7 +109,9 @@ export function EarwormSetup({
         ))}
       </div>
       <p className="meta mt-1.5" style={{ fontSize: 12 }}>
-        First clip: {STAGES[level][0]}s, up to {STAGES[level][STAGES[level].length - 1]}s.
+        {level === "mix"
+          ? "Harder every song: Easy → Medium → Hard → Insane → Impossible."
+          : `First clip: ${STAGES[level][0]}s, up to ${STAGES[level][STAGES[level].length - 1]}s.`}
       </p>
       <div className="mt-5 grid gap-2.5">
         <button
@@ -204,8 +208,9 @@ export function EarwormPlay({
   onFinish: (r: EarResult, done: Done[]) => void;
   onClose: () => void;
 }) {
-  const stages = STAGES[level];
   const [k, setK] = useState(0);
+  const tier = tierOf(level, k);
+  const stages = STAGES[tier];
   const [stage, setStage] = useState(0);
   const [guesses, setGuesses] = useState<string[]>([]);
   const [reveal, setReveal] = useState<Done | null>(null);
@@ -363,7 +368,8 @@ export function EarwormPlay({
               className="block font-semibold capitalize"
               style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)" }}
             >
-              {title ?? meta.name} · {level}
+              {title ?? meta.name} ·{" "}
+              {level === "mix" ? `Mix · ${TIER_NAME[tier]}` : TIER_NAME[tier]}
             </span>
           </span>
           <span
