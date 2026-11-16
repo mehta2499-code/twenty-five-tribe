@@ -645,7 +645,9 @@ function Table({
               aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
             >
               <span className="flex flex-col items-center" style={lean}>
-                {!isListening(f) && bdayDays !== undefined && <PartyHat size={size} />}
+                {/* Birthday coming up: the party hat. If they're also listening, it sits on
+                    top of the headphone band, so both show. */}
+                {bdayDays !== undefined && <PartyHat size={size} onPhones={isListening(f)} />}
                 <span
                   className="relative rounded-full transition-transform duration-150"
                   style={{
@@ -1423,17 +1425,18 @@ function LiveBadge({ now, small }: { now: FriendNow; small: boolean }) {
   );
 }
 
-function PartyHat({ size }: { size: number }) {
-  const w = Math.round(size * 0.62);
+function PartyHat({ size, onPhones }: { size: number; onPhones?: boolean }) {
+  // On its own: tilted on the head. With headphones: a bit smaller, perched on the band.
+  const w = Math.round(size * (onPhones ? 0.54 : 0.62));
   return (
     <span
       className="absolute"
       aria-hidden="true"
       style={{
-        top: -w * 0.78,
-        left: size * 0.02,
-        transform: "rotate(-18deg)",
-        zIndex: 2,
+        top: onPhones ? -w * 0.74 - size * 0.1 : -w * 0.78,
+        left: onPhones ? size / 2 - w * 0.42 : size * 0.02,
+        transform: onPhones ? "rotate(-12deg)" : "rotate(-18deg)",
+        zIndex: 4,
         lineHeight: 0,
         filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.5))",
       }}
