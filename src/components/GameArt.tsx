@@ -10,6 +10,7 @@ export type ArtKind =
   | "imposter"
   | "chess"
   | "poker"
+  | "earworm"
   | "tap-rush"
   | "quick-math"
   | "colour-clash"
@@ -35,6 +36,7 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "imposter" && <Hooded />}
       {kind === "chess" && <ChessArt />}
       {kind === "poker" && <PokerArt />}
+      {kind === "earworm" && <EarArt />}
       {kind === "tap-rush" && <Target />}
       {kind === "quick-math" && <MathTiles />}
       {kind === "colour-clash" && <PaletteArt />}
@@ -480,6 +482,43 @@ function PokerArt() {
         <ellipse cx="9" cy="2" rx="11" ry="5" fill="#F4C96B" stroke={EDGE} strokeWidth="2" />
         <ellipse cx="9" cy="2" rx="5" ry="2.2" fill="none" stroke="#FFF8EC" strokeWidth="1.5" />
       </g>
+    </g>
+  );
+}
+
+function EarArt() {
+  // Headphones with a sound wave and a note.
+  return (
+    <g strokeLinejoin="round" strokeLinecap="round">
+      <path d="M12 38 V32 a20 20 0 0 1 40 0 V38" fill="none" stroke={EDGE} strokeWidth="5" />
+      <path d="M12 38 V32 a20 20 0 0 1 40 0 V38" fill="none" stroke="#B8F25C" strokeWidth="2.5" />
+      <rect
+        x="6"
+        y="34"
+        width="12"
+        height="20"
+        rx="5"
+        fill="#B8F25C"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <rect
+        x="46"
+        y="34"
+        width="12"
+        height="20"
+        rx="5"
+        fill="#B8F25C"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <path d="M24 44 v-6 M29 48 v-14 M34 46 v-10 M39 43 v-4" stroke="#FFF8EC" strokeWidth="3" />
+      <path
+        d="M44 10 v12 a4 4 0 1 1 -3 -3.8 V12 l9 -3 v4 z"
+        fill="#F15B91"
+        stroke={EDGE}
+        strokeWidth="2"
+      />
     </g>
   );
 }

@@ -19,6 +19,7 @@ import {
 import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
+import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
 import {
   leave as pokerLeave,
   newPoker,
@@ -54,10 +55,10 @@ export const hideWord = (w: string) => btoa([...w].reverse().join(""));
 export const revealWord = (h: string) => [...atob(h)].reverse().join("");
 
 export type GameRow<
-  S = KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState,
+  S = KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState | EarState,
 > = {
   id: string;
-  kind: "kachuful" | "trivia" | "word" | "ludo" | "imposter" | "chess" | "poker";
+  kind: "kachuful" | "trivia" | "word" | "ludo" | "imposter" | "chess" | "poker" | "earworm";
   host: string;
   players: string[];
   status: "playing" | "done";
@@ -212,6 +213,43 @@ export async function startWordChallenge(friend: Person, word: string) {
   return id;
 }
 
+/** Earworm challenge: everyone gets the same songs; highest score wins. */
+export async function startEarworm(
+  friends: Person[],
+  cat: EarCat,
+  level: EarLevel,
+  songs: EarSong[],
+) {
+  track("game_started", { game: "earworm" });
+  const me = myId();
+  const id = uuid();
+  const state: EarState = { cat, level, songs, results: {} };
+  const { error } = await supabase.from("games").insert({
+    id,
+    kind: "earworm",
+    host: me,
+    players: [me, ...friends.map((f) => f.id)],
+    state,
+    version: 0,
+  });
+  if (error) throw new Error(error.message);
+  const name = { bollywood: "Bollywood", punjabi: "Punjabi", english: "English" }[cat];
+  await invite(
+    friends.map((f) => f.id),
+    id,
+    `🎧 Earworm: name ${songs.length} ${name} songs from a tiny clip (${level}). Same songs as me. Beat my score.`,
+  );
+  return id;
+}
+
+/** Save my Earworm score on top of the latest version (others finish at the same time). */
+export async function saveEarworm(id: string, meId: string, result: EarState["results"][string]) {
+  return changeLatest<EarState>(id, (cur) => {
+    if (cur.results[meId]) return null;
+    return { state: { ...cur, results: { ...cur.results, [meId]: result } } };
+  });
+}
+
 /** Challenge a friend to chess (colours picked at random). */
 export async function startChess(friend: Person, minutes?: number) {
   track("game_started", { game: "chess" });
@@ -319,6 +357,8 @@ export async function quitGame(g: GameRow, meId: string) {
       await changeLatest<TriviaState>(g.id, (cur) =>
         cur.results[meId] ? null : { state: { ...cur, forfeit: meId }, status: "done" },
       );
+    } else if (g.kind === "earworm") {
+      // Nothing to undo: it just leaves Your games.
     } else if (g.kind === "chess") {
       await changeLatest<ChessState>(g.id, (cur) =>
         cur.result

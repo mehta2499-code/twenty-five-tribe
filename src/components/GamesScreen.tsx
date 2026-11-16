@@ -1,4 +1,6 @@
 import { Tour } from "@/components/Tour";
+import { EarwormSetup, SoloEarworm } from "@/components/Earworm";
+import { loadPool, pickSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { PokerSetup } from "@/components/Poker";
 import type { ChessState } from "@/lib/chess";
@@ -8,6 +10,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronRight,
   Crown,
+  Music,
   CircleHelp,
   X,
   Dices,
@@ -53,6 +56,7 @@ import {
   quitGame,
   startLudo,
   startChess,
+  startEarworm,
   startPoker,
   startParty,
   startTriviaChallenge,
@@ -140,6 +144,12 @@ function YourGames({ meId }: { meId: string }) {
             status = guessing
               ? `Your turn · ${w.guesses.length}/6`
               : `${others[0]?.name.split(" ")[0] ?? "They"}'re on ${w.guesses.length}/6`;
+          } else if (g.kind === "earworm") {
+            const e = g.state as EarState;
+            yourTurn = !e.results[meId];
+            const left = g.players.filter((p) => !e.results[p]).length;
+            title = `Earworm · ${e.songs.length} songs`;
+            status = yourTurn ? "Your turn" : `Waiting for ${left}`;
           } else if (g.kind === "chess") {
             const c = g.state as ChessState;
             const mine = c.white === meId ? "w" : "b";
@@ -387,6 +397,8 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
     minutes?: number;
   } | null>(null);
   const [poker, setPoker] = useState(false);
+  const [ear, setEar] = useState(false);
+  const [earSolo, setEarSolo] = useState<{ cat: EarCat; level: EarLevel } | null>(null);
   const [soloLudo, setSoloLudo] = useState<number | null>(null);
   const [wordMenu, setWordMenu] = useState(false);
 
@@ -444,6 +456,18 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           {live && <YourGames meId={s.me!.id} />}
 
           <section className="px-5 mt-6 grid grid-cols-2 gap-3.5" aria-label="All games">
+            <GameTile
+              wide
+              tone="#16200F"
+              light
+              Icon={Music}
+              art="earworm"
+              sticker="NEW · NAME THAT SONG"
+              title="Earworm"
+              line="A tiny clip. Name the song. Bollywood, Punjabi or English hits. Skip for more, but it costs you."
+              tilt={-0.6}
+              onClick={() => (live ? setEar(true) : setToast("Sign in to play."))}
+            />
             <GameTile
               tone="#1E7F4C"
               light
@@ -562,6 +586,28 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           minutes={chessBot.minutes}
           onClose={() => setChessBot(null)}
         />
+      )}
+      {ear && (
+        <EarwormSetup
+          onClose={() => setEar(false)}
+          onSolo={(cat, level) => {
+            setEar(false);
+            setEarSolo({ cat, level });
+          }}
+          onChallenge={async (friends, cat, level) => {
+            setEar(false);
+            try {
+              const songs = pickSongs(await loadPool(cat));
+              const id = await startEarworm(friends, cat, level, songs);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
+      {earSolo && (
+        <SoloEarworm cat={earSolo.cat} level={earSolo.level} onClose={() => setEarSolo(null)} />
       )}
       {poker && (
         <PokerSetup

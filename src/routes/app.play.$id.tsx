@@ -60,7 +60,9 @@ import {
   startHand,
   type PokerState,
 } from "@/lib/poker";
-import { inviteToPoker, startChess } from "@/lib/games";
+import { inviteToPoker, saveEarworm, startChess } from "@/lib/games";
+import { EarwormPlay, EarwormStandings } from "@/components/Earworm";
+import type { EarState } from "@/lib/earworm";
 
 export const Route = createFileRoute("/app/play/$id")({
   component: clientOnly(PlayScreen),
@@ -89,7 +91,7 @@ type Live<S> = ReturnType<typeof useGame<S>>;
 
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
   const live = useGame<
-    KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState
+    KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState | EarState
   >(id);
   const { game, error } = live;
   // Your 25 see you playing at the Table.
@@ -163,7 +165,9 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   const close = quit ? () => setLeaving(true) : onClose;
 
   const board =
-    game.kind === "chess" ? (
+    game.kind === "earworm" ? (
+      <OnlineEarworm live={live as Live<EarState>} meId={meId} onClose={onClose} />
+    ) : game.kind === "chess" ? (
       <OnlineChess live={live as Live<ChessState>} meId={meId} onClose={onClose} />
     ) : game.kind === "poker" ? (
       <OnlinePoker live={live as Live<PokerState>} meId={meId} onClose={onClose} />
@@ -748,6 +752,39 @@ function OnlinePoker({
         onClose();
       }}
       onClose={onClose}
+    />
+  );
+}
+
+function OnlineEarworm({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<EarState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game } = live;
+  if (!game) return null;
+  const st = game.state;
+  if (st.results[meId] || game.status === "done")
+    return <EarwormStandings st={st} players={game.players} meId={meId} onClose={onClose} />;
+  return (
+    <EarwormPlay
+      cat={st.cat}
+      level={st.level}
+      songs={st.songs}
+      onClose={onClose}
+      onFinish={(r) =>
+        void saveEarworm(game.id, meId, r).then(async () => {
+          // Everyone's played: the challenge is done.
+          await changeLatest<EarState>(game.id, (cur) =>
+            game.players.every((p) => cur.results[p]) ? { state: cur, status: "done" } : null,
+          );
+          live.reload();
+        })
+      }
     />
   );
 }

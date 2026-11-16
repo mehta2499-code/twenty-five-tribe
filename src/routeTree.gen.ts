@@ -31,6 +31,8 @@ import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppArcadeRouteImport } from './routes/app.arcade'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
 import { Route as ApiSpotifyRouteImport } from './routes/api.spotify'
+import { Route as ApiSongAudioRouteImport } from './routes/api.song-audio'
+import { Route as ApiSongRouteImport } from './routes/api.song'
 import { Route as ApiPushRouteImport } from './routes/api.push'
 import { Route as ApiGifRouteImport } from './routes/api.gif'
 import { Route as AppSeatIdRouteImport } from './routes/app.seat.$id'
@@ -150,6 +152,16 @@ const ApiSpotifyRoute = ApiSpotifyRouteImport.update({
   path: '/api/spotify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSongAudioRoute = ApiSongAudioRouteImport.update({
+  id: '/api/song-audio',
+  path: '/api/song-audio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSongRoute = ApiSongRouteImport.update({
+  id: '/api/song',
+  path: '/api/song',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushRoute = ApiPushRouteImport.update({
   id: '/api/push',
   path: '/api/push',
@@ -201,6 +213,8 @@ export interface FileRoutesByFullPath {
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
+  '/api/song': typeof ApiSongRoute
+  '/api/song-audio': typeof ApiSongAudioRoute
   '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
   '/app/arcade': typeof AppArcadeRoute
@@ -232,6 +246,8 @@ export interface FileRoutesByTo {
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
+  '/api/song': typeof ApiSongRoute
+  '/api/song-audio': typeof ApiSongAudioRoute
   '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
   '/app/arcade': typeof AppArcadeRoute
@@ -265,6 +281,8 @@ export interface FileRoutesById {
   '/walkthrough': typeof WalkthroughRoute
   '/api/gif': typeof ApiGifRoute
   '/api/push': typeof ApiPushRoute
+  '/api/song': typeof ApiSongRoute
+  '/api/song-audio': typeof ApiSongAudioRoute
   '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
   '/app/arcade': typeof AppArcadeRoute
@@ -299,6 +317,8 @@ export interface FileRouteTypes {
     | '/walkthrough'
     | '/api/gif'
     | '/api/push'
+    | '/api/song'
+    | '/api/song-audio'
     | '/api/spotify'
     | '/app/activity'
     | '/app/arcade'
@@ -330,6 +350,8 @@ export interface FileRouteTypes {
     | '/walkthrough'
     | '/api/gif'
     | '/api/push'
+    | '/api/song'
+    | '/api/song-audio'
     | '/api/spotify'
     | '/app/activity'
     | '/app/arcade'
@@ -362,6 +384,8 @@ export interface FileRouteTypes {
     | '/walkthrough'
     | '/api/gif'
     | '/api/push'
+    | '/api/song'
+    | '/api/song-audio'
     | '/api/spotify'
     | '/app/activity'
     | '/app/arcade'
@@ -395,6 +419,8 @@ export interface RootRouteChildren {
   WalkthroughRoute: typeof WalkthroughRoute
   ApiGifRoute: typeof ApiGifRoute
   ApiPushRoute: typeof ApiPushRoute
+  ApiSongRoute: typeof ApiSongRoute
+  ApiSongAudioRoute: typeof ApiSongAudioRoute
   ApiSpotifyRoute: typeof ApiSpotifyRoute
   InUsernameRoute: typeof InUsernameRoute
 }
@@ -555,6 +581,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSpotifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/song-audio': {
+      id: '/api/song-audio'
+      path: '/api/song-audio'
+      fullPath: '/api/song-audio'
+      preLoaderRoute: typeof ApiSongAudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/song': {
+      id: '/api/song'
+      path: '/api/song'
+      fullPath: '/api/song'
+      preLoaderRoute: typeof ApiSongRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push': {
       id: '/api/push'
       path: '/api/push'
@@ -670,6 +710,8 @@ const rootRouteChildren: RootRouteChildren = {
   WalkthroughRoute: WalkthroughRoute,
   ApiGifRoute: ApiGifRoute,
   ApiPushRoute: ApiPushRoute,
+  ApiSongRoute: ApiSongRoute,
+  ApiSongAudioRoute: ApiSongAudioRoute,
   ApiSpotifyRoute: ApiSpotifyRoute,
   InUsernameRoute: InUsernameRoute,
 }
