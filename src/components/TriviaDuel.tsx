@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar } from "@/components/Avatar";
+import { GameOverBoard } from "@/components/Leaderboard";
 import { Confetti, buzz } from "@/components/SocialUI";
 import { buildRound } from "@/lib/trivia";
 import type { TriviaPack } from "@/lib/data";
@@ -310,37 +311,42 @@ export function TriviaDuel({
           : myPoints === theirPoints
             ? "tie"
             : "loss";
-    return shell(
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-        <h2 className="title" style={{ fontSize: 34 }}>
-          {result === "win"
-            ? "You win"
-            : result === "walkover"
-              ? `${them.name.split(" ")[0]} left. You win by walkover.`
-              : result === "tie"
-                ? "Dead heat"
-                : `${them.name.split(" ")[0]} wins`}
-        </h2>
-        <div className="mt-8 flex items-center gap-8">
-          {[
-            { p: me, pts: myPoints, label: "You" },
-            { p: them, pts: theirPoints, label: them.name.split(" ")[0] },
-          ].map(({ p, pts, label }) => (
-            <div key={p.id} className="flex flex-col items-center">
-              <Avatar src={p.avatar} initials={p.initials} color={p.color} size={72} />
-              <span className="mt-2 text-sm font-semibold">{label}</span>
-              <span className="text-3xl font-black tabular-nums text-bronze">{pts}</span>
-            </div>
-          ))}
-        </div>
-        <p className="meta mt-4">
-          {correctCount}/{questions.length} right
-        </p>
-        <button onClick={onClose} className="mt-10 btn-primary px-8">
-          Done
-        </button>
-        <Confetti fire={result === "win" || result === "walkover" ? 1 : 0} />
-      </div>,
+    // Two players: the leaderboard shows only the winner (both on a tie).
+    const meRank = result === "loss" ? 2 : 1;
+    const themRank = result === "win" || result === "walkover" ? 2 : 1;
+    return (
+      <GameOverBoard
+        game={pack.name}
+        headline={
+          result === "walkover"
+            ? `${them.name.split(" ")[0]} left. You win by walkover.`
+            : undefined
+        }
+        note={`You got ${correctCount}/${questions.length} right`}
+        rows={[
+          {
+            id: me.id,
+            rank: meRank,
+            name: me.name,
+            avatar: me.avatar,
+            initials: me.initials,
+            color: me.color,
+            value: myPoints,
+            me: true,
+          },
+          {
+            id: them.id,
+            rank: themRank,
+            name: them.name,
+            avatar: them.avatar,
+            initials: them.initials,
+            color: them.color,
+            value: theirPoints,
+            link: true,
+          },
+        ].sort((x, y) => x.rank - y.rank)}
+        onClose={onClose}
+      />
     );
   }
 

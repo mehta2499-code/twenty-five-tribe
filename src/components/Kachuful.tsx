@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HelpCircle, ListOrdered, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
+import { GameOverBoard, withRanks } from "@/components/Leaderboard";
 import {
   SUIT_NAME,
   SUIT_SYMBOL,
@@ -759,6 +760,29 @@ function RoundSummary({
   const order = state.seats.map((_, i) => i).sort((a, b) => total[b] - total[a]);
   const winner = order[0];
   const iWon = over && winner === mySeat;
+  // Game over: the leaderboard, with everyone's final score.
+  if (over)
+    return (
+      <GameOverBoard
+        game="Judgement"
+        rows={withRanks(order, (i) => total[i]).map(({ r: i, rank }) => {
+          const p = state.seats[i];
+          return {
+            id: p.id,
+            rank,
+            name: p.name,
+            avatar: p.avatar,
+            initials: p.initials,
+            color: p.color,
+            value: total[i],
+            link: !p.bot,
+            me: i === mySeat,
+          };
+        })}
+        onClose={onClose}
+        onPlayAgain={onPlayAgain}
+      />
+    );
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center"

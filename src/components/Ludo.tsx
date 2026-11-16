@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Flag, House, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
+import { GameOverBoard, withRanks } from "@/components/Leaderboard";
 import { mutualFriends, useSocial, type Person } from "@/lib/social";
 import {
   COLOR_HEX,
@@ -487,6 +488,13 @@ export function LudoTable({
 }) {
   const [menu, setMenu] = useState(false);
   const [rolling, setRolling] = useState(false);
+  // Show the final leaderboard a beat after the game ends.
+  const [over, setOver] = useState(false);
+  useEffect(() => {
+    if (state.phase !== "over") return setOver(false);
+    const t = setTimeout(() => setOver(true), 1200);
+    return () => clearTimeout(t);
+  }, [state.phase]);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -689,9 +697,45 @@ export function LudoTable({
           </span>
         </div>
       )}
-      <Confetti fire={state.phase === "over" && state.winner === mine ? 1 : 0} />
+      {/* Game over: the leaderboard (a moment after the last move, so it's seen). */}
+      {over && (
+        <GameOverBoard
+          game="Ludo"
+          rows={ludoPlaces(state, mine)}
+          onClose={onClose}
+          onPlayAgain={onPlayAgain}
+        />
+      )}
     </div>
   );
+}
+
+/** Final places: the winner, then by how far everyone got (resigned last). */
+function ludoPlaces(state: LudoState, mine: number) {
+  const progress = (i: number) => state.tokens[i].reduce((a, r) => a + Math.max(0, r + 1), 0);
+  const order = state.players
+    .map((_, i) => i)
+    .sort(
+      (a, b) =>
+        Number(b === state.winner) - Number(a === state.winner) ||
+        Number(!!state.players[a].out) - Number(!!state.players[b].out) ||
+        progress(b) - progress(a),
+    );
+  // Only the winner is 1st; the rest place by progress.
+  return withRanks(order, (i) =>
+    i === state.winner ? -1 : progress(i) - (state.players[i].out ? 1e4 : 0),
+  ).map(({ r: i, rank }) => {
+    const p = state.players[i];
+    return {
+      id: p.id,
+      rank,
+      name: p.bot ? `${p.name} (bot)` : p.name,
+      avatar: p.avatar,
+      initials: p.initials,
+      link: !p.bot,
+      me: i === mine,
+    };
+  });
 }
 
 // ---------- Waiting room (online games) ----------

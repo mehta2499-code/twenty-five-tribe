@@ -1,3 +1,4 @@
+import { GameOverBoard } from "@/components/Leaderboard";
 import { gameLabel, useDoing } from "@/lib/status";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -333,14 +334,41 @@ function OnlineTrivia({
       );
     }
     const total = mine.total;
-    const verdict =
-      theirs === undefined
-        ? `Waiting for ${opponent.name.split(" ")[0]} to play.`
-        : mine.score > theirs.score
-          ? "You won this one."
-          : mine.score === theirs.score
-            ? "It's a tie."
-            : `${opponent.name.split(" ")[0]} won this one.`;
+    // Both have played: the leaderboard with just the winner (both on a tie).
+    if (theirs) {
+      const fmt = (r: { score: number }) =>
+        mine.points !== undefined ? r.score : `${r.score}/${total}`;
+      const meFirst = mine.score >= theirs.score;
+      const rows = [
+        {
+          id: meId,
+          rank: mine.score >= theirs.score ? 1 : 2,
+          name: s.me?.name ?? "You",
+          avatar: s.me?.avatar,
+          initials: s.me?.initials ?? "YO",
+          value: fmt(mine),
+          me: true,
+        },
+        {
+          id: otherId,
+          rank: theirs.score >= mine.score ? 1 : 2,
+          name: opponent.name,
+          avatar: opponent.avatar,
+          initials: opponent.initials,
+          color: opponent.color,
+          value: fmt(theirs),
+          link: true,
+        },
+      ];
+      return (
+        <GameOverBoard
+          game={`${pack.name} · challenge`}
+          rows={meFirst ? rows : [rows[1], rows[0]]}
+          onClose={onClose}
+        />
+      );
+    }
+    const verdict = `Waiting for ${opponent.name.split(" ")[0]} to play.`;
     return (
       <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center px-6 text-center">
         <p className="label-caps">{pack.name} · challenge</p>
@@ -349,8 +377,8 @@ function OnlineTrivia({
         </h2>
         <p className="mt-6 text-2xl font-black tabular-nums text-cream">
           {mine.points !== undefined
-            ? `You ${mine.score} pts · ${opponent.name.split(" ")[0]} ${theirs ? `${theirs.score} pts` : "?"}`
-            : `You ${mine.score}/${total} · ${opponent.name.split(" ")[0]} ${theirs ? `${theirs.score}/${total}` : "?"}`}
+            ? `You scored ${mine.score} pts`
+            : `You got ${mine.score}/${total}`}
         </p>
         <button onClick={onClose} className="mt-10 btn-bronze px-8 py-3.5">
           Back to games

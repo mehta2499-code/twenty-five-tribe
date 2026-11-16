@@ -4,6 +4,7 @@ import { Check, Copy, Crown, Eye, Share2, UserPlus, Users, X } from "lucide-reac
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
 import { Confetti, Toast, buzz } from "@/components/SocialUI";
+import { Leaderboard, withRanks } from "@/components/Leaderboard";
 import { changeLatest, inviteToParty, quitGame, type GameRow } from "@/lib/games";
 import { friendById, mutualFriends } from "@/lib/social";
 
@@ -798,6 +799,35 @@ function Over({
         </div>
       </div>
 
+      {/* The party's leaderboard: points across every game played together. */}
+      {st.games > 0 && (
+        <>
+          <p className="label-caps mt-7 mb-4 text-center">
+            Party points · {st.games} game{st.games > 1 ? "s" : ""}
+          </p>
+          <Leaderboard
+            rows={withRanks(board, (p) => st.tally[p.id] ?? 0).map(({ r: p, rank }) => {
+              const f = friendById(p.id);
+              return {
+                id: p.id,
+                rank,
+                name: name(p.id),
+                avatar: f?.avatar || undefined,
+                initials: p.initials,
+                color: f?.color,
+                value: st.tally[p.id] ?? 0,
+                link: true,
+                me: p.id === meId,
+              };
+            })}
+          />
+          <p className="meta mt-3 text-center">
+            Crew win +{POINTS.crew} · imposter win +{POINTS.imposter} · caught but guessed it +
+            {POINTS.steal}
+          </p>
+        </>
+      )}
+
       {targets.length > 0 && (
         <>
           <p className="label-caps mt-6 mb-2">Who voted for who</p>
@@ -829,28 +859,6 @@ function Over({
 
       <p className="label-caps mt-6 mb-0">All the clues</p>
       <ClueLog st={st} name={name} highlight />
-
-      {st.games > 0 && (
-        <>
-          <p className="label-caps mt-6 mb-2">
-            Party points · {st.games} game{st.games > 1 ? "s" : ""}
-          </p>
-          <ol className="grid gap-1.5">
-            {board.map((p, i) => (
-              <li key={p.id} className="flex items-center gap-3 px-1">
-                <span className="w-5 meta tabular-nums">{i + 1}</span>
-                <Face p={p} size={30} />
-                <span className="flex-1 font-semibold text-cream truncate">{name(p.id)}</span>
-                <span className="font-extrabold tabular-nums">{st.tally[p.id] ?? 0} pts</span>
-              </li>
-            ))}
-          </ol>
-          <p className="meta mt-2">
-            Crew win +{POINTS.crew} · imposter win +{POINTS.imposter} · caught but guessed it +
-            {POINTS.steal}
-          </p>
-        </>
-      )}
 
       {host ? (
         <div className="mt-6 grid gap-2.5">
