@@ -4,7 +4,7 @@
  * "Best player", then everyone's actual score in bright ranked pills
  * (tries used and points earned as chips). Then the day's points.
  */
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Crown, Hourglass, Play, RotateCw } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
@@ -205,7 +205,14 @@ export function DayResults({
       {combined.length > 0 && (
         <section className="mt-9">
           <p className="label-caps text-center mb-4">{dayTitle(day)}'s points · both games</p>
-          <Leaderboard rows={combined} />
+          {/* Top 3 on the podium, plus your own spot if you're further down. */}
+          <Leaderboard
+            rows={(() => {
+              const me = combined.find((r) => r.me);
+              const top = combined.slice(0, 3);
+              return me && !top.includes(me) ? [...top, me] : top;
+            })()}
+          />
         </section>
       )}
     </div>
@@ -240,6 +247,10 @@ function GameCard({
 }) {
   const [a, b, c] = rows;
   const best = rows.filter((r) => r.rank === 1);
+  const [all, setAll] = useState(false);
+  const mineRow = rows.find((r) => r.id === "me");
+  const shortList =
+    mineRow && rows.indexOf(mineRow) >= 3 ? [...rows.slice(0, 3), mineRow] : rows.slice(0, 3);
   return (
     <section className="mt-6">
       {/* The game: big art on a bright card, name on a sticker. */}
@@ -359,11 +370,28 @@ function GameCard({
           )}
 
           {/* Everyone, in bright ranked pills. */}
+          {/* Top 3, plus your own spot if you're further down. */}
           <ol className="mt-5 grid gap-3.5">
-            {rows.map((r) => (
-              <RankPill key={r.id} r={r} unit={unit} />
+            {(all ? rows : shortList).map((r, i, list) => (
+              <Fragment key={r.id}>
+                {i > 0 && rows.indexOf(r) > rows.indexOf(list[i - 1]) + 1 && !all && (
+                  <li aria-hidden="true" className="text-center meta leading-none -my-1.5">
+                    ···
+                  </li>
+                )}
+                <RankPill r={r} unit={unit} />
+              </Fragment>
             ))}
           </ol>
+          {rows.length > shortList.length && (
+            <button
+              onClick={() => setAll((v) => !v)}
+              className="mt-4 mx-auto block meta font-semibold"
+              style={{ fontSize: 13 }}
+            >
+              {all ? "Show less" : `See all ${rows.length}`}
+            </button>
+          )}
         </>
       )}
     </section>
