@@ -64,62 +64,85 @@ async function authHeader(): Promise<Record<string, string>> {
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
-/** The big list for a category (falls back to the backup list). */
-const poolCache = new Map<EarCat, EarSong[]>();
-export async function loadPool(cat: EarCat): Promise<EarSong[]> {
-  const hit = poolCache.get(cat);
-  if (hit) return hit;
+const backupFor = (cat: EarCat): EarSong[] =>
+  BACKUP[cat].map(([title, artist]) => ({ id: `q:${title}|${artist}`, title, artist }));
+
+function recentIds(): string[] {
   try {
-    const r = await fetch(`/api/song?pool=${cat}`, {
+    return JSON.parse(localStorage.getItem("tf.earworm.recent") ?? "[]");
+  } catch {
+    return [];
+  }
+}
+function remember(songs: EarSong[]) {
+  try {
+    localStorage.setItem(
+      "tf.earworm.recent",
+      JSON.stringify([...songs.map((s) => s.id), ...recentIds()].slice(0, 150)),
+    );
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Songs for one game, picked fresh each time: random big artists from the
+ * category and a random hit from each, skipping ones you had recently.
+ * Falls back to the backup list if Deezer can't be reached.
+ */
+export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
+  const recent = recentIds();
+  try {
+    const skip = recent
+      .filter((id) => /^\d+$/.test(id))
+      .slice(0, 120)
+      .join(",");
+    const r = await fetch(`/api/song?game=${cat}&n=${n}&skip=${skip}`, {
       headers: await authHeader(),
       signal: AbortSignal.timeout(6000),
     });
     if (r.ok) {
       const songs = (await r.json()) as EarSong[];
-      if (songs.length >= 50) {
-        poolCache.set(cat, songs);
+      if (songs.length >= n) {
+        remember(songs);
         return songs;
       }
     }
   } catch {
     // backup below
   }
-  const backup = BACKUP[cat].map(([title, artist]) => ({
-    id: `q:${title}|${artist}`,
-    title,
-    artist,
-  }));
-  // The big list isn't ready yet: play from the backup now (and ask again next game).
-  return backup;
+  const pool = backupFor(cat);
+  const fresh = pool.filter((s) => !recent.includes(s.id));
+  const from = [...(fresh.length >= n * 2 ? fresh : pool)].sort(() => Math.random() - 0.5);
+  const out = from.slice(0, n);
+  remember(out);
+  return out;
 }
 
-/** Pick songs for a game, avoiding ones you've had recently on this phone. */
-export function pickSongs(pool: EarSong[], n = SONGS_PER_GAME): EarSong[] {
-  let recent: string[] = [];
+/** Type-ahead while guessing: any song on Deezer (backup list if offline). */
+const searchCache = new Map<string, EarSong[]>();
+export async function searchSongs(q: string, cat: EarCat): Promise<EarSong[]> {
+  const key = q.trim().toLowerCase();
+  if (key.length < 2) return [];
+  const hit = searchCache.get(key);
+  if (hit) return hit;
   try {
-    recent = JSON.parse(localStorage.getItem("tf.earworm.recent") ?? "[]");
+    const r = await fetch(`/api/song?q=${encodeURIComponent(key)}`, {
+      headers: await authHeader(),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (r.ok) {
+      const songs = (await r.json()) as EarSong[];
+      searchCache.set(key, songs);
+      return songs;
+    }
   } catch {
-    // ignore
+    // backup below
   }
-  const fresh = pool.filter((s) => !recent.includes(s.id));
-  const from = fresh.length >= n * 2 ? fresh : pool;
-  const out: EarSong[] = [];
-  const used = new Set<string>();
-  while (out.length < n && used.size < from.length) {
-    const s = from[Math.floor(Math.random() * from.length)];
-    if (used.has(s.id)) continue;
-    used.add(s.id);
-    out.push(s);
-  }
-  try {
-    localStorage.setItem(
-      "tf.earworm.recent",
-      JSON.stringify([...out.map((s) => s.id), ...recent].slice(0, 150)),
-    );
-  } catch {
-    // ignore
-  }
-  return out;
+  const words = key.split(/\s+/);
+  return backupFor(cat)
+    .filter((s) => words.every((w) => `${s.title} ${s.artist}`.toLowerCase().includes(w)))
+    .slice(0, 6);
 }
 
 export type Preview = {

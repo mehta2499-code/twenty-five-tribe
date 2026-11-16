@@ -1,8 +1,8 @@
 /**
  * Name That Tune's song server.
- *   /api/song?pool=bollywood|punjabi|english — the big list of popular songs for
- *     a category, built from Deezer's public hit playlists (most popular first,
- *     up to 1,000), refreshed daily.
+ *   /api/song?game=bollywood|punjabi|english&n=5&skip=… — songs for one game:
+ *     random big artists from the category, a random hit from each.
+ *   /api/song?q=<text> — type-ahead song search for guessing.
  *   /api/song?id=<deezer id> — one song's 30-second preview (fresh link).
  *   /api/song?t=<title>&a=<artist> — find a song by name (Deezer, then iTunes).
  * Signed-in people only.
@@ -117,47 +117,41 @@ async function itunes(title: string, artist: string): Promise<SongHit | null> {
 }
 
 const cache = new Map<string, { at: number; hit: SongHit | null }>();
+const searches = new Map<string, { at: number; songs: PoolSong[] }>();
 
-// ---------- Pools of popular songs ----------
+// ---------- Songs for a game ----------
 export type PoolSong = { id: string; title: string; artist: string };
-const POOL_QUERIES: Record<string, string[]> = {
+/** Hand-picked big artists for each category (Deezer artist ids). */
+const ARTISTS: Record<string, number[]> = {
+  // Arijit Singh, Shreya Ghoshal, Sonu Nigam, Atif Aslam, Neha Kakkar, Jubin Nautiyal…
   bollywood: [
-    "bollywood hits",
-    "best of bollywood",
-    "bollywood top 50",
-    "bollywood 90s hits",
-    "bollywood 2000s hits",
-    "bollywood 2010s hits",
-    "bollywood romantic hits",
-    "bollywood party songs",
-    "arijit singh hits",
-    "bollywood dance hits",
+    3830821, 98371, 70075, 405736, 129846, 8419888, 7760, 290619, 491, 498, 70758, 71798, 76645,
+    10587, 97141, 136941, 492, 14779, 5017623, 6048770, 14114495, 516768, 269921, 291752, 4056595,
+    133646, 1212166, 5561521, 4717745, 106752, 126453, 5301812, 4485080, 1452924, 1393198, 129840,
+    1680753, 70024, 7269486, 124682, 2630, 8033, 73805, 10984, 111054, 71797, 106729, 71794,
+    1532482, 4694401, 4661688, 12788789, 56237412,
   ],
+  // Diljit Dosanjh, AP Dhillon, Sidhu Moose Wala, Karan Aujla, Shubh, Guru Randhawa…
   punjabi: [
-    "punjabi hits",
-    "best of punjabi",
-    "punjabi top 50",
-    "punjabi party",
-    "bhangra hits",
-    "diljit dosanjh hits",
-    "ap dhillon",
-    "sidhu moose wala hits",
-    "punjabi romantic hits",
+    1199677, 76708242, 12423322, 6555107, 14499793, 5956602, 11649473, 4550961, 10851328, 116467,
+    96512, 96441, 93746, 113572, 16023, 1511979, 1093616, 1092615, 891590, 987126, 4059801,
+    50094692, 5368682, 9941124, 9466614, 5027880, 6207326, 1196073, 543560, 71525972, 1197473,
+    5834324, 14555677, 5368627, 5851900, 1811, 107177, 1711258, 59454682, 14393879, 65370542,
+    15287739, 5196512, 4759264, 4121038, 9948046, 49267072,
   ],
+  // Taylor Swift, Ed Sheeran, The Weeknd, Ariana Grande, Justin Bieber, Dua Lipa…
   english: [
-    "today's hits",
-    "pop hits",
-    "top hits 2010s",
-    "top hits 2000s",
-    "throwback hits",
-    "global top 50",
-    "best pop songs ever",
-    "hits of the decade",
-    "party hits",
+    12246, 384236, 4050205, 1562681, 288166, 8706544, 9635624, 429675, 564, 75798, 892, 416239,
+    1188, 144227, 75491, 145, 246791, 7543848, 5313805, 1007876, 5962948, 292185, 3469, 11152580,
+    12436, 1176900, 1362735, 1097709, 13, 12178, 542, 4104927, 293585, 4999707, 74398, 12088868,
+    5578942, 5531258, 92, 259, 330, 483, 103, 5062414, 1182, 1424821, 5292512, 362326, 5259966,
+    146543992, 64927672, 12945219, 126335112, 249599, 776, 160, 88, 17, 102, 4768753, 7890702,
+    4331004, 15888, 647650, 16398, 873890, 313, 4492087, 311820,
   ],
 };
-const pools = new Map<string, { at: number; songs: PoolSong[] }>();
-const building = new Map<string, Promise<PoolSong[]>>();
+/** Not the song people know: remixes, reprises, live, lo-fi and the like. */
+const ALT_VERSION =
+  /\b(remix|reprise|live|acoustic|unplugged|lofi|lo-fi|slowed|reverb|sped up|instrumental|karaoke|mashup|version|female|male|cover|edit|mix|remake|recreated|8d|demo)\b/i;
 
 async function dz<T>(path: string): Promise<T | null> {
   try {
@@ -170,82 +164,98 @@ async function dz<T>(path: string): Promise<T | null> {
   }
 }
 
-async function buildPool(cat: string): Promise<PoolSong[]> {
-  type Track = {
-    id: number;
-    title: string;
-    title_short?: string;
-    rank?: number;
-    preview?: string;
-    artist?: { name: string };
-  };
-  const seen = new Map<string, Track>();
-  // All the playlist searches at once, then all their tracks at once.
-  const found = await Promise.all(
-    POOL_QUERIES[cat].map((q) =>
-      dz<{ data?: { id: number; nb_tracks?: number; fans?: number }[] }>(
-        `/search/playlist?limit=6&q=${encodeURIComponent(q)}`,
-      ),
-    ),
-  );
-  const ids = [
-    ...new Set(
-      found.flatMap((lists) =>
-        (lists?.data ?? [])
-          .filter((l) => (l.nb_tracks ?? 0) >= 25)
-          .sort((a, b) => (b.fans ?? 0) - (a.fans ?? 0))
-          .slice(0, 3)
-          .map((l) => l.id),
-      ),
-    ),
-  ];
-  const lists = await Promise.all(
-    ids.map((id) => dz<{ data?: Track[] }>(`/playlist/${id}/tracks?limit=200`)),
-  );
-  for (const tracks of lists) {
-    {
-      for (const t of tracks?.data ?? []) {
-        if (!t.preview || !t.artist?.name) continue;
-        const name = t.title_short || t.title;
-        const k = `${norm(name)}|${norm(t.artist.name)}`;
-        const prev = seen.get(k);
-        if (!prev || (t.rank ?? 0) > (prev.rank ?? 0)) seen.set(k, { ...t, title: name });
-      }
+/** How well-known a song must be (Deezer rank) to be asked; Punjabi charts run smaller. */
+/** Devotional and holiday songs aren't what people mean by popular. */
+const OFF_TOPIC = /\b(chalisa|aarti|bhajan|mantra|maa|mata|christmas|xmas|santa|holiday)\b/i;
+const FLOOR: Record<string, number> = { bollywood: 170_000, punjabi: 100_000, english: 300_000 };
+/** "Kesariya (From \"Brahmastra\")" → "Kesariya"; "Closer (feat. Halsey)" → "Closer". */
+const tidy = (t: string) =>
+  t
+    .replace(/\s*[([](from|feat\.?|ft\.?|with)\b.*$/i, "")
+    .replace(/\s+-\s+(from|feat).*$/i, "")
+    .trim() || t;
+
+const tops = new Map<number, { at: number; songs: (PoolSong & { rank: number })[] }>();
+/** An artist's most popular songs (their Deezer top tracks), cached for a day. */
+async function artistTop(id: number) {
+  const c = tops.get(id);
+  if (c && Date.now() - c.at < 24 * 3_600_000) return c.songs;
+  const body = await dz<{
+    data?: {
+      id: number;
+      title: string;
+      title_short?: string;
+      rank?: number;
+      preview?: string;
+      artist?: { id: number; name: string };
+    }[];
+  }>(`/artist/${id}/top?limit=25`);
+  const songs = (body?.data ?? [])
+    .filter(
+      (t) =>
+        t.preview &&
+        // Their own songs, not ones they only feature on.
+        t.artist?.id === id &&
+        !ALT_VERSION.test(`${t.title} ${t.title_short ?? ""}`) &&
+        !OFF_TOPIC.test(t.title),
+    )
+    .map((t) => ({
+      id: String(t.id),
+      title: tidy(t.title_short || t.title),
+      artist: t.artist?.name ?? "",
+      rank: t.rank ?? 0,
+    }));
+  if (songs.length) tops.set(id, { at: Date.now(), songs });
+  return songs;
+}
+
+/**
+ * Songs for one game: random artists from the category, and from each a
+ * random song among their most popular (top 12). No artist twice; skips
+ * songs the player had recently.
+ */
+export async function gameSongs(cat: string, n: number, skip: Set<string>): Promise<PoolSong[]> {
+  const list = [...(ARTISTS[cat] ?? [])].sort(() => Math.random() - 0.5);
+  const out: PoolSong[] = [];
+  const seenTitles = new Set<string>();
+  const floor = FLOOR[cat] ?? 0;
+  for (let i = 0; i < list.length && out.length < n; i += n) {
+    // A few artists at a time (Deezer allows ~50 requests per 5 seconds).
+    const batch = await Promise.all(
+      list.slice(i, i + n + 1).map((id) => artistTop(id).catch(() => [])),
+    );
+    for (const songs of batch) {
+      if (out.length >= n) break;
+      const pool = songs
+        .slice(0, 12)
+        .filter((s) => s.rank >= floor && !skip.has(s.id) && !seenTitles.has(norm(s.title)));
+      if (!pool.length) continue;
+      const s = pool[Math.floor(Math.random() * pool.length)];
+      seenTitles.add(norm(s.title));
+      out.push({ id: s.id, title: s.title, artist: s.artist });
     }
   }
-  // Popular only: highest Deezer rank first, nothing obscure.
-  const sorted = [...seen.values()].sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
-  const floor = sorted.length > 300 ? (sorted[Math.min(sorted.length - 1, 999)].rank ?? 0) : 0;
-  return sorted
-    .filter((t) => (t.rank ?? 0) >= floor && (t.rank ?? 0) >= 150_000)
-    .slice(0, 1000)
-    .map((t) => ({ id: String(t.id), title: t.title, artist: t.artist!.name }));
+  return out;
 }
 
-async function pool(cat: string) {
-  const p = pools.get(cat);
-  if (p && Date.now() - p.at < 24 * 3_600_000 && p.songs.length) return p.songs;
-  let run = building.get(cat);
-  if (!run) {
-    run = buildPool(cat)
-      .then((songs) => {
-        if (songs.length) pools.set(cat, { at: Date.now(), songs });
-        return songs;
-      })
-      .catch(() => [] as PoolSong[])
-      .finally(() => building.delete(cat));
-    building.set(cat, run);
+/** Type-ahead: songs matching what's been typed (Deezer search). */
+export async function searchSongs(q: string): Promise<PoolSong[]> {
+  const body = await dz<{
+    data?: { id: number; title: string; title_short?: string; artist?: { name: string } }[];
+  }>(`/search?limit=12&q=${encodeURIComponent(q)}`);
+  const seen = new Set<string>();
+  const out: PoolSong[] = [];
+  for (const t of body?.data ?? []) {
+    const title = tidy(t.title_short || t.title);
+    const k = `${norm(title)}|${norm(t.artist?.name ?? "")}`;
+    if (seen.has(k) || ALT_VERSION.test(t.title)) continue;
+    seen.add(k);
+    out.push({ id: String(t.id), title, artist: t.artist?.name ?? "" });
   }
-  // Don't keep anyone waiting: if it isn't built in a few seconds, answer with
-  // what we had (or nothing, and the app uses its backup list) while it finishes.
-  const songs = await Promise.race([
-    run,
-    new Promise<PoolSong[]>((r) => setTimeout(() => r([]), 4000)),
-  ]);
-  return songs.length ? songs : (p?.songs ?? []);
+  return out.slice(0, 7);
 }
 
-async function byId(id: string): Promise<SongHit | null> {
+export async function byId(id: string): Promise<SongHit | null> {
   const t = await dz<{
     title: string;
     title_short?: string;
@@ -271,11 +281,26 @@ export const Route = createFileRoute("/api/song")({
       GET: async ({ request }) => {
         if (!(await signedIn(request))) return json({ error: "Sign in first." }, 401, "no-store");
         const u = new URL(request.url);
-        const cat = u.searchParams.get("pool");
-        if (cat) {
-          if (!POOL_QUERIES[cat]) return json({ error: "Unknown category." }, 400, "no-store");
-          const songs = await pool(cat);
-          return json(songs, 200, "private, max-age=3600");
+        const game = u.searchParams.get("game");
+        if (game) {
+          if (!ARTISTS[game]) return json({ error: "Unknown category." }, 400, "no-store");
+          const n = Math.min(10, Math.max(1, Number(u.searchParams.get("n")) || 5));
+          const skip = new Set(
+            (u.searchParams.get("skip") ?? "").split(",").filter(Boolean).slice(0, 300),
+          );
+          const songs = await gameSongs(game, n, skip);
+          return json(songs, 200, "no-store");
+        }
+        const search = (u.searchParams.get("q") ?? "").trim().slice(0, 60);
+        if (search) {
+          if (search.length < 2) return json([]);
+          const k = `q:${search.toLowerCase()}`;
+          const c = searches.get(k);
+          if (c && Date.now() - c.at < 6 * 3_600_000) return json(c.songs);
+          const songs = await searchSongs(search);
+          if (searches.size > 5000) searches.clear();
+          searches.set(k, { at: Date.now(), songs });
+          return json(songs);
         }
         const id = u.searchParams.get("id");
         if (id) {

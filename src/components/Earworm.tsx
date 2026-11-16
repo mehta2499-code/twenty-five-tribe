@@ -3,7 +3,7 @@
  * longer clip; naming it sooner scores more. 5 songs a game, solo or against
  * your 25 (same songs for everyone).
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ExternalLink, Pause, Play, Search, SkipForward, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, buzz } from "@/components/SocialUI";
@@ -17,9 +17,9 @@ import {
   SONGS_PER_GAME,
   cleanTitle,
   isRight,
-  loadPool,
   loadPreview,
-  pickSongs,
+  pickGameSongs,
+  searchSongs,
   type EarCat,
   type EarLevel,
   type EarResult,
@@ -211,7 +211,7 @@ export function EarwormPlay({
   const [reveal, setReveal] = useState<Done | null>(null);
   const [done, setDone] = useState<Done[]>([]);
   const [preview, setPreview] = useState<Preview | null | undefined>(undefined);
-  const [pool, setPool] = useState<EarSong[]>([]);
+  const [suggestions, setSuggestions] = useState<EarSong[]>([]);
   const [text, setText] = useState("");
   const [playing, setPlaying] = useState(false);
   const [startedAt, setStartedAt] = useState(0);
@@ -221,9 +221,22 @@ export function EarwormPlay({
   const song = songs[k];
   const meta = CATS.find((c) => c.id === cat)!;
 
+  // Type-ahead: search as they type (a short pause first, so not every key).
   useEffect(() => {
-    void loadPool(cat).then(setPool);
-  }, [cat]);
+    const q = text.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(() => {
+      void searchSongs(q, cat).then((r) => alive && setSuggestions(r.slice(0, 6)));
+    }, 220);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [text, cat]);
   // Load this song's clip.
   useEffect(() => {
     let alive = true;
@@ -317,18 +330,6 @@ export function EarwormPlay({
     if (isRight(g, song)) finishSong(stage);
     else wrong(g);
   };
-
-  const suggestions = useMemo(() => {
-    const q = text.trim().toLowerCase();
-    if (q.length < 2) return [];
-    const words = q.split(/\s+/);
-    return pool
-      .filter((s) => {
-        const hay = `${s.title} ${s.artist}`.toLowerCase();
-        return words.every((w) => hay.includes(w));
-      })
-      .slice(0, 6);
-  }, [text, pool]);
 
   const score = done.reduce((a, d) => a + (d.got >= 0 ? POINTS[d.got] : 0), 0);
 
@@ -760,7 +761,7 @@ export function EarwormSummary({
           {result.score}
         </p>
         <p className="text-center meta">out of {SONGS_PER_GAME * POINTS[0]}</p>
-        <ul className="mt-6 grid gap-2">
+        <ul className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-2">
           {done.map((d, i) => (
             <li
               key={i}
@@ -886,7 +887,7 @@ export function EarwormStandings({
         <p className="meta mt-1">
           Waiting for {waiting.length} more. The board fills in as they finish.
         </p>
-        <ul className="mt-5 grid gap-2">
+        <ul className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-2">
           {rows.map((r) => (
             <li
               key={r.id}
@@ -953,7 +954,7 @@ export function SoloEarworm({
     let alive = true;
     setSongs(null);
     setEnd(null);
-    void loadPool(cat).then((pool) => alive && setSongs(pickSongs(pool)));
+    void pickGameSongs(cat).then((songs) => alive && setSongs(songs));
     return () => {
       alive = false;
     };

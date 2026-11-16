@@ -1,6 +1,6 @@
 import { Tour } from "@/components/Tour";
 import { EarwormSetup, SoloEarworm } from "@/components/Earworm";
-import { loadPool, pickSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
+import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { PokerSetup } from "@/components/Poker";
 import type { ChessState } from "@/lib/chess";
@@ -597,7 +597,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           onChallenge={async (friends, cat, level) => {
             setEar(false);
             try {
-              const songs = pickSongs(await loadPool(cat));
+              const songs = await pickGameSongs(cat);
               const id = await startEarworm(friends, cat, level, songs);
               navigate({ to: "/app/play/$id", params: { id } });
             } catch (e) {
