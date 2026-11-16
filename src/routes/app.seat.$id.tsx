@@ -1,6 +1,7 @@
 import { NowPlayingCard } from "@/components/NowPlaying";
 import { isListening } from "@/lib/music";
 import { KnowsBest, QuizBadge } from "@/components/QuizBadges";
+import { SeasonBadge } from "@/components/SeasonBadge";
 import { badgeOf, useQuizBadges } from "@/lib/quiz";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -126,6 +127,9 @@ function LiveSeat() {
                 : "has you in their 25"}
           </span>
         </p>
+        <div className="mt-3 flex justify-center empty:hidden">
+          <SeasonBadge userId={id} />
+        </div>
         {(badgeOf(quiz.knowsMe[id]) || badgeOf(quiz.iKnow[id])) && (
           <div className="mt-3 grid gap-1.5 justify-items-start">
             {badgeOf(quiz.knowsMe[id]) && (

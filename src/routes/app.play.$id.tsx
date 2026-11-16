@@ -363,6 +363,7 @@ function OnlineTrivia({
       return (
         <GameOverBoard
           game={`${pack.name} · challenge`}
+          roast={{ game: "Trivia", detail: pack.name }}
           rows={meFirst ? rows : [rows[1], rows[0]]}
           onClose={onClose}
         />

@@ -18,6 +18,7 @@ import {
   dayRanking,
   gameFor,
   lastWeek,
+  seasonOf,
   today,
   untilMidnight,
   useDaily,
@@ -85,7 +86,8 @@ export function DayResults({
   const d = useDaily();
   const [day, setDay] = useState(today());
   const isToday = day === today();
-  const first = lastWeek();
+  // As far back as scores are loaded: last week or the start of the season.
+  const first = [lastWeek(), seasonOf().start].sort()[0];
   // A countdown to the next game, while looking at today.
   const [, tick] = useState(0);
   useEffect(() => {

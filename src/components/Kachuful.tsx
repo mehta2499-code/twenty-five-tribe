@@ -765,6 +765,7 @@ function RoundSummary({
     return (
       <GameOverBoard
         game="Judgement"
+        roast={{ game: "Judgement" }}
         rows={withRanks(order, (i) => total[i]).map(({ r: i, rank }) => {
           const p = state.seats[i];
           return {

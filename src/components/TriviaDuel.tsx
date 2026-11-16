@@ -317,6 +317,7 @@ export function TriviaDuel({
     return (
       <GameOverBoard
         game={pack.name}
+        roast={{ game: "Trivia", detail: pack.name }}
         headline={
           result === "walkover"
             ? `${them.name.split(" ")[0]} left. You win by walkover.`

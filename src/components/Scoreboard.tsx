@@ -10,7 +10,9 @@ import { Ico } from "@/components/Ico";
 import { Leaderboard, withRanks, type LeaderRow } from "@/components/Leaderboard";
 import { DayResults, wordDay } from "@/components/DayResults";
 import { friendById, meView, useSocial } from "@/lib/social";
-import { addDays, dayRanking, thisWeek, today, useDaily, weekDays } from "@/lib/daily";
+import { SEASON_DAYS, addDays, dayRanking, seasonOf, today, useDaily } from "@/lib/daily";
+import { Avatar } from "@/components/Avatar";
+import { Crown } from "lucide-react";
 import { track } from "@/lib/track";
 
 /** Points for 1st, 2nd, 3rd… each day; everyone else who played gets 2. */
@@ -30,26 +32,6 @@ function person(id: string) {
   };
 }
 
-type Lifetime = { user_id: string; daily_points: number; word_points?: number };
-
-/** All-time points for you and your mutual 25 (worked out on the server). */
-function useLifetime(on: boolean) {
-  const s = useSocial();
-  const [rows, setRows] = useState<Lifetime[]>([]);
-  useEffect(() => {
-    if (!on || s.mode !== "live") return;
-    let alive = true;
-    void supabase.rpc("lifetime_scores" as never).then(({ data }) => {
-      if (alive) setRows((data as Lifetime[] | null) ?? []);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [on, s.mode]);
-  const myId = s.me?.id;
-  return rows.map((r) => ({ ...r, user_id: r.user_id === myId ? "me" : r.user_id }));
-}
-
 /** Days in a row you've played the daily game, counting back from today (or yesterday). */
 function playStreak(board: Record<string, Record<string, number[]>>) {
   let day = today();
@@ -62,12 +44,40 @@ function playStreak(board: Record<string, Record<string, number[]>>) {
   return n;
 }
 
-type View = "daily" | "weekly" | "overall";
+type View = "daily" | "season";
 const VIEWS: [View, string][] = [
   ["daily", "Daily"],
-  ["weekly", "Weekly"],
-  ["overall", "Overall"],
+  ["season", "Season"],
 ];
+
+/** Last season's champion(s) among you and your 25. */
+function useLastChamps(season: number) {
+  const s = useSocial();
+  const [ids, setIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (season < 2 || s.mode !== "live" || !s.me) return;
+    let alive = true;
+    const me = s.me.id;
+    void supabase
+      .from("season_winners" as never)
+      .select("user_id")
+      .eq("season" as never, (season - 1) as never)
+      .then(({ data }) => {
+        if (!alive) return;
+        const mine = new Set([me, ...s.people.filter((p) => p.mutual !== false).map((p) => p.id)]);
+        setIds(
+          ((data as { user_id: string }[] | null) ?? [])
+            .map((r) => r.user_id)
+            .filter((id) => mine.has(id))
+            .map((id) => (id === me ? "me" : id)),
+        );
+      });
+    return () => {
+      alive = false;
+    };
+  }, [season, s.mode, s.me?.id, s.people.length]);
+  return ids;
+}
 
 export function Scoreboard({
   onPlayDaily,
@@ -79,20 +89,17 @@ export function Scoreboard({
   const d = useDaily();
   useEffect(() => track("leaderboard_viewed"), []);
   const [view, setView] = useState<View>("daily");
-  const lifetime = useLifetime(view === "overall");
   const day = today();
+  const season = seasonOf(day);
+  const champs = useLastChamps(season.n);
 
   // Points per person for the chosen period.
   const totals: Record<string, number> = {};
   const add = (id: string, n: number) => (totals[id] = (totals[id] ?? 0) + n);
-  if (view === "overall") {
-    for (const r of lifetime) add(r.user_id, (r.daily_points ?? 0) + (r.word_points ?? 0));
-  } else {
-    const days = view === "daily" ? [day] : weekDays(thisWeek()).filter((k) => k <= day);
-    for (const k of days) {
-      for (const r of dayRanking(d, k)) add(r.id, r.points);
-      for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
-    }
+  // Season: every day so far this season.
+  for (let k = season.start; k <= day; k = addDays(k, 1)) {
+    for (const r of dayRanking(d, k)) add(r.id, r.points);
+    for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
   }
   const sorted = Object.entries(totals)
     .filter(([, n]) => n > 0)
@@ -132,13 +139,7 @@ export function Scoreboard({
           </button>
         ))}
       </div>
-      <p
-        className={`meta text-center mt-3 ${view === "daily" ? "hidden" : ""}`}
-        style={{ fontSize: 12.5 }}
-      >
-        Daily game + Word Up
-        {view === "daily" ? " · today" : view === "weekly" ? " · this week" : " · all-time"}
-      </p>
+      {view === "season" && <SeasonBanner season={season} champs={champs} />}
 
       {view === "daily" ? (
         <div className="mt-5">
@@ -179,5 +180,74 @@ export function Scoreboard({
       )}
       <p className="text-center meta mt-6">Only your mutual 25 see your scores.</p>
     </section>
+  );
+}
+
+/** Season header: which season, how far in, and last season's champ. */
+function SeasonBanner({
+  season,
+  champs,
+}: {
+  season: ReturnType<typeof seasonOf>;
+  champs: string[];
+}) {
+  const pct = Math.round((season.dayNo / SEASON_DAYS) * 100);
+  return (
+    <div
+      className="mt-5 rounded-[24px] p-4 relative overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(circle at 85% 10%, rgba(247,201,72,0.35), transparent 50%), linear-gradient(150deg, #3A2A6E, #1B1730)",
+        border: "1px solid rgba(255,255,255,0.12)",
+      }}
+    >
+      <p className="label-caps" style={{ color: "#F7C948" }}>
+        Season {season.n}
+      </p>
+      <p className="display mt-1" style={{ fontSize: 26, lineHeight: 1.05 }}>
+        Day {season.dayNo} of {SEASON_DAYS}
+      </p>
+      <div
+        className="mt-3 h-2.5 rounded-full overflow-hidden"
+        style={{ background: "rgba(255,255,255,0.12)" }}
+        role="progressbar"
+        aria-valuenow={season.dayNo}
+        aria-valuemin={1}
+        aria-valuemax={SEASON_DAYS}
+      >
+        <span
+          className="block h-full rounded-full"
+          style={{ width: `${pct}%`, background: "linear-gradient(90deg, #F7C948, #F27DA6)" }}
+        />
+      </div>
+      <p className="meta mt-2.5" style={{ fontSize: 13 }}>
+        {season.left === 0
+          ? "Last day. Whoever's on top at midnight takes the title."
+          : `${season.left} day${season.left === 1 ? "" : "s"} left. Top of your 25 wins the Season ${season.n} title.`}
+      </p>
+      {champs.length > 0 && (
+        <div className="mt-3 flex items-center gap-2.5">
+          <span className="flex -space-x-2">
+            {champs.slice(0, 3).map((id) => {
+              const p = person(id);
+              return (
+                <span key={id} className="rounded-full" style={{ border: "2px solid #F7C948" }}>
+                  <Avatar src={p.avatar} initials={p.initials} color={p.color} size={28} />
+                </span>
+              );
+            })}
+          </span>
+          <span className="font-semibold" style={{ fontSize: 13.5 }}>
+            <Crown
+              size={14}
+              aria-hidden="true"
+              className="inline -mt-0.5 mr-1"
+              style={{ color: "#F7C948", fill: "#F7C948" }}
+            />
+            Season {season.n - 1} champ: {champs.map((id) => person(id).name).join(" & ")}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

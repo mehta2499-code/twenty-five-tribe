@@ -2,6 +2,7 @@ import { PhotoCropper } from "@/components/PhotoCropper";
 import { NowPlayingCard, NowPlayingPicker } from "@/components/NowPlaying";
 import { Glyph3D } from "@/components/Glyph3D";
 import { KnowsBest } from "@/components/QuizBadges";
+import { SeasonBadge } from "@/components/SeasonBadge";
 import { DeleteAccount } from "@/components/Safety";
 import { PushSetting } from "@/components/PushPrompt";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -155,6 +156,9 @@ function Profile() {
         <div className="min-w-0">
           <p className="heading truncate">{name}</p>
           {s.me && <p className="meta truncate">@{s.me.username}</p>}
+          <div className="mt-1.5 empty:hidden">
+            <SeasonBadge userId={s.me?.id} />
+          </div>
           <p className="text-cool mt-1" style={{ fontSize: 14 }}>
             {taken} of {SEATS_TOTAL} seats filled
           </p>

@@ -6,7 +6,10 @@
  */
 import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
-import { Confetti } from "@/components/SocialUI";
+import { useState } from "react";
+import { Flame, Shuffle } from "lucide-react";
+import { Confetti, Sheet } from "@/components/SocialUI";
+import { friendById, social } from "@/lib/social";
 
 export type LeaderRow = {
   id: string;
@@ -267,9 +270,12 @@ export function GameOverBoard({
   onClose,
   onPlayAgain,
   children,
+  roast,
 }: {
   game: string;
   rows: LeaderRow[];
+  /** Winners can roast the people they beat, as a post in Scenes. */
+  roast?: { game: string; detail?: string };
   headline?: string;
   note?: string;
   onClose: () => void;
@@ -315,6 +321,7 @@ export function GameOverBoard({
           )}
         </div>
         {children}
+        {roast && iWon && <RoastButton rows={rows} roast={roast} />}
         <div className="mt-8 flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">
             Done
@@ -328,5 +335,120 @@ export function GameOverBoard({
       </div>
       <Confetti fire={iWon ? 1 : 0} />
     </div>
+  );
+}
+
+// ---------- Roast: brag about a win in Scenes ----------
+
+const ROASTS = [
+  "Just beat {who} in {game}{detail}{by}. Anyone else want to lose? 😤",
+  "{game}{detail}: me 1, {who} 0{by}. Next victim? 🔥",
+  "Sorry {who}, {game} just isn't your thing. Took the W{by}. Who's next?",
+  "Another day, another {game} win over {who}{by}. Form an orderly queue. 🏆",
+  "{who} really thought. {game}{detail} is mine{by}. Line up. 😮‍💨",
+  "Dear {who}, practice more. Love, the {game} champ{by}. 💅",
+  "Took {who} to school in {game}{detail}{by}. Class dismissed. 🎓",
+];
+
+function roastText(k: number, rows: LeaderRow[], roast: { game: string; detail?: string }) {
+  const me = rows.find((r) => r.me);
+  const losers = rows.filter((r) => !r.me && r.rank > (me?.rank ?? 1));
+  const tag = (r: LeaderRow) => {
+    const u = r.link ? friendById(r.id)?.username : undefined;
+    return u ? `@${u}` : r.name.split(" ")[0];
+  };
+  const names = losers.map(tag);
+  const who =
+    names.length <= 1
+      ? (names[0] ?? "everyone")
+      : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  const next = losers[0];
+  const margin =
+    typeof me?.value === "number" && typeof next?.value === "number" ? me.value - next.value : 0;
+  const by =
+    margin > 0 && losers.length === 1 ? ` by ${margin} point${margin === 1 ? "" : "s"}` : "";
+  return ROASTS[k % ROASTS.length]
+    .replace("{who}", who)
+    .replace("{game}", roast.game)
+    .replace("{detail}", roast.detail ? ` (${roast.detail})` : "")
+    .replace("{by}", by);
+}
+
+function RoastButton({
+  rows,
+  roast,
+}: {
+  rows: LeaderRow[];
+  roast: { game: string; detail?: string };
+}) {
+  const [open, setOpen] = useState(false);
+  const [k, setK] = useState(() => Math.floor(Math.random() * ROASTS.length));
+  const [text, setText] = useState("");
+  const [posted, setPosted] = useState(false);
+  const me = rows.find((r) => r.me);
+  // Only when you actually beat someone from your 25.
+  if (!rows.some((r) => !r.me && r.link && r.rank > (me?.rank ?? 1))) return null;
+  const start = () => {
+    setText(roastText(k, rows, roast));
+    setOpen(true);
+  };
+  return (
+    <>
+      <button
+        onClick={start}
+        disabled={posted}
+        className="mt-6 w-full rounded-full font-extrabold flex items-center justify-center gap-2 disabled:opacity-60"
+        style={{
+          minHeight: 52,
+          background: "linear-gradient(90deg, #FF7A45, #F2506A)",
+          color: "#fff",
+          boxShadow: "0 8px 24px rgba(242,80,106,0.35)",
+        }}
+      >
+        <Flame size={19} aria-hidden="true" />
+        {posted ? "Roast posted to Scenes" : "Roast them in Scenes"}
+      </button>
+      {open && (
+        <Sheet title="Roast them" onClose={() => setOpen(false)}>
+          <label className="sr-only" htmlFor="roast-text">
+            Your roast
+          </label>
+          <textarea
+            id="roast-text"
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 280))}
+            rows={4}
+            className="input w-full resize-none"
+            style={{ fontSize: 16, lineHeight: 1.4, paddingTop: 12 }}
+          />
+          <div className="mt-3 flex gap-2.5">
+            <button
+              onClick={() => {
+                const n = k + 1;
+                setK(n);
+                setText(roastText(n, rows, roast));
+              }}
+              className="btn-secondary px-4 flex items-center gap-1.5"
+            >
+              <Shuffle size={16} aria-hidden="true" /> Another
+            </button>
+            <button
+              disabled={!text.trim()}
+              onClick={() => {
+                social.addPost("", text.trim());
+                setPosted(true);
+                setOpen(false);
+              }}
+              className="btn-primary flex-1"
+            >
+              Post to Scenes
+            </button>
+          </div>
+          <p className="meta mt-3" style={{ fontSize: 12.5 }}>
+            Goes to Scenes for your 25. Anyone you @tag gets a ping.
+          </p>
+        </Sheet>
+      )}
+    </>
   );
 }

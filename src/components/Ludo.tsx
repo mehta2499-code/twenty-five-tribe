@@ -701,6 +701,7 @@ export function LudoTable({
       {over && (
         <GameOverBoard
           game="Ludo"
+          roast={{ game: "Ludo" }}
           rows={ludoPlaces(state, mine)}
           onClose={onClose}
           onPlayAgain={onPlayAgain}

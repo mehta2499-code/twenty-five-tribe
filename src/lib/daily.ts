@@ -47,6 +47,16 @@ export const dayGameName = (k: string = dayKey()) => `${WEEKDAYS[weekdayOf(k)]}'
 export const today = () => dayKey();
 export const thisWeek = () => weekKey();
 export const lastWeek = () => addDays(weekKey(), -7);
+/** Seasons: 25 days each, season 1 starts 16 Nov 2026 (keep in sync with public.season_of). */
+export const SEASON_DAYS = 25;
+const SEASON_ONE = "2026-11-16";
+export function seasonOf(day: string = today()) {
+  const n = Math.floor((toDate(day).getTime() - toDate(SEASON_ONE).getTime()) / DAY / SEASON_DAYS) + 1;
+  const start = addDays(SEASON_ONE, (n - 1) * SEASON_DAYS);
+  const end = addDays(start, SEASON_DAYS - 1);
+  const dayNo = Math.round((toDate(day).getTime() - toDate(start).getTime()) / DAY) + 1;
+  return { n, start, end, dayNo, left: SEASON_DAYS - dayNo };
+}
 export const weekDays = (start: string) => Array.from({ length: 7 }, (_, i) => addDays(start, i));
 
 /** Time until the next game (midnight India time). */
@@ -154,7 +164,8 @@ let channel: ReturnType<typeof supabase.channel> | null = null;
 let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function loadLive(me: string) {
-  const since = lastWeek();
+  // Back to the start of the season (or last week, whichever is earlier).
+  const since = [lastWeek(), seasonOf().start].sort()[0];
   const [scores, words] = await Promise.all([
     supabase.from("daily_scores").select("user_id,day,tries").gte("day", since),
     supabase.from("word_results").select("user_id,day,guesses,grid").gte("day", since),
