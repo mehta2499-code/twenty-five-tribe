@@ -30,7 +30,8 @@ export function BottomNav() {
           const active =
             pathname.startsWith(to) ||
             (to === "/app/home" &&
-              (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat")));
+              (pathname.startsWith("/app/people") || pathname.startsWith("/app/seat"))) ||
+            (to === "/app/games" && pathname.startsWith("/app/arcade"));
           const badge = to === "/app/chats" ? unread : 0;
           const dropDot = to === "/app/drop" && !active ? drop : null;
           const color = active ? "var(--lime)" : "var(--ink-2)";

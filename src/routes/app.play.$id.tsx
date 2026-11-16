@@ -56,7 +56,7 @@ function PlayScreen() {
   const { id } = Route.useParams();
   const s = useSocial();
   const navigate = useNavigate();
-  const close = () => navigate({ to: "/app/games" });
+  const close = () => navigate({ to: "/app/arcade" });
 
   if (s.mode !== "live" || !s.me) {
     return (

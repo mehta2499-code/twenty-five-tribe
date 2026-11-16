@@ -108,7 +108,7 @@ export function Scoreboard({
   const streak = playStreak(d.board);
 
   return (
-    <section className="px-5 mt-5 pb-4">
+    <section className="px-5 mt-5 pb-4" aria-label="Daily games">
       {/* Daily · Weekly · Overall */}
       <div
         className="flex rounded-[16px] p-1"

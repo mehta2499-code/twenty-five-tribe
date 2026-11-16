@@ -323,7 +323,7 @@ function GameCard({
       </div>
 
       {rows.length === 0 ? (
-        <p className="meta text-center mt-5">{empty}</p>
+        <span className="sr-only">{empty}</span>
       ) : (
         <>
           {/* Mini podium: 2nd · 1st (crowned) · 3rd */}

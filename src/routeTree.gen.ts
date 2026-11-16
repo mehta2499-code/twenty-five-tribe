@@ -28,6 +28,7 @@ import { Route as AppGamesRouteImport } from './routes/app.games'
 import { Route as AppFeedRouteImport } from './routes/app.feed'
 import { Route as AppDropRouteImport } from './routes/app.drop'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
+import { Route as AppArcadeRouteImport } from './routes/app.arcade'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
 import { Route as ApiSpotifyRouteImport } from './routes/api.spotify'
 import { Route as ApiPushRouteImport } from './routes/api.push'
@@ -134,6 +135,11 @@ const AppChatsRoute = AppChatsRouteImport.update({
   path: '/chats',
   getParentRoute: () => AppRoute,
 } as any)
+const AppArcadeRoute = AppArcadeRouteImport.update({
+  id: '/arcade',
+  path: '/arcade',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppActivityRoute = AppActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/api/push': typeof ApiPushRoute
   '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
+  '/app/arcade': typeof AppArcadeRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
   '/app/feed': typeof AppFeedRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/api/push': typeof ApiPushRoute
   '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
+  '/app/arcade': typeof AppArcadeRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
   '/app/feed': typeof AppFeedRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/api/push': typeof ApiPushRoute
   '/api/spotify': typeof ApiSpotifyRoute
   '/app/activity': typeof AppActivityRoute
+  '/app/arcade': typeof AppArcadeRoute
   '/app/chats': typeof AppChatsRoute
   '/app/drop': typeof AppDropRoute
   '/app/feed': typeof AppFeedRoute
@@ -292,6 +301,7 @@ export interface FileRouteTypes {
     | '/api/push'
     | '/api/spotify'
     | '/app/activity'
+    | '/app/arcade'
     | '/app/chats'
     | '/app/drop'
     | '/app/feed'
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/api/push'
     | '/api/spotify'
     | '/app/activity'
+    | '/app/arcade'
     | '/app/chats'
     | '/app/drop'
     | '/app/feed'
@@ -353,6 +364,7 @@ export interface FileRouteTypes {
     | '/api/push'
     | '/api/spotify'
     | '/app/activity'
+    | '/app/arcade'
     | '/app/chats'
     | '/app/drop'
     | '/app/feed'
@@ -522,6 +534,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppChatsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/arcade': {
+      id: '/app/arcade'
+      path: '/arcade'
+      fullPath: '/app/arcade'
+      preLoaderRoute: typeof AppArcadeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/activity': {
       id: '/app/activity'
       path: '/activity'
@@ -597,6 +616,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppActivityRoute: typeof AppActivityRoute
+  AppArcadeRoute: typeof AppArcadeRoute
   AppChatsRoute: typeof AppChatsRoute
   AppDropRoute: typeof AppDropRoute
   AppFeedRoute: typeof AppFeedRoute
@@ -618,6 +638,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppActivityRoute: AppActivityRoute,
+  AppArcadeRoute: AppArcadeRoute,
   AppChatsRoute: AppChatsRoute,
   AppDropRoute: AppDropRoute,
   AppFeedRoute: AppFeedRoute,
