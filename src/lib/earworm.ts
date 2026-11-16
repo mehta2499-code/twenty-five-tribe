@@ -204,7 +204,7 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
       signal: AbortSignal.timeout(6000),
     });
     if (r.ok) {
-      const songs = (await r.json()) as EarSong[];
+      const songs = asSongs(await r.json());
       if (songs.length >= n) {
         remember(songs);
         return songs;
@@ -220,6 +220,18 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
   remember(out);
   return out;
 }
+
+/** Only well-formed songs (a bad or old answer never breaks the game). */
+const asSongs = (x: unknown): EarSong[] =>
+  Array.isArray(x)
+    ? x.filter(
+        (s): s is EarSong =>
+          !!s &&
+          typeof s.id === "string" &&
+          typeof s.title === "string" &&
+          typeof s.artist === "string",
+      )
+    : [];
 
 /**
  * The songs worth guessing in a category (~1,000 hits), kept on the phone for a
@@ -243,7 +255,8 @@ export function loadNames(cat: EarCat): Promise<EarSong[]> {
         signal: AbortSignal.timeout(20000),
       });
       if (!r.ok) return null;
-      const songs = (await r.json()) as EarSong[];
+      const songs = asSongs(await r.json());
+      if (!songs.length) return null;
       try {
         localStorage.setItem(key, JSON.stringify({ at: Date.now(), songs }));
       } catch {
@@ -254,10 +267,10 @@ export function loadNames(cat: EarCat): Promise<EarSong[]> {
       return null;
     }
   };
-  if (saved?.songs?.length) {
+  if (saved && asSongs(saved.songs).length) {
     // Use what's on the phone now; refresh it in the background once a day.
     if (Date.now() - saved.at > 24 * 3_600_000) void fresh();
-    run = Promise.resolve(saved.songs);
+    run = Promise.resolve(asSongs(saved.songs));
   } else {
     run = fresh().then((s) => {
       if (!s) namesMem.delete(cat);
@@ -311,7 +324,7 @@ export async function searchSongs(q: string): Promise<EarSong[]> {
       signal: AbortSignal.timeout(5000),
     });
     if (!r.ok) return [];
-    const found = (await r.json()) as EarSong[];
+    const found = asSongs(await r.json());
     if (found.length) searchCache.set(key, found);
     return found;
   } catch {

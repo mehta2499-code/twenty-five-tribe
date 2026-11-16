@@ -210,6 +210,23 @@ export const friendById = (id: string): Person | undefined =>
     ? (state.people.find((f) => f.id === id) ??
       state.requests.find((r) => r.person.id === id)?.person)
     : FRIENDS.find((f) => f.id === id);
+/**
+ * Name and photo for anyone in a game: you, someone in your 25, or someone
+ * you only know through a game. (friendById alone has no entry for you.)
+ */
+export function personView(id: string): {
+  name: string;
+  avatar?: string;
+  initials: string;
+  color?: string;
+} | null {
+  if (state.me && id === state.me.id) return meView();
+  const f = friendById(id);
+  if (f)
+    return { name: f.name, avatar: f.avatar || undefined, initials: f.initials, color: f.color };
+  const o = state.others?.[id];
+  return o ? { name: o.name, avatar: o.avatar, initials: o.initials, color: o.color } : null;
+}
 /** Demo friends are all mutual; live ones only when they seated you back. */
 export const isMutual = (p?: Person) => !!p && p.mutual !== false;
 /** People you can chat, snap and play with: you're in each other's 25. */

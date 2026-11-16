@@ -43,7 +43,7 @@ import {
   type KState,
   type Move,
 } from "@/lib/kachuful";
-import { _get, friendById, useSocial } from "@/lib/social";
+import { _get, friendById, personView, useSocial } from "@/lib/social";
 import { GameChat } from "@/components/GameChat";
 import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
@@ -878,11 +878,11 @@ function LiveEarworm({
     endsAt: at.endsAt,
     now,
     players: inGame.map((p) => {
-      const f = friendById(p);
+      const f = personView(p);
       return {
         id: p,
         name: f?.name.split(" ")[0] ?? "Someone",
-        avatar: f?.avatar || undefined,
+        avatar: f?.avatar,
         initials: f?.initials ?? "?",
         color: f?.color,
         me: p === meId,

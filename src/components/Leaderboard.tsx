@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import { sfx } from "@/lib/sfx";
 import { Flame, Shuffle } from "lucide-react";
 import { Confetti, Sheet } from "@/components/SocialUI";
-import { friendById, social } from "@/lib/social";
+import { friendById, meView, social } from "@/lib/social";
+import { makeRoastCard } from "@/lib/roastCard";
 
 export type LeaderRow = {
   id: string;
@@ -350,7 +351,7 @@ const ROASTS = [
   "Sorry {who}, {game} just isn't your thing. Took the W{by}. Who's next?",
   "Another day, another {game} win over {who}{by}. Form an orderly queue. 🏆",
   "{who} really thought. {game}{detail} is mine{by}. Line up. 😮‍💨",
-  "Dear {who}, practice more. Love, the {game} champ{by}. 💅",
+  "Dear {who}, practice more. Love, the {game} champ. 💅",
   "Took {who} to school in {game}{detail}{by}. Class dismissed. 🎓",
 ];
 
@@ -389,12 +390,46 @@ function RoastButton({
   const [k, setK] = useState(() => Math.floor(Math.random() * ROASTS.length));
   const [text, setText] = useState("");
   const [posted, setPosted] = useState(false);
+  // The roast card (a picture for the post), and whether to post it.
+  const [card, setCard] = useState<string | null>(null);
+  const [making, setMaking] = useState(false);
+  const [withCard, setWithCard] = useState(true);
   const me = rows.find((r) => r.me);
+  const losers = rows.filter((r) => !r.me && r.rank > (me?.rank ?? 1));
+  const draw = (variant: number) => {
+    if (!me) return;
+    const next = losers[0];
+    setMaking(true);
+    void makeRoastCard(
+      {
+        game: roast.game,
+        detail: roast.detail,
+        winner: {
+          name: meView().name,
+          avatar: me.avatar ?? meView().avatar,
+          initials: me.initials,
+        },
+        losers: losers.map((r) => ({ name: r.name, avatar: r.avatar, initials: r.initials })),
+        score:
+          typeof me.value === "number" && typeof next?.value === "number"
+            ? [me.value, next.value]
+            : undefined,
+      },
+      variant,
+    ).then((url) => {
+      setCard((old) => {
+        if (old) URL.revokeObjectURL(old);
+        return url;
+      });
+      setMaking(false);
+    });
+  };
   // Only when you actually beat someone from your 25.
   if (!rows.some((r) => !r.me && r.link && r.rank > (me?.rank ?? 1))) return null;
   const start = () => {
     setText(roastText(k, rows, roast));
     setOpen(true);
+    if (!card) draw(k);
   };
   return (
     <>
@@ -414,6 +449,47 @@ function RoastButton({
       </button>
       {open && (
         <Sheet title="Roast them" onClose={() => setOpen(false)}>
+          {/* The roast card: tap to leave it out. */}
+          <div className="mb-3 flex items-start gap-3">
+            <button
+              onClick={() => card && setWithCard((v) => !v)}
+              aria-pressed={withCard}
+              aria-label={withCard ? "Roast card on (tap to leave it out)" : "Add the roast card"}
+              className="relative shrink-0 rounded-2xl overflow-hidden"
+              style={{
+                width: 96,
+                height: 120,
+                background: "var(--fill)",
+                outline: withCard && card ? "3px solid var(--lime)" : "1px solid var(--line)",
+                opacity: withCard ? 1 : 0.45,
+              }}
+            >
+              {card ? (
+                <img src={card} alt="Your roast card" className="w-full h-full object-cover" />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="w-6 h-6 rounded-full border-[3px] border-white/20 border-t-white animate-spin"
+                    aria-label="Making your roast card"
+                  />
+                </span>
+              )}
+              {making && card && (
+                <span className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span className="w-6 h-6 rounded-full border-[3px] border-white/20 border-t-white animate-spin" />
+                </span>
+              )}
+            </button>
+            <p className="meta pt-1" style={{ fontSize: 13 }}>
+              {card
+                ? withCard
+                  ? "Your roast card goes with the post. Tap it to leave it out."
+                  : "Posting just the text. Tap the card to add it back."
+                : making
+                  ? "Making your roast card…"
+                  : "Couldn't make a card this time. The roast still posts."}
+            </p>
+          </div>
           <label className="sr-only" htmlFor="roast-text">
             Your roast
           </label>
@@ -431,6 +507,7 @@ function RoastButton({
                 const n = k + 1;
                 setK(n);
                 setText(roastText(n, rows, roast));
+                draw(n);
               }}
               className="btn-secondary px-4 flex items-center gap-1.5"
             >
@@ -439,7 +516,7 @@ function RoastButton({
             <button
               disabled={!text.trim()}
               onClick={() => {
-                social.addPost("", text.trim());
+                social.addPost(withCard && card ? card : "", text.trim());
                 setPosted(true);
                 setOpen(false);
               }}

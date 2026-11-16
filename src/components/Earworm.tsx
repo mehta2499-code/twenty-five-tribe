@@ -9,7 +9,7 @@ import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, withRanks, type LeaderRow } from "@/components/Leaderboard";
 import { sfx } from "@/lib/sfx";
-import { friendById, mutualFriends, type Person } from "@/lib/social";
+import { mutualFriends, personView, type Person } from "@/lib/social";
 import {
   CATS,
   POINTS,
@@ -1082,10 +1082,10 @@ export function EarwormStandings({
   const doneIds = players.filter((p) => st.results[p]);
   const waiting = players.filter((p) => !st.results[p]);
   const person = (id: string) => {
-    const f = friendById(id);
+    const f = personView(id);
     return {
       name: id === meId ? "You" : (f?.name ?? "Someone"),
-      avatar: f?.avatar || undefined,
+      avatar: f?.avatar,
       initials: f?.initials ?? "?",
       color: f?.color,
     };
@@ -1311,7 +1311,7 @@ export function EarwormLobby({
             <p className="label-caps mt-8 mb-2">who's here</p>
             <ul className="grid grid-cols-[minmax(0,1fr)] gap-2">
               {players.map((id) => {
-                const f = friendById(id);
+                const f = personView(id);
                 const isIn = ready.includes(id);
                 return (
                   <li
