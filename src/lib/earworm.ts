@@ -61,13 +61,13 @@ export const TIER_NAME: Record<EarTier, string> = {
 /** The difficulty of song number k (0-based) in a game. */
 export const tierOf = (level: EarLevel, k: number): EarTier =>
   level === "mix" ? MIX_TIERS[Math.min(k, MIX_TIERS.length - 1)] : level;
-/** Live games: seconds to name each song, by how hard it is. */
+/** Live games: seconds to name each song. Harder = shorter clips, so more time to think. */
 export const SONG_SECS: Record<EarTier, number> = {
   easy: 60,
-  medium: 50,
-  hard: 45,
-  insane: 40,
-  impossible: 30,
+  medium: 65,
+  hard: 75,
+  insane: 85,
+  impossible: 90,
 };
 /** Live games: the answer is shown to everyone for this long between songs. */
 export const REVEAL_MS = 7000;
