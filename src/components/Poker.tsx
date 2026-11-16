@@ -923,6 +923,16 @@ export function PokerWaiting({
 }
 
 // ---------- Setting up a table ----------
+/** Buy-ins on the slider (nice round numbers). */
+const BUY_INS = [
+  100, 200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 10_000, 15_000, 20_000,
+  25_000, 50_000, 100_000,
+];
+/** Big blinds on the slider (even, so the small blind is exactly half). */
+const BIG_BLINDS = [
+  2, 4, 6, 10, 20, 30, 40, 50, 60, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000, 2500, 5000,
+  10_000,
+];
 export function PokerSetup({
   onClose,
   onOpen,
@@ -934,22 +944,25 @@ export function PokerSetup({
   ) => void;
 }) {
   const [seats, setSeats] = useState(6);
-  const [buyIn, setBuyIn] = useState(1000);
-  const [blinds, setBlinds] = useState<[number, number]>([10, 20]);
+  const [buyK, setBuyK] = useState(BUY_INS.indexOf(1000));
+  const buyIn = BUY_INS[buyK];
+  // Blinds: from 500 big blinds deep down to 10 (big blind must be even so the small is half).
+  const blindOptions = BIG_BLINDS.filter((b) => b <= buyIn / 10 && b >= buyIn / 500);
+  const [bbPick, setBbPick] = useState(20);
+  const bb = blindOptions.reduce(
+    (best, b) => (Math.abs(b - bbPick) < Math.abs(best - bbPick) ? b : best),
+    blindOptions[0] ?? 2,
+  );
+  const blinds: [number, number] = [bb / 2, bb];
   const [rise, setRise] = useState(true);
   const [picking, setPicking] = useState(false);
   const friends = mutualFriends();
-  const chip = (on: boolean) => ({
-    background: on ? "#E2506A" : "rgba(255,255,255,0.06)",
-    color: on ? "#fff" : "var(--ink)",
-    border: `1px solid ${on ? "#E2506A" : "var(--line)"}`,
-  });
   if (picking)
     return (
       <FriendPicker
         title="Who's playing?"
         cta="Open the table"
-        note={`Up to ${seats - 1} friends. Anyone else you invite can watch the seats fill up.`}
+        note={`Up to ${seats - 1} friends can sit. You can invite more later.`}
         onClose={() => setPicking(false)}
         onPick={(ids) =>
           onOpen(
@@ -987,43 +1000,55 @@ export function PokerSetup({
         </button>
       </div>
 
-      <p className="label-caps mt-4 mb-1.5">Buy-in</p>
-      <div className="grid grid-cols-4 gap-1.5">
-        {[500, 1000, 2500, 10000].map((v) => (
-          <button
-            key={v}
-            onClick={() => setBuyIn(v)}
-            className="rounded-xl py-2 font-bold"
-            style={chip(buyIn === v)}
-          >
-            {fmt(v)}
-          </button>
-        ))}
+      <div className="mt-5 flex items-baseline justify-between">
+        <p className="label-caps">Buy-in</p>
+        <p className="font-black tabular-nums" style={{ fontSize: 22, color: "#F2A93B" }}>
+          {fmt(buyIn)}
+        </p>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={BUY_INS.length - 1}
+        step={1}
+        value={buyK}
+        onChange={(e) => setBuyK(Number(e.target.value))}
+        aria-label="Buy-in"
+        aria-valuetext={`${fmt(buyIn)} chips`}
+        className="w-full mt-1 accent-[#F2A93B]"
+      />
+      <div className="flex justify-between meta" style={{ fontSize: 11.5 }}>
+        <span>{fmt(BUY_INS[0])}</span>
+        <span>{fmt(BUY_INS[BUY_INS.length - 1])}</span>
       </div>
 
-      <p className="label-caps mt-4 mb-1.5">Blinds</p>
-      <div className="grid grid-cols-4 gap-1.5">
-        {(
-          [
-            [5, 10],
-            [10, 20],
-            [25, 50],
-            [50, 100],
-          ] as [number, number][]
-        ).map((b) => (
-          <button
-            key={b[1]}
-            onClick={() => setBlinds(b)}
-            className="rounded-xl py-2 font-bold"
-            style={chip(blinds[1] === b[1])}
-          >
-            {b[0]}/{b[1]}
-          </button>
-        ))}
+      <div className="mt-5 flex items-baseline justify-between">
+        <p className="label-caps">Blinds</p>
+        <p className="font-black tabular-nums" style={{ fontSize: 22, color: "#F2A93B" }}>
+          {fmt(blinds[0])}/{fmt(blinds[1])}
+        </p>
       </div>
-      <p className="meta mt-1.5" style={{ fontSize: 12 }}>
-        That's {Math.round(buyIn / blinds[1])} big blinds each.
-      </p>
+      <input
+        type="range"
+        min={0}
+        max={Math.max(0, blindOptions.length - 1)}
+        step={1}
+        value={Math.max(0, blindOptions.indexOf(bb))}
+        onChange={(e) => setBbPick(blindOptions[Number(e.target.value)])}
+        aria-label="Blinds"
+        aria-valuetext={`${blinds[0]} and ${blinds[1]}`}
+        className="w-full mt-1 accent-[#F2A93B]"
+      />
+      <div className="flex justify-between meta" style={{ fontSize: 11.5 }}>
+        <span>
+          {fmt((blindOptions[0] ?? 2) / 2)}/{fmt(blindOptions[0] ?? 2)}
+        </span>
+        <span>{Math.round(buyIn / blinds[1])} big blinds deep</span>
+        <span>
+          {fmt((blindOptions[blindOptions.length - 1] ?? 2) / 2)}/
+          {fmt(blindOptions[blindOptions.length - 1] ?? 2)}
+        </span>
+      </div>
 
       <label className="mt-4 flex items-center justify-between gap-3">
         <span>

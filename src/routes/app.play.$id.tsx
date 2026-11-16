@@ -49,7 +49,7 @@ import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
 import { ChessTable } from "@/components/Chess";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
-import { makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
+import { claimTimeout, makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
 import {
   act as pokerAct,
   beginPoker,
@@ -639,6 +639,12 @@ function OnlineChess({
         )
       }
       onOfferDraw={() => void save({ ...st, drawOffer: me })}
+      onTimeout={() =>
+        void changeLatest<ChessState>(game.id, (cur) => {
+          const next = claimTimeout(cur);
+          return next ? { state: next, status: "done" } : null;
+        })
+      }
       onAcceptDraw={() =>
         done({ ...st, drawOffer: undefined, result: { winner: null, reason: "agreed" } })
       }
@@ -646,7 +652,10 @@ function OnlineChess({
       onPlayAgain={
         other
           ? () =>
-              void startChess(other).then((id) => navigate({ to: "/app/play/$id", params: { id } }))
+              void startChess(
+                other,
+                st.clock ? Math.round(st.clock.base / 60_000) : undefined,
+              ).then((id) => navigate({ to: "/app/play/$id", params: { id } }))
           : undefined
       }
     />

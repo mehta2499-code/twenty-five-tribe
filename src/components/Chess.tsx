@@ -3,8 +3,18 @@
  * Tap a piece to see where it can go, tap a square to move. The board turns
  * for whoever is playing black.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Flag, Handshake, X } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Handshake,
+  Menu,
+  RefreshCw,
+  Timer,
+  X,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, type LeaderRow } from "@/components/Leaderboard";
@@ -13,6 +23,9 @@ import { sfx, useGameMusic } from "@/lib/sfx";
 import {
   botMove,
   captured,
+  claimTimeout,
+  positionAt,
+  timeLeft,
   colorOf,
   inCheck,
   kingSquare,
@@ -35,8 +48,8 @@ const GLYPH: Record<string, string> = {
   n: "♞︎",
   p: "♟︎",
 };
-const LIGHT = "#E7E2F7";
-const DARK = "#8571C9";
+const LIGHT = "#EDEED2";
+const DARK = "#769457";
 
 export type ChessSide = {
   id: string;
@@ -147,11 +160,7 @@ export function ChessBoard({
   return (
     <div
       ref={boxRef}
-      className="relative w-full aspect-square rounded-[14px] overflow-hidden select-none"
-      style={{
-        boxShadow:
-          "0 18px 40px rgba(0,0,0,0.5), 0 0 0 4px #2A2245, 0 0 0 5px rgba(255,255,255,0.1)",
-      }}
+      className="relative w-full aspect-square overflow-hidden select-none"
       role="grid"
       aria-label="Chess board"
     >
@@ -173,9 +182,9 @@ export function ChessBoard({
                 background: dark ? DARK : LIGHT,
                 boxShadow:
                   sel === i
-                    ? "inset 0 0 0 100px rgba(193,239,98,0.55)"
+                    ? "inset 0 0 0 100px rgba(246,246,105,0.75)"
                     : isLast
-                      ? "inset 0 0 0 100px rgba(247,201,72,0.38)"
+                      ? "inset 0 0 0 100px rgba(246,246,105,0.55)"
                       : undefined,
               }}
             >
@@ -292,68 +301,86 @@ function useMoveSounds(state: ChessState) {
   }, [n]);
 }
 
-/** A player's strip: face, name, what they've taken. */
-function PlayerBar({
+/** The chess clock box: dark when it's running, grey when not, red in the last 20s. */
+function Clock({ ms, running }: { ms: number | null; running: boolean }) {
+  if (ms === null) return null;
+  const low = ms < 20_000;
+  const t = Math.ceil(ms / 1000);
+  const text =
+    ms < 10_000
+      ? (ms / 1000).toFixed(1)
+      : `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+  return (
+    <span
+      className="flex items-center gap-2 rounded-xl px-3 font-black tabular-nums shrink-0"
+      style={{
+        minWidth: 116,
+        height: 52,
+        justifyContent: "flex-end",
+        fontSize: 26,
+        background: running ? (low ? "#C8323F" : "#0E0D12") : "#4A4852",
+        color: running ? "#fff" : "rgba(255,255,255,0.55)",
+      }}
+      aria-label={`${text} left`}
+    >
+      {running && <Timer size={20} aria-hidden="true" />}
+      {text}
+    </span>
+  );
+}
+
+/** A player's row: square photo, name, what they've taken, their clock. */
+function PlayerRow({
   who,
-  color,
   taken,
   lead,
-  active,
+  ms,
+  running,
   note,
 }: {
   who: ChessSide;
-  color: Color;
   taken: string[];
   lead: number;
-  active: boolean;
+  ms: number | null;
+  running: boolean;
   note?: string;
 }) {
   return (
-    <div
-      className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-colors"
-      style={{
-        background: active ? "rgba(193,239,98,0.12)" : "var(--fill)",
-        border: `1px solid ${active ? "rgba(193,239,98,0.5)" : "var(--line)"}`,
-      }}
-    >
-      <span className="relative shrink-0">
-        <Avatar src={who.avatar} initials={who.initials} color={who.color} size={38} />
-        <span
-          aria-hidden="true"
-          className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full"
-          style={{
-            background: color === "w" ? "#fff" : "#1A1530",
-            border: "2px solid var(--surface)",
-          }}
-        />
+    <div className="flex items-center gap-3 px-3 py-2.5">
+      <span className="rounded-[6px] overflow-hidden shrink-0" style={{ width: 46, height: 46 }}>
+        <Avatar src={who.avatar} initials={who.initials} color={who.color} size={46} />
       </span>
-      <span className="flex-1 min-w-0">
-        <span className="flex items-center gap-2">
-          <span className="font-bold text-cream truncate" style={{ fontSize: 15 }}>
+      <span className="flex-1 min-w-0 self-start">
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-bold truncate" style={{ fontSize: 16, color: "#fff" }}>
             {who.name}
           </span>
           {note && (
-            <span className="meta shrink-0" style={{ fontSize: 12 }}>
+            <span className="shrink-0" style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
               {note}
             </span>
           )}
         </span>
         <span
-          className="flex items-center gap-[1px] h-4 overflow-hidden"
+          className="flex items-center h-5 overflow-hidden"
           aria-label={`Captured ${taken.length}`}
         >
           {taken.map((p, k) => (
-            <span key={k} style={{ marginRight: -3 }}>
-              <Piece p={p} size={14} />
+            <span key={k} style={{ marginRight: -4 }}>
+              <Piece p={p} size={16} />
             </span>
           ))}
           {lead > 0 && (
-            <span className="ml-2 font-bold meta" style={{ fontSize: 12 }}>
+            <span
+              className="ml-2 font-bold"
+              style={{ fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}
+            >
               +{lead}
             </span>
           )}
         </span>
       </span>
+      <Clock ms={ms} running={running} />
     </div>
   );
 }
@@ -368,6 +395,7 @@ export function ChessTable({
   onResign,
   onOfferDraw,
   onAcceptDraw,
+  onTimeout,
   onClose,
   onPlayAgain,
   thinking,
@@ -380,36 +408,54 @@ export function ChessTable({
   onResign: () => void;
   onOfferDraw?: () => void;
   onAcceptDraw?: () => void;
+  /** Someone's clock hit zero. */
+  onTimeout?: () => void;
   onClose: () => void;
   onPlayAgain?: () => void;
   thinking?: boolean;
 }) {
   useGameMusic(!state.result);
   useMoveSounds(state);
+  const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const [over, setOver] = useState(false);
+  // Going back through the moves: null = the live position.
+  const [view, setView] = useState<number | null>(null);
+  useEffect(() => setView(null), [state.san.length]);
   useEffect(() => {
     if (!state.result) return setOver(false);
     const t = setTimeout(() => setOver(true), 900);
     return () => clearTimeout(t);
   }, [state.result]);
-  const cap = captured(state.board);
+  // Clocks tick on screen; when one hits zero, the game ends.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!state.clock || state.result) return;
+    const t = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(t);
+  }, [state.clock, state.result]);
+  const flagged = !!state.clock && !state.result && (timeLeft(state, state.turn, now) ?? 1) <= 0;
+  useEffect(() => {
+    if (flagged) onTimeout?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flagged]);
+
+  const live = view === null;
+  const shown = live ? state : positionAt(state, view);
+  const cap = captured(shown.board);
   const myTurn = state.turn === me && !state.result;
-  const check = inCheck(state);
+  const check = live && inCheck(state);
   const moveListRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     moveListRef.current?.scrollTo({ left: 99999, behavior: "smooth" });
   }, [state.san.length]);
+  const bottom: Color = flipped ? (me === "w" ? "b" : "w") : me;
+  const top: Color = bottom === "w" ? "b" : "w";
+  const side = (c: Color) => (c === me ? you : them);
+  const n = view ?? state.san.length;
+  const running = (c: Color) => !state.result && state.turn === c && state.san.length > 0;
 
-  const status = state.result
-    ? REASON[state.result.reason]
-    : myTurn
-      ? check
-        ? "Check! Your move"
-        : "Your move"
-      : thinking
-        ? `${them.name.split(" ")[0]} is thinking…`
-        : `${them.name.split(" ")[0]}'s move`;
   const rows: LeaderRow[] = (() => {
     const w = state.result?.winner;
     const mine = { ...you, rank: w && w !== me ? 2 : 1, me: true };
@@ -418,78 +464,113 @@ export function ChessTable({
   })();
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: "var(--page)" }}>
-      <div className="mx-auto w-full max-w-md px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col min-h-full">
-        <header className="flex items-center justify-between">
-          <span className="heading" style={{ fontSize: 20 }}>
-            Chess
+    <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: "#302E2B" }}>
+      <div className="mx-auto w-full max-w-md flex flex-col min-h-full pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <header className="flex items-center justify-between px-3">
+          <button
+            onClick={onClose}
+            aria-label="Leave the game"
+            className="w-10 h-10 flex items-center justify-center"
+            style={{ color: "rgba(255,255,255,0.7)" }}
+          >
+            <X size={22} />
+          </button>
+          <span className="font-black" style={{ fontSize: 17, color: "#fff" }}>
+            {state.clock ? `${Math.round(state.clock.base / 60_000)} min chess` : "Chess"}
           </span>
-          <span className="flex items-center gap-1">
+          <span style={{ color: "rgba(255,255,255,0.7)" }}>
             <SoundToggle />
-            <button
-              onClick={onClose}
-              aria-label="Leave the game"
-              className="text-cool w-10 h-10 flex items-center justify-center"
-            >
-              <X size={22} />
-            </button>
           </span>
         </header>
 
-        <div className="mt-2">
-          <PlayerBar
-            who={them}
-            color={me === "w" ? "b" : "w"}
-            taken={me === "w" ? cap.byBlack : cap.byWhite}
-            lead={me === "w" ? -cap.lead : cap.lead}
-            active={!state.result && state.turn !== me}
-            note={thinking ? "thinking…" : undefined}
-          />
+        {/* Moves along the top. Tap one to see that position. */}
+        <div
+          ref={moveListRef}
+          className="flex items-center gap-1 overflow-x-auto no-scrollbar px-3 h-11"
+          data-noswipe
+        >
+          {state.san.map((m, k) => (
+            <Fragment key={k}>
+              {k % 2 === 0 && (
+                <span
+                  className="shrink-0 tabular-nums ml-1"
+                  style={{ color: "rgba(255,255,255,0.5)", fontSize: 15 }}
+                >
+                  {k / 2 + 1}.
+                </span>
+              )}
+              <button
+                onClick={() => setView(k + 1 === state.san.length ? null : k + 1)}
+                className="shrink-0 rounded-md px-1.5 py-0.5 font-bold"
+                style={{
+                  fontSize: 15,
+                  color: "#fff",
+                  background: k + 1 === n ? "rgba(255,255,255,0.16)" : "transparent",
+                  boxShadow: k + 1 === n ? "inset 0 -2px 0 rgba(255,255,255,0.55)" : undefined,
+                }}
+              >
+                {m}
+              </button>
+            </Fragment>
+          ))}
         </div>
-        <div className="mt-3">
-          <ChessBoard state={state} me={me} canMove={myTurn} onMove={onMove} />
-        </div>
-        <div className="mt-3">
-          <PlayerBar
-            who={{ ...you, name: "You" }}
-            color={me}
-            taken={me === "w" ? cap.byWhite : cap.byBlack}
-            lead={me === "w" ? cap.lead : -cap.lead}
-            active={myTurn}
-          />
-        </div>
+
+        <PlayerRow
+          who={side(top)}
+          taken={top === "w" ? cap.byWhite : cap.byBlack}
+          lead={top === "w" ? cap.lead : -cap.lead}
+          ms={timeLeft(state, top, now)}
+          running={running(top)}
+          note={
+            top !== me
+              ? thinking
+                ? "thinking…"
+                : them.id === "bot"
+                  ? "(bot)"
+                  : undefined
+              : undefined
+          }
+        />
+        <ChessBoard
+          state={shown}
+          me={bottom}
+          canMove={myTurn && live && bottom === me}
+          onMove={onMove}
+        />
+        <PlayerRow
+          who={side(bottom)}
+          taken={bottom === "w" ? cap.byWhite : cap.byBlack}
+          lead={bottom === "w" ? cap.lead : -cap.lead}
+          ms={timeLeft(state, bottom, now)}
+          running={running(bottom)}
+          note={bottom !== me && thinking ? "thinking…" : undefined}
+        />
 
         <p
-          className="text-center font-extrabold mt-3"
-          style={{ fontSize: 17, color: check && myTurn ? "#FF6B7D" : "var(--ink)" }}
+          className="text-center font-extrabold px-3"
+          style={{
+            fontSize: 15,
+            color: check && myTurn ? "#FF6B7D" : "rgba(255,255,255,0.75)",
+            minHeight: 22,
+          }}
           aria-live="polite"
         >
-          {status}
+          {!live
+            ? `Going back · move ${Math.ceil(n / 2)}`
+            : state.result
+              ? REASON[state.result.reason]
+              : check && myTurn
+                ? "Check!"
+                : myTurn && state.san.length < 2
+                  ? "Your move"
+                  : ""}
         </p>
 
-        {/* Moves so far */}
-        {state.san.length > 0 && (
-          <div
-            ref={moveListRef}
-            className="mt-3 flex gap-1.5 overflow-x-auto no-scrollbar pb-1"
-            data-noswipe
-          >
-            {Array.from({ length: Math.ceil(state.san.length / 2) }, (_, k) => (
-              <span
-                key={k}
-                className="shrink-0 rounded-lg px-2 py-1 tabular-nums"
-                style={{ background: "var(--fill)", fontSize: 12.5 }}
-              >
-                <span className="meta">{k + 1}.</span>{" "}
-                <b className="font-semibold">{state.san[k * 2]}</b> {state.san[k * 2 + 1] ?? ""}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Draw offered to you */}
         {!state.result && state.drawOffer && state.drawOffer !== me && onAcceptDraw && (
-          <div className="mt-3 card p-3 flex items-center gap-3">
+          <div
+            className="mx-3 mt-2 rounded-xl p-3 flex items-center gap-3"
+            style={{ background: "#3D3A36" }}
+          >
             <Handshake size={20} aria-hidden="true" />
             <span className="flex-1 font-semibold">{them.name.split(" ")[0]} offers a draw</span>
             <button onClick={onAcceptDraw} className="btn-primary px-4 min-h-[38px]">
@@ -498,28 +579,84 @@ export function ChessTable({
           </div>
         )}
 
-        {!state.result && (
-          <div className="mt-auto pt-5 flex gap-2.5">
-            {onOfferDraw && (
-              <button
-                onClick={onOfferDraw}
-                disabled={state.drawOffer === me}
-                className="btn-secondary flex-1 flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                <Handshake size={17} aria-hidden="true" />
-                {state.drawOffer === me ? "Draw offered" : "Offer draw"}
-              </button>
-            )}
+        {/* Toolbar */}
+        <nav
+          className="mt-auto grid grid-cols-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          style={{ background: "#262421" }}
+          aria-label="Game"
+        >
+          {(
+            [
+              { label: "Options", Icon: Menu, on: () => setMenu(true), off: false },
+              {
+                label: "Back",
+                Icon: ChevronLeft,
+                on: () => setView(Math.max(0, n - 1)),
+                off: n === 0,
+              },
+              {
+                label: "Forward",
+                Icon: ChevronRight,
+                on: () => setView(n + 1 >= state.san.length ? null : n + 1),
+                off: live,
+              },
+            ] as const
+          ).map(({ label, Icon, on, off }) => (
             <button
-              onClick={() => setConfirm(true)}
-              className="btn-secondary flex-1 flex items-center justify-center gap-1.5"
+              key={label}
+              onClick={on}
+              disabled={off}
+              className="flex flex-col items-center gap-0.5 py-1.5 disabled:opacity-35"
+              style={{ color: "rgba(255,255,255,0.85)" }}
             >
-              <Flag size={17} aria-hidden="true" /> Resign
+              <Icon size={26} aria-hidden="true" />
+              <span className="font-bold" style={{ fontSize: 13 }}>
+                {label}
+              </span>
             </button>
-          </div>
-        )}
+          ))}
+        </nav>
       </div>
 
+      {menu && (
+        <Sheet title="Options" onClose={() => setMenu(false)}>
+          <div className="grid gap-2.5">
+            <button
+              onClick={() => {
+                setFlipped((f) => !f);
+                setMenu(false);
+              }}
+              className="btn-secondary flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={17} aria-hidden="true" /> Flip board
+            </button>
+            {!state.result && onOfferDraw && (
+              <button
+                onClick={() => {
+                  onOfferDraw();
+                  setMenu(false);
+                }}
+                disabled={state.drawOffer === me}
+                className="btn-secondary flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <Handshake size={17} aria-hidden="true" />
+                {state.drawOffer === me ? "Draw offered" : "Offer a draw"}
+              </button>
+            )}
+            {!state.result && (
+              <button
+                onClick={() => {
+                  setMenu(false);
+                  setConfirm(true);
+                }}
+                className="btn-danger flex items-center justify-center gap-2"
+              >
+                <Flag size={17} aria-hidden="true" /> Resign
+              </button>
+            )}
+          </div>
+        </Sheet>
+      )}
       {confirm && (
         <Sheet title="Resign?" onClose={() => setConfirm(false)}>
           <div className="grid gap-2.5">
@@ -565,14 +702,17 @@ const BOT_NAMES: Record<1 | 2 | 3, string> = { 1: "Rookie bot", 2: "Club bot", 3
 export function LocalChess({
   level,
   color,
+  minutes,
   onClose,
 }: {
   level: 1 | 2 | 3;
   color: Color;
+  minutes?: number;
   onClose: () => void;
 }) {
   const me = meView();
-  const fresh = () => newChess(color === "w" ? "me" : "bot", color === "w" ? "bot" : "me", level);
+  const fresh = () =>
+    newChess(color === "w" ? "me" : "bot", color === "w" ? "bot" : "me", level, minutes);
   const [state, setState] = useState<ChessState>(fresh);
   const [thinking, setThinking] = useState(false);
   // The bot's turn: think for a moment (so it feels like a move), then play.
@@ -595,6 +735,7 @@ export function LocalChess({
       thinking={thinking}
       onMove={(m) => setState((s) => makeMove(s, m) ?? s)}
       onResign={() => setState((s) => resign(s, color))}
+      onTimeout={() => setState((s) => claimTimeout(s) ?? s)}
       onClose={onClose}
       onPlayAgain={() => setState(fresh())}
     />
@@ -608,10 +749,11 @@ export function ChessLobby({
   onFriend,
 }: {
   onClose: () => void;
-  onBot: (level: 1 | 2 | 3, color: Color) => void;
-  onFriend: (f: Person) => void;
+  onBot: (level: 1 | 2 | 3, color: Color, minutes?: number) => void;
+  onFriend: (f: Person, minutes?: number) => void;
 }) {
   const [level, setLevel] = useState<1 | 2 | 3>(2);
+  const [minutes, setMinutes] = useState<number>(10);
   const [color, setColor] = useState<"w" | "b" | "random">("w");
   const [picking, setPicking] = useState(false);
   const friends = mutualFriends();
@@ -624,7 +766,7 @@ export function ChessLobby({
         onClose={() => setPicking(false)}
         onPick={(ids) => {
           const f = friends.find((x) => x.id === ids[0]);
-          if (f) onFriend(f);
+          if (f) onFriend(f, minutes || undefined);
         }}
       />
     );
@@ -634,6 +776,25 @@ export function ChessLobby({
   });
   return (
     <Sheet title="Chess" onClose={onClose}>
+      <p className="label-caps mb-1.5">Time per player</p>
+      <div className="grid grid-cols-6 gap-1.5 mb-5" role="group" aria-label="Time per player">
+        {[0, 1, 3, 5, 10, 30].map((m) => (
+          <button
+            key={m}
+            onClick={() => setMinutes(m)}
+            aria-pressed={minutes === m}
+            aria-label={m ? `${m} minutes` : "No clock"}
+            className="rounded-xl py-2 font-bold"
+            style={{
+              ...seg(minutes === m),
+              border: `1px solid ${minutes === m ? "#E2506A" : "var(--line)"}`,
+              fontSize: 13.5,
+            }}
+          >
+            {m ? `${m}m` : "∞"}
+          </button>
+        ))}
+      </div>
       <button
         onClick={() => setPicking(true)}
         disabled={!friends.length}
@@ -699,7 +860,11 @@ export function ChessLobby({
         </div>
         <button
           onClick={() =>
-            onBot(level, color === "random" ? (Math.random() < 0.5 ? "w" : "b") : color)
+            onBot(
+              level,
+              color === "random" ? (Math.random() < 0.5 ? "w" : "b") : color,
+              minutes || undefined,
+            )
           }
           className="btn-secondary w-full mt-4"
         >

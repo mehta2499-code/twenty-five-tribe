@@ -381,7 +381,11 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [packs, setPacks] = useState(false);
   const [ludo, setLudo] = useState(false);
   const [chess, setChess] = useState(false);
-  const [chessBot, setChessBot] = useState<{ level: 1 | 2 | 3; color: "w" | "b" } | null>(null);
+  const [chessBot, setChessBot] = useState<{
+    level: 1 | 2 | 3;
+    color: "w" | "b";
+    minutes?: number;
+  } | null>(null);
   const [poker, setPoker] = useState(false);
   const [soloLudo, setSoloLudo] = useState<number | null>(null);
   const [wordMenu, setWordMenu] = useState(false);
@@ -535,15 +539,15 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
       {chess && (
         <ChessLobby
           onClose={() => setChess(false)}
-          onBot={(level, color) => {
+          onBot={(level, color, minutes) => {
             setChess(false);
-            setChessBot({ level, color });
+            setChessBot({ level, color, minutes });
           }}
-          onFriend={async (f) => {
+          onFriend={async (f, minutes) => {
             setChess(false);
             if (!live) return setToast("Sign in to challenge a friend.");
             try {
-              const id = await startChess(f);
+              const id = await startChess(f, minutes);
               navigate({ to: "/app/play/$id", params: { id } });
             } catch (e) {
               setToast((e as Error).message);
@@ -555,6 +559,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         <LocalChess
           level={chessBot.level}
           color={chessBot.color}
+          minutes={chessBot.minutes}
           onClose={() => setChessBot(null)}
         />
       )}

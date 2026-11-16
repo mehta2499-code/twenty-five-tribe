@@ -213,12 +213,12 @@ export async function startWordChallenge(friend: Person, word: string) {
 }
 
 /** Challenge a friend to chess (colours picked at random). */
-export async function startChess(friend: Person) {
+export async function startChess(friend: Person, minutes?: number) {
   track("game_started", { game: "chess" });
   const me = myId();
   const id = uuid();
   const iAmWhite = Math.random() < 0.5;
-  const state = newChess(iAmWhite ? me : friend.id, iAmWhite ? friend.id : me);
+  const state = newChess(iAmWhite ? me : friend.id, iAmWhite ? friend.id : me, undefined, minutes);
   const { error } = await supabase
     .from("games")
     .insert({ id, kind: "chess", host: me, players: [me, friend.id], state, version: 0 });
@@ -226,7 +226,7 @@ export async function startChess(friend: Person) {
   await invite(
     [friend.id],
     id,
-    iAmWhite ? "Chess? I'm white, opening now. ♟️" : "Chess? You're white. Your move. ♟️",
+    `${minutes ? `${minutes}-min chess` : "Chess"}? ${iAmWhite ? "I'm white, opening now." : "You're white. Your move."} ♟️`,
   );
   return id;
 }

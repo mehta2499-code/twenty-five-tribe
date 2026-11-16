@@ -26,6 +26,10 @@ export type ChessState = {
   level?: 1 | 2 | 3;
   /** Offered a draw (the colour that offered). */
   drawOffer?: Color;
+  /** Every move as "from-to[promo]" (square numbers), to replay the game. */
+  moves?: string[];
+  /** Chess clock: ms left for each side; `at` is when the current turn started. */
+  clock?: { w: number; b: number; at: number; base: number };
 };
 export type Reason =
   | "checkmate"
@@ -46,7 +50,12 @@ const other = (c: Color): Color => (c === "w" ? "b" : "w");
 const fileOf = (i: number) => i % 8;
 const rankOf = (i: number) => Math.floor(i / 8); // 0 = rank 8
 
-export function newChess(white: string, black: string, level?: 1 | 2 | 3): ChessState {
+export function newChess(
+  white: string,
+  black: string,
+  level?: 1 | 2 | 3,
+  minutes?: number,
+): ChessState {
   const s: ChessState = {
     board: START,
     turn: "w",
@@ -59,9 +68,50 @@ export function newChess(white: string, black: string, level?: 1 | 2 | 3): Chess
     white,
     black,
     level,
+    moves: [],
   };
+  if (minutes) {
+    const ms = minutes * 60_000;
+    s.clock = { w: ms, b: ms, at: 0, base: ms };
+  }
   s.seen[key(s)] = 1;
   return s;
+}
+
+/** Time left for a side right now (the clock starts after White's first move). */
+export function timeLeft(s: ChessState, c: Color, now = Date.now()) {
+  if (!s.clock) return null;
+  const running = !s.result && s.turn === c && s.san.length > 0 && s.clock.at > 0;
+  return Math.max(0, s.clock[c] - (running ? now - s.clock.at : 0));
+}
+
+/** The side to move ran out of time: they lose. */
+export function claimTimeout(s: ChessState, now = Date.now()): ChessState | null {
+  if (s.result || !s.clock) return null;
+  if ((timeLeft(s, s.turn, now) ?? 1) > 0) return null;
+  const left = s.board.replace(/[.]/g, "");
+  const winner = other(s.turn);
+  // A flag fall against a lone king (or king + one minor) is a draw.
+  const theirs = left.split("").filter((p) => colorOf(p) === winner).join("").toLowerCase();
+  const draw = theirs === "k" || theirs === "kn" || theirs === "kb" || theirs === "nk" || theirs === "bk";
+  return {
+    ...s,
+    clock: { ...s.clock, [s.turn]: 0 },
+    result: draw ? { winner: null, reason: "timeout" } : { winner, reason: "timeout" },
+  };
+}
+
+/** The position after the first `n` moves (for going back through a game). */
+export function positionAt(s: ChessState, n: number): ChessState {
+  if (n >= s.san.length) return s;
+  let cur: ChessState = { ...newChess(s.white, s.black), clock: undefined };
+  for (const mv of (s.moves ?? []).slice(0, n)) {
+    const [a, b] = mv.split("-");
+    const to = parseInt(b, 10);
+    const promo = b.replace(/[0-9]/g, "") || undefined;
+    cur = makeMove(cur, { from: Number(a), to, promo }) ?? cur;
+  }
+  return { ...cur, result: undefined };
 }
 
 const key = (s: Pick<ChessState, "board" | "turn" | "castling" | "ep">) =>
@@ -322,7 +372,7 @@ function insufficient(board: string) {
 }
 
 /** Make a legal move (null if it isn't legal). Ends the game when it should. */
-export function makeMove(s: ChessState, m: Move): ChessState | null {
+export function makeMove(s: ChessState, m: Move, now = Date.now()): ChessState | null {
   if (s.result) return null;
   const all = legalMoves(s);
   const legal = all.find(
@@ -339,7 +389,15 @@ export function makeMove(s: ChessState, m: Move): ChessState | null {
     last: [legal.from, legal.to],
     seen,
     drawOffer: undefined,
+    moves: [...(s.moves ?? []), `${legal.from}-${legal.to}${legal.promo ?? ""}`],
   };
+  if (s.clock) {
+    // Take the time this move used off the mover's clock (White's first move is free).
+    const used = s.san.length > 0 && s.clock.at > 0 ? now - s.clock.at : 0;
+    const left = s.clock[s.turn] - used;
+    if (left <= 0) return claimTimeout(s, now);
+    out.clock = { ...s.clock, [s.turn]: left, at: now };
+  }
   const replies = legalMoves(out);
   if (!replies.length)
     out.result = inCheck(out)
