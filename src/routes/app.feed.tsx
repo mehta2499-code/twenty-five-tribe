@@ -3,6 +3,7 @@
  * video (caption optional), no likes. Text posts get replies, photo and video
  * posts get comments. Tag people with @username, or everyone with @all.
  */
+import { ZoomablePhoto } from "@/components/PhotoZoom";
 import { Tour } from "@/components/Tour";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -106,18 +107,16 @@ function SceneRow({
               <LazyVideo
                 src={post.video}
                 label={`Video from ${by.name}`}
-                className="w-full aspect-[4/5]"
+                className="w-full"
+                fitShape
               />
             ) : post.image ? (
-              <button onClick={onOpen} className="block w-full" aria-label={`Open ${word(post)}s`}>
-                <img
-                  src={post.image}
-                  alt={post.caption || `Photo from ${by.name}`}
-                  loading="lazy"
-                  draggable={false}
-                  className="w-full max-h-[560px] object-cover"
-                />
-              </button>
+              // Same size as before; pinch to zoom, tap to see it full screen.
+              <ZoomablePhoto
+                src={post.image}
+                alt={post.caption || `Photo from ${by.name}`}
+                className="block w-full max-h-[560px] object-cover"
+              />
             ) : (
               <div className="w-full aspect-[4/5] skeleton" style={{ borderRadius: 0 }} />
             )}

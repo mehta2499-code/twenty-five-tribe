@@ -23,12 +23,18 @@ export function LazyVideo({
   style,
   autoplay = true,
   label = "Video",
+  fitShape = false,
 }: {
   src: string;
   className?: string;
   style?: React.CSSProperties;
   autoplay?: boolean;
   label?: string;
+  /**
+   * Take the video's own shape (portrait stays tall, landscape wide) once it
+   * loads, instead of a fixed box. Holds a 4:5 box until then.
+   */
+  fitShape?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const vid = useRef<HTMLVideoElement>(null);
@@ -41,6 +47,8 @@ export function LazyVideo({
   const [waiting, setWaiting] = useState(false);
   const [muted, setMuted] = useState(!soundOn);
   const auto = autoplay && !saveData();
+  // The video's own width ÷ height (fitShape), kept between tall 9:16 and wide 16:9.
+  const [ratio, setRatio] = useState<number | null>(null);
 
   useEffect(() => {
     const el = box.current;
@@ -105,7 +113,11 @@ export function LazyVideo({
     <div
       ref={box}
       className={`relative ${className ?? ""}`}
-      style={{ background: "#000", ...style }}
+      style={{
+        background: "#000",
+        ...(fitShape ? { aspectRatio: String(ratio ?? 4 / 5) } : {}),
+        ...style,
+      }}
     >
       <video
         ref={vid}
@@ -121,6 +133,11 @@ export function LazyVideo({
         onWaiting={() => setWaiting(true)}
         onPlaying={() => setWaiting(false)}
         onCanPlay={() => setWaiting(false)}
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          if (fitShape && v.videoWidth && v.videoHeight)
+            setRatio(Math.min(16 / 9, Math.max(9 / 16, v.videoWidth / v.videoHeight)));
+        }}
         className="w-full h-full object-cover"
       />
       {/* Buffering */}
