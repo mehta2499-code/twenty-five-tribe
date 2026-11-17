@@ -235,7 +235,13 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
         </div>
       )}
       {game.status === "playing" && (
-        <GameChat gameId={id} meId={meId} myName={_get().me?.name ?? "You"} kind={game.kind} />
+        <GameChat
+          gameId={id}
+          meId={meId}
+          myName={_get().me?.name ?? "You"}
+          kind={game.kind}
+          hideTab={game.kind === "poker"}
+        />
       )}
     </>
   );

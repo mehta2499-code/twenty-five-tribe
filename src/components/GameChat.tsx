@@ -18,12 +18,15 @@ export function GameChat({
   meId,
   myName,
   kind,
+  hideTab = false,
 }: {
   gameId: string;
   meId: string;
   myName: string;
   /** The game (each remembers where you put the chat tab). */
   kind: string;
+  /** The game has its own chat button (it sends "gamechat:open"). */
+  hideTab?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -57,6 +60,15 @@ export function GameChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
 
+  // A game's own chat button opens this, and shows how many are new.
+  useEffect(() => {
+    const on = () => setOpen(true);
+    window.addEventListener("gamechat:open", on);
+    return () => window.removeEventListener("gamechat:open", on);
+  }, []);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("gamechat:unread", { detail: unread }));
+  }, [unread]);
   useEffect(() => {
     if (open) {
       setUnread(0);
@@ -97,7 +109,7 @@ export function GameChat({
         ))}
       </div>
 
-      {!open && (
+      {!open && !hideTab && (
         <ChatTab
           kind={kind}
           unread={unread}
