@@ -907,3 +907,8 @@ button, a, [role="button"] { touch-action: manipulation; }
 @keyframes msg-flash { 0%, 100% { background: transparent; } 25%, 60% { background: rgba(193, 239, 98, 0.22); } }
 .msg-flash { animation: msg-flash 1.4s ease both; }
 @media (prefers-reduced-motion: reduce) { .msg-lift, .msg-flash { animation: none; } }
+
+/* Game chat tab: glows while there are new messages. */
+@keyframes chat-tab-ping { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 10px rgba(193, 239, 98, 0.9)); } }
+.chat-tab-ping { animation: chat-tab-ping 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .chat-tab-ping { animation: none; } }

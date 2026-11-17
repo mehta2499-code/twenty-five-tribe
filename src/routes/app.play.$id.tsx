@@ -235,16 +235,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
         </div>
       )}
       {game.status === "playing" && (
-        <GameChat
-          gameId={id}
-          meId={meId}
-          myName={_get().me?.name ?? "You"}
-          spot={
-            game.kind === "kachuful" || game.kind === "word" || game.kind === "earworm"
-              ? "side"
-              : "corner"
-          }
-        />
+        <GameChat gameId={id} meId={meId} myName={_get().me?.name ?? "You"} kind={game.kind} />
       )}
     </>
   );

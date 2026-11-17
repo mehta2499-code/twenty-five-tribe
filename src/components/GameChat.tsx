@@ -17,13 +17,13 @@ export function GameChat({
   gameId,
   meId,
   myName,
-  spot = "corner",
+  kind,
 }: {
   gameId: string;
   meId: string;
   myName: string;
-  /** "side": right edge, mid-screen (for games with cards/keyboard at the bottom). */
-  spot?: "corner" | "side";
+  /** The game (each remembers where you put the chat tab). */
+  kind: string;
 }) {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -98,35 +98,12 @@ export function GameChat({
       </div>
 
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          aria-label={unread ? `Game chat, ${unread} new` : "Game chat"}
-          className={`fixed z-[60] right-3 rounded-full flex items-center justify-center ${
-            spot === "side"
-              ? "top-[42%] w-12 h-12"
-              : "bottom-[max(1rem,env(safe-area-inset-bottom))] w-14 h-14"
-          }`}
-          style={{
-            background: "var(--lime)",
-            color: "var(--on-accent)",
-            border: "var(--bd)",
-            boxShadow: "var(--pop)",
-          }}
-        >
-          <MessageCircle size={24} />
-          {unread > 0 && (
-            <span
-              className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full text-[12px] font-extrabold flex items-center justify-center"
-              style={{
-                background: "var(--pink)",
-                color: "var(--on-accent)",
-                border: "var(--bd)",
-              }}
-            >
-              {unread}
-            </span>
-          )}
-        </button>
+        <ChatTab
+          kind={kind}
+          unread={unread}
+          onOpen={() => setOpen(true)}
+          label={unread ? `Game chat, ${unread} new` : "Game chat"}
+        />
       )}
 
       {open && (
@@ -206,5 +183,115 @@ export function GameChat({
         </div>
       )}
     </>
+  );
+}
+
+/** Where the tab starts in each game: clear of boards, cards and scores. */
+const START_Y: Record<string, number> = {
+  chess: 0.8, // under the board, beside "Your move"
+  ludo: 0.82, // under the board and the dice card
+};
+
+/**
+ * The way into game chat: a slim tab tucked against the screen edge, so it
+ * doesn't sit on cards, scores or buttons. Drag it up or down (or to the other
+ * edge) and it stays there for that game.
+ */
+function ChatTab({
+  kind,
+  unread,
+  onOpen,
+  label,
+}: {
+  kind: string;
+  unread: number;
+  onOpen: () => void;
+  label: string;
+}) {
+  const key = `tf.gamechat.spot.${kind}`;
+  const [spot, setSpot] = useState<{ side: "left" | "right"; y: number }>(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(key) ?? "null");
+      if (v && (v.side === "left" || v.side === "right") && typeof v.y === "number") return v;
+    } catch {
+      // ignore
+    }
+    return { side: "right", y: START_Y[kind] ?? 0.34 };
+  });
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const start = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const H = 52;
+  const clampY = (py: number) => Math.max(0.08, Math.min(0.9, py / window.innerHeight));
+  const top = drag
+    ? drag.y - H / 2
+    : spot.y * (typeof window === "undefined" ? 800 : window.innerHeight) - H / 2;
+  return (
+    <button
+      onPointerDown={(e) => {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        start.current = { x: e.clientX, y: e.clientY, moved: false };
+      }}
+      onPointerMove={(e) => {
+        const st = start.current;
+        if (!st) return;
+        if (!st.moved && Math.hypot(e.clientX - st.x, e.clientY - st.y) < 6) return;
+        st.moved = true;
+        setDrag({ x: e.clientX, y: e.clientY });
+      }}
+      onPointerUp={(e) => {
+        const st = start.current;
+        start.current = null;
+        if (!st?.moved) {
+          setDrag(null);
+          onOpen();
+          return;
+        }
+        const next = {
+          side: (e.clientX < window.innerWidth / 2 ? "left" : "right") as "left" | "right",
+          y: clampY(e.clientY),
+        };
+        setSpot(next);
+        setDrag(null);
+        try {
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+      }}
+      onPointerCancel={() => {
+        start.current = null;
+        setDrag(null);
+      }}
+      aria-label={label}
+      title="Game chat (drag to move)"
+      className={`fixed z-[60] flex items-center justify-center ${unread ? "chat-tab-ping" : ""}`}
+      style={{
+        top,
+        ...(drag ? { left: drag.x - 17 } : spot.side === "right" ? { right: 0 } : { left: 0 }),
+        width: 34,
+        height: H,
+        borderRadius: drag ? 17 : spot.side === "right" ? "16px 0 0 16px" : "0 16px 16px 0",
+        background: "rgba(193,239,98,0.92)",
+        color: "var(--on-accent)",
+        boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
+        touchAction: "none",
+        transition: drag ? "none" : "top 0.2s ease, border-radius 0.2s ease",
+      }}
+    >
+      <MessageCircle size={18} />
+      {unread > 0 && (
+        <span
+          className="absolute -top-2 min-w-[20px] h-[20px] px-1 rounded-full text-[11px] font-extrabold flex items-center justify-center"
+          style={{
+            [spot.side === "right" ? "left" : "right"]: -6,
+            background: "var(--pink)",
+            color: "var(--on-accent)",
+            border: "2px solid #0B0A10",
+          }}
+        >
+          {unread}
+        </span>
+      )}
+    </button>
   );
 }
