@@ -1424,9 +1424,23 @@ export function DailyTune({ onClose }: { onClose: () => void }) {
         level={level}
         songs={[song]}
         title={`Daily · ${meta.name}`}
-        onAnswer={(_, got) =>
-          save(got >= 0 ? Date.now() - t0.current : null, got >= 0 ? got : null)
-        }
+        onAnswer={(_, got) => {
+          // The clip wouldn't load: that's not your go. Try again later.
+          if (got === -2) {
+            try {
+              localStorage.removeItem(startedKey);
+            } catch {
+              // ignore
+            }
+            setPlaying(false);
+            setSong(null);
+            setErr(
+              "Couldn't play today's song right now. This didn't use your go. Try again in a bit.",
+            );
+            return;
+          }
+          save(got >= 0 ? Date.now() - t0.current : null, got >= 0 ? got : null);
+        }}
         onFinish={() => setPlaying(false)}
         onClose={() => {
           save(null, null);

@@ -153,15 +153,21 @@ const ARTISTS: Record<string, number[]> = {
 const ALT_VERSION =
   /\b(remix|reprise|live|acoustic|unplugged|lofi|lo-fi|slowed|reverb|sped up|instrumental|karaoke|mashup|version|female|male|cover|edit|mix|remake|recreated|8d|demo)\b/i;
 
-async function dz<T>(path: string): Promise<T | null> {
-  try {
-    const r = await fetch(`https://api.deezer.com${path}`, { signal: AbortSignal.timeout(7000) });
-    if (!r.ok) return null;
-    const body = (await r.json()) as T & { error?: unknown };
-    return body.error ? null : body;
-  } catch {
-    return null;
+async function dz<T>(path: string, tries = 3): Promise<T | null> {
+  for (let attempt = 0; attempt < tries; attempt++) {
+    try {
+      const r = await fetch(`https://api.deezer.com${path}`, { signal: AbortSignal.timeout(7000) });
+      if (!r.ok) return null;
+      const body = (await r.json()) as T & { error?: { code?: number } };
+      if (!body.error) return body;
+      // Deezer's rate limit (~50 requests / 5 s): wait a moment and ask again.
+      if (body.error.code !== 4) return null;
+    } catch {
+      return null;
+    }
+    await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
   }
+  return null;
 }
 
 /** How well-known a song must be (Deezer rank) to be asked; Punjabi charts run smaller. */
@@ -254,10 +260,10 @@ async function buildNames(cat: string): Promise<PoolSong[]> {
   const ids = ARTISTS[cat] ?? [];
   const out: (PoolSong & { rank: number })[] = [];
   const seen = new Set<string>();
-  for (let i = 0; i < ids.length; i += 10) {
-    // Ten artists at a time, gently (Deezer allows ~50 requests per 5 seconds).
+  // Gently: 5 artists every 1.5 s, leaving room under Deezer's limit for games.
+  for (let i = 0; i < ids.length; i += 5) {
     const lists = await Promise.all(
-      ids.slice(i, i + 10).map((id) => artistTop(id).catch(() => [])),
+      ids.slice(i, i + 5).map((id) => artistTop(id).catch(() => [])),
     );
     for (const songs of lists)
       for (const s of songs) {
@@ -266,7 +272,7 @@ async function buildNames(cat: string): Promise<PoolSong[]> {
         seen.add(k);
         out.push(s);
       }
-    if (i + 10 < ids.length) await new Promise((r) => setTimeout(r, 1100));
+    if (i + 5 < ids.length) await new Promise((r) => setTimeout(r, 1500));
   }
   // Most popular first, so the songs people mean come up top.
   return out

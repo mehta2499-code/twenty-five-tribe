@@ -342,12 +342,22 @@ export async function loadDailyTune(day: string): Promise<EarSong> {
     .maybeSingle();
   const row = have as { song_id: string; title: string; artist: string } | null;
   if (row) return { id: row.song_id, title: row.title, artist: row.artist };
-  const r = await fetch(`/api/song?game=${cat}&n=6`, {
-    headers: await authHeader(),
-    signal: AbortSignal.timeout(8000),
-  });
-  const picks = r.ok ? asSongs(await r.json()).filter((x) => /^\d+$/.test(x.id)) : [];
-  if (!picks.length) throw new Error("Couldn't get today's song. Try again in a bit.");
+  // A few fresh hits from the server (asked twice if it's slow), then the
+  // built-in list as a backup so the day never breaks. The database skips any
+  // that were a daily song before.
+  let picks: EarSong[] = [];
+  for (let attempt = 0; attempt < 2 && !picks.length; attempt++) {
+    try {
+      const r = await fetch(`/api/song?game=${cat}&n=6`, {
+        headers: await authHeader(),
+        signal: AbortSignal.timeout(20000),
+      });
+      if (r.ok) picks = asSongs(await r.json()).filter((x) => /^\d+$/.test(x.id));
+    } catch {
+      // try again, then the backup list
+    }
+  }
+  picks = [...picks, ...shuffle(backupFor(cat))].slice(0, 40);
   const { data, error } = await supabase.rpc(
     "claim_daily_tune" as never,
     {
