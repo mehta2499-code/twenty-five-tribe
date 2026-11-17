@@ -6,21 +6,13 @@
  * Name That Tune.
  */
 import { Fragment, useEffect, useState } from "react";
-import {
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Crown,
-  Hourglass,
-  Play,
-  RotateCw,
-} from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Crown, Play, RotateCw } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
 import { PersonLink } from "@/components/PersonLink";
 import { GAMES } from "@/components/ArcadeGames";
 import { withRanks } from "@/components/Leaderboard";
+import { Sheet } from "@/components/SocialUI";
 import { friendById, meView } from "@/lib/social";
 import { tuneOf } from "@/lib/earworm";
 import {
@@ -88,397 +80,76 @@ type Row = {
   grid?: string;
 };
 
-export function DayResults({
-  onPlayDaily,
-  onPlayWord,
-  onPlayTune,
-}: {
-  onPlayDaily?: () => void;
-  onPlayWord?: () => void;
-  onPlayTune?: () => void;
-}) {
-  const d = useDaily();
-  const [day, setDay] = useState(today());
-  const isToday = day === today();
-  // As far back as scores are loaded: last week or the start of the season.
-  const first = [lastWeek(), seasonOf().start].sort()[0];
-  // A countdown to the next game, while looking at today.
-  const [, tick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => tick((n) => n + 1), 30_000);
-    return () => clearInterval(t);
-  }, []);
-
-  // Today's game is a surprise until you reveal it (Games tab) or play it.
-  const myTries = d.board[day]?.me ?? [];
-  let revealed = !isToday || myTries.length > 0;
-  try {
-    revealed ||= localStorage.getItem(`tf.reveal.${day}`) === "1";
-  } catch {
-    // ignore
-  }
-  const id = gameFor(day);
-  const g = GAMES[id];
-
-  const game: Row[] = dayRanking(d, day).map((r) => ({
-    id: r.id,
-    rank: r.rank,
-    score: `${r.best}`,
-    tries: r.tries.filter((t) => t >= 0).length,
-    points: r.points,
-  }));
-  const words = wordDay(d.words[day]);
-  const word: Row[] = Object.entries(words)
-    .sort((a, b) => a[1].rank - b[1].rank)
-    .map(([pid, w]) => ({
-      id: pid,
-      rank: w.rank,
-      score: w.guesses > 6 ? "X/6" : `${w.guesses}/6`,
-      points: w.points,
-      grid: w.grid,
-    }));
-
-  // Name That Tune: quickest first.
-  const tune: Row[] = tuneRanking(d, day).map((r) => ({
-    id: r.id,
-    rank: r.rank,
-    score: r.ms != null ? `${(r.ms / 1000).toFixed(1)}s` : "✗",
-    points: r.points,
-  }));
-  const playedTune = !!d.tunes[day]?.me;
-  const tuneDay = tuneOf(day);
-  const tuneCat = { bollywood: "Bollywood", punjabi: "Punjabi", english: "English" }[tuneDay.cat];
-
-  const left = TRIES - myTries.length;
-  const playedWord = !!d.words[day]?.me;
-
-  return (
-    <div>
-      {/* Day picker */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setDay((k) => addDays(k, -1))}
-          disabled={day <= first}
-          aria-label="Previous day"
-          className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-25"
-          style={{ background: "var(--fill)" }}
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <h3
-          className="display uppercase text-center"
-          style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.01em" }}
-        >
-          {dayTitle(day)}
-        </h3>
-        <button
-          onClick={() => setDay((k) => addDays(k, 1))}
-          disabled={isToday}
-          aria-label="Next day"
-          className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-25"
-          style={{ background: "var(--fill)" }}
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
-
-      <GameCard
-        art={revealed ? id : "mystery"}
-        name={revealed ? g.name : "Today's game"}
-        bg={
-          revealed
-            ? `radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), transparent 55%), linear-gradient(160deg, ${g.tone}, #2B2350 120%)`
-            : "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.25), transparent 55%), linear-gradient(160deg, #F06292, #3A2366 120%)"
-        }
-        play={
-          isToday && left > 0 && onPlayDaily
-            ? {
-                label: myTries.length ? `Try again · ${myTries.length}/${TRIES}` : "Play",
-                onClick: onPlayDaily,
-              }
-            : undefined
-        }
-        done={isToday && left <= 0 ? `${TRIES}/${TRIES} done` : undefined}
-        timer={isToday ? untilMidnight() : undefined}
-        rows={game}
-        unit={revealed ? g.unit : "pts"}
-        empty={isToday ? "Nobody has played yet. Go first." : "Nobody played this day."}
-      />
-
-      <GameCard
-        art="word"
-        name="Word Up"
-        bg="radial-gradient(circle at 50% 40%, rgba(255,255,255,0.3), transparent 55%), linear-gradient(160deg, #2FBF71, #173D3A 120%)"
-        play={
-          isToday && !playedWord && onPlayWord ? { label: "Play", onClick: onPlayWord } : undefined
-        }
-        done={isToday && playedWord ? "Played" : undefined}
-        timer={isToday ? untilMidnight() : undefined}
-        rows={word}
-        unit=""
-        empty={isToday ? "No one has cracked today's word yet." : "Nobody played Word Up this day."}
-      />
-
-      <GameCard
-        art="earworm"
-        name={`Name That Tune · ${tuneCat}`}
-        bg="radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), transparent 55%), linear-gradient(160deg, #F2507B, #3A1A6B 120%)"
-        play={
-          isToday && !playedTune && onPlayTune ? { label: "Play", onClick: onPlayTune } : undefined
-        }
-        done={isToday && playedTune ? "Played" : undefined}
-        timer={isToday ? untilMidnight() : undefined}
-        rows={tune}
-        unit=""
-        empty={
-          isToday
-            ? `Today's song is ${tuneCat}. Name it fastest.`
-            : "Nobody played Name That Tune this day."
-        }
-      />
-    </div>
-  );
-}
-
 const PILL: { bg: string; dark: string }[] = [
   { bg: "#EE6A6A", dark: "#C94B4B" },
   { bg: "#178A6E", dark: "#0F6B55" },
   { bg: "#8C6CF0", dark: "#6E4FD6" },
 ];
 
-/** One game's results for the day. */
-function GameCard({
-  art,
-  name,
-  bg,
-  play,
-  done,
-  timer,
-  rows,
-  unit,
-  empty,
-}: {
-  art: Parameters<typeof GameArt>[0]["kind"];
-  name: string;
-  bg: string;
-  play?: { label: string; onClick: () => void };
-  /** You've used all your goes today ("3/3 tries done", "Played"). */
-  done?: string;
-  timer?: string;
-  rows: Row[];
-  unit: string;
-  empty: string;
-}) {
+/** A game's board for a day: podium, best player (if one), top 3 + you. */
+function BoardBody({ rows, unit }: { rows: Row[]; unit: string }) {
   const [a, b, c] = rows;
   const best = rows.filter((r) => r.rank === 1);
   const [all, setAll] = useState(false);
-  // The board is folded away, so all three games fit on screen.
-  const [open, setOpen] = useState(false);
   const mineRow = rows.find((r) => r.id === "me");
   const shortList =
     mineRow && rows.indexOf(mineRow) >= 3 ? [...rows.slice(0, 3), mineRow] : rows.slice(0, 3);
   return (
-    <section className="mt-3">
-      {/* The game: art on a bright card, name on a sticker. */}
-      <div
-        {...(play
-          ? {
-              role: "button",
-              tabIndex: 0,
-              "aria-label": `${play.label} ${name}`,
-              onClick: play.onClick,
-              onKeyDown: (e: React.KeyboardEvent) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  play.onClick();
-                }
-              },
-            }
-          : {})}
-        className={`relative rounded-[28px] overflow-hidden ${
-          play ? "cursor-pointer active:scale-[0.98] transition-transform" : ""
-        }`}
-        style={{
-          height: 112,
-          background: bg,
-          border: "3px solid rgba(255,255,255,0.18)",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
-        }}
-      >
-        {/* Confetti-ish shapes for life. */}
-        <span
-          aria-hidden="true"
-          className="absolute -left-6 top-8 w-24 h-24 rounded-[22px] rotate-12"
-          style={{ background: "rgba(255,255,255,0.08)" }}
-        />
-        <span
-          aria-hidden="true"
-          className="absolute right-4 bottom-10 w-16 h-16 rounded-full"
-          style={{ background: "rgba(255,255,255,0.08)" }}
-        />
-        <span
-          aria-hidden="true"
-          className="absolute right-16 top-6 w-6 h-6 rotate-45 rounded-[4px]"
-          style={{ background: "rgba(255,255,255,0.18)" }}
-        />
-        <div className="absolute inset-0 flex items-center justify-center pb-7">
-          <span className="day-art-float">
-            <GameArt kind={art} size={60} />
-          </span>
-        </div>
-        {play && (
-          <span
-            aria-hidden="true"
-            className="absolute left-3 top-3 flex items-center gap-1 rounded-full pl-1.5 pr-3 py-1 font-extrabold"
-            style={{
-              background: "rgba(10,10,16,0.55)",
-              color: "#fff",
-              fontSize: 13,
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-            }}
-          >
-            <span
-              className="w-5 h-5 rounded-full flex items-center justify-center"
-              style={{ background: "#fff", color: "#111" }}
-            >
-              <Play size={11} fill="currentColor" aria-hidden="true" />
-            </span>
-            {play.label}
-          </span>
+    <>
+      {/* Mini podium: 2nd · 1st (crowned) · 3rd */}
+      <div className="mt-6 flex items-end justify-center gap-4">
+        {[b, a, c].map((r, slot) =>
+          r ? (
+            <MiniFace key={r.id} r={r} unit={unit} top={slot === 1} />
+          ) : (
+            <span key={slot} className="w-14" />
+          ),
         )}
-        {!play && done && (
-          <span
-            className="absolute left-3 top-3 flex items-center gap-1 rounded-full pl-1.5 pr-3 py-1 font-extrabold"
-            style={{
-              background: "rgba(10,10,16,0.55)",
-              color: "#fff",
-              fontSize: 13,
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-            }}
-            aria-label={done}
-          >
-            <span
-              className="w-5 h-5 rounded-full flex items-center justify-center"
-              style={{ background: "var(--lime)", color: "#14200A" }}
-            >
-              <Check size={12} strokeWidth={3.5} aria-hidden="true" />
-            </span>
-            {done}
-          </span>
-        )}
-        {timer && (
-          <span
-            className="absolute right-3 top-3 flex items-center gap-1 rounded-full px-2.5 py-1 font-extrabold tabular-nums"
-            style={{
-              background: "rgba(10,10,16,0.55)",
-              color: "#fff",
-              fontSize: 12.5,
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-            }}
-            aria-label={`Next game in ${timer}`}
-          >
-            <Hourglass size={13} aria-hidden="true" /> {timer}
-          </span>
-        )}
-        <span
-          className="absolute left-1/2 bottom-2.5 -translate-x-1/2 rounded-[12px] px-3.5 py-1 font-black uppercase whitespace-nowrap"
-          style={{
-            background: "#fff",
-            color: "#14121C",
-            fontSize: 14,
-            letterSpacing: "0.02em",
-            border: "3px solid #14121C",
-            boxShadow: "0 4px 0 #14121C",
-          }}
-        >
-          {name}
-        </span>
       </div>
 
-      {rows.length === 0 ? (
-        <p className="meta text-center mt-2" style={{ fontSize: 12.5 }}>
-          {empty}
-        </p>
-      ) : (
+      {/* Best player */}
+      {best.length === 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <Branch />
+          <div className="text-center">
+            <p className="font-bold" style={{ fontSize: 13, color: "var(--ink-2)" }}>
+              Best Player
+            </p>
+            <p className="display uppercase" style={{ fontSize: 26, lineHeight: 1 }}>
+              {best.map((r) => person(r.id).name).join(" & ")}
+            </p>
+            <p className="font-extrabold tabular-nums" style={{ fontSize: 14 }}>
+              {best[0].score} {unit}
+            </p>
+          </div>
+          <Branch flip />
+        </div>
+      )}
+
+      {/* Everyone, in bright ranked pills. */}
+      {/* Top 3, plus your own spot if you're further down. */}
+      <ol className="mt-5 grid gap-3.5">
+        {(all ? rows : shortList).map((r, i, list) => (
+          <Fragment key={r.id}>
+            {i > 0 && rows.indexOf(r) > rows.indexOf(list[i - 1]) + 1 && !all && (
+              <li aria-hidden="true" className="text-center meta leading-none -my-1.5">
+                ···
+              </li>
+            )}
+            <RankPill r={r} unit={unit} />
+          </Fragment>
+        ))}
+      </ol>
+      {rows.length > shortList.length && (
         <button
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-full py-2 font-bold"
-          style={{ background: "var(--fill)", fontSize: 13.5, color: "var(--ink)" }}
+          onClick={() => setAll((v) => !v)}
+          className="mt-4 mx-auto block meta font-semibold"
+          style={{ fontSize: 13 }}
         >
-          {open ? "Hide leaderboard" : "View leaderboard"}
-          <span className="meta font-semibold" style={{ fontSize: 12.5 }}>
-            · {rows.length} played
-            {mineRow ? ` · you're #${mineRow.rank}` : ""}
-          </span>
-          <ChevronDown
-            size={17}
-            aria-hidden="true"
-            style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.2s" }}
-          />
+          {all ? "Show less" : `See all ${rows.length}`}
         </button>
       )}
-      {rows.length > 0 && open && (
-        <>
-          {/* Mini podium: 2nd · 1st (crowned) · 3rd */}
-          <div className="mt-6 flex items-end justify-center gap-4">
-            {[b, a, c].map((r, slot) =>
-              r ? (
-                <MiniFace key={r.id} r={r} unit={unit} top={slot === 1} />
-              ) : (
-                <span key={slot} className="w-14" />
-              ),
-            )}
-          </div>
-
-          {/* Best player */}
-          {best.length === 1 && (
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <Branch />
-              <div className="text-center">
-                <p className="font-bold" style={{ fontSize: 13, color: "var(--ink-2)" }}>
-                  Best Player
-                </p>
-                <p className="display uppercase" style={{ fontSize: 26, lineHeight: 1 }}>
-                  {best.map((r) => person(r.id).name).join(" & ")}
-                </p>
-                <p className="font-extrabold tabular-nums" style={{ fontSize: 14 }}>
-                  {best[0].score} {unit}
-                </p>
-              </div>
-              <Branch flip />
-            </div>
-          )}
-
-          {/* Everyone, in bright ranked pills. */}
-          {/* Top 3, plus your own spot if you're further down. */}
-          <ol className="mt-5 grid gap-3.5">
-            {(all ? rows : shortList).map((r, i, list) => (
-              <Fragment key={r.id}>
-                {i > 0 && rows.indexOf(r) > rows.indexOf(list[i - 1]) + 1 && !all && (
-                  <li aria-hidden="true" className="text-center meta leading-none -my-1.5">
-                    ···
-                  </li>
-                )}
-                <RankPill r={r} unit={unit} />
-              </Fragment>
-            ))}
-          </ol>
-          {rows.length > shortList.length && (
-            <button
-              onClick={() => setAll((v) => !v)}
-              className="mt-4 mx-auto block meta font-semibold"
-              style={{ fontSize: 13 }}
-            >
-              {all ? "Show less" : `See all ${rows.length}`}
-            </button>
-          )}
-        </>
-      )}
-    </section>
+    </>
   );
 }
 
@@ -641,5 +312,248 @@ function RankPill({ r, unit }: { r: Row; unit: string }) {
         </span>
       </span>
     </li>
+  );
+}
+
+// ---------- Games home: Today (three compact rows) + each game's board ----------
+type DailyKind = "daily" | "word" | "tune";
+const TUNE_CATS: Record<string, string> = {
+  bollywood: "Bollywood",
+  punjabi: "Punjabi",
+  english: "English",
+};
+
+/** Every daily game's rows for one day, plus what's needed to show them. */
+function dayBoards(d: ReturnType<typeof useDaily>, day: string) {
+  const isToday = day === today();
+  const myTries = d.board[day]?.me ?? [];
+  let revealed = !isToday || myTries.length > 0;
+  try {
+    revealed ||= localStorage.getItem(`tf.reveal.${day}`) === "1";
+  } catch {
+    // ignore
+  }
+  const g = GAMES[gameFor(day)];
+  const game: Row[] = dayRanking(d, day).map((r) => ({
+    id: r.id,
+    rank: r.rank,
+    score: `${r.best}`,
+    tries: r.tries.filter((t) => t >= 0).length,
+    points: r.points,
+  }));
+  const word: Row[] = Object.entries(wordDay(d.words[day]))
+    .sort((a, b) => a[1].rank - b[1].rank)
+    .map(([pid, w]) => ({
+      id: pid,
+      rank: w.rank,
+      score: w.guesses > 6 ? "X/6" : `${w.guesses}/6`,
+      points: w.points,
+      grid: w.grid,
+    }));
+  const tune: Row[] = tuneRanking(d, day).map((r) => ({
+    id: r.id,
+    rank: r.rank,
+    score: r.ms != null ? `${(r.ms / 1000).toFixed(1)}s` : "✗",
+    points: r.points,
+  }));
+  const tuneCat = TUNE_CATS[tuneOf(day).cat];
+  return {
+    daily: {
+      art: (revealed ? gameFor(day) : "mystery") as Parameters<typeof GameArt>[0]["kind"],
+      name: revealed ? g.name : "Today's game",
+      bg: revealed
+        ? `linear-gradient(140deg, ${g.tone}, #2B2350 130%)`
+        : "linear-gradient(140deg, #F06292, #3A2366 130%)",
+      rows: game,
+      unit: revealed ? g.unit : "pts",
+      tries: myTries.length,
+      extra: "",
+    },
+    word: {
+      art: "word" as const,
+      name: "Word Up",
+      bg: "linear-gradient(140deg, #2FBF71, #173D3A 130%)",
+      rows: word,
+      unit: "",
+      tries: d.words[day]?.me ? 1 : 0,
+      extra: "",
+    },
+    tune: {
+      art: "earworm" as const,
+      name: "Name That Tune",
+      bg: "linear-gradient(140deg, #F2507B, #3A1A6B 130%)",
+      rows: tune,
+      unit: "",
+      tries: d.tunes[day]?.me ? 1 : 0,
+      extra: tuneCat,
+    },
+  };
+}
+
+/**
+ * Today: the three daily games as compact rows. Tap a row to play (or, once
+ * you've played, to see its board); your rank on the right opens the board too.
+ */
+export function TodaySection({
+  onPlayDaily,
+  onPlayWord,
+  onPlayTune,
+}: {
+  onPlayDaily?: () => void;
+  onPlayWord?: () => void;
+  onPlayTune?: () => void;
+}) {
+  const d = useDaily();
+  const day = today();
+  const [board, setBoard] = useState<DailyKind | null>(null);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const b = dayBoards(d, day);
+  const items: { kind: DailyKind; max: number; onPlay?: () => void }[] = [
+    { kind: "daily", max: TRIES, onPlay: onPlayDaily },
+    { kind: "word", max: 1, onPlay: onPlayWord },
+    { kind: "tune", max: 1, onPlay: onPlayTune },
+  ];
+  return (
+    <section className="px-5 mt-6" aria-label="Today's games">
+      <div className="flex items-baseline justify-between mb-2 px-1">
+        <h2 className="label-caps">Today</h2>
+        <span className="meta font-semibold" style={{ fontSize: 12.5 }}>
+          resets in {untilMidnight()}
+        </span>
+      </div>
+      <ul className="card overflow-hidden p-0" style={{ borderRadius: 22 }}>
+        {items.map(({ kind, max, onPlay }, i) => {
+          const x = b[kind];
+          const mine = x.rows.find((r) => r.id === "me");
+          const left = max - x.tries;
+          const canPlay = left > 0 && !!onPlay;
+          const status = canPlay
+            ? x.tries
+              ? `${x.tries}/${max}`
+              : "Play"
+            : max > 1
+              ? `${max}/${max}`
+              : "Done";
+          return (
+            <li
+              key={kind}
+              className="flex items-center gap-2 pl-2.5 pr-2 py-2.5"
+              style={{ borderTop: i ? "1px solid var(--line)" : undefined }}
+            >
+              <button
+                onClick={() => (canPlay ? onPlay!() : setBoard(kind))}
+                className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-80"
+                aria-label={canPlay ? `Play ${x.name}` : `${x.name}: see today's board`}
+              >
+                <span
+                  className="w-[46px] h-[46px] rounded-[14px] flex items-center justify-center shrink-0"
+                  style={{ background: x.bg, border: "2px solid rgba(255,255,255,0.18)" }}
+                >
+                  <GameArt kind={x.art} size={32} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block font-extrabold text-cream truncate"
+                    style={{ fontSize: 15 }}
+                  >
+                    {x.name}
+                  </span>
+                  <span className="block meta truncate" style={{ fontSize: 12.5 }}>
+                    {[x.extra, x.rows.length ? `${x.rows.length} played` : "Be the first"]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </span>
+                <span
+                  className="shrink-0 rounded-full px-2 py-1 font-extrabold flex items-center gap-0.5"
+                  style={
+                    canPlay
+                      ? {
+                          background: "var(--lime)",
+                          color: "var(--on-accent)",
+                          border: "2px solid var(--edge)",
+                          boxShadow: "0 2px 0 var(--edge)",
+                          fontSize: 13,
+                        }
+                      : { background: "var(--fill)", color: "var(--lime)", fontSize: 13 }
+                  }
+                >
+                  {canPlay ? (
+                    <Play size={12} fill="currentColor" aria-hidden="true" />
+                  ) : (
+                    <Check size={13} strokeWidth={3} aria-hidden="true" />
+                  )}
+                  {status}
+                </span>
+              </button>
+              <button
+                onClick={() => setBoard(kind)}
+                className="shrink-0 w-[44px] h-[46px] rounded-[13px] flex flex-col items-center justify-center leading-none"
+                style={{ background: "var(--fill)" }}
+                aria-label={`${x.name} board${mine ? `, you're number ${mine.rank}` : ""}`}
+              >
+                <span className="font-black tabular-nums" style={{ fontSize: 16 }}>
+                  {mine ? `#${mine.rank}` : "–"}
+                </span>
+                <span className="meta font-bold mt-1" style={{ fontSize: 9.5 }}>
+                  board ›
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {board && <DailyBoard kind={board} onClose={() => setBoard(null)} />}
+    </section>
+  );
+}
+
+/** One daily game's board, any day back to the start of the season. */
+function DailyBoard({ kind, onClose }: { kind: DailyKind; onClose: () => void }) {
+  const d = useDaily();
+  const [day, setDay] = useState(today());
+  const first = [lastWeek(), seasonOf().start].sort()[0];
+  const x = dayBoards(d, day)[kind];
+  return (
+    <div className="relative z-[70]">
+      <Sheet title={x.name} onClose={onClose}>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setDay((k) => addDays(k, -1))}
+            disabled={day <= first}
+            aria-label="Previous day"
+            className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-25"
+            style={{ background: "var(--fill)" }}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className="display uppercase" style={{ fontSize: 22 }}>
+            {dayTitle(day)}
+          </span>
+          <button
+            onClick={() => setDay((k) => addDays(k, 1))}
+            disabled={day === today()}
+            aria-label="Next day"
+            className="w-10 h-10 rounded-full flex items-center justify-center disabled:opacity-25"
+            style={{ background: "var(--fill)" }}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+        {x.rows.length ? (
+          <div className="pb-4">
+            <BoardBody rows={x.rows} unit={x.unit} />
+          </div>
+        ) : (
+          <p className="meta text-center py-10">
+            Nobody played {day === today() ? "yet today" : "this day"}.
+          </p>
+        )}
+      </Sheet>
+    </div>
   );
 }

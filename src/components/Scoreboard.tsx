@@ -1,14 +1,14 @@
 /**
- * Scores tab: Daily · Weekly · Overall leaderboards. Only the two daily games
- * count: the daily game (points for your place at your table each day) and
- * Word Up (points for your place by fewest guesses). Live games don't.
+ * The season on the Games page: a summary card (top 3, your place, the gap)
+ * and the full board. Points come from the three daily games only; live games
+ * with your 25 don't count.
  */
 import { useEffect, useState } from "react";
-import { Flag, Flame } from "lucide-react";
+import { Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Ico } from "@/components/Ico";
 import { Leaderboard, withRanks, type LeaderRow } from "@/components/Leaderboard";
-import { DayResults, wordDay } from "@/components/DayResults";
+import { wordDay } from "@/components/DayResults";
 import { friendById, meView, useSocial } from "@/lib/social";
 import {
   SEASON_DAYS,
@@ -20,11 +20,9 @@ import {
   useDaily,
 } from "@/lib/daily";
 import { Avatar } from "@/components/Avatar";
+import { Sheet } from "@/components/SocialUI";
 import { Crown } from "lucide-react";
-import { track } from "@/lib/track";
 
-/** Points for 1st, 2nd, 3rd… each day; everyone else who played gets 2. */
-const RANK_PTS = (rank: number) => [10, 8, 6, 5, 4][rank - 1] ?? 2;
 
 function person(id: string) {
   if (id === "me") {
@@ -51,12 +49,6 @@ function playStreak(board: Record<string, Record<string, number[]>>) {
   }
   return n;
 }
-
-type View = "daily" | "season";
-const VIEWS: [View, string][] = [
-  ["daily", "Daily"],
-  ["season", "Season"],
-];
 
 /** Last season's champion(s) among you and your 25. */
 function useLastChamps(season: number) {
@@ -85,113 +77,6 @@ function useLastChamps(season: number) {
     };
   }, [season, s.mode, s.me?.id, s.people.length]);
   return ids;
-}
-
-export function Scoreboard({
-  onPlayDaily,
-  onPlayWord,
-  onPlayTune,
-}: {
-  onPlayDaily?: () => void;
-  onPlayWord?: () => void;
-  onPlayTune?: () => void;
-} = {}) {
-  const d = useDaily();
-  useEffect(() => track("leaderboard_viewed"), []);
-  const [view, setView] = useState<View>("daily");
-  const day = today();
-  const season = seasonOf(day);
-  const champs = useLastChamps(season.n);
-
-  // Points per person for the chosen period.
-  const totals: Record<string, number> = {};
-  const add = (id: string, n: number) => (totals[id] = (totals[id] ?? 0) + n);
-  // Season: every day so far this season.
-  for (let k = season.start; k <= day; k = addDays(k, 1)) {
-    for (const r of dayRanking(d, k)) add(r.id, r.points);
-    for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
-    for (const r of tuneRanking(d, k)) add(r.id, r.points);
-  }
-  const sorted = Object.entries(totals)
-    .filter(([, n]) => n > 0)
-    .sort((a, b) => b[1] - a[1]);
-  const rows: LeaderRow[] = withRanks(sorted, ([, n]) => n).map(({ r: [id, n], rank }) => ({
-    id,
-    rank,
-    value: n,
-    link: true,
-    me: id === "me",
-    ...person(id),
-  }));
-  const streak = playStreak(d.board);
-
-  return (
-    <section className="px-5 mt-5 pb-4" aria-label="Daily games">
-      {/* Daily · Weekly · Overall */}
-      <div
-        className="flex rounded-[16px] p-1"
-        style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
-        role="group"
-        aria-label="Which leaderboard"
-      >
-        {VIEWS.map(([k, label]) => (
-          <button
-            key={k}
-            onClick={() => setView(k)}
-            aria-pressed={view === k}
-            className="flex-1 rounded-[12px] py-2 font-bold transition-colors"
-            style={{
-              fontSize: 14.5,
-              background: view === k ? "#E2506A" : "transparent",
-              color: view === k ? "#fff" : "var(--ink-2)",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {view === "season" && <SeasonBanner season={season} champs={champs} />}
-
-      {view === "daily" ? (
-        <div className="mt-5">
-          <DayResults onPlayDaily={onPlayDaily} onPlayWord={onPlayWord} onPlayTune={onPlayTune} />
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="card mt-6 p-6 text-center">
-          <Flag
-            size={44}
-            strokeWidth={2}
-            aria-hidden="true"
-            className="mx-auto"
-            style={{ color: "var(--lime)" }}
-          />
-          <p className="heading mt-3">No scores yet</p>
-          <p className="meta mt-1">Play first. Set the bar. Make them sweat.</p>
-        </div>
-      ) : (
-        <div className="mt-6">
-          <Leaderboard rows={rows} />
-        </div>
-      )}
-
-      {streak > 0 && (
-        <div className="mt-8 flex justify-center">
-          <span
-            className="px-4 py-1.5 rounded-full font-extrabold text-[14px]"
-            style={{
-              background: "var(--lime)",
-              color: "var(--on-accent)",
-              border: "var(--bd)",
-              boxShadow: "var(--pop)",
-            }}
-          >
-            <Ico i={Flame} size={15} /> Day {streak} of playing in a row
-          </span>
-        </div>
-      )}
-      <p className="text-center meta mt-6">Only your mutual 25 see your scores.</p>
-    </section>
-  );
 }
 
 /** Season header: which season, how far in, and last season's champ. */
@@ -262,3 +147,148 @@ function SeasonBanner({
     </div>
   );
 }
+
+/** This season's standings among you and your 25 (all three daily games). */
+function useSeasonRows() {
+  const d = useDaily();
+  const day = today();
+  const season = seasonOf(day);
+  const totals: Record<string, number> = {};
+  const add = (id: string, n: number) => (totals[id] = (totals[id] ?? 0) + n);
+  for (let k = season.start; k <= day; k = addDays(k, 1)) {
+    for (const r of dayRanking(d, k)) add(r.id, r.points);
+    for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
+    for (const r of tuneRanking(d, k)) add(r.id, r.points);
+  }
+  const sorted = Object.entries(totals)
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const rows: LeaderRow[] = withRanks(sorted, ([, n]) => n).map(({ r: [id, n], rank }) => ({
+    id,
+    rank,
+    value: n,
+    link: true,
+    me: id === "me",
+    ...person(id),
+  }));
+  return { season, rows, streak: playStreak(d.board) };
+}
+
+/**
+ * Games home: the season at a glance (top 3, your place, the gap). Tap for
+ * the full board.
+ */
+export function SeasonCard() {
+  const { season, rows, streak } = useSeasonRows();
+  const champs = useLastChamps(season.n);
+  const [open, setOpen] = useState(false);
+  const me = rows.find((r) => r.me);
+  const ahead = me ? [...rows].reverse().find((r) => r.rank < me.rank) : undefined;
+  const gap = me && ahead ? Number(ahead.value) - Number(me.value) : 0;
+  const pct = Math.round((season.dayNo / SEASON_DAYS) * 100);
+  const [a, b, c] = rows;
+  const tile = (r: LeaderRow | undefined, medal: string, tone: string, top?: boolean) =>
+    r ? (
+      <div
+        className="flex-1 min-w-0 rounded-[16px] flex flex-col items-center gap-1 py-2.5 px-1"
+        style={{
+          background: tone,
+          boxShadow: r.me ? "inset 0 0 0 2px var(--lime)" : undefined,
+          marginTop: top ? 0 : 10,
+        }}
+      >
+        <Avatar src={r.avatar} initials={r.initials} color={r.color} size={top ? 48 : 40} />
+        <span className="font-extrabold truncate max-w-full" style={{ fontSize: 12.5 }}>
+          {medal} {r.name}
+        </span>
+        <span className="font-black tabular-nums" style={{ fontSize: 13, color: "var(--lime)" }}>
+          ♦ {r.value}
+        </span>
+      </div>
+    ) : (
+      <div className="flex-1" />
+    );
+  return (
+    <section className="px-5 mt-7" aria-label="Season">
+      <div className="flex items-baseline justify-between mb-2 px-1">
+        <h2 className="label-caps">Season {season.n}</h2>
+        <span className="meta font-semibold" style={{ fontSize: 12.5 }}>
+          Day {season.dayNo} of {SEASON_DAYS}
+        </span>
+      </div>
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full text-left rounded-[22px] p-3.5"
+        style={{
+          background:
+            "radial-gradient(circle at 85% 10%, rgba(247,201,72,0.25), transparent 50%), linear-gradient(150deg, #3A2A6E, #1B1730)",
+          border: "1px solid rgba(255,255,255,0.12)",
+        }}
+        aria-label="Season board"
+      >
+        <div
+          className="h-1.5 rounded-full overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.12)" }}
+        >
+          <span
+            className="block h-full rounded-full"
+            style={{ width: `${pct}%`, background: "linear-gradient(90deg, #F7C948, #F27DA6)" }}
+          />
+        </div>
+        {rows.length ? (
+          <>
+            <div className="mt-3 flex items-start gap-2">
+              {tile(b, "🥈", "rgba(70,110,230,0.35)")}
+              {tile(a, "🥇", "rgba(244,201,107,0.3)", true)}
+              {tile(c, "🥉", "rgba(241,120,70,0.3)")}
+            </div>
+            <div
+              className="mt-3 rounded-[14px] px-3 py-2 flex items-center justify-between gap-2"
+              style={{ background: "rgba(0,0,0,0.25)", fontSize: 13 }}
+            >
+              <span className="min-w-0 truncate">
+                {!me
+                  ? "Play today's games to get on the board."
+                  : me.rank === 1
+                    ? "You're 1st. Hold on to it."
+                    : `You're ${ordinalOf(me.rank)}${ahead ? ` · ${gap} behind ${ahead.name}` : ""}`}
+              </span>
+              <span className="shrink-0 font-bold" style={{ color: "var(--ink-2)" }}>
+                Full board ›
+              </span>
+            </div>
+          </>
+        ) : (
+          <p className="meta mt-3" style={{ fontSize: 13 }}>
+            No points yet this season. Play today's games to get on the board.
+          </p>
+        )}
+      </button>
+      {open && (
+        <div className="relative z-[70]">
+          <Sheet title={`Season ${season.n}`} onClose={() => setOpen(false)}>
+            <div className="-mt-5">
+              <SeasonBanner season={season} champs={champs} />
+            </div>
+            {rows.length > 0 && (
+              <div className="mt-6">
+                <Leaderboard rows={rows} />
+              </div>
+            )}
+            {streak > 0 && (
+              <p className="text-center mt-6 font-extrabold" style={{ fontSize: 14 }}>
+                <Ico i={Flame} size={15} /> Day {streak} of playing in a row
+              </p>
+            )}
+            <p className="text-center meta mt-4 pb-4">
+              Points from all three daily games. Only your mutual 25 see your scores.
+            </p>
+          </Sheet>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const ordinalOf = (n: number) =>
+  `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th")}`;
