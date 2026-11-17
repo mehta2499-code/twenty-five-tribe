@@ -51,7 +51,8 @@ export const lastWeek = () => addDays(weekKey(), -7);
 export const SEASON_DAYS = 25;
 const SEASON_ONE = "2026-11-16";
 export function seasonOf(day: string = today()) {
-  const n = Math.floor((toDate(day).getTime() - toDate(SEASON_ONE).getTime()) / DAY / SEASON_DAYS) + 1;
+  const n =
+    Math.floor((toDate(day).getTime() - toDate(SEASON_ONE).getTime()) / DAY / SEASON_DAYS) + 1;
   const start = addDays(SEASON_ONE, (n - 1) * SEASON_DAYS);
   const end = addDays(start, SEASON_DAYS - 1);
   const dayNo = Math.round((toDate(day).getTime() - toDate(start).getTime()) / DAY) + 1;
@@ -73,14 +74,17 @@ export function untilMidnight() {
 export const best = (tries: number[]) => (tries.length ? Math.max(0, ...tries) : 0);
 
 export type WordResult = { guesses: number; grid: string };
+/** Daily Name That Tune: how long it took to name it (ms), or null if missed. */
+export type TuneResult = { ms: number | null; stage: number | null };
 type DailyState = {
   /** day -> person id ("me" for you) -> tries */
   board: Record<string, Record<string, number[]>>;
   words: Record<string, Record<string, WordResult>>;
+  tunes: Record<string, Record<string, TuneResult>>;
   loaded: boolean;
 };
 
-let store: DailyState = { board: {}, words: {}, loaded: false };
+let store: DailyState = { board: {}, words: {}, tunes: {}, loaded: false };
 const listeners = new Set<() => void>();
 function setStore(fn: (s: DailyState) => DailyState) {
   store = fn(store);
@@ -133,17 +137,20 @@ function demoBoard() {
 }
 function loadDemo() {
   const { board, words } = demoBoard();
+  const tunes: DailyState["tunes"] = {};
   try {
     const mine = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "{}") as {
       board?: Record<string, number[]>;
       words?: Record<string, WordResult>;
+      tunes?: Record<string, TuneResult>;
     };
     for (const [day, tries] of Object.entries(mine.board ?? {})) (board[day] ??= {}).me = tries;
     for (const [day, w] of Object.entries(mine.words ?? {})) (words[day] ??= {}).me = w;
+    for (const [day, t] of Object.entries(mine.tunes ?? {})) (tunes[day] ??= {}).me = t;
   } catch {
     // Unreadable; start fresh.
   }
-  store = { board, words, loaded: true };
+  store = { board, words, tunes, loaded: true };
   listeners.forEach((l) => l());
 }
 function saveDemo() {
@@ -152,7 +159,9 @@ function saveDemo() {
     const words: Record<string, WordResult> = {};
     for (const [d, r] of Object.entries(store.board)) if (r.me) board[d] = r.me;
     for (const [d, r] of Object.entries(store.words)) if (r.me) words[d] = r.me;
-    localStorage.setItem(DEMO_KEY, JSON.stringify({ board, words }));
+    const tunes: Record<string, TuneResult> = {};
+    for (const [d, r] of Object.entries(store.tunes)) if (r.me) tunes[d] = r.me;
+    localStorage.setItem(DEMO_KEY, JSON.stringify({ board, words, tunes }));
   } catch {
     // ignore
   }
@@ -166,9 +175,13 @@ let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 async function loadLive(me: string) {
   // Back to the start of the season (or last week, whichever is earlier).
   const since = [lastWeek(), seasonOf().start].sort()[0];
-  const [scores, words] = await Promise.all([
+  const [scores, words, tunes] = await Promise.all([
     supabase.from("daily_scores").select("user_id,day,tries").gte("day", since),
     supabase.from("word_results").select("user_id,day,guesses,grid").gte("day", since),
+    supabase
+      .from("tune_results" as never)
+      .select("user_id,day,ms,stage")
+      .gte("day" as never, since as never),
   ]);
   const who = (id: string) => (id === me ? "me" : id);
   const board: DailyState["board"] = {};
@@ -182,8 +195,16 @@ async function loadLive(me: string) {
     grid: string;
   }[])
     (w[r.day] ??= {})[who(r.user_id)] = { guesses: r.guesses, grid: r.grid };
+  const t: DailyState["tunes"] = {};
+  for (const r of (tunes.data ?? []) as unknown as {
+    user_id: string;
+    day: string;
+    ms: number | null;
+    stage: number | null;
+  }[])
+    (t[r.day] ??= {})[who(r.user_id)] = { ms: r.ms, stage: r.stage };
   if (liveFor !== me) return;
-  store = { board, words: w, loaded: true };
+  store = { board, words: w, tunes: t, loaded: true };
   listeners.forEach((l) => l());
 }
 
@@ -203,6 +224,7 @@ function ensureLoaded() {
       .channel(`daily:${me}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_scores" }, reload)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "word_results" }, reload)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "tune_results" }, reload)
       .subscribe();
   } else if (s.mode === "demo" && (liveFor !== "demo" || !store.loaded)) {
     liveFor = "demo";
@@ -271,6 +293,35 @@ export async function saveWord(day: string, result: WordResult) {
       .insert({ user_id: me, day, guesses: result.guesses, grid: result.grid });
     if (error && !/duplicate/i.test(error.message)) throw new Error(error.message);
   }
+}
+
+/** Save your daily Name That Tune (one go a day). */
+export async function saveTune(day: string, result: TuneResult) {
+  setStore((s) => ({ ...s, tunes: { ...s.tunes, [day]: { ...s.tunes[day], me: result } } }));
+  if (_get().mode === "live") {
+    const me = _get().me!.id;
+    const { error } = await supabase
+      .from("tune_results" as never)
+      .insert({ user_id: me, day, ms: result.ms, stage: result.stage } as never);
+    if (error && !/duplicate/i.test(error.message)) throw new Error(error.message);
+  }
+}
+
+/** Daily Name That Tune: quickest first; missed it = 2 points for playing. */
+export function tuneRanking(d: DailyState, day: string) {
+  const list = Object.entries(d.tunes[day] ?? {});
+  const named = list.filter(([, r]) => r.ms != null).sort((a, b) => a[1].ms! - b[1].ms!);
+  const missed = list.filter(([, r]) => r.ms == null);
+  let rank = 0;
+  const out = named.map(([id, r], i) => {
+    if (i === 0 || r.ms !== named[i - 1][1].ms) rank = i + 1;
+    return { id, ms: r.ms, rank, points: POINTS[rank - 1] ?? PLAYED_POINTS };
+  });
+  const last = named.length + 1;
+  return [
+    ...out,
+    ...missed.map(([id]) => ({ id, ms: null as number | null, rank: last, points: PLAYED_POINTS })),
+  ];
 }
 
 // ---------- Standings ----------

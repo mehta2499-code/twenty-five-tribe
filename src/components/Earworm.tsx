@@ -9,6 +9,8 @@ import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, withRanks, type LeaderRow } from "@/components/Leaderboard";
 import { sfx } from "@/lib/sfx";
+import { GameArt } from "@/components/GameArt";
+import { saveTune, today, tuneRanking, useDaily } from "@/lib/daily";
 import { mutualFriends, personView, type Person } from "@/lib/social";
 import {
   CATS,
@@ -27,6 +29,8 @@ import {
   loadNames,
   matchSongs,
   allBackup,
+  loadDailyTune,
+  tuneOf,
   type EarCat,
   type EarLevel,
   type EarResult,
@@ -232,6 +236,7 @@ export function EarwormPlay({
   onFinish,
   onClose,
   live,
+  onAnswer,
 }: {
   cat: EarCat;
   level: EarLevel;
@@ -240,6 +245,8 @@ export function EarwormPlay({
   onFinish?: (r: EarResult, done: Done[]) => void;
   onClose: () => void;
   live?: LiveCtl;
+  /** Called the moment a song is named, missed or skipped (daily game timing). */
+  onAnswer?: (k: number, got: number) => void;
 }) {
   const [soloK, setK] = useState(0);
   const k = live ? live.k : soloK;
@@ -425,6 +432,7 @@ export function EarwormPlay({
       return y;
     });
     live?.onPick(k, got);
+    onAnswer?.(k, got);
   };
   const next = () => {
     stop();
@@ -1359,6 +1367,157 @@ export function EarwormLobby({
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- The daily song (third daily game) ----------
+const fmtSecs = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+
+/** Today's Name That Tune: one song, same for everyone, quickest wins. */
+export function DailyTune({ onClose }: { onClose: () => void }) {
+  const day = today();
+  const { cat, level } = tuneOf(day);
+  const meta = CATS.find((c) => c.id === cat)!;
+  const d = useDaily();
+  const mine = d.tunes[day]?.me;
+  const startedKey = `tf.tune.started.${day}`;
+  const [song, setSong] = useState<EarSong | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const t0 = useRef(0);
+  const saved = useRef(false);
+  const save = (ms: number | null, stage: number | null) => {
+    if (saved.current) return;
+    saved.current = true;
+    void saveTune(day, { ms, stage }).catch((e) => setErr((e as Error).message));
+  };
+  // Opened it before and left without an answer: that go counts as missed.
+  useEffect(() => {
+    let started = false;
+    try {
+      started = localStorage.getItem(startedKey) === "1";
+    } catch {
+      // ignore
+    }
+    if (started && !mine) save(null, null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (mine) return;
+    let alive = true;
+    loadDailyTune(day).then(
+      (s) => alive && setSong(s),
+      (e) => alive && setErr((e as Error).message),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [day, mine]);
+
+  // Keep the game up until you leave the reveal (your time is saved the moment you answer).
+  if (playing && song)
+    return (
+      <EarwormPlay
+        cat={cat}
+        level={level}
+        songs={[song]}
+        title={`Daily · ${meta.name}`}
+        onAnswer={(_, got) =>
+          save(got >= 0 ? Date.now() - t0.current : null, got >= 0 ? got : null)
+        }
+        onFinish={() => setPlaying(false)}
+        onClose={() => {
+          save(null, null);
+          setPlaying(false);
+        }}
+      />
+    );
+
+  const ranking = tuneRanking(d, day);
+  const me = ranking.find((r) => r.id === "me");
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto"
+      style={{
+        background: `radial-gradient(120% 70% at 50% -10%, ${meta.tone}40 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)`,
+      }}
+    >
+      <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col min-h-full">
+        <header className="flex items-center justify-between">
+          <span className="label-caps">today's tune</span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center"
+            style={{ color: "rgba(255,255,255,0.65)" }}
+          >
+            <X size={22} />
+          </button>
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center text-center">
+          <GameArt kind="earworm" size={96} />
+          <p className="font-black mt-4" style={{ fontSize: 28, color: "#fff" }}>
+            Name That Tune
+          </p>
+          <p className="mt-1 font-semibold" style={{ color: meta.tone }}>
+            {meta.emoji} {meta.name} · {level === "hard" ? "Hard" : "Medium"}
+          </p>
+          {mine ? (
+            <>
+              <p
+                className="display mt-8"
+                style={{ fontSize: 56, color: mine.ms != null ? LIME : "#FF8A98" }}
+              >
+                {mine.ms != null ? fmtSecs(mine.ms) : "Missed"}
+              </p>
+              <p className="mt-2" style={{ color: "rgba(255,255,255,0.7)" }}>
+                {mine.ms != null
+                  ? `You named it${me ? ` · #${me.rank} in your 25 today` : ""}`
+                  : "Better luck tomorrow. A new song every day."}
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-8 w-full rounded-2xl font-black"
+                style={{ background: LIME, color: "#14200A", minHeight: 54 }}
+              >
+                See today's board
+              </button>
+            </>
+          ) : (
+            <>
+              <p
+                className="mt-6 max-w-[300px]"
+                style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}
+              >
+                One song, the same for your whole 25. The clock starts when you tap Start. Quickest
+                to name it wins. One go: leaving counts as missed.
+              </p>
+              {err && (
+                <p className="mt-4" style={{ color: "#FF8A98" }}>
+                  {err}
+                </p>
+              )}
+              <button
+                disabled={!song}
+                onClick={() => {
+                  try {
+                    localStorage.setItem(startedKey, "1");
+                  } catch {
+                    // ignore
+                  }
+                  t0.current = Date.now();
+                  setPlaying(true);
+                }}
+                className="mt-8 w-full rounded-2xl font-black disabled:opacity-50"
+                style={{ background: LIME, color: "#14200A", minHeight: 56, fontSize: 17 }}
+              >
+                {song ? "Start" : err ? "Couldn't load" : "Getting today's song…"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

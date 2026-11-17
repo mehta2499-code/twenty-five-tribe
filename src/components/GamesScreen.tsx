@@ -1,5 +1,5 @@
 import { Tour } from "@/components/Tour";
-import { EarwormSetup, SoloEarworm } from "@/components/Earworm";
+import { DailyTune, EarwormSetup, SoloEarworm } from "@/components/Earworm";
 import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { PokerSetup } from "@/components/Poker";
@@ -372,6 +372,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   useDaily();
   const [daily, setDaily] = useState(false);
   const [wordDaily, setWordDaily] = useState(false);
+  const [tuneDaily, setTuneDaily] = useState(false);
   // Opened from a friend's Word Up card in chat: go straight to today's word.
   useEffect(() => {
     try {
@@ -428,8 +429,8 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           steps={[
             {
               at: 'section[aria-label="Daily games"]',
-              title: "Two games a day",
-              body: "A new mini game and a Word Up every day, same for your whole 25. Your place in each earns points.",
+              title: "Three games a day",
+              body: "A new mini game, a Word Up and a Name That Tune song every day, same for your whole 25. Your place in each earns points.",
             },
             {
               at: 'a[href="/app/arcade"]',
@@ -460,7 +461,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         title="Games"
         sub={
           mode === "home"
-            ? "Today's two games, same for your whole 25. Top the board."
+            ? "Today's three games, same for your whole 25. Top the board."
             : "Chess, Hold'em, Ludo, Trivia and more, live with your 25."
         }
       />
@@ -570,7 +571,11 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
       ) : (
         <>
           {live && <YourGames meId={s.me!.id} />}
-          <Scoreboard onPlayDaily={() => setDaily(true)} onPlayWord={() => setWordDaily(true)} />
+          <Scoreboard
+            onPlayDaily={() => setDaily(true)}
+            onPlayWord={() => setWordDaily(true)}
+            onPlayTune={() => setTuneDaily(true)}
+          />
         </>
       )}
 
@@ -812,6 +817,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
 
       {daily && <DailyRunner game={gameFor(today())} onClose={() => setDaily(false)} />}
       {wordDaily && <WordDaily onClose={() => setWordDaily(false)} />}
+      {tuneDaily && <DailyTune onClose={() => setTuneDaily(false)} />}
       {wordSheet && (
         <Sheet title="Set a secret word" onClose={() => setWordSheet(false)}>
           <p className="text-sm text-cool">

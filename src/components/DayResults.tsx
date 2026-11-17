@@ -1,8 +1,9 @@
 /**
  * Scores → Daily: one day at a time (flip back through the last 2 weeks).
  * A big card per daily game, like a game show: the game's art, a mini podium,
- * "Best player", then everyone's actual score in bright ranked pills
- * (tries used and points earned as chips). Then the day's points.
+ * "Best player" (only when there's one winner), then the top 3 and your own
+ * spot in bright ranked pills. Three daily games: the mini game, Word Up and
+ * Name That Tune.
  */
 import { Fragment, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Crown, Hourglass, Play, RotateCw } from "lucide-react";
@@ -10,10 +11,12 @@ import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
 import { PersonLink } from "@/components/PersonLink";
 import { GAMES } from "@/components/ArcadeGames";
-import { Leaderboard, withRanks, type LeaderRow } from "@/components/Leaderboard";
+import { withRanks } from "@/components/Leaderboard";
 import { friendById, meView } from "@/lib/social";
+import { tuneOf } from "@/lib/earworm";
 import {
   TRIES,
+  tuneRanking,
   addDays,
   dayRanking,
   gameFor,
@@ -79,9 +82,11 @@ type Row = {
 export function DayResults({
   onPlayDaily,
   onPlayWord,
+  onPlayTune,
 }: {
   onPlayDaily?: () => void;
   onPlayWord?: () => void;
+  onPlayTune?: () => void;
 }) {
   const d = useDaily();
   const [day, setDay] = useState(today());
@@ -124,18 +129,16 @@ export function DayResults({
       grid: w.grid,
     }));
 
-  // The day's points: both games together.
-  const totals: Record<string, number> = {};
-  for (const r of [...game, ...word]) totals[r.id] = (totals[r.id] ?? 0) + r.points;
-  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  const combined: LeaderRow[] = withRanks(sorted, ([, n]) => n).map(({ r: [pid, n], rank }) => ({
-    id: pid,
-    rank,
-    value: n,
-    link: true,
-    me: pid === "me",
-    ...person(pid),
+  // Name That Tune: quickest first.
+  const tune: Row[] = tuneRanking(d, day).map((r) => ({
+    id: r.id,
+    rank: r.rank,
+    score: r.ms != null ? `${(r.ms / 1000).toFixed(1)}s` : "✗",
+    points: r.points,
   }));
+  const playedTune = !!d.tunes[day]?.me;
+  const tuneDay = tuneOf(day);
+  const tuneCat = { bollywood: "Bollywood", punjabi: "Punjabi", english: "English" }[tuneDay.cat];
 
   const left = TRIES - myTries.length;
   const playedWord = !!d.words[day]?.me;
@@ -202,19 +205,24 @@ export function DayResults({
         empty={isToday ? "No one has cracked today's word yet." : "Nobody played Word Up this day."}
       />
 
-      {combined.length > 0 && (
-        <section className="mt-9">
-          <p className="label-caps text-center mb-4">{dayTitle(day)}'s points · both games</p>
-          {/* Top 3 on the podium, plus your own spot if you're further down. */}
-          <Leaderboard
-            rows={(() => {
-              const me = combined.find((r) => r.me);
-              const top = combined.slice(0, 3);
-              return me && !top.includes(me) ? [...top, me] : top;
-            })()}
-          />
-        </section>
-      )}
+      <GameCard
+        art="earworm"
+        name="Name That Tune"
+        bg="radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), transparent 55%), linear-gradient(160deg, #F2507B, #3A1A6B 120%)"
+        play={
+          isToday && !playedTune && onPlayTune
+            ? { label: `Play · ${tuneCat}`, onClick: onPlayTune }
+            : undefined
+        }
+        timer={isToday ? untilMidnight() : undefined}
+        rows={tune}
+        unit=""
+        empty={
+          isToday
+            ? `Today's song is ${tuneCat}. Name it fastest.`
+            : "Nobody played Name That Tune this day."
+        }
+      />
     </div>
   );
 }
@@ -367,7 +375,7 @@ function GameCard({
           </div>
 
           {/* Best player */}
-          {best.length > 0 && (
+          {best.length === 1 && (
             <div className="mt-4 flex items-center justify-center gap-2">
               <Branch />
               <div className="text-center">

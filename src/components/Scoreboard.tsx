@@ -10,7 +10,15 @@ import { Ico } from "@/components/Ico";
 import { Leaderboard, withRanks, type LeaderRow } from "@/components/Leaderboard";
 import { DayResults, wordDay } from "@/components/DayResults";
 import { friendById, meView, useSocial } from "@/lib/social";
-import { SEASON_DAYS, addDays, dayRanking, seasonOf, today, useDaily } from "@/lib/daily";
+import {
+  SEASON_DAYS,
+  addDays,
+  dayRanking,
+  seasonOf,
+  today,
+  tuneRanking,
+  useDaily,
+} from "@/lib/daily";
 import { Avatar } from "@/components/Avatar";
 import { Crown } from "lucide-react";
 import { track } from "@/lib/track";
@@ -82,9 +90,11 @@ function useLastChamps(season: number) {
 export function Scoreboard({
   onPlayDaily,
   onPlayWord,
+  onPlayTune,
 }: {
   onPlayDaily?: () => void;
   onPlayWord?: () => void;
+  onPlayTune?: () => void;
 } = {}) {
   const d = useDaily();
   useEffect(() => track("leaderboard_viewed"), []);
@@ -100,6 +110,7 @@ export function Scoreboard({
   for (let k = season.start; k <= day; k = addDays(k, 1)) {
     for (const r of dayRanking(d, k)) add(r.id, r.points);
     for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
+    for (const r of tuneRanking(d, k)) add(r.id, r.points);
   }
   const sorted = Object.entries(totals)
     .filter(([, n]) => n > 0)
@@ -143,7 +154,7 @@ export function Scoreboard({
 
       {view === "daily" ? (
         <div className="mt-5">
-          <DayResults onPlayDaily={onPlayDaily} onPlayWord={onPlayWord} />
+          <DayResults onPlayDaily={onPlayDaily} onPlayWord={onPlayWord} onPlayTune={onPlayTune} />
         </div>
       ) : rows.length === 0 ? (
         <div className="card mt-6 p-6 text-center">

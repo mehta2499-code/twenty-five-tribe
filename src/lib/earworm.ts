@@ -312,6 +312,56 @@ export function matchSongs(list: EarSong[], q: string, max = 6): EarSong[] {
     .map((h) => h.s);
 }
 
+// ---------- The daily song (third daily game) ----------
+/** Hindi, Punjabi, English, round and round; medium and hard take turns. */
+export function tuneOf(day: string): { cat: EarCat; level: "medium" | "hard" } {
+  const n = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
+  const cats: EarCat[] = ["bollywood", "punjabi", "english"];
+  return { cat: cats[((n % 3) + 3) % 3], level: n % 2 ? "hard" : "medium" };
+}
+
+/**
+ * Today's song, the same for everyone. The first person to open it picks it
+ * (from a handful of hits; the database skips any that were a daily song
+ * before), everyone after gets that one.
+ */
+export async function loadDailyTune(day: string): Promise<EarSong> {
+  const { cat, level } = tuneOf(day);
+  const { data: s0 } = await supabase.auth.getSession();
+  if (!s0.session) {
+    // Demo: a song from the built-in list, picked by the date.
+    const list = backupFor(cat);
+    const n = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
+    return list[n % list.length];
+  }
+  const { data: have } = await supabase
+    .from("daily_tunes" as never)
+    .select("song_id,title,artist")
+    .eq("day" as never, day as never)
+    .maybeSingle();
+  const row = have as { song_id: string; title: string; artist: string } | null;
+  if (row) return { id: row.song_id, title: row.title, artist: row.artist };
+  const r = await fetch(`/api/song?game=${cat}&n=6`, {
+    headers: await authHeader(),
+    signal: AbortSignal.timeout(8000),
+  });
+  const picks = r.ok ? asSongs(await r.json()).filter((x) => /^\d+$/.test(x.id)) : [];
+  if (!picks.length) throw new Error("Couldn't get today's song. Try again in a bit.");
+  const { data, error } = await supabase.rpc(
+    "claim_daily_tune" as never,
+    {
+      p_cat: cat,
+      p_level: level,
+      p_ids: picks.map((x) => x.id),
+      p_titles: picks.map((x) => x.title),
+      p_artists: picks.map((x) => x.artist),
+    } as never,
+  );
+  if (error) throw new Error(error.message);
+  const got = data as unknown as { song_id: string; title: string; artist: string };
+  return { id: got.song_id, title: got.title, artist: got.artist };
+}
+
 /** Type-ahead extra: anything on Deezer (for songs outside the list). */
 const searchCache = new Map<string, EarSong[]>();
 export async function searchSongs(q: string): Promise<EarSong[]> {
