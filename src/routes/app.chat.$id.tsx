@@ -221,7 +221,7 @@ function ChatThread() {
           <div
             ref={logRef}
             id="chat-log"
-            className="relative flex-1 overflow-y-auto px-3 pb-3 pt-2"
+            className="relative flex-1 overflow-y-auto overscroll-contain px-3 pb-3 pt-2"
             role="log"
             aria-live="polite"
             aria-label={`Conversation with ${f.name}`}

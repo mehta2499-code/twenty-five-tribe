@@ -207,31 +207,49 @@ function remember(songs: EarSong[]) {
  */
 export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
   const recent = recentIds();
-  try {
-    const skip = recent
-      .filter((id) => /^\d+$/.test(id))
-      .slice(0, 120)
-      .join(",");
-    const r = await fetch(`/api/song?game=${cat}&n=${n}&skip=${skip}`, {
-      headers: await authHeader(),
-      signal: within(6000),
-    });
-    if (r.ok) {
-      const songs = asSongs(await r.json());
-      if (songs.length >= n) {
-        remember(songs);
-        return songs;
+  // Fresh hits from the server (asked twice if it's slow).
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const skip = recent
+        .filter((id) => /^\d+$/.test(id))
+        .slice(0, 120)
+        .join(",");
+      const r = await fetch(`/api/song?game=${cat}&n=${n}&skip=${skip}`, {
+        headers: await authHeader(),
+        signal: within(attempt ? 15000 : 9000),
+      });
+      if (r.ok) {
+        const songs = asSongs(await r.json());
+        if (songs.length >= n) {
+          remember(songs);
+          return songs;
+        }
       }
+    } catch {
+      // try again, then the lists below
     }
-  } catch {
-    // backup below
   }
-  const pool = backupFor(cat);
-  const fresh = pool.filter((s) => !recent.includes(s.id));
-  const from = shuffle(fresh.length >= n * 2 ? fresh : pool);
-  const out = from.slice(0, n);
-  remember(out);
-  return out;
+  // Server slow or down: the category's big list kept on the phone (~1,000
+  // hits), then the small built-in one. Never the songs you had recently.
+  const big = await loadNames(cat).catch(() => [] as EarSong[]);
+  for (const pool of [big, backupFor(cat)]) {
+    const fresh = pool.filter((s) => !recent.includes(s.id));
+    const from = shuffle(fresh.length >= n * 3 ? fresh : pool);
+    const seen = new Set<string>();
+    const out: EarSong[] = [];
+    for (const s of from) {
+      const k = norm(s.title);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(s);
+      if (out.length >= n) break;
+    }
+    if (out.length >= n) {
+      remember(out);
+      return out;
+    }
+  }
+  return [];
 }
 
 /** Only well-formed songs (a bad or old answer never breaks the game). */

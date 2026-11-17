@@ -59,6 +59,54 @@ export function ChatScreen({ children, logId }: { children: React.ReactNode; log
       document.removeEventListener("focusout", late);
     };
   }, [logId]);
+  // Only the messages (and a long message box) scroll. Everything else is
+  // pinned: on iPhone, a drag that couldn't scroll anything (the header, the
+  // composer, or the list already at its end) used to drag the whole page.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const locked = [
+      document.documentElement,
+      document.body,
+      document.getElementById("app-scroll"),
+    ].filter(Boolean) as HTMLElement[];
+    const prev = locked.map((n) => [n.style.overflow, n.style.overscrollBehavior] as const);
+    locked.forEach((n) => {
+      n.style.overflow = "hidden";
+      n.style.overscrollBehavior = "none";
+    });
+    let startY = 0;
+    const onStart = (e: TouchEvent) => {
+      startY = e.touches[0]?.clientY ?? 0;
+    };
+    const onMove = (e: TouchEvent) => {
+      const dy = (e.touches[0]?.clientY ?? 0) - startY;
+      // The nearest thing under the finger that can scroll up/down.
+      let n = e.target as HTMLElement | null;
+      while (n && n !== el) {
+        const st = getComputedStyle(n);
+        if (/(auto|scroll)/.test(st.overflowY) && n.scrollHeight > n.clientHeight + 1) {
+          const atTop = n.scrollTop <= 0;
+          const atEnd = n.scrollTop + n.clientHeight >= n.scrollHeight - 1;
+          // It can scroll this way: let it.
+          if (!((dy > 0 && atTop) || (dy < 0 && atEnd))) return;
+          break;
+        }
+        n = n.parentElement;
+      }
+      if (e.cancelable) e.preventDefault();
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      locked.forEach((n, i) => {
+        n.style.overflow = prev[i][0];
+        n.style.overscrollBehavior = prev[i][1];
+      });
+    };
+  }, []);
   // Remember whether you're reading the newest messages.
   useEffect(() => {
     let log: HTMLElement | null = null;
@@ -86,7 +134,12 @@ export function ChatScreen({ children, logId }: { children: React.ReactNode; log
     <div
       ref={box}
       className="fixed inset-x-0 top-0 z-50 flex flex-col"
-      style={{ height: "100%", background: "#0B0A0D", overscrollBehavior: "none" }}
+      style={{
+        height: "100%",
+        background: "#0B0A0D",
+        overscrollBehavior: "none",
+        touchAction: "pan-y",
+      }}
     >
       {children}
     </div>

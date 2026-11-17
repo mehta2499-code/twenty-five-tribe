@@ -224,7 +224,7 @@ function GroupThread() {
           <div
             ref={logRef}
             id="group-log"
-            className="relative flex-1 overflow-y-auto px-2 pb-3 pt-2"
+            className="relative flex-1 overflow-y-auto overscroll-contain px-2 pb-3 pt-2"
             role="log"
             aria-live="polite"
           >

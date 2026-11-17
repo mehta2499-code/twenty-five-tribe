@@ -262,9 +262,7 @@ async function buildNames(cat: string): Promise<PoolSong[]> {
   const seen = new Set<string>();
   // Gently: 5 artists every 1.5 s, leaving room under Deezer's limit for games.
   for (let i = 0; i < ids.length; i += 5) {
-    const lists = await Promise.all(
-      ids.slice(i, i + 5).map((id) => artistTop(id).catch(() => [])),
-    );
+    const lists = await Promise.all(ids.slice(i, i + 5).map((id) => artistTop(id).catch(() => [])));
     for (const songs of lists)
       for (const s of songs) {
         const k = norm(s.title);
@@ -369,6 +367,9 @@ export const Route = createFileRoute("/api/song")({
     handlers: {
       GET: async ({ request }) => {
         if (!(await signedIn(request))) return json({ error: "Sign in first." }, 401, "no-store");
+        // Have every artist's top songs ready (cached for a day), so games
+        // get their songs instantly instead of waiting on Deezer.
+        warmUp();
         const u = new URL(request.url);
         const game = u.searchParams.get("game");
         if (game) {
@@ -380,7 +381,6 @@ export const Route = createFileRoute("/api/song")({
           const songs = await gameSongs(game, n, skip);
           return json(songs, 200, "no-store");
         }
-        warmUp();
         const namesOf = u.searchParams.get("names");
         if (namesOf) {
           if (!ARTISTS[namesOf]) return json({ error: "Unknown category." }, 400, "no-store");
