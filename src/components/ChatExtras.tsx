@@ -625,9 +625,11 @@ export function focusNoJump(el: HTMLTextAreaElement | HTMLInputElement | null) {
     border: "0",
     padding: "0",
   });
+  const vv = window.visualViewport;
+  // The keyboard is up once the visible area gets clearly shorter than now.
+  const before = vv?.height ?? window.innerHeight;
   document.body.appendChild(fake);
   fake.focus({ preventScroll: true });
-  const vv = window.visualViewport;
   let done = false;
   const finish = () => {
     if (done) return;
@@ -647,7 +649,7 @@ export function focusNoJump(el: HTMLTextAreaElement | HTMLInputElement | null) {
       }),
     );
   };
-  const onResize = () => keyboardUp() && finish();
+  const onResize = () => (vv?.height ?? window.innerHeight) < before - 100 && finish();
   vv?.addEventListener("resize", onResize);
   setTimeout(finish, 700);
 }

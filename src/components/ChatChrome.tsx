@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BarChart3, Camera, ChevronLeft, Images, Plus, Send, Sticker } from "lucide-react";
 import { GrowingInput, VoiceRecorder } from "@/components/ChatExtras";
-import { Sheet, useVisibleViewport } from "@/components/SocialUI";
+import { Sheet } from "@/components/SocialUI";
 import { dayKey } from "@/lib/social";
 
 export const BUBBLE_ME = "#33471A";
@@ -19,40 +19,74 @@ export const BUBBLE_THEM = "#26232F";
  * newest messages sit right above the message box.
  */
 export function ChatScreen({ children, logId }: { children: React.ReactNode; logId: string }) {
-  const vv = useVisibleViewport();
-  // Keyboard opening or closing: keep the newest messages in view if you were there.
-  const wasNearBottom = useRef(true);
+  const box = useRef<HTMLDivElement>(null);
+  // Always exactly the visible part of the screen (above the keyboard when it's
+  // up), set straight on the element on every change so it never lags behind.
+  // If the phone does scroll the page, we follow it rather than fight it.
   useEffect(() => {
-    const el = document.getElementById(logId);
+    const v = window.visualViewport;
+    const el = box.current;
     if (!el) return;
-    if (wasNearBottom.current) el.scrollTop = el.scrollHeight;
-    const on = () => {
-      wasNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    let raf = 0;
+    const fit = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const top = v ? v.offsetTop : 0;
+        const h = v && v.height > 120 ? v.height : window.innerHeight;
+        el.style.top = `${Math.round(top)}px`;
+        el.style.height = `${Math.round(h)}px`;
+        // Keyboard opening or closing: keep the newest messages in view if you were there.
+        const log = document.getElementById(logId);
+        if (log && log.dataset.nearBottom !== "0") log.scrollTop = log.scrollHeight;
+      });
     };
-    el.addEventListener("scroll", on, { passive: true });
-    return () => el.removeEventListener("scroll", on);
-  }, [vv?.height, logId]);
-  // Don't let the page underneath scroll (that's what moved the header).
-  useEffect(() => {
-    const settle = () => {
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
-    };
-    window.addEventListener("scroll", settle, { passive: true });
-    window.visualViewport?.addEventListener("resize", settle);
+    fit();
+    v?.addEventListener("resize", fit);
+    v?.addEventListener("scroll", fit);
+    window.addEventListener("resize", fit);
+    window.addEventListener("scroll", fit, { passive: true });
+    // And once more when typing starts/stops (some phones only settle then).
+    const late = () => setTimeout(fit, 350);
+    document.addEventListener("focusin", late);
+    document.addEventListener("focusout", late);
     return () => {
-      window.removeEventListener("scroll", settle);
-      window.visualViewport?.removeEventListener("resize", settle);
+      cancelAnimationFrame(raf);
+      v?.removeEventListener("resize", fit);
+      v?.removeEventListener("scroll", fit);
+      window.removeEventListener("resize", fit);
+      window.removeEventListener("scroll", fit);
+      document.removeEventListener("focusin", late);
+      document.removeEventListener("focusout", late);
     };
-  }, []);
+  }, [logId]);
+  // Remember whether you're reading the newest messages.
+  useEffect(() => {
+    let log: HTMLElement | null = null;
+    let raf = 0;
+    const on = () => {
+      if (log)
+        log.dataset.nearBottom =
+          log.scrollHeight - log.scrollTop - log.clientHeight < 80 ? "1" : "0";
+    };
+    const attach = () => {
+      log = document.getElementById(logId);
+      if (!log) {
+        raf = requestAnimationFrame(attach);
+        return;
+      }
+      log.addEventListener("scroll", on, { passive: true });
+    };
+    attach();
+    return () => {
+      cancelAnimationFrame(raf);
+      log?.removeEventListener("scroll", on);
+    };
+  }, [logId]);
   return (
     <div
-      className="fixed inset-x-0 z-50 flex flex-col"
-      style={{
-        top: vv ? vv.top : 0,
-        height: vv ? vv.height : "100%",
-        background: "#0B0A0D",
-        overscrollBehavior: "none",
-      }}
+      ref={box}
+      className="fixed inset-x-0 top-0 z-50 flex flex-col"
+      style={{ height: "100%", background: "#0B0A0D", overscrollBehavior: "none" }}
     >
       {children}
     </div>
