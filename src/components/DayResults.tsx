@@ -6,7 +6,15 @@
  * Name That Tune.
  */
 import { Fragment, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Crown, Hourglass, Play, RotateCw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Hourglass,
+  Play,
+  RotateCw,
+} from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { GameArt } from "@/components/GameArt";
 import { PersonLink } from "@/components/PersonLink";
@@ -158,7 +166,7 @@ export function DayResults({
         </button>
         <h3
           className="display uppercase text-center"
-          style={{ fontSize: 34, lineHeight: 1, letterSpacing: "-0.01em" }}
+          style={{ fontSize: 26, lineHeight: 1, letterSpacing: "-0.01em" }}
         >
           {dayTitle(day)}
         </h3>
@@ -207,12 +215,10 @@ export function DayResults({
 
       <GameCard
         art="earworm"
-        name="Name That Tune"
+        name={`Name That Tune · ${tuneCat}`}
         bg="radial-gradient(circle at 50% 40%, rgba(255,255,255,0.28), transparent 55%), linear-gradient(160deg, #F2507B, #3A1A6B 120%)"
         play={
-          isToday && !playedTune && onPlayTune
-            ? { label: `Play · ${tuneCat}`, onClick: onPlayTune }
-            : undefined
+          isToday && !playedTune && onPlayTune ? { label: "Play", onClick: onPlayTune } : undefined
         }
         timer={isToday ? untilMidnight() : undefined}
         rows={tune}
@@ -256,12 +262,14 @@ function GameCard({
   const [a, b, c] = rows;
   const best = rows.filter((r) => r.rank === 1);
   const [all, setAll] = useState(false);
+  // The board is folded away, so all three games fit on screen.
+  const [open, setOpen] = useState(false);
   const mineRow = rows.find((r) => r.id === "me");
   const shortList =
     mineRow && rows.indexOf(mineRow) >= 3 ? [...rows.slice(0, 3), mineRow] : rows.slice(0, 3);
   return (
-    <section className="mt-6">
-      {/* The game: big art on a bright card, name on a sticker. */}
+    <section className="mt-3">
+      {/* The game: art on a bright card, name on a sticker. */}
       <div
         {...(play
           ? {
@@ -281,7 +289,7 @@ function GameCard({
           play ? "cursor-pointer active:scale-[0.98] transition-transform" : ""
         }`}
         style={{
-          height: 200,
+          height: 112,
           background: bg,
           border: "3px solid rgba(255,255,255,0.18)",
           boxShadow: "0 18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)",
@@ -303,9 +311,9 @@ function GameCard({
           className="absolute right-16 top-6 w-6 h-6 rotate-45 rounded-[4px]"
           style={{ background: "rgba(255,255,255,0.18)" }}
         />
-        <div className="absolute inset-0 flex items-center justify-center pb-6">
+        <div className="absolute inset-0 flex items-center justify-center pb-7">
           <span className="day-art-float">
-            <GameArt kind={art} size={118} />
+            <GameArt kind={art} size={60} />
           </span>
         </div>
         {play && (
@@ -345,11 +353,11 @@ function GameCard({
           </span>
         )}
         <span
-          className="absolute left-1/2 bottom-3 -translate-x-1/2 rounded-[14px] px-4 py-1.5 font-black uppercase whitespace-nowrap"
+          className="absolute left-1/2 bottom-2.5 -translate-x-1/2 rounded-[12px] px-3.5 py-1 font-black uppercase whitespace-nowrap"
           style={{
             background: "#fff",
             color: "#14121C",
-            fontSize: 16,
+            fontSize: 14,
             letterSpacing: "0.02em",
             border: "3px solid #14121C",
             boxShadow: "0 4px 0 #14121C",
@@ -360,8 +368,29 @@ function GameCard({
       </div>
 
       {rows.length === 0 ? (
-        <span className="sr-only">{empty}</span>
+        <p className="meta text-center mt-2" style={{ fontSize: 12.5 }}>
+          {empty}
+        </p>
       ) : (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-full py-2 font-bold"
+          style={{ background: "var(--fill)", fontSize: 13.5, color: "var(--ink)" }}
+        >
+          {open ? "Hide leaderboard" : "View leaderboard"}
+          <span className="meta font-semibold" style={{ fontSize: 12.5 }}>
+            · {rows.length} played
+            {mineRow ? ` · you're #${mineRow.rank}` : ""}
+          </span>
+          <ChevronDown
+            size={17}
+            aria-hidden="true"
+            style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform 0.2s" }}
+          />
+        </button>
+      )}
+      {rows.length > 0 && open && (
         <>
           {/* Mini podium: 2nd · 1st (crowned) · 3rd */}
           <div className="mt-6 flex items-end justify-center gap-4">
