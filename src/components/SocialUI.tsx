@@ -235,7 +235,7 @@ export function Sheet({
 }
 
 /** The visible part of the screen (shrinks when the keyboard opens). */
-function useVisibleViewport() {
+export function useVisibleViewport() {
   const [vv, setVv] = useState<{ top: number; height: number } | null>(null);
   useEffect(() => {
     const v = window.visualViewport;

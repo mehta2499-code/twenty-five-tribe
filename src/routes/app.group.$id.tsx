@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Bubble,
   ChatHeader,
+  ChatScreen,
   ChatWallpaper,
   Composer,
   DayPill,
@@ -197,7 +198,7 @@ function GroupThread() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#0B0A0D" }}>
+    <ChatScreen logId="group-log">
       <div className="relative mx-auto w-full max-w-md flex flex-col h-full app-column overflow-hidden">
         <ChatWallpaper />
         <ChatHeader onBack={() => navigate({ to: "/app/chats" })}>
@@ -849,6 +850,6 @@ function GroupThread() {
         />
       )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
-    </div>
+    </ChatScreen>
   );
 }

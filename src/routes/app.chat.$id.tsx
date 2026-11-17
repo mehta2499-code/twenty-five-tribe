@@ -38,6 +38,7 @@ import {
   BUBBLE_THEM,
   Bubble,
   ChatHeader,
+  ChatScreen,
   ChatWallpaper,
   Composer,
   DayPill,
@@ -190,7 +191,7 @@ function ChatThread() {
     !!a && !!b && a.from === b.from && dayKey(a.at) === dayKey(b.at) && b.at - a.at < 5 * 60_000;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#0B0A0D" }}>
+    <ChatScreen logId="chat-log">
       <div className="relative mx-auto w-full max-w-md flex flex-col h-full app-column overflow-hidden">
         <ChatWallpaper />
         <ChatHeader onBack={() => navigate({ to: "/app/chats" })} unread={unreadElsewhere}>
@@ -516,7 +517,7 @@ function ChatThread() {
         />
       )}
       {notice && <Toast text={notice} onDone={() => setNotice(null)} />}
-    </div>
+    </ChatScreen>
   );
 }
 

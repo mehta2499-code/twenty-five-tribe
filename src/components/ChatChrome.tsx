@@ -2,15 +2,62 @@
  * The chat screen's look, shared by 1:1 and group chats: wallpaper, header,
  * date pills, bubbles with tails, and the composer (+ · message · camera · mic).
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BarChart3, Camera, ChevronLeft, Images, Plus, Send, Sticker } from "lucide-react";
 import { GrowingInput, VoiceRecorder } from "@/components/ChatExtras";
-import { Sheet } from "@/components/SocialUI";
+import { Sheet, useVisibleViewport } from "@/components/SocialUI";
 import { dayKey } from "@/lib/social";
 
 export const BUBBLE_ME = "#33471A";
 export const BUBBLE_THEM = "#26232F";
+
+/**
+ * The whole chat screen. When the keyboard opens, iPhones slide the page up
+ * instead of shrinking it, which pushed the header off the top. This fits the
+ * screen to the part above the keyboard instead, so the name stays put and the
+ * newest messages sit right above the message box.
+ */
+export function ChatScreen({ children, logId }: { children: React.ReactNode; logId: string }) {
+  const vv = useVisibleViewport();
+  // Keyboard opening or closing: keep the newest messages in view if you were there.
+  const wasNearBottom = useRef(true);
+  useEffect(() => {
+    const el = document.getElementById(logId);
+    if (!el) return;
+    if (wasNearBottom.current) el.scrollTop = el.scrollHeight;
+    const on = () => {
+      wasNearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener("scroll", on, { passive: true });
+    return () => el.removeEventListener("scroll", on);
+  }, [vv?.height, logId]);
+  // Don't let the page underneath scroll (that's what moved the header).
+  useEffect(() => {
+    const settle = () => {
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+    };
+    window.addEventListener("scroll", settle, { passive: true });
+    window.visualViewport?.addEventListener("resize", settle);
+    return () => {
+      window.removeEventListener("scroll", settle);
+      window.visualViewport?.removeEventListener("resize", settle);
+    };
+  }, []);
+  return (
+    <div
+      className="fixed inset-x-0 z-50 flex flex-col"
+      style={{
+        top: vv ? vv.top : 0,
+        height: vv ? vv.height : "100%",
+        background: "#0B0A0D",
+        overscrollBehavior: "none",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 /** The doodle wallpaper behind every chat. It stays put while messages scroll. */
 export function ChatWallpaper() {
