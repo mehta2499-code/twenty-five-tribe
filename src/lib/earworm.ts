@@ -167,6 +167,18 @@ async function authHeader(): Promise<Record<string, string>> {
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
+/**
+ * A signal that gives up after `ms`. (AbortSignal.timeout isn't on iPhones
+ * before iOS 16; there it broke loading songs.)
+ */
+export function within(ms: number): AbortSignal {
+  if (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal)
+    return (AbortSignal as unknown as { timeout: (n: number) => AbortSignal }).timeout(ms);
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
+
 const backupFor = (cat: EarCat): EarSong[] =>
   BACKUP[cat].map(([title, artist]) => ({ id: `q:${title}|${artist}`, title, artist }));
 
@@ -202,7 +214,7 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
       .join(",");
     const r = await fetch(`/api/song?game=${cat}&n=${n}&skip=${skip}`, {
       headers: await authHeader(),
-      signal: AbortSignal.timeout(6000),
+      signal: within(6000),
     });
     if (r.ok) {
       const songs = asSongs(await r.json());
@@ -253,7 +265,7 @@ export function loadNames(cat: EarCat): Promise<EarSong[]> {
     try {
       const r = await fetch(`/api/song?names=${cat}`, {
         headers: await authHeader(),
-        signal: AbortSignal.timeout(20000),
+        signal: within(20000),
       });
       if (!r.ok) return null;
       const songs = asSongs(await r.json());
@@ -350,7 +362,7 @@ export async function loadDailyTune(day: string): Promise<EarSong> {
     try {
       const r = await fetch(`/api/song?game=${cat}&n=6`, {
         headers: await authHeader(),
-        signal: AbortSignal.timeout(20000),
+        signal: within(20000),
       });
       if (r.ok) picks = asSongs(await r.json()).filter((x) => /^\d+$/.test(x.id));
     } catch {
@@ -383,7 +395,7 @@ export async function searchSongs(q: string): Promise<EarSong[]> {
   try {
     const r = await fetch(`/api/song?q=${encodeURIComponent(key)}`, {
       headers: await authHeader(),
-      signal: AbortSignal.timeout(5000),
+      signal: within(5000),
     });
     if (!r.ok) return [];
     const found = asSongs(await r.json());
@@ -398,6 +410,8 @@ export const allBackup = (): EarSong[] => (Object.keys(BACKUP) as EarCat[]).flat
 
 export type Preview = {
   url: string;
+  /** The streamed link, kept when `url` is a downloaded copy (fallback). */
+  stream?: string;
   title: string;
   artist: string;
   cover: string | null;
@@ -411,7 +425,7 @@ export async function loadPreview(s: EarSong): Promise<Preview | null> {
   try {
     const r = await fetch(`/api/song?${q}`, {
       headers: await authHeader(),
-      signal: AbortSignal.timeout(8000),
+      signal: within(8000),
     });
     if (!r.ok) return null;
     const h = (await r.json()) as {
@@ -446,10 +460,12 @@ export function loadClip(s: EarSong): Promise<Preview | null> {
     run = loadPreview(s).then(async (p) => {
       if (!p) return null;
       try {
-        const r = await fetch(p.url, { signal: AbortSignal.timeout(12000) });
+        const r = await fetch(p.url, { signal: within(12000) });
         if (!r.ok) return p;
         const blob = await r.blob();
-        return { ...p, url: URL.createObjectURL(blob) };
+        // Only keep it if it's really audio (an error page would never play).
+        if (!/^audio\//.test(blob.type) || blob.size < 1000) return p;
+        return { ...p, url: URL.createObjectURL(blob), stream: p.url };
       } catch {
         return p;
       }

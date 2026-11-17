@@ -360,6 +360,7 @@ export function EarwormPlay({
   useEffect(() => {
     let alive = true;
     setPreview(undefined);
+    setPlayErr(null);
     void loadClip(song).then((p) => alive && setPreview(p));
     // Get the next one ready too.
     const nextSong = songs[k + 1];
@@ -383,6 +384,8 @@ export function EarwormPlay({
     setPlaying(false);
   };
   const starting = useRef(false);
+  // Why the clip didn't play, shown under the record (null = all good).
+  const [playErr, setPlayErr] = useState<string | null>(null);
   const play = (seconds: number) => {
     const a = audio.current;
     if (!a || !preview) return;
@@ -390,20 +393,54 @@ export function EarwormPlay({
     // Already starting: a second tap shouldn't queue another play.
     if (starting.current) return;
     starting.current = true;
+    setPlayErr(null);
     a.pause();
-    a.currentTime = 0;
+    try {
+      a.currentTime = 0;
+    } catch {
+      // not loaded far enough to seek yet; it starts from 0 anyway
+    }
     stopAt.current = seconds;
-    void a.play().then(
-      () => {
-        starting.current = false;
-        setStartedAt(performance.now());
-        setPlaying(true);
-      },
-      () => {
-        starting.current = false;
-        setPlaying(false);
-      },
-    );
+    // Never leave the button stuck: if the phone hasn't started it in 4 s,
+    // free it up and say so (slow network, or the clip didn't load).
+    const guard = setTimeout(() => {
+      if (!starting.current) return;
+      starting.current = false;
+      setPlayErr("The clip is taking long to load. Tap the record again.");
+      a.load();
+    }, 4000);
+    const p = a.play();
+    const ok = () => {
+      clearTimeout(guard);
+      if (!starting.current) return;
+      starting.current = false;
+      setStartedAt(performance.now());
+      setPlaying(true);
+    };
+    const fail = (e: unknown) => {
+      clearTimeout(guard);
+      starting.current = false;
+      setPlaying(false);
+      const name = (e as { name?: string })?.name;
+      setPlayErr(
+        name === "NotAllowedError"
+          ? "Your phone blocked the sound. Tap the record again (and check it isn't on silent)."
+          : "Couldn't play this clip. Tap the record to try again.",
+      );
+    };
+    // Very old browsers don't return a promise from play().
+    if (p && typeof p.then === "function") void p.then(ok, fail);
+    else ok();
+  };
+  // The downloaded copy won't play on this phone: switch to streaming it.
+  const onAudioError = () => {
+    if (preview?.url.startsWith("blob:") && preview.stream) {
+      setPreview({ ...preview, url: preview.stream });
+      return;
+    }
+    starting.current = false;
+    setPlaying(false);
+    setPlayErr("Couldn't play this clip. Tap the record to try again.");
   };
   // Stop exactly at the end of the clip.
   useEffect(() => {
@@ -480,7 +517,9 @@ export function EarwormPlay({
         background: `radial-gradient(120% 70% at 50% -10%, ${meta.tone}40 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)`,
       }}
     >
-      {preview && <audio ref={audio} src={preview.url} preload="auto" />}
+      {preview && (
+        <audio ref={audio} src={preview.url} preload="auto" playsInline onError={onAudioError} />
+      )}
       <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col min-h-full">
         {/* Top: close · title · score */}
         <header className="flex items-center justify-between">
@@ -648,6 +687,15 @@ export function EarwormPlay({
                     ? "Listen…"
                     : `Tap the record · ${stages[stage]}s clip`}
               </p>
+              {playErr && !playing && (
+                <p
+                  className="mt-2 text-center max-w-[280px]"
+                  style={{ fontSize: 12.5, color: "#FF8A98" }}
+                  role="status"
+                >
+                  {playErr}
+                </p>
+              )}
             </div>
 
             <div className="mt-6">
