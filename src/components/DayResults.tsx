@@ -7,6 +7,7 @@
  */
 import { Fragment, useEffect, useState } from "react";
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -191,9 +192,13 @@ export function DayResults({
         }
         play={
           isToday && left > 0 && onPlayDaily
-            ? { label: myTries.length ? "Retry?" : "Play", onClick: onPlayDaily }
+            ? {
+                label: myTries.length ? `Try again · ${myTries.length}/${TRIES}` : "Play",
+                onClick: onPlayDaily,
+              }
             : undefined
         }
+        done={isToday && left <= 0 ? `${TRIES}/${TRIES} done` : undefined}
         timer={isToday ? untilMidnight() : undefined}
         rows={game}
         unit={revealed ? g.unit : "pts"}
@@ -207,6 +212,7 @@ export function DayResults({
         play={
           isToday && !playedWord && onPlayWord ? { label: "Play", onClick: onPlayWord } : undefined
         }
+        done={isToday && playedWord ? "Played" : undefined}
         timer={isToday ? untilMidnight() : undefined}
         rows={word}
         unit=""
@@ -220,6 +226,7 @@ export function DayResults({
         play={
           isToday && !playedTune && onPlayTune ? { label: "Play", onClick: onPlayTune } : undefined
         }
+        done={isToday && playedTune ? "Played" : undefined}
         timer={isToday ? untilMidnight() : undefined}
         rows={tune}
         unit=""
@@ -245,6 +252,7 @@ function GameCard({
   name,
   bg,
   play,
+  done,
   timer,
   rows,
   unit,
@@ -254,6 +262,8 @@ function GameCard({
   name: string;
   bg: string;
   play?: { label: string; onClick: () => void };
+  /** You've used all your goes today ("3/3 tries done", "Played"). */
+  done?: string;
   timer?: string;
   rows: Row[];
   unit: string;
@@ -335,6 +345,27 @@ function GameCard({
               <Play size={11} fill="currentColor" aria-hidden="true" />
             </span>
             {play.label}
+          </span>
+        )}
+        {!play && done && (
+          <span
+            className="absolute left-3 top-3 flex items-center gap-1 rounded-full pl-1.5 pr-3 py-1 font-extrabold"
+            style={{
+              background: "rgba(10,10,16,0.55)",
+              color: "#fff",
+              fontSize: 13,
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+            aria-label={done}
+          >
+            <span
+              className="w-5 h-5 rounded-full flex items-center justify-center"
+              style={{ background: "var(--lime)", color: "#14200A" }}
+            >
+              <Check size={12} strokeWidth={3.5} aria-hidden="true" />
+            </span>
+            {done}
           </span>
         )}
         {timer && (
