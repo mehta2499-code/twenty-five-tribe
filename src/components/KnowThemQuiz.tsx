@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { shuffle } from "@/lib/utils";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, buzz } from "@/components/SocialUI";
@@ -64,9 +65,7 @@ export function KnowThemQuiz({
       try {
         if (demo) {
           const ids = [
-            ...VIBE_QUESTIONS.map((q) => q.id)
-              .sort(() => Math.random() - 0.5)
-              .slice(0, QUIZ_SIZE - 1),
+            ...shuffle(VIBE_QUESTIONS.map((q) => q.id)).slice(0, QUIZ_SIZE - 1),
             "bday_month",
           ];
           setPhase({

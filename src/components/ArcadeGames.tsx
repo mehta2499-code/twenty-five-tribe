@@ -1,4 +1,5 @@
 import { useDoing } from "@/lib/status";
+import { shuffle } from "@/lib/utils";
 import { sfx, useGameMusic } from "@/lib/sfx";
 import { SoundToggle } from "@/components/SoundToggle";
 import { Glyph3D } from "@/components/Glyph3D";
@@ -275,7 +276,8 @@ function makeQuestion() {
   const answer = op === "+" ? a + b : a * b;
   const opts = new Set([answer]);
   while (opts.size < 4) opts.add(answer + (Math.floor(Math.random() * 11) - 5 || 7));
-  return { text: `${a} ${op} ${b}`, answer, options: [...opts].sort(() => Math.random() - 0.5) };
+  // A fair shuffle: the right answer can be in any of the four spots.
+  return { text: `${a} ${op} ${b}`, answer, options: shuffle([...opts]) };
 }
 
 function QuickMath({ onFinish, onClose }: RoundProps) {
@@ -283,15 +285,23 @@ function QuickMath({ onFinish, onClose }: RoundProps) {
   const [score, setScore] = useState(0);
   const [q, setQ] = useState(makeQuestion);
   const [flash, setFlash] = useState<"right" | "wrong" | null>(null);
+  // A wrong answer costs a point and a short pause, so tapping blindly doesn't pay.
+  const [locked, setLocked] = useState(false);
   const left = useCountdown(30, !over, () => setOver(true));
   useFinish(over, score, onFinish);
 
   const pick = (n: number) => {
+    if (locked) return;
     const right = n === q.answer;
     if (right) setScore((s) => s + 1);
-    else buzz(30);
+    else {
+      buzz(30);
+      setScore((s) => Math.max(0, s - 1));
+      setLocked(true);
+      setTimeout(() => setLocked(false), 600);
+    }
     setFlash(right ? "right" : "wrong");
-    setTimeout(() => setFlash(null), 250);
+    setTimeout(() => setFlash(null), right ? 250 : 600);
     setQ(makeQuestion());
   };
 
@@ -326,7 +336,8 @@ function QuickMath({ onFinish, onClose }: RoundProps) {
               <button
                 key={n}
                 onClick={() => pick(n)}
-                className="card py-5 display tabular-nums active:scale-95 transition"
+                disabled={locked}
+                className="card py-5 display tabular-nums active:scale-95 transition disabled:opacity-40"
                 style={{ fontSize: 26 }}
               >
                 {n}
@@ -349,7 +360,7 @@ const CLASH_COLOURS = [
 
 function clashRound() {
   const word = CLASH_COLOURS[Math.floor(Math.random() * CLASH_COLOURS.length)];
-  const match = Math.random() < 0.45;
+  const match = Math.random() < 0.5;
   const ink = match ? word : CLASH_COLOURS.filter((c) => c !== word)[Math.floor(Math.random() * 3)];
   return { word: word.name, ink: ink.value, match };
 }
@@ -359,13 +370,21 @@ function ColourClash({ onFinish, onClose }: RoundProps) {
   const [score, setScore] = useState(0);
   const [q, setQ] = useState(clashRound);
   const [flash, setFlash] = useState<"right" | "wrong" | null>(null);
+  const [locked, setLocked] = useState(false);
   const left = useCountdown(30, !over, () => setOver(true));
   useFinish(over, score, onFinish);
 
   const answer = (saysMatch: boolean) => {
+    if (locked) return;
     const right = saysMatch === q.match;
     if (right) setScore((n) => n + 1);
-    else buzz(30);
+    else {
+      // Wrong costs a point and a short pause, so mashing one button doesn't pay.
+      buzz(30);
+      setScore((n) => Math.max(0, n - 1));
+      setLocked(true);
+      setTimeout(() => setLocked(false), 500);
+    }
     setFlash(right ? "right" : "wrong");
     setTimeout(() => setFlash(null), 220);
     setQ(clashRound());
@@ -402,14 +421,16 @@ function ColourClash({ onFinish, onClose }: RoundProps) {
           <div className="mt-8 grid grid-cols-2 gap-3">
             <button
               onClick={() => answer(false)}
-              className="btn-secondary"
+              disabled={locked}
+              className="btn-secondary disabled:opacity-40"
               style={{ minHeight: 64, fontSize: 18 }}
             >
               No match
             </button>
             <button
               onClick={() => answer(true)}
-              className="btn-primary"
+              disabled={locked}
+              className="btn-primary disabled:opacity-40"
               style={{ minHeight: 64, fontSize: 18 }}
             >
               Match

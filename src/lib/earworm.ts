@@ -4,6 +4,7 @@
  * builds big pools from Deezer's hit playlists; the lists here are a backup).
  */
 import { supabase } from "@/integrations/supabase/client";
+import { shuffle } from "@/lib/utils";
 
 export type EarCat = "bollywood" | "punjabi" | "english";
 export type EarLevel = "easy" | "medium" | "hard" | "mix";
@@ -215,7 +216,7 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
   }
   const pool = backupFor(cat);
   const fresh = pool.filter((s) => !recent.includes(s.id));
-  const from = [...(fresh.length >= n * 2 ? fresh : pool)].sort(() => Math.random() - 0.5);
+  const from = shuffle(fresh.length >= n * 2 ? fresh : pool);
   const out = from.slice(0, n);
   remember(out);
   return out;
