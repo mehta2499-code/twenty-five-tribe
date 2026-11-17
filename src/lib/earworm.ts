@@ -317,7 +317,8 @@ export function matchSongs(list: EarSong[], q: string, max = 6): EarSong[] {
 export function tuneOf(day: string): { cat: EarCat; level: "medium" | "hard" } {
   const n = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000);
   const cats: EarCat[] = ["bollywood", "punjabi", "english"];
-  return { cat: cats[((n % 3) + 3) % 3], level: n % 2 ? "hard" : "medium" };
+  // (+1 so the run starts on Bollywood, 17 Nov 2026.)
+  return { cat: cats[(((n + 1) % 3) + 3) % 3], level: n % 2 ? "hard" : "medium" };
 }
 
 /**
