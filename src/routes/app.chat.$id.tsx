@@ -49,6 +49,7 @@ import { Avatar } from "@/components/Avatar";
 import { Toast, clientOnly } from "@/components/SocialUI";
 import {
   EarlierButton,
+  focusNoJump,
   useRecent,
   useStickToBottom,
   MediaBubble,
@@ -166,7 +167,7 @@ function ChatThread() {
   const whoColor = (m: ChatMessage) => (m.from === "me" ? "var(--lime)" : "#7FD3FF");
   const reply = (m: ChatMessage) => {
     setReplyTo(m);
-    document.getElementById("chat-input")?.focus();
+    focusNoJump(document.getElementById("chat-input") as HTMLTextAreaElement | null);
   };
   const forwardTargets: ForwardTarget[] = [
     ...mutualFriends().map((p) => ({

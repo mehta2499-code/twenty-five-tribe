@@ -589,6 +589,69 @@ export async function sendMedia(friendId: string, file: File) {
  * Enter adds a new line on phones; on a keyboard, Enter sends and
  * Shift+Enter adds a line.
  */
+const isIOS = () =>
+  typeof navigator !== "undefined" &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+const keyboardUp = () => {
+  const vv = typeof window !== "undefined" ? window.visualViewport : null;
+  return !!vv && vv.height < window.innerHeight - 60;
+};
+
+/**
+ * Focus a text box without iPhone's jump. Safari scrolls the page up to make
+ * room for the keyboard and only then can the chat re-fit, so the screen
+ * flashes. Instead: open the keyboard on an invisible box at the very top
+ * (nothing to scroll for), let the chat fit above the keyboard, then move the
+ * cursor to the real box, which is already in view.
+ */
+export function focusNoJump(el: HTMLTextAreaElement | HTMLInputElement | null) {
+  if (!el) return;
+  if (!isIOS() || document.activeElement === el || keyboardUp()) {
+    el.focus({ preventScroll: true });
+    return;
+  }
+  const fake = document.createElement("input");
+  fake.setAttribute("aria-hidden", "true");
+  fake.tabIndex = -1;
+  Object.assign(fake.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "1px",
+    height: "1px",
+    opacity: "0",
+    fontSize: "16px",
+    border: "0",
+    padding: "0",
+  });
+  document.body.appendChild(fake);
+  fake.focus({ preventScroll: true });
+  const vv = window.visualViewport;
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    vv?.removeEventListener("resize", onResize);
+    // Two frames: let the chat re-fit above the keyboard first.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        el.focus({ preventScroll: true });
+        const end = el.value.length;
+        try {
+          el.setSelectionRange(end, end);
+        } catch {
+          // some inputs don't have a cursor
+        }
+        fake.remove();
+      }),
+    );
+  };
+  const onResize = () => keyboardUp() && finish();
+  vv?.addEventListener("resize", onResize);
+  setTimeout(finish, 700);
+}
+
 export function GrowingInput({
   value,
   onChange,
@@ -630,6 +693,12 @@ export function GrowingInput({
           e.preventDefault();
           if (value.trim()) onSend();
         }
+      }}
+      // iPhone: tapping in opens the keyboard without the page jumping.
+      onTouchEnd={(e) => {
+        if (!isIOS() || document.activeElement === e.currentTarget) return;
+        e.preventDefault();
+        focusNoJump(e.currentTarget);
       }}
       aria-label={label}
       className={

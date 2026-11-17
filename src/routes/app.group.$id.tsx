@@ -35,6 +35,7 @@ import { PersonLink } from "@/components/PersonLink";
 import { FriendPicker, Sheet, Toast, clientOnly } from "@/components/SocialUI";
 import {
   EarlierButton,
+  focusNoJump,
   useRecent,
   useStickToBottom,
   MediaBubble,
@@ -133,7 +134,7 @@ function GroupThread() {
   const whoColor = (m: M) => (m.from === "me" ? "var(--lime)" : tone(m.from));
   const reply = (m: M) => {
     setReplyTo(m);
-    boxRef.current?.focus();
+    focusNoJump(boxRef.current);
   };
   const forwardTargets: ForwardTarget[] = [
     ...mutualFriends().map((p) => ({
