@@ -27,6 +27,7 @@ import {
   loadDrops,
   phaseOf,
   postDrop,
+  addSecondDrop,
   toggleDropLike,
   type DropPost,
 } from "@/lib/drop";
@@ -73,6 +74,10 @@ function DropScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const [party, setParty] = useState(0);
   const shootRef = useRef<HTMLInputElement>(null);
+  // Your second Drop of the day (two max).
+  const secondRef = useRef<HTMLInputElement>(null);
+  const [image2, setImage2] = useState<string | null>(null);
+  const [caption2, setCaption2] = useState("");
 
   const reload = () => void loadDrops().then(setData);
   const [open, setOpen] = useState<string | null>(null);
@@ -92,7 +97,7 @@ function DropScreen() {
       <PageBand
         ring
         title="The 25 Drop"
-        sub="Once a day, at a surprise time. 10 minutes. One real photo. Post yours to see theirs."
+        sub="Once a day, at a surprise time. 10 minutes to post a real photo (and one more later, if you like). Post yours to see theirs."
         actions={
           <Link
             to="/app/recap"
@@ -268,6 +273,95 @@ function DropScreen() {
       )}
 
       {data.mine && (
+        <section className="px-5 mb-4">
+          <div className="flex items-center gap-3">
+            {(data.mine.streak ?? 0) > 0 && (
+              <span
+                className="sticker !text-[13px] shrink-0"
+                style={{ transform: "rotate(-3deg)" }}
+                aria-label={`Your Drop streak: day ${data.mine.streak}`}
+              >
+                🔥 Day {data.mine.streak}
+              </span>
+            )}
+            {!data.mine.image2 && !image2 && (
+              <button
+                onClick={() => secondRef.current?.click()}
+                className="flex-1 btn-secondary min-h-[44px] text-[14px]"
+              >
+                <Camera size={17} aria-hidden="true" /> Add a second Drop · 1 left today
+              </button>
+            )}
+            {data.mine.image2 && (
+              <span className="meta text-[13px]">
+                Both of today's Drops are in. See you tomorrow.
+              </span>
+            )}
+          </div>
+          <input
+            ref={secondRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (f) setImage2(await fileToImage(f, 1080));
+              e.target.value = "";
+            }}
+          />
+          {image2 && (
+            <div className="mt-3 card p-3">
+              <div
+                className="relative rounded-2xl overflow-hidden"
+                style={{ aspectRatio: "3 / 4" }}
+              >
+                <img
+                  src={image2}
+                  alt="Your second drop"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => setImage2(null)}
+                  className="absolute top-3 left-3 btn-quiet min-h-[36px] px-3 text-sm"
+                  style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}
+                >
+                  Cancel
+                </button>
+              </div>
+              <input
+                value={caption2}
+                onChange={(e) => setCaption2(e.target.value.slice(0, 120))}
+                placeholder="Caption (optional)"
+                className="input mt-3 w-full"
+              />
+              <button
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await addSecondDrop(image2, caption2);
+                    setImage2(null);
+                    setCaption2("");
+                    buzz(30);
+                    reload();
+                  } catch (e) {
+                    setToast((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                className="btn-primary w-full mt-3"
+                style={{ minHeight: 50 }}
+              >
+                {busy ? "Dropping…" : "Drop it"}
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {data.mine && (
         <section className="px-5">
           <div className="grid grid-cols-2 gap-3">
             <DropCard post={data.mine} onOpen={() => setOpen(data.mine!.id)} />
@@ -333,6 +427,24 @@ function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
             </>
           )}
         </span>
+        {(post.streak ?? 0) > 0 && (
+          <span
+            className="absolute top-2 right-2 rounded-full px-2 py-0.5 font-extrabold text-[11px]"
+            style={{ background: "rgba(0,0,0,0.62)", color: "#fff" }}
+            aria-label={`Day ${post.streak} in a row`}
+          >
+            🔥 Day {post.streak}
+          </span>
+        )}
+        {post.image2 && (
+          <span
+            className="absolute bottom-2 right-2 rounded-full w-6 h-6 flex items-center justify-center font-black text-[12px]"
+            style={{ background: "var(--lime)", color: "var(--on-accent)", border: "var(--bd)" }}
+            aria-label="Two photos"
+          >
+            2
+          </span>
+        )}
       </div>
       <figcaption className="p-2.5 flex items-center gap-2">
         <Avatar
@@ -375,6 +487,13 @@ function DropViewer({
   onChanged: () => void;
 }) {
   const by = personOf(post.id);
+  // Two Drops today? Tap either side (or the dots) to switch.
+  const pages = [
+    { image: post.image, caption: post.caption },
+    ...(post.image2 ? [{ image: post.image2, caption: post.caption2 ?? "" }] : []),
+  ];
+  const [page, setPage] = useState(0);
+  const cur = pages[Math.min(page, pages.length - 1)];
   const [likes, setLikes] = useState(post.likes ?? []);
   const [comments, setComments] = useState(post.comments ?? []);
   const [text, setText] = useState("");
@@ -418,6 +537,7 @@ function DropViewer({
                   <Ico i={Zap} size={11} /> on time
                 </>
               )}
+              {(post.streak ?? 0) > 0 && <> · 🔥 Day {post.streak}</>}
             </span>
           </span>
           <button
@@ -429,18 +549,45 @@ function DropViewer({
           </button>
         </header>
         <div className="relative flex-1 min-h-0" onDoubleClick={() => !liked && like()}>
-          {post.image && (
+          {cur.image && (
             <img
+              key={page}
               loading="lazy"
               decoding="async"
-              src={post.image}
+              src={cur.image}
               alt=""
               className="absolute inset-0 w-full h-full object-contain"
             />
           )}
+          {pages.length > 1 && (
+            <>
+              <button
+                aria-label="First Drop"
+                onClick={() => setPage(0)}
+                className="absolute inset-y-0 left-0 w-1/3"
+              />
+              <button
+                aria-label="Second Drop"
+                onClick={() => setPage(1)}
+                className="absolute inset-y-0 right-0 w-1/3"
+              />
+              <div className="absolute top-2 inset-x-0 flex justify-center gap-1.5">
+                {pages.map((_, i) => (
+                  <span
+                    key={i}
+                    className="h-1 rounded-full"
+                    style={{
+                      width: 36,
+                      background: i === page ? "#fff" : "rgba(255,255,255,0.35)",
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
         <div className="px-4 pt-3 text-white">
-          {post.caption && <p className="text-[15px]">{post.caption}</p>}
+          {cur.caption && <p className="text-[15px]">{cur.caption}</p>}
           <div className="flex items-center gap-4 mt-2">
             <button
               onClick={like}

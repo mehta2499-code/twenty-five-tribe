@@ -5,9 +5,69 @@ import { Avatar } from "@/components/Avatar";
 import { PersonLink } from "@/components/PersonLink";
 import { Sheet, buzz } from "@/components/SocialUI";
 import { mentionQuery } from "@/lib/groups";
-import { social, useSocial, type Person, type Poll } from "@/lib/social";
+import { meView, personView, social, useSocial, type Person, type Poll } from "@/lib/social";
 
 export const MAX_CHARS = 280;
+
+// ---------- Who voted for what (Scenes polls) ----------
+/**
+ * The poll's author sees everyone; others see their own vote and their mutual
+ * 25's (the server only sends those). The rest show as a count.
+ */
+function PollVotes({ poll, onClose }: { poll: Poll; onClose: () => void }) {
+  const by = poll.by ?? poll.options.map(() => []);
+  return (
+    <div className="relative z-[70]">
+      <Sheet title="Votes" onClose={onClose}>
+        <div className="grid gap-4 pb-2">
+          {poll.options.map((o, i) => {
+            const ids = by[i] ?? [];
+            const hidden = Math.max(0, (poll.counts[i] ?? 0) - ids.length);
+            return (
+              <div key={i}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="font-bold text-cream" style={{ overflowWrap: "anywhere" }}>
+                    {o}
+                  </p>
+                  <span className="meta tabular-nums shrink-0">
+                    {poll.counts[i] ?? 0} vote{(poll.counts[i] ?? 0) === 1 ? "" : "s"}
+                  </span>
+                </div>
+                {ids.length > 0 && (
+                  <ul className="mt-2 grid gap-1.5">
+                    {ids.map((id) => {
+                      const p = id === "me" ? meView() : personView(id);
+                      return (
+                        <li key={id} className="flex items-center gap-2.5">
+                          <Avatar
+                            src={p?.avatar}
+                            initials={p?.initials ?? "?"}
+                            color={p && "color" in p ? (p.color as string | undefined) : undefined}
+                            size={30}
+                          />
+                          <span className="font-semibold truncate">
+                            {id === "me" ? "You" : (p?.name ?? "Someone")}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {hidden > 0 && (
+                  <p className="meta mt-1.5" style={{ fontSize: 12.5 }}>
+                    {ids.length ? "+" : ""}
+                    {hidden} {ids.length ? "other" : "vote"}
+                    {hidden === 1 ? "" : "s"} from people outside your mutual 25
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Sheet>
+    </div>
+  );
+}
 
 // ---------- Text with @tags ----------
 export function useHandles() {
@@ -200,6 +260,9 @@ export function PollView({
   // multiple choice, tap more options to add them.
   const voted = poll.mine.length > 0;
   const total = poll.counts.reduce((a, b) => a + b, 0);
+  // Scenes polls: who voted for what (as much as you're allowed to see).
+  const [votesOpen, setVotesOpen] = useState(false);
+  const showVotes = onShowVotes ?? (poll.by ? () => setVotesOpen(true) : undefined);
   const tap = (i: number) => {
     buzz(12);
     if (onVote) onVote(i);
@@ -285,10 +348,10 @@ export function PollView({
           {poll.voters} vote{poll.voters === 1 ? "" : "s"}
           {poll.multi ? " · Pick one or more" : ""}
         </span>
-        {onShowVotes && poll.voters > 0 && (
+        {showVotes && poll.voters > 0 && (
           <button
             type="button"
-            onClick={onShowVotes}
+            onClick={showVotes}
             className="ml-auto font-bold"
             style={{ color: "var(--lime)", fontSize: 12.5 }}
           >
@@ -296,6 +359,7 @@ export function PollView({
           </button>
         )}
       </div>
+      {votesOpen && <PollVotes poll={poll} onClose={() => setVotesOpen(false)} />}
     </div>
   );
 }

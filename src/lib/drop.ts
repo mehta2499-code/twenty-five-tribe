@@ -1,6 +1,7 @@
 /**
  * The 25 Drop: once a day, at a surprise time (same for everyone, 10:00–22:00
- * India time), everyone gets 10 minutes to post one unfiltered photo.
+ * India time), everyone gets 10 minutes to post an unfiltered photo, and can add
+ * one more later that day (two max). Each Drop shows the poster's streak.
  * You only see your mutual 25's drops after posting yours.
  */
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +22,14 @@ export type DropPost = {
   at: number;
   likes?: string[];
   comments?: DropComment[];
+  /** A second photo added later the same day. */
+  image2?: string;
+  caption2?: string;
+  at2?: number;
+  /** Days in a row they've dropped ("Day 20"). */
+  streak?: number;
 };
+export const MAX_DROPS_A_DAY = 2;
 
 function hash(s: string) {
   let h = 2166136261;
@@ -94,7 +102,7 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
   }
   const { data } = await supabase
     .from("drops")
-    .select("user_id,image_path,caption,late_minutes,created_at")
+    .select("user_id,image_path,caption,late_minutes,created_at,image_path_2,caption_2,at_2")
     .eq("day", day);
   const rows = (data ?? []) as {
     user_id: string;
@@ -102,8 +110,14 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
     caption: string;
     late_minutes: number;
     created_at: string;
+    image_path_2?: string | null;
+    caption_2?: string | null;
+    at_2?: string | null;
   }[];
-  const urls = await signedMedia(rows.map((r) => r.image_path));
+  const [urls, streaks] = await Promise.all([
+    signedMedia(rows.flatMap((r) => [r.image_path, r.image_path_2 ?? ""]).filter(Boolean)),
+    loadStreaks(rows.map((r) => r.user_id)),
+  ]);
   const me = s.me?.id;
   const who = (id: string) => (id === me ? "me" : id);
   const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
@@ -133,11 +147,47 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
     caption: r.caption,
     late: r.late_minutes,
     at: Date.parse(r.created_at),
+    image2: r.image_path_2 ? (urls[r.image_path_2] ?? "") : undefined,
+    caption2: r.caption_2 ?? undefined,
+    at2: r.at_2 ? Date.parse(r.at_2) : undefined,
+    streak: streaks[r.user_id],
   }));
   return {
     mine: posts.find((p) => p.id === "me") ?? null,
     others: posts.filter((p) => p.id !== "me").sort((a, b) => a.at - b.at),
   };
+}
+
+/** Days in a row each person has dropped (you and your mutual 25 only). */
+export async function loadStreaks(ids: string[]): Promise<Record<string, number>> {
+  if (!ids.length || _get().mode !== "live") return {};
+  const { data } = await supabase.rpc("drop_streaks" as never, { p_users: ids } as never);
+  const out: Record<string, number> = {};
+  for (const r of (data ?? []) as { user_id: string; streak: number }[]) out[r.user_id] = r.streak;
+  return out;
+}
+
+/** Your second Drop today (two max). */
+export async function addSecondDrop(image: string, caption: string) {
+  const s = _get();
+  if (s.mode !== "live") {
+    const saved = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null");
+    if (!saved || saved.day !== today()) throw new Error("Post your first Drop first.");
+    if (saved.image2) throw new Error("Two Drops a day is the max.");
+    localStorage.setItem(
+      DEMO_KEY,
+      JSON.stringify({ ...saved, image2: image, caption2: caption, at2: Date.now() }),
+    );
+    return;
+  }
+  const path = await uploadMedia(image, "jpg");
+  const { error } = await supabase
+    .from("drops")
+    .update({ image_path_2: path, caption_2: caption.slice(0, 120) } as never)
+    .eq("user_id", s.me!.id)
+    .eq("day", today());
+  if (error)
+    throw new Error(/max/i.test(error.message) ? "Two Drops a day is the max." : error.message);
 }
 
 export async function postDrop(image: string, caption: string, at: number) {

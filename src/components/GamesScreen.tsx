@@ -8,7 +8,6 @@ import type { PokerState } from "@/lib/poker";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  ChevronRight,
   Crown,
   Music,
   CircleHelp,
@@ -435,7 +434,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             {
               at: 'a[href="/app/arcade"]',
               title: "Play with your 25",
-              body: "Judgement, Trivia duels, Ludo, Imposter and Word Up 1 vs 1 live here. Just for fun.",
+              body: "Chess, Hold'em, Ludo, Trivia, Name That Tune and more live in this tab. Tap it any time.",
             },
           ]}
         />
@@ -456,11 +455,16 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           ]}
         />
       )}
-      {mode === "home" ? (
-        <PageBand ring title="Games" sub="Today's games. Beat your 25." />
-      ) : (
-        <PageBand back title="Play with your 25" sub="Live games. Just for fun, no leaderboard." />
-      )}
+      <PageBand
+        ring
+        title="Games"
+        sub={
+          mode === "home"
+            ? "Today's two games, same for your whole 25. Top the board."
+            : "Chess, Hold'em, Ludo, Trivia and more, live with your 25."
+        }
+      />
+      <GamesTabs mode={mode} />
       {mode === "more" ? (
         <>
           {live && <YourGames meId={s.me!.id} />}
@@ -565,7 +569,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         </>
       ) : (
         <>
-          <MoreGamesCard />
+          {live && <YourGames meId={s.me!.id} />}
           <Scoreboard onPlayDaily={() => setDaily(true)} onPlayWord={() => setWordDaily(true)} />
         </>
       )}
@@ -869,39 +873,59 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
 }
 
 /** Games home → the live games with your 25 (Judgement, Trivia, Ludo, Imposter, Word Up 1v1). */
-function MoreGamesCard() {
+/**
+ * The two halves of Games, always one tap away: today's daily games (and the
+ * leaderboard), and every game you play with your 25.
+ */
+function GamesTabs({ mode }: { mode: "home" | "more" }) {
+  const tabs = [
+    {
+      to: "/app/games",
+      label: "Today's games",
+      sub: "Daily + scores",
+      art: "quick-math",
+      on: mode === "home",
+    },
+    {
+      to: "/app/arcade",
+      label: "Play with your 25",
+      sub: "Live games",
+      art: "chess",
+      on: mode === "more",
+    },
+  ] as const;
   return (
-    <div className="px-5 mt-1">
-      <Link
-        to="/app/arcade"
-        className="flex items-center gap-3 rounded-[22px] pl-3 pr-4 py-3"
-        style={{
-          background:
-            "linear-gradient(120deg, rgba(122,162,255,0.22), rgba(242,125,166,0.18) 60%, rgba(193,239,98,0.14))",
-          border: "1px solid var(--line)",
-        }}
-      >
-        <span className="flex -space-x-3 shrink-0" aria-hidden="true">
-          {(["kachuful", "trivia", "ludo"] as const).map((k) => (
-            <span
-              key={k}
-              className="w-11 h-11 rounded-[14px] flex items-center justify-center"
-              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-            >
-              <GameArt kind={k} size={30} />
+    <nav className="px-5 mt-1 grid grid-cols-2 gap-2.5" aria-label="Games">
+      {tabs.map((t) => (
+        <Link
+          key={t.to}
+          to={t.to}
+          replace
+          aria-current={t.on ? "page" : undefined}
+          className="flex items-center gap-2.5 rounded-[18px] px-3 py-2.5 transition-colors"
+          style={{
+            background: t.on ? "var(--lime)" : "var(--surface)",
+            color: t.on ? "var(--on-accent)" : "var(--ink)",
+            border: t.on ? "var(--bd)" : "1px solid var(--line)",
+            boxShadow: t.on ? "var(--pop-sm)" : undefined,
+          }}
+        >
+          <span
+            className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
+            style={{ background: t.on ? "rgba(0,0,0,0.12)" : "var(--fill)" }}
+          >
+            <GameArt kind={t.art} size={28} />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-extrabold leading-tight" style={{ fontSize: 14.5 }}>
+              {t.label}
             </span>
-          ))}
-        </span>
-        <span className="flex-1 min-w-0">
-          <span className="block font-extrabold text-cream" style={{ fontSize: 15.5 }}>
-            Play with your 25
+            <span className="block truncate" style={{ fontSize: 11.5, opacity: t.on ? 0.75 : 0.6 }}>
+              {t.sub}
+            </span>
           </span>
-          <span className="block meta truncate" style={{ fontSize: 12.5 }}>
-            Judgement, Trivia, Ludo, Imposter & more
-          </span>
-        </span>
-        <ChevronRight size={20} aria-hidden="true" />
-      </Link>
-    </div>
+        </Link>
+      ))}
+    </nav>
   );
 }

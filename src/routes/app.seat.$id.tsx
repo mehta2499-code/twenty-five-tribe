@@ -1,4 +1,7 @@
 import { NowPlayingCard } from "@/components/NowPlaying";
+import { loadStreaks } from "@/lib/drop";
+import { loadRivalry, type Rivalry } from "@/lib/rivalry";
+import { GameArt, type ArtKind } from "@/components/GameArt";
 import { isListening } from "@/lib/music";
 import { KnowsBest, QuizBadge } from "@/components/QuizBadges";
 import { SeasonBadge } from "@/components/SeasonBadge";
@@ -13,7 +16,7 @@ import { PersonMenu } from "@/components/Safety";
 import { bdayLabel, daysUntil, useBirthdays } from "@/lib/birthdays";
 import { Avatar } from "@/components/Avatar";
 import { clientOnly } from "@/components/SocialUI";
-import { friendById, isMutual, useSocial } from "@/lib/social";
+import { friendById, isMutual, meView, useSocial } from "@/lib/social";
 import { GAMES } from "@/components/ArcadeGames";
 import { dayRanking, gameFor, thisWeek, today, useDaily, weekStandings } from "@/lib/daily";
 
@@ -50,7 +53,7 @@ function LiveSeat() {
   const todayRows = dayRanking(daily, today());
   const avg = (who: string) => todayRows.find((r) => r.id === who)?.best;
   const rivalry = [
-    { label: "This week's points", you: pts("me")?.points, them: pts(id)?.points },
+    { label: "Daily games · this week's points", you: pts("me")?.points, them: pts(id)?.points },
     { label: "Days won", you: pts("me")?.wins, them: pts(id)?.wins },
     { label: `Today · ${GAMES[gameFor(today())].name}`, you: avg("me"), them: avg(id) },
   ];
@@ -193,23 +196,166 @@ function LiveSeat() {
         </Link>
       </div>
 
-      <section className="px-5 mt-8">
-        <p className="label-caps mb-2">this week's rivalry</p>
-        <ul className="card-editorial divide-y" style={{ borderColor: "var(--border-cool)" }}>
-          {rivalry.map(({ label, them, you }) => (
-            <li key={label} className="flex items-center justify-between px-4 py-3 text-sm">
-              <span className="font-semibold text-cream">{label}</span>
-              <span className="tabular-nums text-cool">
-                You {you ?? "–"} · {f.name.split(" ")[0]} {them ?? "–"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <DropStreak id={id} name={f.name.split(" ")[0]} />
+      <HeadToHead
+        id={id}
+        name={f.name.split(" ")[0]}
+        them={{ avatar: f.avatar || undefined, initials: f.initials, color: f.color }}
+        week={rivalry}
+      />
       <MyProveIt id={id} name={f.name.split(" ")[0]} />
       {mutual && <KnowsBest userId={id} title={`Knows ${f.name.split(" ")[0]} best`} />}
       {menu && <PersonMenu person={f} onClose={() => setMenu(false)} />}
     </div>
+  );
+}
+
+/** Their Drop streak: days in a row they've posted a Drop. */
+function DropStreak({ id, name }: { id: string; name: string }) {
+  const [n, setN] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadStreaks([id]).then(
+      (r) => alive && setN(r[id] ?? 0),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+  if (!n) return null;
+  return (
+    <section className="px-5 mt-6">
+      <div className="card-editorial px-4 py-3 flex items-center gap-3">
+        <span style={{ fontSize: 26 }} aria-hidden="true">
+          🔥
+        </span>
+        <span className="flex-1">
+          <span className="block font-extrabold text-cream">Drop streak · Day {n}</span>
+          <span className="block meta text-[12.5px]">
+            {name} has posted a Drop {n} day{n === 1 ? "" : "s"} in a row.
+          </span>
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * You vs them: every game you've finished together (who won how many), and
+ * this week's daily games underneath.
+ */
+function HeadToHead({
+  id,
+  name,
+  them,
+  week,
+}: {
+  id: string;
+  name: string;
+  them: { avatar?: string; initials: string; color?: string };
+  week: { label: string; you?: number; them?: number }[];
+}) {
+  const [games, setGames] = useState<Rivalry | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setGames(null);
+    loadRivalry(id).then(
+      (r) => alive && setGames(r),
+      () => alive && setGames([]),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+  const me = meView();
+  const you = games?.reduce((a, g) => a + g.you, 0) ?? 0;
+  const they = games?.reduce((a, g) => a + g.them, 0) ?? 0;
+  return (
+    <section className="px-5 mt-8">
+      <p className="label-caps mb-2">head to head</p>
+      <div className="card-editorial overflow-hidden">
+        {/* The big score */}
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+          <span className="flex items-center gap-2.5 min-w-0">
+            <Avatar src={me.avatar} initials={me.initials} size={40} />
+            <span className="font-bold text-cream">You</span>
+          </span>
+          <span
+            className="display tabular-nums shrink-0"
+            style={{ fontSize: 30, lineHeight: 1 }}
+            aria-label={`You ${you}, ${name} ${they}`}
+          >
+            <span style={{ color: you >= they && you ? "var(--lime)" : undefined }}>{you}</span>
+            <span className="text-faint mx-1.5">–</span>
+            <span style={{ color: they > you ? "var(--pink)" : undefined }}>{they}</span>
+          </span>
+          <span className="flex items-center gap-2.5 min-w-0 justify-end">
+            <span className="font-bold text-cream truncate">{name}</span>
+            <Avatar src={them.avatar} initials={them.initials} color={them.color} size={40} />
+          </span>
+        </div>
+        {/* Game by game */}
+        {games === null ? (
+          <p className="meta px-4 pb-4">Counting…</p>
+        ) : games.length === 0 ? (
+          <p className="meta px-4 pb-4">
+            No games together yet. Challenge {name} from Games → Play with your 25.
+          </p>
+        ) : (
+          <ul className="px-4 pb-3 grid gap-2.5">
+            {games.map((g) => {
+              const total = g.you + g.them;
+              return (
+                <li key={g.kind} className="flex items-center gap-3">
+                  <GameArt kind={g.kind as ArtKind} size={30} />
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-baseline justify-between">
+                      <span className="font-semibold text-cream text-[14px]">{g.name}</span>
+                      <span className="font-extrabold tabular-nums text-[14px]">
+                        <span style={{ color: g.you > g.them ? "var(--lime)" : undefined }}>
+                          {g.you}
+                        </span>
+                        <span className="text-faint"> – </span>
+                        <span style={{ color: g.them > g.you ? "var(--pink)" : undefined }}>
+                          {g.them}
+                        </span>
+                      </span>
+                    </span>
+                    <span
+                      className="mt-1 flex h-1.5 rounded-full overflow-hidden"
+                      style={{ background: "var(--fill)" }}
+                      aria-hidden="true"
+                    >
+                      <span
+                        style={{ width: `${(g.you / total) * 100}%`, background: "var(--lime)" }}
+                      />
+                      <span
+                        style={{ width: `${(g.them / total) * 100}%`, background: "var(--pink)" }}
+                      />
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {/* This week's daily games */}
+        <ul
+          className="divide-y"
+          style={{ borderTop: "1px solid var(--border-cool)", borderColor: "var(--border-cool)" }}
+        >
+          {week.map(({ label, them: t, you: y }) => (
+            <li key={label} className="flex items-center justify-between px-4 py-2.5 text-[13px]">
+              <span className="text-cool">{label}</span>
+              <span className="tabular-nums font-semibold text-cream">
+                {y ?? "–"} – {t ?? "–"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -229,7 +375,7 @@ function MyProveIt({ id, name }: { id: string; name: string }) {
       alive = false;
     };
   }, [id]);
-  if (!res) return null;
+  if (!res || !Array.isArray(res.wrong)) return null;
   const n = res.wrong.length;
   return (
     <section className="px-5 mt-8">

@@ -468,16 +468,33 @@ async function loadAll() {
           ).catch(() => [] as VoteRow[]),
         ])
       : [[], [], []];
-    // Poll results per scene: counts, your picks, how many voted.
+    // Poll totals come from the server (everyone's votes); the votes we can
+    // see one by one are ours, our mutual 25's, or everyone's on our own polls.
+    const pollIds = postRows.filter((p) => p.poll_options?.length).map((p) => p.id);
+    const totals = pollIds.length
+      ? (((await supabase.rpc("poll_counts" as never, { p_ids: pollIds } as never)).data ?? []) as {
+          post_id: string;
+          option: number;
+          n: number;
+          voters: number;
+        }[])
+      : [];
     const pollFor = (p: PostRow): Poll | undefined => {
       if (!p.poll_options?.length) return undefined;
       const vs = (votes as VoteRow[]).filter((v) => v.post_id === p.id);
+      const t = totals.filter((x) => x.post_id === p.id);
+      const seen = (i: number) => vs.filter((v) => v.option === i).length;
       return {
         options: p.poll_options,
         multi: !!p.poll_multi,
-        counts: p.poll_options.map((_, i) => vs.filter((v) => v.option === i).length),
+        counts: p.poll_options.map((_, i) =>
+          Math.max(seen(i), t.find((x) => x.option === i)?.n ?? 0),
+        ),
         mine: vs.filter((v) => v.user_id === me).map((v) => v.option),
-        voters: new Set(vs.map((v) => v.user_id)).size,
+        voters: Math.max(new Set(vs.map((v) => v.user_id)).size, t[0]?.voters ?? 0),
+        by: p.poll_options.map((_, i) =>
+          vs.filter((v) => v.option === i).map((v) => (v.user_id === me ? "me" : v.user_id)),
+        ),
       };
     };
     const mediaUrls = await signed(
