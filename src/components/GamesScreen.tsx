@@ -1,12 +1,12 @@
 import { Tour } from "@/components/Tour";
-import { DailyTune, EarwormSetup, SoloEarworm } from "@/components/Earworm";
+import { DailyTune, EarwormSetup, SoloEarworm, SongsLoading } from "@/components/Earworm";
 import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { PokerSetup } from "@/components/Poker";
 import type { ChessState } from "@/lib/chess";
 import type { PokerState } from "@/lib/poker";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { GameArt, type ArtKind } from "@/components/GameArt";
 import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
@@ -348,6 +348,9 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [daily, setDaily] = useState(false);
   const [wordDaily, setWordDaily] = useState(false);
   const [tuneDaily, setTuneDaily] = useState(false);
+  // Picking songs for a Name That Tune with friends (shows the loader).
+  const [earLoading, setEarLoading] = useState<EarCat | null>(null);
+  const earTicket = useRef(0);
   // Opened from a friend's Word Up card in chat: go straight to today's word.
   useEffect(() => {
     try {
@@ -522,13 +525,29 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           }}
           onChallenge={async (friends, cat, level) => {
             setEar(false);
+            // Show the loader while the songs are picked (it can take a few seconds).
+            const ticket = Date.now();
+            earTicket.current = ticket;
+            setEarLoading(cat);
             try {
               const songs = await pickGameSongs(cat);
+              if (earTicket.current !== ticket) return; // cancelled
               const id = await startEarworm(friends, cat, level, songs);
               navigate({ to: "/app/play/$id", params: { id } });
             } catch (e) {
               setToast((e as Error).message);
+            } finally {
+              if (earTicket.current === ticket) setEarLoading(null);
             }
+          }}
+        />
+      )}
+      {earLoading && (
+        <SongsLoading
+          cat={earLoading}
+          onCancel={() => {
+            earTicket.current = 0;
+            setEarLoading(null);
           }}
         />
       )}

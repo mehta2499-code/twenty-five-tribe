@@ -25,6 +25,7 @@ import {
   isRight,
   loadClip,
   pickGameSongs,
+  prefetchGameSongs,
   searchSongs,
   loadNames,
   matchSongs,
@@ -52,6 +53,11 @@ export function EarwormSetup({
   onChallenge: (friends: Person[], cat: EarCat, level: EarLevel) => void;
 }) {
   const [cat, setCat] = useState<EarCat>("bollywood");
+  // Get this category's songs going now, so Play is quick.
+  useEffect(() => {
+    prefetchGameSongs(cat);
+    void loadNames(cat);
+  }, [cat]);
   const [level, setLevel] = useState<EarLevel>("medium");
   const [picking, setPicking] = useState(false);
   const friends = mutualFriends();
@@ -1273,15 +1279,7 @@ export function SoloEarworm({
         onClose={onClose}
       />
     );
-  if (!songs)
-    return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ background: "#09080D" }}
-      >
-        <p className="meta">Picking songs…</p>
-      </div>
-    );
+  if (!songs) return <SongsLoading cat={cat} onCancel={onClose} />;
   return (
     <EarwormPlay
       key={round}
@@ -1291,6 +1289,79 @@ export function SoloEarworm({
       onClose={onClose}
       onFinish={(r, done) => setEnd({ r, done })}
     />
+  );
+}
+
+// ---------- While a game's songs are being picked ----------
+/**
+ * A spinning record and a message that changes the longer it takes (fresh
+ * songs can take a few seconds to come back), with a way out.
+ */
+export function SongsLoading({ cat, onCancel }: { cat: EarCat; onCancel: () => void }) {
+  const meta = CATS.find((c) => c.id === cat)!;
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSecs((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const line =
+    secs < 3
+      ? `Picking ${SONGS_PER_GAME} ${meta.name} hits…`
+      : secs < 8
+        ? "Finding fresh songs you haven't heard…"
+        : "Taking a little longer than usual. Hang tight, it's worth it…";
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center px-8 text-center"
+      style={{
+        background: `radial-gradient(120% 70% at 50% -10%, ${meta.tone}40 0%, transparent 60%), linear-gradient(180deg, #121019 0%, #09080D 100%)`,
+      }}
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        aria-hidden="true"
+        className="relative rounded-full vinyl-spin"
+        style={{
+          width: 150,
+          height: 150,
+          background:
+            "repeating-radial-gradient(circle at 50% 50%, #151318 0 2px, #1D1B21 2px 4px), #18161B",
+          boxShadow: `0 0 0 5px ${meta.tone}33, 0 16px 50px rgba(0,0,0,0.7), 0 0 50px ${meta.tone}44`,
+        }}
+      >
+        <span
+          className="absolute rounded-full"
+          style={{
+            inset: "33%",
+            background: `radial-gradient(circle at 35% 30%, #fff8 0%, transparent 45%), ${meta.tone}`,
+          }}
+        />
+        <span className="absolute rounded-full" style={{ inset: "47.5%", background: "#09080D" }} />
+      </span>
+      <p className="mt-8 font-extrabold" style={{ fontSize: 18, color: "#fff" }}>
+        {meta.emoji} Name That Tune
+      </p>
+      <p
+        key={line}
+        className="mt-2 ear-pop"
+        style={{ fontSize: 14.5, color: "rgba(255,255,255,0.7)", maxWidth: 280 }}
+      >
+        {line}
+      </p>
+      {secs >= 8 && (
+        <p className="mt-1.5" style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)" }}>
+          Sometimes the music service is slow. It usually takes a few seconds.
+        </p>
+      )}
+      <button
+        onClick={onCancel}
+        className="mt-8 rounded-full px-5 py-2 font-bold"
+        style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }}
+      >
+        Cancel
+      </button>
+    </div>
   );
 }
 

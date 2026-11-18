@@ -205,7 +205,29 @@ function remember(songs: EarSong[]) {
  * category and a random hit from each, skipping ones you had recently.
  * Falls back to the backup list if Deezer can't be reached.
  */
+/**
+ * Start picking a game's songs early (when a category is chosen on the setup
+ * screen), so they're often ready by the time Play is tapped.
+ */
+const early = new Map<EarCat, { at: number; run: Promise<EarSong[]> }>();
+export function prefetchGameSongs(cat: EarCat) {
+  const e = early.get(cat);
+  if (e && Date.now() - e.at < 5 * 60_000) return;
+  const run = fetchGameSongs(cat);
+  early.set(cat, { at: Date.now(), run });
+  run.catch(() => early.delete(cat));
+}
 export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
+  const e = early.get(cat);
+  if (e && n === SONGS_PER_GAME && Date.now() - e.at < 5 * 60_000) {
+    // Anyone asking at the same moment shares it; it's used up once it lands.
+    const songs = await e.run.catch(() => [] as EarSong[]);
+    setTimeout(() => early.get(cat) === e && early.delete(cat), 1000);
+    if (songs.length >= n) return songs;
+  }
+  return fetchGameSongs(cat, n);
+}
+async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
   const recent = recentIds();
   // Fresh hits from the server (asked twice if it's slow).
   for (let attempt = 0; attempt < 2; attempt++) {
