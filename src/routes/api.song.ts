@@ -120,7 +120,7 @@ const cache = new Map<string, { at: number; hit: SongHit | null }>();
 const searches = new Map<string, { at: number; songs: PoolSong[] }>();
 
 // ---------- Songs for a game ----------
-export type PoolSong = { id: string; title: string; artist: string };
+export type PoolSong = { id: string; title: string; artist: string; g?: 1 };
 /** Hand-picked big artists for each category (Deezer artist ids). */
 const ARTISTS: Record<string, number[]> = {
   // Arijit Singh, Shreya Ghoshal, Sonu Nigam, Atif Aslam, Neha Kakkar, Jubin Nautiyal…
@@ -258,24 +258,35 @@ const names = new Map<string, { at: number; songs: PoolSong[] }>();
 const namesRun = new Map<string, Promise<PoolSong[]>>();
 async function buildNames(cat: string): Promise<PoolSong[]> {
   const ids = ARTISTS[cat] ?? [];
-  const out: (PoolSong & { rank: number })[] = [];
+  const out: (PoolSong & { rank: number; g?: 1 })[] = [];
   const seen = new Set<string>();
+  const floor = FLOOR[cat] ?? 0;
   // Gently: 5 artists every 1.5 s, leaving room under Deezer's limit for games.
   for (let i = 0; i < ids.length; i += 5) {
     const lists = await Promise.all(ids.slice(i, i + 5).map((id) => artistTop(id).catch(() => [])));
-    for (const songs of lists)
+    for (const songs of lists) {
+      // Game picks: the same ones a server-picked game would use (their own
+      // song, in their top 12, popular enough). The phone picks from these.
+      const pickable = new Set(
+        songs
+          .filter((s) => s.own)
+          .slice(0, 12)
+          .filter((s) => s.rank >= floor)
+          .map((s) => s.id),
+      );
       for (const s of songs) {
         const k = norm(s.title);
         if (seen.has(k)) continue;
         seen.add(k);
-        out.push(s);
+        out.push(pickable.has(s.id) ? { ...s, g: 1 } : s);
       }
+    }
     if (i + 5 < ids.length) await new Promise((r) => setTimeout(r, 1500));
   }
   // Most popular first, so the songs people mean come up top.
   return out
     .sort((a, b) => b.rank - a.rank)
-    .map(({ id, title, artist }) => ({ id, title, artist }));
+    .map(({ id, title, artist, g }) => (g ? { id, title, artist, g } : { id, title, artist }));
 }
 /** Build the guess lists in the background soon after the server starts. */
 let warmed = false;

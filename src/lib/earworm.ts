@@ -10,7 +10,13 @@ export type EarCat = "bollywood" | "punjabi" | "english";
 export type EarLevel = "easy" | "medium" | "hard" | "mix";
 /** How hard one song is. Mix mode climbs through all five. */
 export type EarTier = "easy" | "medium" | "hard" | "insane" | "impossible";
-export type EarSong = { id: string; title: string; artist: string };
+export type EarSong = {
+  id: string;
+  title: string;
+  artist: string;
+  /** In the phone's big list: a good game pick (their own popular hit). */
+  g?: 1;
+};
 export type EarResult = {
   score: number;
   /** Per song: the clip it was named on (0 = shortest), or -1 if missed. */
@@ -211,6 +217,9 @@ function remember(songs: EarSong[]) {
  */
 const early = new Map<EarCat, { at: number; run: Promise<EarSong[]> }>();
 export function prefetchGameSongs(cat: EarCat) {
+  // Have the big list ready on the phone for next time.
+  void loadNames(cat).catch(() => []);
+  if (savedPicks(cat).length) return; // picking is instant: nothing to wait for
   const e = early.get(cat);
   if (e && Date.now() - e.at < 5 * 60_000) return;
   const run = fetchGameSongs(cat);
@@ -218,6 +227,8 @@ export function prefetchGameSongs(cat: EarCat) {
   run.catch(() => early.delete(cat));
 }
 export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
+  const quick = pickOnPhone(cat, n);
+  if (quick) return quick;
   const e = early.get(cat);
   if (e && n === SONGS_PER_GAME && Date.now() - e.at < 5 * 60_000) {
     // Anyone asking at the same moment shares it; it's used up once it lands.
@@ -226,6 +237,41 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
     if (songs.length >= n) return songs;
   }
   return fetchGameSongs(cat, n);
+}
+/** The game picks in the big list saved on the phone (none if not saved yet). */
+function savedPicks(cat: EarCat): EarSong[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`tf.ntt.names.${cat}`) ?? "null");
+    return asSongs(saved?.songs).filter((s) => s.g === 1);
+  } catch {
+    return [];
+  }
+}
+/**
+ * Pick a game's songs right here from the big list on the phone: no waiting
+ * on the server. One song per artist, never a song you had recently.
+ */
+function pickOnPhone(cat: EarCat, n: number): EarSong[] | null {
+  const picks = savedPicks(cat);
+  if (picks.length < n * 6) return null;
+  const recent = new Set(recentIds());
+  const fresh = picks.filter((s) => !recent.has(s.id));
+  const from = shuffle(fresh.length >= n * 3 ? fresh : picks);
+  const titles = new Set<string>();
+  const artists = new Set<string>();
+  const out: EarSong[] = [];
+  for (const s of from) {
+    const t = norm(s.title);
+    const a = norm(s.artist);
+    if (titles.has(t) || artists.has(a)) continue;
+    titles.add(t);
+    artists.add(a);
+    out.push({ id: s.id, title: s.title, artist: s.artist });
+    if (out.length >= n) break;
+  }
+  if (out.length < n) return null;
+  remember(out);
+  return out;
 }
 async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
   const recent = recentIds();
@@ -322,7 +368,9 @@ export function loadNames(cat: EarCat): Promise<EarSong[]> {
   };
   if (saved && asSongs(saved.songs).length) {
     // Use what's on the phone now; refresh it in the background once a day.
-    if (Date.now() - saved.at > 24 * 3_600_000) void fresh();
+    // (Lists saved before game picks were marked get refreshed straight away.)
+    const old = !asSongs(saved.songs).some((x) => x.g === 1);
+    if (old || Date.now() - saved.at > 24 * 3_600_000) void fresh();
     run = Promise.resolve(asSongs(saved.songs));
   } else {
     run = fresh().then((s) => {
