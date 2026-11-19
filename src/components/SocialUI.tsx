@@ -1,5 +1,7 @@
 import { SeatLogo } from "@/components/Logo";
 import {
+  createContext,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -176,7 +178,9 @@ export function Sheet({
   }, [onClose]);
   // Fit the part of the screen above the keyboard (iPhone keyboards cover the
   // bottom of the page without shrinking it), so text boxes stay visible.
-  const vv = useVisibleViewport();
+  const screenVv = useVisibleViewport();
+  const stage = useContext(StageCtx);
+  const vv = stage ? { top: 0, height: stage.h } : screenVv;
   return (
     <div
       className={`fixed inset-x-0 z-[60] flex justify-center ${center ? "items-center px-4" : "items-end"}`}
@@ -233,6 +237,12 @@ export function Sheet({
     </div>
   );
 }
+
+/**
+ * A game turned sideways (landscape) on an upright phone: sheets opened inside
+ * it size themselves to the game's area, not the screen.
+ */
+export const StageCtx = createContext<{ w: number; h: number } | null>(null);
 
 /** The visible part of the screen (shrinks when the keyboard opens). */
 export function useVisibleViewport() {

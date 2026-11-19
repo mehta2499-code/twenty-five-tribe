@@ -326,7 +326,9 @@ export function GameOverBoard({
           )}
         </div>
         {children}
-        {roast && iWon && <RoastButton rows={rows} roast={roast} />}
+        {roast && rows.some((r) => r.me) && rows.length > 1 && (
+          <RoastButton rows={rows} roast={roast} mode={iWon ? "roast" : "result"} />
+        )}
         <div className="mt-8 flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">
             Done
@@ -355,6 +357,27 @@ const ROASTS = [
   "Took {who} to school in {game}{detail}{by}. Class dismissed. 🎓",
 ];
 
+// Didn't win: post the result anyway (and call for a rematch).
+const RESULTS = [
+  "{winner} took {game}{detail} this time. Rematch? 😤",
+  "Came #{rank} in {game}{detail}. {winner}, enjoy it while it lasts. 👀",
+  "{winner} got lucky in {game}{detail}. Run it back? 🔁",
+  "Lost {game}{detail} to {winner}. I'll be back. 😮‍💨",
+  "GG {winner}. {game}{detail} rematch tonight? 🔥",
+];
+
+function resultText(k: number, rows: LeaderRow[], roast: { game: string; detail?: string }) {
+  const me = rows.find((r) => r.me);
+  const w = rows.find((r) => r.rank === 1 && !r.me);
+  const u = w?.link ? friendById(w.id)?.username : undefined;
+  const winner = u ? `@${u}` : (w?.name.split(" ")[0] ?? "Someone");
+  return RESULTS[k % RESULTS.length]
+    .replace("{winner}", winner)
+    .replace("{rank}", String(me?.rank ?? 2))
+    .replace("{game}", roast.game)
+    .replace("{detail}", roast.detail ? ` (${roast.detail})` : "");
+}
+
 function roastText(k: number, rows: LeaderRow[], roast: { game: string; detail?: string }) {
   const me = rows.find((r) => r.me);
   const losers = rows.filter((r) => !r.me && r.rank > (me?.rank ?? 1));
@@ -382,12 +405,18 @@ function roastText(k: number, rows: LeaderRow[], roast: { game: string; detail?:
 function RoastButton({
   rows,
   roast,
+  mode = "roast",
 }: {
   rows: LeaderRow[];
   roast: { game: string; detail?: string };
+  /** roast: you won, roast them. result: post how it went and ask for a rematch. */
+  mode?: "roast" | "result";
 }) {
+  const lines = mode === "roast" ? ROASTS : RESULTS;
+  const textFor = (n: number) =>
+    mode === "roast" ? roastText(n, rows, roast) : resultText(n, rows, roast);
   const [open, setOpen] = useState(false);
-  const [k, setK] = useState(() => Math.floor(Math.random() * ROASTS.length));
+  const [k, setK] = useState(() => Math.floor(Math.random() * lines.length));
   const [text, setText] = useState("");
   const [posted, setPosted] = useState(false);
   // The roast card (a picture for the post), and whether to post it.
@@ -395,24 +424,25 @@ function RoastButton({
   const [making, setMaking] = useState(false);
   const [withCard, setWithCard] = useState(true);
   const me = rows.find((r) => r.me);
-  const losers = rows.filter((r) => !r.me && r.rank > (me?.rank ?? 1));
+  // The card always shows the winner on top: you, or whoever beat you.
+  const top = mode === "roast" ? me : rows.find((r) => r.rank === 1 && !r.me);
+  const losers = rows.filter((r) => r !== top && r.rank > (top?.rank ?? 1));
   const draw = (variant: number) => {
-    if (!me) return;
+    if (!me || !top) return;
     const next = losers[0];
     setMaking(true);
     void makeRoastCard(
       {
         game: roast.game,
         detail: roast.detail,
-        winner: {
-          name: meView().name,
-          avatar: me.avatar ?? meView().avatar,
-          initials: me.initials,
-        },
+        winner:
+          top === me
+            ? { name: meView().name, avatar: me.avatar ?? meView().avatar, initials: me.initials }
+            : { name: top.name, avatar: top.avatar, initials: top.initials },
         losers: losers.map((r) => ({ name: r.name, avatar: r.avatar, initials: r.initials })),
         score:
-          typeof me.value === "number" && typeof next?.value === "number"
-            ? [me.value, next.value]
+          typeof top.value === "number" && typeof next?.value === "number"
+            ? [top.value, next.value]
             : undefined,
       },
       variant,
@@ -424,10 +454,9 @@ function RoastButton({
       setMaking(false);
     });
   };
-  // Only when you actually beat someone from your 25.
-  if (!rows.some((r) => !r.me && r.link && r.rank > (me?.rank ?? 1))) return null;
+  if (!me || !top) return null;
   const start = () => {
-    setText(roastText(k, rows, roast));
+    setText(textFor(k));
     setOpen(true);
     if (!card) draw(k);
   };
@@ -445,10 +474,17 @@ function RoastButton({
         }}
       >
         <Flame size={19} aria-hidden="true" />
-        {posted ? "Roast posted to Scenes" : "Roast them in Scenes"}
+        {posted
+          ? "Posted to Scenes"
+          : mode === "roast"
+            ? "Roast them in Scenes"
+            : "Post to Scenes · ask for a rematch"}
       </button>
       {open && (
-        <Sheet title="Roast them" onClose={() => setOpen(false)}>
+        <Sheet
+          title={mode === "roast" ? "Roast them" : "Post to Scenes"}
+          onClose={() => setOpen(false)}
+        >
           {/* The roast card: tap to leave it out. */}
           <div className="mb-3 flex items-start gap-3">
             <button
@@ -506,7 +542,7 @@ function RoastButton({
               onClick={() => {
                 const n = k + 1;
                 setK(n);
-                setText(roastText(n, rows, roast));
+                setText(textFor(n));
                 draw(n);
               }}
               className="btn-secondary px-4 flex items-center gap-1.5"

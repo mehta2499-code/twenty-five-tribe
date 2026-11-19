@@ -240,7 +240,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
           meId={meId}
           myName={_get().me?.name ?? "You"}
           kind={game.kind}
-          hideTab={game.kind === "poker"}
+          hideTab={game.kind === "poker" || game.kind === "kachuful" || game.kind === "ludo"}
         />
       )}
     </>

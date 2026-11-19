@@ -5,6 +5,7 @@ import { Bot, Flag, House, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, withRanks } from "@/components/Leaderboard";
+import { ChatStrip } from "@/components/GameChat";
 import { sfx, useGameMusic } from "@/lib/sfx";
 import { SoundToggle } from "@/components/SoundToggle";
 import { mutualFriends, useSocial, type Person } from "@/lib/social";
@@ -675,6 +676,10 @@ export function LudoTable({
               </button>
             )}
           </div>
+        </div>
+        {/* Game chat under the board (online games). */}
+        <div className="mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <ChatStrip />
         </div>
       </div>
       {menu && (

@@ -69,6 +69,27 @@ export function GameChat({
   useEffect(() => {
     window.dispatchEvent(new CustomEvent("gamechat:unread", { detail: unread }));
   }, [unread]);
+  // A board's chat strip shows the latest messages and can send.
+  useEffect(() => {
+    const share = () =>
+      window.dispatchEvent(
+        new CustomEvent("gamechat:msgs", {
+          detail: msgs.slice(-6).map((m) => ({ ...m, mine: m.from === meId })),
+        }),
+      );
+    share();
+    window.addEventListener("gamechat:hello", share);
+    return () => window.removeEventListener("gamechat:hello", share);
+  }, [msgs, meId]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      const t = String((e as CustomEvent<string>).detail ?? "").trim();
+      if (t) send({ text: t.slice(0, 200) });
+    };
+    window.addEventListener("gamechat:send", on);
+    return () => window.removeEventListener("gamechat:send", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meId, myName]);
   useEffect(() => {
     if (open) {
       setUnread(0);
@@ -305,5 +326,103 @@ function ChatTab({
         </span>
       )}
     </button>
+  );
+}
+
+type StripMsg = Msg & { mine: boolean };
+/**
+ * A small chat box for under a game board: the last few messages and a text
+ * box, so you can talk while you play. Only shows in online games (where the
+ * game chat is running). Tap the messages to open the full chat.
+ */
+export function ChatStrip({
+  lines = 2,
+  dark = true,
+  openable = true,
+}: {
+  lines?: number;
+  dark?: boolean;
+  /** Tap the messages to open the full chat. */
+  openable?: boolean;
+}) {
+  const [msgs, setMsgs] = useState<StripMsg[] | null>(null);
+  const [text, setText] = useState("");
+  useEffect(() => {
+    const on = (e: Event) => setMsgs((e as CustomEvent<StripMsg[]>).detail ?? []);
+    window.addEventListener("gamechat:msgs", on);
+    window.dispatchEvent(new Event("gamechat:hello"));
+    return () => window.removeEventListener("gamechat:msgs", on);
+  }, []);
+  if (!msgs) return null;
+  const last = msgs.slice(-lines);
+  return (
+    <div
+      className="w-full rounded-2xl px-2.5 pt-1.5 pb-2"
+      style={{
+        background: dark ? "rgba(7,6,11,0.55)" : "var(--surface)",
+        border: "1px solid rgba(255,255,255,0.12)",
+      }}
+    >
+      <button
+        onClick={() => openable && window.dispatchEvent(new Event("gamechat:open"))}
+        className="w-full text-left grid gap-0.5"
+        style={{ minHeight: lines * 18, cursor: openable ? "pointer" : "default" }}
+        aria-label={openable ? "Open game chat" : "Game chat"}
+      >
+        {last.length === 0 ? (
+          <span className="text-[12.5px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Game chat · talk your trash here
+          </span>
+        ) : (
+          last.map((m) => (
+            <span
+              key={m.id}
+              className="block truncate text-[13px]"
+              style={{ color: "rgba(255,255,255,0.92)" }}
+            >
+              <b style={{ color: m.mine ? "var(--lime)" : "var(--sky)" }}>
+                {m.mine ? "You" : m.name}
+              </b>{" "}
+              {m.text}
+            </span>
+          ))
+        )}
+      </button>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const t = text.trim();
+          if (!t) return;
+          window.dispatchEvent(new CustomEvent("gamechat:send", { detail: t }));
+          setText("");
+        }}
+        className="mt-1.5 flex gap-1.5"
+      >
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Say something…"
+          aria-label="Message the game chat"
+          className="flex-1 min-w-0 rounded-full px-3 text-[14px] outline-none"
+          style={{
+            height: 34,
+            background: "rgba(255,255,255,0.1)",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.14)",
+          }}
+          autoComplete="off"
+          enterKeyHint="send"
+        />
+        <button
+          type="submit"
+          disabled={!text.trim()}
+          aria-label="Send"
+          className="w-[34px] h-[34px] shrink-0 rounded-full flex items-center justify-center disabled:opacity-40"
+          style={{ background: "var(--lime)", color: "#14200A" }}
+        >
+          <Send size={15} />
+        </button>
+      </form>
+    </div>
   );
 }
