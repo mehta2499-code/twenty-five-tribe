@@ -602,7 +602,7 @@ function Table({
         {seated.map((f, i) => {
           const { x, y } = places[i];
           const isStar = i === star;
-          const size = isStar ? Math.round(Math.min(W * 0.26, faceSize * 2)) : faceSize;
+          const size = isStar ? Math.round(Math.min(W * 0.18, faceSize * 1.4)) : faceSize;
           const lit = spot === i;
           const oneWay = f.mutual === false;
           const score = scores[f.id];
@@ -707,7 +707,7 @@ function Table({
                       animation: "float 2.4s ease-in-out infinite",
                     }}
                   >
-                    🎂 {f.name.split(" ")[0]}'s birthday · Wish
+                    Wish 🎂
                   </span>
                 )}
               </span>

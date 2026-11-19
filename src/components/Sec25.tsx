@@ -108,7 +108,7 @@ export function Sec25({ onClose }: { onClose: () => void }) {
     >
       <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] flex flex-col min-h-full">
         <header className="flex items-center justify-between">
-          <span className="label-caps">today's game</span>
+          <span className="label-caps">daily game</span>
           {phase !== "counting" && (
             <button
               onClick={onClose}
