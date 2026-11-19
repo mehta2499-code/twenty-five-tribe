@@ -524,9 +524,99 @@ function Lounge() {
   );
 }
 
+// ---------- All-in runout ----------
+/**
+ * When everyone's all in, the engine deals the rest of the board at once and
+ * pays the winner straight away. On screen we slow that down like a real
+ * table: the flop, then the turn, then the river (with a beat between each),
+ * and only then the winner and the pot moving to them.
+ */
+const RUN_FIRST = 900;
+const RUN_STEP = 1700;
+const RUN_REVEAL = 1500;
+function useRunout(real: PokerState): { s: PokerState; running: boolean } {
+  const len = real.board.length;
+  const [shown, setShown] = useState(len);
+  const [revealed, setRevealed] = useState(true);
+  const hand = useRef(real.handNo);
+  // A new hand (or a board that shrank): show it as it is.
+  useEffect(() => {
+    if (real.handNo !== hand.current || len < shown) {
+      hand.current = real.handNo;
+      setShown(len);
+      setRevealed(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [real.handNo, len]);
+  // The board jumped more than one street, or the hand ended as cards came:
+  // that's a runout. Turn them one street at a time.
+  useEffect(() => {
+    if (real.handNo !== hand.current || len <= shown) return;
+    const jump = len - shown;
+    const runout = !!real.result || jump > (shown === 0 ? 3 : 1);
+    if (!runout) {
+      setShown(len);
+      return;
+    }
+    setRevealed(false);
+    const next = shown < 3 ? 3 : shown + 1;
+    const t = setTimeout(() => setShown(Math.min(len, next)), revealed ? RUN_FIRST : RUN_STEP);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [len, shown, real.handNo, real.result]);
+  // Last card down: a beat to take it in, then the winner.
+  useEffect(() => {
+    if (revealed || shown < len) return;
+    const t = setTimeout(() => setRevealed(true), RUN_REVEAL);
+    return () => clearTimeout(t);
+  }, [revealed, shown, len]);
+
+  // The hand that ended the game: keep the table up a few seconds after the
+  // winner shows, so everyone sees who took it before the game-over screen.
+  const [settling, setSettling] = useState(false);
+  const wasRunning = useRef(false);
+  const running = shown < len || !revealed;
+  useEffect(() => {
+    if (running) wasRunning.current = true;
+    else if (wasRunning.current) {
+      wasRunning.current = false;
+      if (real.phase === "over") {
+        setSettling(true);
+        const t = setTimeout(() => setSettling(false), 4000);
+        return () => clearTimeout(t);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
+  if (!running && settling && real.phase === "over")
+    return {
+      s: { ...real, phase: "showdown", seats: real.seats.map((p) => ({ ...p, out: false })) },
+      running: false,
+    };
+  if (!running || real.handNo !== hand.current) return { s: real, running: false };
+  const r = real.result;
+  // Before the winner is shown: the pot's still in the middle, stacks as they were.
+  const won = new Map((r?.winners ?? []).map((w) => [w.seat, w.amount]));
+  return {
+    running: true,
+    s: {
+      ...real,
+      // A hand that ends the game: the game-over screen waits for the runout too.
+      phase: real.phase === "over" ? "showdown" : real.phase,
+      seats: real.seats.map((p, i) => ({
+        ...p,
+        out: real.phase === "over" ? false : p.out,
+        stack: won.has(i) ? p.stack - won.get(i)! : p.stack,
+      })),
+      board: real.board.slice(0, shown),
+      result: r ? { ...r, winners: [] } : r,
+    },
+  };
+}
+
 // ---------- The table ----------
 export function PokerTable({
-  s,
+  s: real,
   meId,
   hostId,
   onAction,
@@ -544,6 +634,7 @@ export function PokerTable({
   onLeave: () => void;
   onClose: () => void;
 }) {
+  const { s, running } = useRunout(real);
   useGameMusic(s.phase !== "over");
   const wide = useWide();
   const [stageRef, box] = useBox<HTMLDivElement>();
@@ -628,11 +719,11 @@ export function PokerTable({
   const dealer =
     s.seats.find((p) => p.id === hostId && !p.out)?.id ?? s.seats.find((p) => !p.out)?.id;
   useEffect(() => {
-    if (s.phase !== "showdown" || dealer !== meId) return;
-    const t = setTimeout(onNextHand, 4500);
+    if (s.phase !== "showdown" || dealer !== meId || running) return;
+    const t = setTimeout(onNextHand, 5000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s.phase, s.handNo, dealer]);
+  }, [s.phase, s.handNo, dealer, running]);
 
   const myHand =
     myCards.length === 2 && s.board.length >= 3 ? rank7([...myCards, ...s.board]).name : null;
@@ -658,15 +749,16 @@ export function PokerTable({
         .filter((x, k, a) => a.findIndex((y) => y[1] === x[1]) === k)
     : [];
 
-  const banner = s.result
-    ? (() => {
-        const w = s.result.winners;
-        const names = w
-          .map((x) => (s.seats[x.seat].id === meId ? "You" : s.seats[x.seat].name.split(" ")[0]))
-          .join(" & ");
-        return `${names} win${w.length === 1 && names !== "You" ? "s" : ""} ${fmt(w.reduce((a, x) => a + x.amount, 0))}${w[0]?.hand ? ` · ${w[0].hand}` : ""}`;
-      })()
-    : null;
+  const banner =
+    s.result && !running
+      ? (() => {
+          const w = s.result.winners;
+          const names = w
+            .map((x) => (s.seats[x.seat].id === meId ? "You" : s.seats[x.seat].name.split(" ")[0]))
+            .join(" & ");
+          return `${names} win${w.length === 1 && names !== "You" ? "s" : ""} ${fmt(w.reduce((a, x) => a + x.amount, 0))}${w[0]?.hand ? ` · ${w[0].hand}` : ""}`;
+        })()
+      : null;
   const meSeat = mine >= 0 ? s.seats[mine] : null;
   const meSpot = spots.find((v) => v.me);
   // You sit on the near edge of the table, photo above your cards.
@@ -675,9 +767,11 @@ export function PokerTable({
   const status =
     s.phase === "betting" && !myTurn
       ? `${s.seats[s.toAct]?.name.split(" ")[0]} to act…`
-      : s.phase === "showdown" && !banner
-        ? "Next hand coming up…"
-        : null;
+      : running
+        ? "All in! Running it out…"
+        : s.phase === "showdown" && !banner
+          ? "Next hand coming up…"
+          : null;
 
   return (
     <div
