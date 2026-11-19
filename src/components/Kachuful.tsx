@@ -139,7 +139,7 @@ function seatPoint(slot: number, others: number) {
   const end = 368;
   const a = others === 1 ? 270 : start + ((end - start) * slot) / (others - 1);
   const rad = (a * Math.PI) / 180;
-  return { x: 50 + 43 * Math.cos(rad), y: 51 + 26 * Math.sin(rad), angle: a };
+  return { x: 50 + 43 * Math.cos(rad), y: 48 + 28 * Math.sin(rad), angle: a };
 }
 
 /** Where a seat's played card lands, part-way from the centre toward them. */
@@ -363,7 +363,7 @@ export function KachufulBoard({
                   style={{
                     left: "4%",
                     right: "4%",
-                    top: "17%",
+                    top: "13%",
                     bottom: "22%",
                     borderRadius: "50%",
                     background:
@@ -432,14 +432,16 @@ export function KachufulBoard({
                   </button>
                 </div>
 
-                {/* What's happening: one line at the top, between the round and the buttons */}
+                {/* What's happening: bottom-left corner (the chat has the bottom-right) */}
                 <div
-                  className="absolute z-[15] left-1/2 -translate-x-1/2 rounded-full px-3.5 py-1.5 text-center whitespace-nowrap max-w-[40%] overflow-hidden text-ellipsis"
+                  className="absolute z-[15] rounded-2xl px-3 py-2 leading-snug"
                   style={{
-                    top: 10,
+                    left: 8,
+                    bottom: 6,
+                    width: CHAT_W,
                     background: "rgba(7,6,11,0.72)",
                     border: "1px solid rgba(255,255,255,0.12)",
-                    fontSize: 14,
+                    fontSize: 13.5,
                   }}
                   role="status"
                 >
