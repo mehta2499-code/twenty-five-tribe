@@ -25,7 +25,15 @@ export type C4State = {
   };
   /** Bot difficulty (bot games only). */
   level?: 1 | 2 | 3;
+  /**
+   * Online games: who has opened it. The game starts once both are in (like
+   * Ludo's waiting room). Older games without it just play.
+   */
+  joined?: string[];
 };
+
+/** Both players are in (or it's a bot game / an older game). */
+export const c4Started = (s: C4State) => !s.joined || s.joined.length >= 2;
 
 export const at = (col: number, row: number) => row * COLS + col;
 
@@ -67,7 +75,7 @@ export function fourFrom(board: string, col: number, row: number): number[] | nu
 
 /** Drop the player-to-move's disc in a column. Null if not allowed. */
 export function dropDisc(s: C4State, col: number): C4State | null {
-  if (s.result || col < 0 || col >= COLS) return null;
+  if (s.result || !c4Started(s) || col < 0 || col >= COLS) return null;
   const row = landing(s.board, col);
   if (row < 0) return null;
   const i = at(col, row);

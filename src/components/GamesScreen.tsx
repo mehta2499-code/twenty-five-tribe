@@ -9,7 +9,9 @@ import type { ChessState } from "@/lib/chess";
 import type { PokerState } from "@/lib/poker";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { ChevronRight, Sparkles, Users, X } from "lucide-react";
+import { Glyph3D } from "@/components/Glyph3D";
+import { SuitIcon } from "@/components/SuitIcon";
 import { GameArt, type ArtKind } from "@/components/GameArt";
 import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
 import { DailyRunner } from "@/components/ArcadeGames";
@@ -132,7 +134,15 @@ function YourGames({ meId }: { meId: string }) {
         const mine = c.red === meId ? "r" : "y";
         yourTurn = c.turn === mine && !c.result;
         title = `Connect 4 vs ${others[0]?.name.split(" ")[0] ?? "a friend"}`;
-        status = yourTurn ? "Your move" : "Their move";
+        const waiting = c.joined && c.joined.length < 2;
+        if (waiting) yourTurn = !c.joined!.includes(meId);
+        status = waiting
+          ? yourTurn
+            ? "Join the game"
+            : "Waiting room"
+          : yourTurn
+            ? "Your move"
+            : "Their move";
       } else if (g.kind === "chess") {
         const c = g.state as ChessState;
         const mine = c.white === meId ? "w" : "b";
@@ -291,44 +301,191 @@ function YourGames({ meId }: { meId: string }) {
   );
 }
 
+/** Each game's card: its colours and its 3D art. */
+const CARD: Record<string, { from: string; to: string; glow: string }> = {
+  earworm: { from: "#4B2BB8", to: "#1A1450", glow: "#8B5CF6" },
+  poker: { from: "#1E8A5A", to: "#0E3B33", glow: "#34D399" },
+  chess: { from: "#F08A24", to: "#9A3A0E", glow: "#FDBA74" },
+  kachuful: { from: "#B03BB0", to: "#4A1A6B", glow: "#E879F9" },
+  trivia: { from: "#2F6BF0", to: "#152A7A", glow: "#60A5FA" },
+  ludo: { from: "#2FA35A", to: "#13492F", glow: "#4ADE80" },
+  word: { from: "#D13E9E", to: "#5A1E8C", glow: "#F472B6" },
+  imposter: { from: "#3B3A9E", to: "#1A1650", glow: "#818CF8" },
+  connect4: { from: "#1E9BD7", to: "#123A8A", glow: "#38BDF8" },
+};
+
+/** A wooden letter tile (Word Up's art). */
+function Tile({ ch, rot, y }: { ch: string; rot: number; y: number }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center font-black"
+      style={{
+        width: 30,
+        height: 32,
+        marginLeft: -3,
+        borderRadius: 7,
+        background: "linear-gradient(160deg, #F7D9A0, #D9A75E)",
+        color: "#2A1A0A",
+        fontSize: 19,
+        transform: `rotate(${rot}deg) translateY(${y}px)`,
+        boxShadow: "0 4px 0 #A87835, 0 8px 14px rgba(0,0,0,0.4)",
+      }}
+    >
+      {ch}
+    </span>
+  );
+}
+/** A small white playing card (Hold'em's art). */
+function MiniCard({ rank, suit, rot }: { rank: string; suit: "S" | "H"; rot: number }) {
+  const red = suit === "H";
+  return (
+    <span
+      className="relative inline-block"
+      style={{
+        width: 40,
+        height: 54,
+        marginLeft: -10,
+        borderRadius: 7,
+        background: "linear-gradient(160deg, #FFFFFF, #ECE8E2)",
+        color: red ? "#D3243B" : "#14121C",
+        transform: `rotate(${rot}deg)`,
+        boxShadow: "0 8px 16px rgba(0,0,0,0.45)",
+      }}
+    >
+      <span className="absolute left-1.5 top-0.5 font-black" style={{ fontSize: 15 }}>
+        {rank}
+      </span>
+      <SuitIcon suit={suit} size={20} style={{ position: "absolute", right: 4, bottom: 4 }} />
+    </span>
+  );
+}
+
+function CardArt({ kind }: { kind: string }) {
+  const g = (emoji: string, size = 64, style?: React.CSSProperties) => (
+    <Glyph3D
+      emoji={emoji}
+      size={size}
+      style={{ filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.45))", ...style }}
+    />
+  );
+  switch (kind) {
+    case "earworm":
+      return g("🎧", 66);
+    case "poker":
+      return (
+        <span className="inline-flex items-end pl-2">
+          <MiniCard rank="A" suit="S" rot={-12} />
+          <MiniCard rank="K" suit="H" rot={10} />
+        </span>
+      );
+    case "chess":
+      return g("♟️", 64);
+    case "kachuful":
+      return g("⚖️", 64);
+    case "trivia":
+      return g("⚡", 64);
+    case "ludo":
+      return (
+        <Glyph3D
+          name="dice"
+          size={76}
+          style={{ filter: "drop-shadow(0 10px 14px rgba(0,0,0,0.45))" }}
+        />
+      );
+    case "word":
+      return (
+        <span className="inline-flex items-end pl-1">
+          <Tile ch="W" rot={-12} y={4} />
+          <Tile ch="O" rot={0} y={-6} />
+          <Tile ch="W" rot={12} y={4} />
+        </span>
+      );
+    case "imposter":
+      return g("🥷", 64);
+    case "connect4":
+      return (
+        <span className="relative inline-block" style={{ width: 74, height: 62 }}>
+          {g("🟡", 46, { position: "absolute", right: 0, top: 0 })}
+          {g("🔴", 50, { position: "absolute", left: 0, bottom: 0 })}
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
 function GameTile({
-  tone,
   art,
   title,
   badge,
   onClick,
   tour,
+  wide,
 }: {
-  tone: string;
+  tone?: string;
   art: ArtKind;
   title: string;
   badge?: string;
   onClick: () => void;
   tour?: string;
+  wide?: boolean;
 }) {
+  const c = CARD[art] ?? { from: "#3A3550", to: "#1A1726", glow: "#A78BFA" };
   return (
     <button
       onClick={onClick}
       data-tour={tour}
-      className="rounded-[18px] px-2 py-3 flex flex-col items-center justify-center gap-1.5 text-center active:scale-95 transition-transform"
+      className={`relative overflow-hidden rounded-[24px] text-left active:scale-[0.97] transition-transform ${wide ? "col-span-2" : ""}`}
       style={{
-        background: tone,
+        minHeight: 122,
+        background: `radial-gradient(120% 90% at 70% 20%, ${c.glow}55, transparent 60%), linear-gradient(150deg, ${c.from}, ${c.to})`,
+        border: "1px solid rgba(255,255,255,0.22)",
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -10px 24px rgba(0,0,0,0.25), 0 10px 24px -10px ${c.glow}99`,
         color: "#fff",
-        border: "2px solid rgba(255,255,255,0.12)",
-        minHeight: 104,
       }}
     >
+      {/* Glass shine across the top */}
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-1/2 pointer-events-none"
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.14), transparent)" }}
+      />
       {badge && (
         <span
-          className="text-[9.5px] font-black px-1.5 py-0.5 rounded-full"
-          style={{ background: "var(--lime)", color: "var(--on-accent)", letterSpacing: "0.04em" }}
+          className="absolute left-3 top-3 z-[1] text-[11px] font-black px-2.5 py-1 rounded-full"
+          style={{
+            background: "linear-gradient(180deg, #FFD86B, #F5B83A)",
+            color: "#3A2400",
+            letterSpacing: "0.04em",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+          }}
         >
           {badge}
         </span>
       )}
-      <GameArt kind={art} size={badge ? 38 : 44} />
-      <span className="font-extrabold leading-tight" style={{ fontSize: 12.5 }}>
+      <span
+        className="absolute"
+        style={{ right: wide ? "30%" : 12, top: 10, lineHeight: 0 }}
+        aria-hidden="true"
+      >
+        <CardArt kind={art} />
+      </span>
+      <span
+        className="absolute left-3.5 bottom-3 right-14 font-extrabold leading-tight"
+        style={{ fontSize: 16.5, textShadow: "0 2px 6px rgba(0,0,0,0.35)" }}
+      >
         {title}
+      </span>
+      <span
+        aria-hidden="true"
+        className="absolute right-3 bottom-3 w-9 h-9 rounded-full flex items-center justify-center"
+        style={{
+          background: "rgba(10,8,24,0.45)",
+          border: "1px solid rgba(255,255,255,0.25)",
+          backdropFilter: "blur(6px)",
+        }}
+      >
+        <ChevronRight size={19} strokeWidth={2.6} />
       </span>
     </button>
   );
@@ -448,13 +605,19 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
 
       {/* Everything you play with your 25 (live, just for fun). */}
       <section className="px-5 mt-7" aria-label="All games" id="play-with-your-25">
-        <div className="flex items-baseline justify-between mb-2 px-1">
-          <h2 className="label-caps">Play with your 25</h2>
-          <span className="meta font-semibold" style={{ fontSize: 12.5 }}>
-            9 games
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h2 className="flex items-center gap-2 font-extrabold" style={{ fontSize: 20 }}>
+            <Sparkles size={20} style={{ color: "#C084FC" }} aria-hidden="true" />
+            Play with your 25
+          </h2>
+          <span
+            className="flex items-center gap-1.5 font-bold"
+            style={{ fontSize: 13, color: "#B9A8F5" }}
+          >
+            <Users size={15} aria-hidden="true" /> 9 games
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-3">
           <GameTile
             tone="#2A3416"
             art="earworm"
@@ -463,19 +626,19 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             onClick={() => (live ? setEar(true) : setToast("Sign in to play."))}
           />
           <GameTile
-            tone="#1F8150"
-            art="poker"
-            title="Hold'em"
-            onClick={() => (live ? setPoker(true) : setToast("Sign in to open a table."))}
-          />
-          <GameTile tone="#7E6CD6" art="chess" title="Chess" onClick={() => setChess(true)} />
-          <GameTile
             tone="#2F5BE0"
             art="connect4"
             badge="NEW"
             title="Connect 4"
             onClick={() => setC4(true)}
           />
+          <GameTile
+            tone="#1F8150"
+            art="poker"
+            title="Hold'em"
+            onClick={() => (live ? setPoker(true) : setToast("Sign in to open a table."))}
+          />
+          <GameTile tone="#7E6CD6" art="chess" title="Chess" onClick={() => setChess(true)} />
           <GameTile
             tone="#2E2A3A"
             art="kachuful"
@@ -494,6 +657,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             tone="#3A2E4A"
             art="imposter"
             tour="imposter"
+            wide
             title="Imposter"
             onClick={async () => {
               if (!live) return setToast("Sign in to start a party.");

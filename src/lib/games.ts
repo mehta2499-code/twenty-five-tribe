@@ -343,7 +343,10 @@ export async function startConnect4(friend: Person) {
   const me = myId();
   const id = uuid();
   const iGoFirst = Math.random() < 0.5;
-  const state = newConnect4(iGoFirst ? me : friend.id, iGoFirst ? friend.id : me);
+  const state = {
+    ...newConnect4(iGoFirst ? me : friend.id, iGoFirst ? friend.id : me),
+    joined: [me],
+  };
   const { error } = await supabase
     .from("games")
     .insert({ id, kind: "connect4", host: me, players: [me, friend.id], state, version: 0 });

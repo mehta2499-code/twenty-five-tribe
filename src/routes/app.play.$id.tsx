@@ -48,8 +48,8 @@ import { GameChat } from "@/components/GameChat";
 import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
 import { ChessTable } from "@/components/Chess";
-import { Connect4Table } from "@/components/Connect4";
-import { dropDisc, resignC4, type C4State } from "@/lib/connect4";
+import { Connect4Table, Connect4Waiting } from "@/components/Connect4";
+import { c4Started, dropDisc, resignC4, type C4State } from "@/lib/connect4";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
 import { claimTimeout, makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
 import {
@@ -648,11 +648,50 @@ function OnlineConnect4({
   const { game, save } = live;
   const navigate = useNavigate();
   const s = useSocial();
+  // Waiting room: say I'm in. The game starts as soon as both of you are.
+  const needsJoin =
+    !!game && game.status !== "done" && !!game.state.joined && !game.state.joined.includes(meId);
+  useEffect(() => {
+    if (!needsJoin || !game) return;
+    void changeLatest<C4State>(game.id, (cur) =>
+      !cur.joined || cur.joined.includes(meId)
+        ? null
+        : { state: { ...cur, joined: [...cur.joined, meId] } },
+    );
+  }, [needsJoin, game?.id, meId]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!game) return null;
   const st = game.state;
   const me = st.red === meId ? "r" : "y";
   const otherId = me === "r" ? st.yellow : st.red;
   const other = friendById(otherId);
+  const youSide = {
+    id: meId,
+    name: s.me?.name ?? "You",
+    avatar: s.me?.avatar,
+    initials: s.me?.initials ?? "YO",
+  };
+  const themSide = {
+    id: otherId,
+    name: other?.name ?? "Your friend",
+    avatar: other?.avatar || undefined,
+    initials: other?.initials ?? "?",
+    color: other?.color,
+  };
+  if (!c4Started(st))
+    return (
+      <Connect4Waiting
+        you={youSide}
+        them={themSide}
+        themIn={(st.joined ?? []).includes(otherId)}
+        cancelled={game.status === "done"}
+        onCancel={() =>
+          void changeLatest<C4State>(game.id, (cur) =>
+            c4Started(cur) ? null : { state: cur, status: "done" },
+          ).then(onClose)
+        }
+        onClose={onClose}
+      />
+    );
   return (
     <Connect4Table
       state={st}

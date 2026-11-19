@@ -913,3 +913,5 @@ button, a, [role="button"] { touch-action: manipulation; }
 .chat-tab-ping { animation: chat-tab-ping 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .chat-tab-ping { animation: none; } }
 @keyframes c4-drop { from { transform: translateY(var(--from, -300px)); } to { transform: none; } }
+@keyframes c4-win { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+.c4-win { animation: c4-win 0.9s ease-in-out infinite; }

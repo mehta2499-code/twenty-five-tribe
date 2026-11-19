@@ -74,7 +74,7 @@ export function GameChat({
     const share = () =>
       window.dispatchEvent(
         new CustomEvent("gamechat:msgs", {
-          detail: msgs.slice(-6).map((m) => ({ ...m, mine: m.from === meId })),
+          detail: msgs.slice(-40).map((m) => ({ ...m, mine: m.from === meId })),
         }),
       );
     share();
@@ -337,7 +337,7 @@ type StripMsg = Msg & { mine: boolean };
  * game chat is running). Tap the messages to open the full chat.
  */
 export function ChatStrip({
-  lines = 2,
+  lines = 4,
   dark = true,
   openable = true,
 }: {
@@ -354,8 +354,13 @@ export function ChatStrip({
     window.dispatchEvent(new Event("gamechat:hello"));
     return () => window.removeEventListener("gamechat:msgs", on);
   }, []);
+  // Scroll to the newest message whenever one arrives (you can scroll up to read back).
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [msgs?.length]);
   if (!msgs) return null;
-  const last = msgs.slice(-lines);
   return (
     <div
       className="w-full rounded-2xl px-2.5 pt-1.5 pb-2"
@@ -364,31 +369,37 @@ export function ChatStrip({
         border: "1px solid rgba(255,255,255,0.12)",
       }}
     >
-      <button
+      <div
+        ref={box}
         onClick={() => openable && window.dispatchEvent(new Event("gamechat:open"))}
-        className="w-full text-left grid gap-0.5"
-        style={{ minHeight: lines * 18, cursor: openable ? "pointer" : "default" }}
-        aria-label={openable ? "Open game chat" : "Game chat"}
+        className="w-full overflow-y-auto grid content-start gap-1 pr-1"
+        style={{
+          height: lines * 22 + 6,
+          cursor: openable ? "pointer" : "default",
+          overscrollBehavior: "contain",
+        }}
+        role="log"
+        aria-label="Game chat"
       >
-        {last.length === 0 ? (
-          <span className="text-[12.5px]" style={{ color: "rgba(255,255,255,0.55)" }}>
+        {msgs.length === 0 ? (
+          <span className="text-[14px] self-center" style={{ color: "rgba(255,255,255,0.55)" }}>
             Game chat · talk your trash here
           </span>
         ) : (
-          last.map((m) => (
-            <span
+          msgs.map((m) => (
+            <p
               key={m.id}
-              className="block truncate text-[13px]"
-              style={{ color: "rgba(255,255,255,0.92)" }}
+              className="text-[14.5px] leading-snug"
+              style={{ color: "rgba(255,255,255,0.95)", overflowWrap: "anywhere" }}
             >
               <b style={{ color: m.mine ? "var(--lime)" : "var(--sky)" }}>
                 {m.mine ? "You" : m.name}
               </b>{" "}
               {m.text}
-            </span>
+            </p>
           ))
         )}
-      </button>
+      </div>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -404,9 +415,10 @@ export function ChatStrip({
           onChange={(e) => setText(e.target.value)}
           placeholder="Say something…"
           aria-label="Message the game chat"
-          className="flex-1 min-w-0 rounded-full px-3 text-[14px] outline-none"
+          className="flex-1 min-w-0 rounded-full px-3.5 outline-none"
           style={{
-            height: 34,
+            height: 40,
+            fontSize: 16,
             background: "rgba(255,255,255,0.1)",
             color: "#fff",
             border: "1px solid rgba(255,255,255,0.14)",
@@ -418,10 +430,10 @@ export function ChatStrip({
           type="submit"
           disabled={!text.trim()}
           aria-label="Send"
-          className="w-[34px] h-[34px] shrink-0 rounded-full flex items-center justify-center disabled:opacity-40"
+          className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center disabled:opacity-40"
           style={{ background: "var(--lime)", color: "#14200A" }}
         >
-          <Send size={15} />
+          <Send size={17} />
         </button>
       </form>
     </div>

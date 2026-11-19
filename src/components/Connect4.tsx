@@ -33,24 +33,151 @@ export type C4Side = {
   color?: string;
 };
 
-const RED = { light: "#FF6B7F", dark: "#C81E3A", name: "Red" };
-const YELLOW = { light: "#FFE27A", dark: "#E0A800", name: "Yellow" };
+const RED = { light: "#FF8A99", mid: "#F2364F", dark: "#A3122A", name: "Red" };
+const YELLOW = { light: "#FFF1A8", mid: "#FFC928", dark: "#C98A00", name: "Yellow" };
 const tone = (d: Disc) => (d === "r" ? RED : YELLOW);
 
+/** A glossy disc: a rim, a raised centre ring and a shine. */
 function DiscDot({ d, size, glow }: { d: Disc; size: number; glow?: boolean }) {
   const t = tone(d);
   return (
     <span
-      className="block rounded-full"
+      className={`relative block rounded-full ${glow ? "c4-win" : ""}`}
       style={{
         width: size,
         height: size,
-        background: `radial-gradient(circle at 35% 30%, ${t.light}, ${t.dark} 70%)`,
+        background: `radial-gradient(circle at 50% 45%, ${t.mid} 0%, ${t.mid} 52%, ${t.dark} 100%)`,
         boxShadow: glow
-          ? `0 0 0 3px #fff, 0 0 18px ${t.light}`
-          : `inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 0 0 ${Math.max(2, size * 0.08)}px rgba(0,0,0,0.12)`,
+          ? `0 0 0 3px #fff, 0 0 22px ${t.light}`
+          : `inset 0 -${Math.round(size * 0.07)}px 0 rgba(0,0,0,0.22), 0 2px 3px rgba(0,0,0,0.35)`,
       }}
-    />
+    >
+      {/* Raised inner ring */}
+      <span
+        className="absolute rounded-full"
+        style={{
+          inset: "20%",
+          background: `radial-gradient(circle at 40% 35%, ${t.light}, ${t.mid} 60%)`,
+          boxShadow: `inset 0 0 0 ${Math.max(1.5, size * 0.04)}px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.25)`,
+        }}
+      />
+      {/* Shine */}
+      <span
+        className="absolute rounded-full"
+        style={{
+          left: "18%",
+          top: "12%",
+          width: "34%",
+          height: "22%",
+          background: "rgba(255,255,255,0.55)",
+          filter: "blur(1px)",
+          transform: "rotate(-25deg)",
+        }}
+      />
+    </span>
+  );
+}
+
+/** Online games: waiting for your friend to open it. Starts by itself once they're in. */
+export function Connect4Waiting({
+  you,
+  them,
+  themIn,
+  cancelled,
+  onCancel,
+  onClose,
+}: {
+  you: C4Side;
+  them: C4Side;
+  themIn: boolean;
+  cancelled?: boolean;
+  onCancel: () => void;
+  onClose: () => void;
+}) {
+  const first = them.name.split(" ")[0];
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto"
+      style={{
+        background: "radial-gradient(120% 70% at 50% 0%, #1E2A5C 0%, #0D0F1E 70%)",
+        color: "#fff",
+      }}
+    >
+      <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8 min-h-full flex flex-col">
+        <header className="flex items-center justify-between">
+          <span className="font-extrabold" style={{ fontSize: 19 }}>
+            Connect 4 · waiting room
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-10 h-10 flex items-center justify-center"
+            style={{ color: "rgba(255,255,255,0.7)" }}
+          >
+            <X size={22} />
+          </button>
+        </header>
+        <div className="flex-1 flex flex-col justify-center items-center text-center">
+          {cancelled ? (
+            <>
+              <p className="font-extrabold" style={{ fontSize: 24 }}>
+                Game called off
+              </p>
+              <button onClick={onClose} className="btn-primary mt-8 px-8">
+                Back to games
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-6">
+                {[
+                  { side: you, here: true, label: "You" },
+                  { side: them, here: themIn, label: first },
+                ].map(({ side, here, label }) => (
+                  <div key={side.id} className="flex flex-col items-center gap-2">
+                    <span
+                      className="rounded-full"
+                      style={{
+                        opacity: here ? 1 : 0.5,
+                        boxShadow: here
+                          ? "0 0 0 3px var(--lime)"
+                          : "0 0 0 2px rgba(255,255,255,0.2)",
+                      }}
+                    >
+                      <Avatar
+                        src={side.avatar}
+                        initials={side.initials}
+                        color={side.color}
+                        size={72}
+                      />
+                    </span>
+                    <span className="font-bold">{label}</span>
+                    <span
+                      className="text-[13px] font-bold"
+                      style={{ color: here ? "var(--lime)" : "rgba(255,255,255,0.5)" }}
+                    >
+                      {here ? "in" : "joining…"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-8 text-[15px]" style={{ color: "rgba(255,255,255,0.75)" }}>
+                {themIn
+                  ? "Both in. Starting…"
+                  : `We sent ${first} the challenge. The game starts as soon as they open it.`}
+              </p>
+              <button
+                onClick={onCancel}
+                className="mt-8 min-h-[44px] px-5 font-bold"
+                style={{ color: "rgba(255,255,255,0.7)" }}
+              >
+                Call it off
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -169,12 +296,33 @@ export function Connect4Table({
 
         {/* The board */}
         <div className="flex-1 flex flex-col justify-center items-center py-3">
+          {/* Your disc, ready above the column you're aiming at */}
+          <div
+            className="grid mb-1.5"
+            style={{
+              gridTemplateColumns: `repeat(${COLS}, ${size}px)`,
+              columnGap: gap,
+              height: Math.round(size * 0.8),
+            }}
+            aria-hidden="true"
+          >
+            {Array.from({ length: COLS }, (_, c) => (
+              <span key={c} className="flex items-end justify-center">
+                {myTurn && (aim ?? 3) === c && (
+                  <span style={{ animation: "float 1.6s ease-in-out infinite" }}>
+                    <DiscDot d={me} size={Math.round(size * 0.72)} />
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
           <div
             className="relative rounded-[22px]"
             style={{
               padding: gap * 1.5,
-              background: "linear-gradient(180deg, #2F5BE0, #1B3AA8)",
-              boxShadow: "0 18px 40px rgba(0,0,0,0.55), inset 0 2px 0 rgba(255,255,255,0.25)",
+              background: "linear-gradient(180deg, #3D6BFF 0%, #2448C9 55%, #1A35A0 100%)",
+              boxShadow:
+                "0 24px 50px rgba(0,0,0,0.6), 0 0 0 2px #10236E, inset 0 3px 0 rgba(255,255,255,0.3), inset 0 -6px 0 rgba(0,0,0,0.25)",
             }}
           >
             <div
@@ -211,8 +359,9 @@ export function Connect4Table({
                           style={{
                             width: size,
                             height: size,
-                            background: "#0D1440",
-                            boxShadow: "inset 0 4px 6px rgba(0,0,0,0.55)",
+                            background: "radial-gradient(circle at 50% 40%, #0A1238, #050A24)",
+                            boxShadow:
+                              "inset 0 5px 8px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.25), 0 0 0 2px rgba(10,25,90,0.6)",
                           }}
                         >
                           {v !== "." && (
