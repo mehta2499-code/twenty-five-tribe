@@ -868,7 +868,7 @@ export function WordDaily({ onClose }: { onClose: () => void }) {
                 })}
               </ul>
             </div>
-            <p className="meta mt-4">New word at 10:30 PM.</p>
+            <p className="meta mt-4">New word at midnight.</p>
           </div>
         )}
       </div>

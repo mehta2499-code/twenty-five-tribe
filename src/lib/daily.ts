@@ -56,17 +56,18 @@ const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satur
 /** "Thursday's game" — what we call today's daily game before it's revealed. */
 export const dayGameName = (k: string = today()) => `${WEEKDAYS[weekdayOf(k)]}'s game`;
 /**
- * The daily games' day turns over at 10:30 PM India time, not midnight: from
- * 10:30 PM it's already the next game day. (Keep in sync with
- * public.game_day() in the database.) Birthdays, polls and the Drop still go
- * by the calendar day: use calendarDay() for those.
+ * The daily games' day turns over at midnight India time. (For one night,
+ * Thu 19 Nov 2026, it turned over at 10:30 PM instead, so the game day of
+ * Fri 20 Nov started then.) Keep in sync with public.game_day().
+ * Birthdays, polls and the Drop use calendarDay().
  */
-export const GAME_SHIFT = 90 * 60_000;
+const EARLY_UNTIL = Date.parse("2026-11-20T00:00:00+05:30");
 export function today() {
-  return dayKey(Date.now() + GAME_SHIFT);
+  const now = Date.now();
+  return now < EARLY_UNTIL ? dayKey(now + 90 * 60_000) : dayKey(now);
 }
 export const calendarDay = () => dayKey();
-export const thisWeek = () => weekKey(Date.now() + GAME_SHIFT);
+export const thisWeek = () => weekKey(Date.parse(`${today()}T12:00:00+05:30`));
 export const lastWeek = () => addDays(thisWeek(), -7);
 /** Seasons: 25 days each, season 1 starts 16 Nov 2026 (keep in sync with public.season_of). */
 export const SEASON_DAYS = 25;
@@ -81,11 +82,9 @@ export function seasonOf(day: string = today()) {
 }
 export const weekDays = (start: string) => Array.from({ length: 7 }, (_, i) => addDays(start, i));
 
-/** Time until the next game (10:30 PM India time). */
+/** Time until the next game (the next game day starts at midnight India time). */
 export function untilMidnight() {
-  const now = Date.now();
-  const ist = now + 5.5 * 3_600_000 + GAME_SHIFT;
-  const left = DAY - (ist % DAY);
+  const left = Math.max(0, Date.parse(`${addDays(today(), 1)}T00:00:00+05:30`) - Date.now());
   const h = Math.floor(left / 3_600_000);
   const m = Math.floor((left % 3_600_000) / 60_000);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -278,7 +277,7 @@ export function myTries(day = today()) {
 /** Uses up one of today's tries. Returns which day and try it was. */
 export async function startTry(): Promise<{ day: string; tryNo: number }> {
   const day = today();
-  if (myTries(day).length >= TRIES) throw new Error("No tries left today. New game at 10:30 PM.");
+  if (myTries(day).length >= TRIES) throw new Error("No tries left today. New game at midnight.");
   track("game_started", { game: gameFor(day), daily: true, try: myTries(day).length + 1 });
   if (_get().mode === "live") {
     const { data, error } = await supabase.rpc("start_daily_try");
