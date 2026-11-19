@@ -39,9 +39,40 @@ export function useDoing(d: Doing | null) {
   }, [key]);
 }
 
+// Really here: the app is on screen, in focus, and touched in the last few
+// minutes. An app left open on a laptop or a phone that stays awake doesn't
+// keep you "online" for hours.
+const IDLE_MS = 3 * 60_000;
+let lastInput = Date.now();
+let awaySent = false;
+if (typeof window !== "undefined") {
+  const touch = () => {
+    lastInput = Date.now();
+    if (awaySent) {
+      awaySent = false;
+      sendStatus();
+    }
+  };
+  for (const ev of ["pointerdown", "keydown", "touchstart", "wheel", "scroll"])
+    window.addEventListener(ev, touch, { passive: true, capture: true });
+}
+const reallyHere = () =>
+  document.visibilityState === "visible" &&
+  (typeof document.hasFocus !== "function" || document.hasFocus()) &&
+  Date.now() - lastInput < IDLE_MS;
+
 /** Tell the server we're here (and what we're doing). */
 export function sendStatus() {
   if (_get().mode !== "live" || document.visibilityState !== "visible") return;
+  if (!reallyHere()) {
+    // Gone idle: say so once, so we drop off your 25's "online" right away.
+    if (!awaySent) {
+      awaySent = true;
+      markAway();
+    }
+    return;
+  }
+  awaySent = false;
   void supabase
     .rpc(
       "set_status" as never,

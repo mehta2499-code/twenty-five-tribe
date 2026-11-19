@@ -5,7 +5,8 @@ import { _get, seatedFriends, useSocial } from "@/lib/social";
 import { today } from "@/lib/daily";
 
 export type Bday = { id: string; month: number; day: number };
-export type CardNote = { author: string; body: string; at: number };
+/** body is null when it isn't yours to read (only the birthday person reads them all). */
+export type CardNote = { author: string; body: string | null; at: number };
 
 const DAY = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -107,21 +108,20 @@ export async function loadCard(target: string): Promise<CardNote[]> {
           ][i],
           at: Date.now() - (i + 1) * 3_600_000,
         }));
-      return [...mine, ...others];
+      const own = target === "me" || target === _get().me?.id;
+      return [...mine, ...others.map((o) => (own ? o : { ...o, body: null }))];
     } catch {
       return [];
     }
   }
-  const { data } = await supabase
-    .from("birthday_cards")
-    .select("author,body,created_at")
-    .eq("target", target)
-    .eq("year", cardYear())
-    .order("created_at");
+  // Who wished; the words only for the birthday person (and your own wish).
+  const { data } = await supabase.rpc("card_wishes" as never, { p_target: target } as never);
   const me = s.me?.id;
-  return ((data ?? []) as { author: string; body: string; created_at: string }[]).map((r) => ({
+  return (
+    (data ?? []) as unknown as { author: string; body: string | null; created_at: string }[]
+  ).map((r) => ({
     author: r.author === me ? "me" : r.author,
-    body: r.body,
+    body: r.body ?? null,
     at: Date.parse(r.created_at),
   }));
 }

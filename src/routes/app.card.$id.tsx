@@ -21,6 +21,13 @@ export const Route = createFileRoute("/app/card/$id")({
 });
 
 const TONES = ["var(--lime)", "var(--pink)", "var(--sky)", "var(--sun)"];
+/** Stand-in text under the blur (never the real wish). */
+const BLURS = [
+  "Happy birthday you absolute legend, have the best day ever",
+  "Another year of you being iconic, love you loads",
+  "Wishing you all the cake and none of the drama",
+  "So lucky to have you in my 25, party tonight?",
+];
 const CONFETTI: [number, number, string, number][] = [
   [6, 4, "#F27DA6", 20],
   [18, 10, "#C1EF62", -30],
@@ -104,7 +111,9 @@ function CardScreen() {
         <section className="px-5 mt-6">
           <div className="card p-4">
             <p className="font-bold text-cream">Sign {first}'s card</p>
-            <p className="meta mt-0.5">{first} and your 25 can read the card.</p>
+            <p className="meta mt-0.5">
+              Only {first} can read the wishes. Your 25 just see who wished.
+            </p>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 280))}
@@ -226,7 +235,18 @@ function CardScreen() {
                       <p className="text-[12px] font-extrabold opacity-75">
                         {n.author === "me" ? "You" : (who?.name.split(" ")[0] ?? "Someone")}
                       </p>
-                      <p className="font-bold text-[15px] leading-snug break-words">{n.body}</p>
+                      {n.body != null ? (
+                        <p className="font-bold text-[15px] leading-snug break-words">{n.body}</p>
+                      ) : (
+                        // Not yours to read: a blurred stand-in (the real words never reach this phone).
+                        <p
+                          className="font-bold text-[15px] leading-snug select-none"
+                          style={{ filter: "blur(5px)" }}
+                          aria-label={`Only ${first} can read this`}
+                        >
+                          {BLURS[i % BLURS.length]}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
