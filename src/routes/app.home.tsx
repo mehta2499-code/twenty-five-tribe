@@ -69,6 +69,7 @@ import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { BirthdayPop } from "@/components/BirthdayPop";
+import { PollsPop } from "@/components/PollsPop";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
 import { PER_WEEK, daysToNewPolls, myVotesThisWeek } from "@/lib/polls";
 
@@ -2083,6 +2084,7 @@ function Home() {
 
       <Confetti fire={confetti} />
       <BirthdayPop />
+      <PollsPop />
       {pickSong && (
         <NowPlayingPicker
           onClose={() => {
