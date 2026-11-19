@@ -631,13 +631,13 @@ function OddOneOut({ onFinish, onClose }: RoundProps) {
                 key={`${score}-${i}`}
                 onClick={() => tap(i)}
                 className="aspect-square rounded-xl flex items-center justify-center active:scale-90 transition-transform"
-                style={{ background: "var(--fill)", fontSize: board.size > 4 ? 26 : 34 }}
+                style={{ background: "var(--fill)", fontSize: board.size > 4 ? 30 : 40 }}
                 aria-label={`Emoji ${i + 1}`}
               >
-                <Glyph3D
-                  emoji={i === board.at ? board.odd : board.common}
-                  size={board.size > 4 ? 34 : 44}
-                />
+                {/* Plain emoji (the phone's own), not the 3D art. */}
+                <span aria-hidden="true" style={{ lineHeight: 1 }}>
+                  {i === board.at ? board.odd : board.common}
+                </span>
               </button>
             ))}
           </div>
