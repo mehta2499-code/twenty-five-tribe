@@ -162,6 +162,8 @@ function Seat({
   y: number;
 }) {
   const turn = state.turn === index && (state.phase === "bidding" || state.phase === "playing");
+  // Their turn clock runs round their photo.
+  const clock = useTurnLeft(state);
   const bid = state.bids[index];
   const cardsLeft = state.hands[index]?.length ?? 0;
   const made = bid !== null && state.won[index] === bid;
@@ -175,7 +177,11 @@ function Seat({
           className="block rounded-full"
           style={{
             padding: 3,
-            background: turn ? "var(--lime)" : "transparent",
+            background: !turn
+              ? "transparent"
+              : clock
+                ? `conic-gradient(${clock.urgent ? "var(--pink)" : "var(--lime)"} ${clock.pct}%, rgba(255,255,255,0.15) 0)`
+                : "var(--lime)",
             boxShadow: turn ? "0 0 0 2px #0B0A10, 0 0 18px rgba(181,219,94,0.6)" : undefined,
           }}
         >
@@ -252,6 +258,7 @@ export function KachufulBoard({
   const [helpOpen, setHelpOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showLast, setShowLast] = useState(false);
+  const turnClock = useTurnLeft(state);
   const lastKey = state.lastTrick
     ? state.lastTrick.cards.map((c) => c.card).join() + state.round
     : "";
@@ -338,6 +345,8 @@ export function KachufulBoard({
     );
 
   const bidding = state.phase === "bidding" && myTurn;
+  // Your turn clock lives in your status box (you have no seat at the table).
+  const myClock = myTurn ? turnClock : null;
   return (
     <Landscape>
       {(W, H) => {
@@ -354,7 +363,6 @@ export function KachufulBoard({
               background: "radial-gradient(120% 90% at 40% 45%, #1B2A24 0%, #121019 70%)",
             }}
           >
-            <TurnTimer state={state} mine={state.turn === mySeat} />
             <div className="flex-1 min-h-0 flex">
               {/* The table */}
               <div className="relative flex-1 min-w-0">
@@ -399,6 +407,13 @@ export function KachufulBoard({
                   className="absolute z-10 flex items-center gap-1.5"
                   style={{ right: 8, top: 8 }}
                 >
+                  <span
+                    className="text-[12px] font-extrabold uppercase tracking-[0.08em] rounded-full px-2.5 py-1"
+                    style={{ background: "rgba(7,6,11,0.6)", color: "#E9E4F2" }}
+                    aria-hidden="true"
+                  >
+                    Trump
+                  </span>
                   <span
                     className="flex items-center justify-center rounded-xl"
                     style={{
@@ -445,6 +460,14 @@ export function KachufulBoard({
                   }}
                   role="status"
                 >
+                  {myClock && (
+                    <span
+                      className="float-right ml-2 font-black tabular-nums"
+                      style={{ color: myClock.urgent ? "var(--pink)" : "var(--lime)" }}
+                    >
+                      {Math.ceil(myClock.left / 1000)}s
+                    </span>
+                  )}
                   <b>{error ?? status}</b>
                   {!error && myBid !== null && (
                     <span style={{ color: "#CBC5D8" }}>
@@ -453,6 +476,22 @@ export function KachufulBoard({
                     </span>
                   )}
                   {!error && note && <span style={{ color: "#CBC5D8" }}> · {note}</span>}
+                  {myClock && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-3 right-3 bottom-1 h-[3px] rounded-full overflow-hidden"
+                      style={{ background: "rgba(255,255,255,0.12)" }}
+                    >
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          width: `${myClock.pct}%`,
+                          background: myClock.urgent ? "var(--pink)" : "var(--lime)",
+                          transition: "width 250ms linear",
+                        }}
+                      />
+                    </span>
+                  )}
                 </div>
 
                 {/* Game chat, tucked in the bottom-right corner (online games) */}
@@ -1316,7 +1355,8 @@ export function KachufulLobby({
 export { botSeats };
 
 /** Countdown for the current turn (only when the table has a timer). */
-function TurnTimer({ state, mine }: { state: KState; mine: boolean }) {
+/** Time left on the current turn (null when there's no turn clock). */
+function useTurnLeft(state: KState) {
   const [now, setNow] = useState(Date.now());
   const on =
     !!state.turnSeconds &&
@@ -1330,31 +1370,5 @@ function TurnTimer({ state, mine }: { state: KState; mine: boolean }) {
   if (!on) return null;
   const total = state.turnSeconds! * 1000;
   const left = Math.max(0, state.turnStartedAt! + total - now);
-  const pct = (left / total) * 100;
-  const urgent = left < 5000;
-  return (
-    <div className="px-4 pt-[max(0.5rem,env(safe-area-inset-top))]" aria-live="polite">
-      <div
-        className="h-1.5 rounded-full overflow-hidden"
-        style={{ background: "rgba(255,255,255,0.08)" }}
-      >
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${pct}%`,
-            background: urgent ? "var(--pink)" : mine ? "var(--lime)" : "var(--sky)",
-            transition: "width 250ms linear",
-          }}
-        />
-      </div>
-      {mine && (
-        <p
-          className="text-center text-[12px] font-bold mt-1"
-          style={{ color: urgent ? "var(--pink)" : "var(--ink-2)" }}
-        >
-          {Math.ceil(left / 1000)}s to {state.phase === "bidding" ? "call" : "play"}
-        </p>
-      )}
-    </div>
-  );
+  return { left, pct: (left / total) * 100, urgent: left < 5000 };
 }
