@@ -64,6 +64,7 @@ import {
   setGroupPhoto,
   voteGroupPoll,
   useGroups,
+  refreshGroups,
 } from "@/lib/groups";
 
 export const Route = createFileRoute("/app/group/$id")({
@@ -105,6 +106,10 @@ function GroupThread() {
   const [votesFor, setVotesFor] = useState<string | null>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
 
+  // Opening the group (often from a notification): get the newest messages.
+  useEffect(() => {
+    refreshGroups();
+  }, [id]);
   useEffect(() => {
     markSeen(id);
   }, [id, msgs.length]);

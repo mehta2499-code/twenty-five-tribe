@@ -58,7 +58,7 @@ import {
   sendMedia,
   sendVoice,
 } from "@/components/ChatExtras";
-import { sendTyping } from "@/lib/live";
+import { catchUpMessages, sendTyping } from "@/lib/live";
 import {
   clock,
   dayKey,
@@ -101,6 +101,10 @@ function ChatThread() {
   const typing = s.typing[id];
   const live = s.mode === "live";
 
+  // Opening a chat (often from a notification): make sure the newest messages are here.
+  useEffect(() => {
+    void catchUpMessages();
+  }, [id]);
   useEffect(() => {
     social.markRead(id);
   }, [id, msgs.length]);

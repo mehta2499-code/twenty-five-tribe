@@ -831,6 +831,81 @@ function stop() {
   _restoreDemo();
 }
 
+/**
+ * Fetch any chat messages newer than the last one we have and merge them in.
+ * Live updates can be missed while the phone sleeps or the app is in the
+ * background (the connection drops), so this runs every time the app comes
+ * back and whenever a notification is tapped. Cheap: only new rows.
+ */
+let catching: Promise<void> | null = null;
+export function catchUpMessages(): Promise<void> {
+  if (!myId) return Promise.resolve();
+  if (catching) return catching;
+  const me = myId;
+  const run = async () => {
+    let last = 0;
+    for (const list of Object.values(_get().chats))
+      for (const m of list) if (m.at > last) last = m.at;
+    // A little overlap, so a message stamped just before the last one isn't skipped.
+    const since = new Date(Math.max(0, last - 60_000)).toISOString();
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`sender.eq.${me},recipient.eq.${me}`)
+      .gt("created_at", since)
+      .order("created_at", { ascending: true })
+      .limit(500)
+      .returns<MessageRow[]>();
+    if (!data?.length || myId !== me) return;
+    _set((s) => {
+      const chats = { ...s.chats };
+      const unread = { ...s.unread };
+      let changed = false;
+      for (const m of data) {
+        const other = m.sender === me ? m.recipient : m.sender;
+        const list = chats[other] ?? [];
+        const i = list.findIndex((x) => x.id === m.id);
+        if (i >= 0) {
+          // Already have it: pick up read ticks or a delete.
+          const next = toChat(m);
+          if (next.status !== list[i].status || next.deleted !== list[i].deleted) {
+            chats[other] = list.map((x, k) => (k === i ? { ...x, ...next } : x));
+            changed = true;
+          }
+          continue;
+        }
+        chats[other] = [...list, toChat(m)].sort((a, b) => a.at - b.at);
+        if (m.recipient === me && !m.read_at) unread[other] = (unread[other] ?? 0) + 1;
+        changed = true;
+      }
+      return changed ? { ...s, chats, unread } : s;
+    });
+    if (data.some((m) => m.recipient === me && !m.delivered_at))
+      void supabase
+        .from("messages")
+        .update({ delivered_at: new Date().toISOString() })
+        .eq("recipient", me)
+        .is("delivered_at", null)
+        .then(() => {});
+  };
+  catching = run()
+    .catch(() => undefined)
+    .finally(() => {
+      catching = null;
+    });
+  return catching;
+}
+
+/** The live connection died while asleep: open it again. */
+function reconnectIfDropped() {
+  if (!myId) return;
+  const dead = channels.some((c) => c.state !== "joined" && c.state !== "joining");
+  if (dead) {
+    stopChannels();
+    subscribe();
+  }
+}
+
 let started = false;
 let hiddenAt = Date.now();
 /** Call once in the browser: picks up an existing session and listens for sign-in/out. */
@@ -846,7 +921,17 @@ export function initLive() {
   document.addEventListener("visibilitychange", () => {
     // Back after a while: catch up. Quick app switches don't need a full reload.
     if (document.visibilityState === "hidden") hiddenAt = Date.now();
-    else if (myId && Date.now() - hiddenAt > 30_000) scheduleReload(100);
+    else if (myId) {
+      // Always: new messages (even after a quick switch), and a fresh connection if it dropped.
+      reconnectIfDropped();
+      void catchUpMessages();
+      if (Date.now() - hiddenAt > 30_000) scheduleReload(100);
+    }
+  });
+  window.addEventListener("online", () => {
+    if (!myId) return;
+    reconnectIfDropped();
+    void catchUpMessages();
   });
 }
 

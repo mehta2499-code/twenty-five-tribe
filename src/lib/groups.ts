@@ -348,6 +348,20 @@ export function useGroups() {
   return st;
 }
 
+/**
+ * Back in the app (or a notification was tapped): reload groups, since live
+ * updates can be missed while the phone sleeps.
+ */
+let groupsHiddenAt = 0;
+export function refreshGroups() {
+  if (liveFor && liveFor !== "demo") void load(liveFor);
+}
+if (typeof document !== "undefined")
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") groupsHiddenAt = Date.now();
+    else if (Date.now() - groupsHiddenAt > 3000) refreshGroups();
+  });
+
 /** Display info for anyone in a group. */
 export function member(id: string, st: State): Member {
   if (id === "me") {

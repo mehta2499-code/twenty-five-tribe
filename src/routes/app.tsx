@@ -8,7 +8,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { InAppBanner } from "@/components/InAppBanner";
 import { AnimatedLogo, SeatLogo } from "@/components/Logo";
 import { Toast } from "@/components/SocialUI";
-import { initLive } from "@/lib/live";
+import { catchUpMessages, initLive } from "@/lib/live";
+import { refreshGroups } from "@/lib/groups";
 import { syncPush } from "@/lib/push";
 import { clearError, clearNotice, useSocial } from "@/lib/social";
 
@@ -116,11 +117,14 @@ function AppLayout() {
     navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     const onMessage = (e: MessageEvent) => {
       const d = e.data as { type?: string; url?: string } | null;
-      if (d?.type === "open" && typeof d.url === "string" && d.url.startsWith("/"))
+      if (d?.type === "open" && typeof d.url === "string" && d.url.startsWith("/")) {
+        void catchUpMessages();
+        refreshGroups();
         openLink(
           navigate as unknown as (o: { to: string; search?: Record<string, string> }) => unknown,
           d.url,
         );
+      }
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
