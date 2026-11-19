@@ -1,7 +1,6 @@
 /**
- * Weekly trivia: 5 new topics every week, switching every Saturday at
- * midnight India time. Week 1 started Saturday 14 Nov 2026. After week 8 it
- * loops back to week 1.
+ * Weekly trivia: 5 new topics every week, switching every Friday at 9 PM
+ * India time (with a push). After week 8 it loops back to week 1.
  */
 import week1 from "@/lib/trivia/week1";
 import week2 from "@/lib/trivia/week2";
@@ -15,8 +14,11 @@ import type { WeekPack } from "@/lib/trivia/types";
 
 export const WEEKS: WeekPack[][] = [week1, week2, week3, week4, week5, week6, week7, week8];
 
-/** Saturday 14 Nov 2026, 00:00 in India (UTC+5:30). */
-const ANCHOR = Date.UTC(2026, 10, 13, 18, 30);
+/**
+ * Topics switch every Friday at 9 PM India time. Week 1 counts from Friday
+ * 13 Nov 2026, 9 PM (UTC+5:30). Keep in sync with public.trivia_week_now().
+ */
+const ANCHOR = Date.UTC(2026, 10, 13, 15, 30);
 const WEEK_MS = 7 * 24 * 3600_000;
 
 /** Which week of the rotation it is (0-7). */

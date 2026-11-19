@@ -71,7 +71,7 @@ import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { BirthdayPop } from "@/components/BirthdayPop";
 import { PollsPop } from "@/components/PollsPop";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
-import { PER_WEEK, daysToNewPolls, myVotesThisWeek } from "@/lib/polls";
+import { PER_WEEK, myVotesThisWeek, newPollsWhen } from "@/lib/polls";
 
 export const Route = createFileRoute("/app/home")({
   component: clientOnly(Home),
@@ -1729,7 +1729,7 @@ function TodayTiles() {
         ? `${picksLeft} left`
         : newPolls
           ? "new"
-          : `New ${daysToNewPolls() === 1 ? "tomorrow" : "on Sunday"}`;
+          : `New ${newPollsWhen()}`;
 
   const card = (hot: boolean, tone: string) =>
     hot

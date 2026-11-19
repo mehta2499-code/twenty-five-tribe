@@ -1,20 +1,48 @@
 /**
- * Anonymous compliment polls, weekly: a new set of 10 questions every Sunday
- * (India time). For each, pick one of 4 people from your mutual 25. The person
+ * Anonymous compliment polls, weekly: a new set of 10 questions every Thursday
+ * at 9 PM (India time). For each, pick one of 4 people from your mutual 25. The person
  * picked is told "someone picked you", never who.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { _get, mutualFriends, type Person } from "@/lib/social";
-import { addDays, calendarDay as today } from "@/lib/daily";
+import { _get, dayKey, mutualFriends, type Person } from "@/lib/social";
+import { addDays } from "@/lib/daily";
 
-/** The Sunday this poll week started (India time), as "YYYY-MM-DD". */
-export function pollWeek(day = today()) {
-  const dow = new Date(`${day}T00:00:00Z`).getUTCDay(); // 0 = Sunday
-  return addDays(day, -dow);
+/*
+ * Poll weeks turn over every Thursday at 9 PM India time. The set launched on
+ * Thu 19 Nov 2026 runs until Thu 26 Nov, 9 PM (it keeps its old key,
+ * "2026-11-15", so votes already cast still count). After that, each week's
+ * key is the Thursday it started. Keep in sync with public.poll_week().
+ */
+const FIRST_KEY = "2026-11-15";
+const FIRST_SWITCH = "2026-11-26"; // a Thursday; new polls at 9 PM
+const SHIFT = 3 * 3_600_000; // 9 PM + 3 h = the next day
+const dayMs = 86_400_000;
+const daysBetween = (a: string, b: string) =>
+  Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / dayMs);
+
+/** This poll week's key, as "YYYY-MM-DD". */
+export function pollWeek(now = Date.now()) {
+  const shifted = dayKey(now + SHIFT); // from Thu 9 PM it's "Friday"
+  const since = daysBetween(addDays(FIRST_SWITCH, 1), shifted);
+  if (since < 0) return FIRST_KEY;
+  return addDays(FIRST_SWITCH, 7 * Math.floor(since / 7));
 }
 
-/** Days until the next Sunday refresh (1-7). */
-export const daysToNewPolls = (day = today()) => 7 - new Date(`${day}T00:00:00Z`).getUTCDay();
+/** When the next set of polls comes out (ms). */
+export function nextPollsAt(now = Date.now()) {
+  const key = pollWeek(now);
+  const start = key === FIRST_KEY ? FIRST_SWITCH : addDays(key, 7);
+  return Date.parse(`${start}T21:00:00+05:30`);
+}
+
+/** "tonight at 9 PM", "tomorrow at 9 PM", "Thursday at 9 PM". */
+export function newPollsWhen(now = Date.now()) {
+  const at = nextPollsAt(now);
+  const d = daysBetween(dayKey(now), dayKey(at));
+  if (d <= 0) return "tonight at 9 PM";
+  if (d === 1) return "tomorrow at 9 PM";
+  return "Thursday at 9 PM";
+}
 
 /**
  * Spicy (but never mean) questions. Each week takes the next 10 in a shuffled
@@ -189,12 +217,11 @@ function hash(s: string) {
 
 /** A fixed shuffle of the list, so weeks walk through it without repeats. */
 const ORDER = [...QUESTIONS].sort((a, b) => hash("25:" + a) - hash("25:" + b));
-const WEEK_ONE = "2026-11-15"; // a Sunday
 
 export function questionsFor(day = pollWeek()): string[] {
-  const weeks = Math.round(
-    (Date.parse(`${day}T00:00:00Z`) - Date.parse(`${WEEK_ONE}T00:00:00Z`)) / (7 * 86_400_000),
-  );
+  // The first set is 0; then one more each Thursday, never repeating a set
+  // until the whole list has gone round.
+  const weeks = day === FIRST_KEY ? 0 : 1 + Math.round(daysBetween(FIRST_SWITCH, day) / 7);
   const rounds = Math.floor(ORDER.length / PER_WEEK);
   const k = ((weeks % rounds) + rounds) % rounds;
   return ORDER.slice(k * PER_WEEK, k * PER_WEEK + PER_WEEK);

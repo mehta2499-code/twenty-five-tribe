@@ -8,7 +8,7 @@ import { Confetti, EmptyState, PageBand, Toast, buzz, clientOnly } from "@/compo
 import { mutualFriends, timeAgo, useSocial } from "@/lib/social";
 import {
   PER_WEEK,
-  daysToNewPolls,
+  newPollsWhen,
   myPicks,
   myVotesThisWeek,
   optionsFor,
@@ -18,11 +18,8 @@ import {
 } from "@/lib/polls";
 import { Users } from "lucide-react";
 
-/** "tomorrow" / "in 3 days": when Sunday's new polls arrive. */
-const newPollsIn = () => {
-  const d = daysToNewPolls();
-  return d === 1 ? "tomorrow" : `in ${d} days`;
-};
+/** "tomorrow at 9 PM" / "Thursday at 9 PM": when the next polls come out. */
+const newPollsIn = () => newPollsWhen();
 
 export const Route = createFileRoute("/app/polls")({
   head: () => ({ meta: [{ title: "Polls · 25" }] }),
