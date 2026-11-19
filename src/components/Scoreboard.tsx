@@ -1,6 +1,6 @@
 /**
  * The season on the Games page: a summary card (top 3, your place, the gap)
- * and the full board. Points come from the three daily games only; live games
+ * and the full board. Points come from the four daily games only; live games
  * with your 25 don't count.
  */
 import { useEffect, useState } from "react";
@@ -17,12 +17,12 @@ import {
   seasonOf,
   today,
   tuneRanking,
+  secRanking,
   useDaily,
 } from "@/lib/daily";
 import { Avatar } from "@/components/Avatar";
 import { Sheet } from "@/components/SocialUI";
 import { Crown } from "lucide-react";
-
 
 function person(id: string) {
   if (id === "me") {
@@ -148,7 +148,7 @@ function SeasonBanner({
   );
 }
 
-/** This season's standings among you and your 25 (all three daily games). */
+/** This season's standings among you and your 25 (all four daily games). */
 function useSeasonRows() {
   const d = useDaily();
   const day = today();
@@ -159,6 +159,7 @@ function useSeasonRows() {
     for (const r of dayRanking(d, k)) add(r.id, r.points);
     for (const [id, w] of Object.entries(wordDay(d.words[k]))) add(id, w.points);
     for (const r of tuneRanking(d, k)) add(r.id, r.points);
+    for (const r of secRanking(d, k)) add(r.id, r.points);
   }
   const sorted = Object.entries(totals)
     .filter(([, n]) => n > 0)
@@ -281,7 +282,7 @@ export function SeasonCard() {
               </p>
             )}
             <p className="text-center meta mt-4 pb-4">
-              Points from all three daily games. Only your mutual 25 see your scores.
+              Points from all four daily games. Only your mutual 25 see your scores.
             </p>
           </Sheet>
         </div>

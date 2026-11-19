@@ -18,6 +18,7 @@ import { tuneOf } from "@/lib/earworm";
 import {
   TRIES,
   tuneRanking,
+  secRanking,
   addDays,
   dayRanking,
   gameFor,
@@ -316,7 +317,7 @@ function RankPill({ r, unit }: { r: Row; unit: string }) {
 }
 
 // ---------- Games home: Today (three compact rows) + each game's board ----------
-type DailyKind = "daily" | "word" | "tune";
+type DailyKind = "daily" | "word" | "tune" | "sec";
 const TUNE_CATS: Record<string, string> = {
   bollywood: "Bollywood",
   punjabi: "Punjabi",
@@ -353,10 +354,22 @@ function dayBoards(d: ReturnType<typeof useDaily>, day: string) {
   const tune: Row[] = tuneRanking(d, day).map((r) => ({
     id: r.id,
     rank: r.rank,
-    score: r.ms != null ? `${(r.ms / 1000).toFixed(1)}s` : "✗",
+    score:
+      r.skips == null
+        ? "✗"
+        : r.skips === 0
+          ? "No skips"
+          : `${r.skips} skip${r.skips > 1 ? "s" : ""}`,
     points: r.points,
   }));
   const tuneCat = TUNE_CATS[tuneOf(day).cat];
+  const sec: Row[] = secRanking(d, day).map((r) => ({
+    id: r.id,
+    rank: r.rank,
+    score: (r.best / 1000).toFixed(3),
+    tries: r.tries.filter((t) => t >= 0).length,
+    points: r.points,
+  }));
   return {
     daily: {
       art: (revealed ? gameFor(day) : "mystery") as Parameters<typeof GameArt>[0]["kind"],
@@ -387,21 +400,32 @@ function dayBoards(d: ReturnType<typeof useDaily>, day: string) {
       tries: d.tunes[day]?.me ? 1 : 0,
       extra: tuneCat,
     },
+    sec: {
+      art: "sec25" as const,
+      name: "25 Sec",
+      bg: "linear-gradient(140deg, #8C6CF0, #2B1A5C 130%)",
+      rows: sec,
+      unit: "s off",
+      tries: d.secs[day]?.me?.length ?? 0,
+      extra: "Count to 25",
+    },
   };
 }
 
 /**
- * Today: the three daily games as compact rows. Tap a row to play (or, once
+ * Today: the four daily games as compact rows. Tap a row to play (or, once
  * you've played, to see its board); your rank on the right opens the board too.
  */
 export function TodaySection({
   onPlayDaily,
   onPlayWord,
   onPlayTune,
+  onPlaySec,
 }: {
   onPlayDaily?: () => void;
   onPlayWord?: () => void;
   onPlayTune?: () => void;
+  onPlaySec?: () => void;
 }) {
   const d = useDaily();
   const day = today();
@@ -416,6 +440,7 @@ export function TodaySection({
     { kind: "daily", max: TRIES, onPlay: onPlayDaily },
     { kind: "word", max: 1, onPlay: onPlayWord },
     { kind: "tune", max: 1, onPlay: onPlayTune },
+    { kind: "sec", max: TRIES, onPlay: onPlaySec },
   ];
   return (
     <section className="px-5 mt-6" aria-label="Today's games">

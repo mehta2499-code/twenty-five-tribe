@@ -81,10 +81,12 @@ type DailyState = {
   board: Record<string, Record<string, number[]>>;
   words: Record<string, Record<string, WordResult>>;
   tunes: Record<string, Record<string, TuneResult>>;
+  /** 25 Sec: day -> person -> tries, each how far off 25 s (ms); -1 = started, not stopped. */
+  secs: Record<string, Record<string, number[]>>;
   loaded: boolean;
 };
 
-let store: DailyState = { board: {}, words: {}, tunes: {}, loaded: false };
+let store: DailyState = { board: {}, words: {}, tunes: {}, secs: {}, loaded: false };
 const listeners = new Set<() => void>();
 function setStore(fn: (s: DailyState) => DailyState) {
   store = fn(store);
@@ -138,19 +140,22 @@ function demoBoard() {
 function loadDemo() {
   const { board, words } = demoBoard();
   const tunes: DailyState["tunes"] = {};
+  const secs: DailyState["secs"] = {};
   try {
     const mine = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "{}") as {
       board?: Record<string, number[]>;
       words?: Record<string, WordResult>;
       tunes?: Record<string, TuneResult>;
+      secs?: Record<string, number[]>;
     };
     for (const [day, tries] of Object.entries(mine.board ?? {})) (board[day] ??= {}).me = tries;
     for (const [day, w] of Object.entries(mine.words ?? {})) (words[day] ??= {}).me = w;
     for (const [day, t] of Object.entries(mine.tunes ?? {})) (tunes[day] ??= {}).me = t;
+    for (const [day, t] of Object.entries(mine.secs ?? {})) (secs[day] ??= {}).me = t;
   } catch {
     // Unreadable; start fresh.
   }
-  store = { board, words, tunes, loaded: true };
+  store = { board, words, tunes, secs, loaded: true };
   listeners.forEach((l) => l());
 }
 function saveDemo() {
@@ -161,7 +166,9 @@ function saveDemo() {
     for (const [d, r] of Object.entries(store.words)) if (r.me) words[d] = r.me;
     const tunes: Record<string, TuneResult> = {};
     for (const [d, r] of Object.entries(store.tunes)) if (r.me) tunes[d] = r.me;
-    localStorage.setItem(DEMO_KEY, JSON.stringify({ board, words, tunes }));
+    const secs: Record<string, number[]> = {};
+    for (const [d, r] of Object.entries(store.secs)) if (r.me) secs[d] = r.me;
+    localStorage.setItem(DEMO_KEY, JSON.stringify({ board, words, tunes, secs }));
   } catch {
     // ignore
   }
@@ -175,12 +182,16 @@ let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 async function loadLive(me: string) {
   // Back to the start of the season (or last week, whichever is earlier).
   const since = [lastWeek(), seasonOf().start].sort()[0];
-  const [scores, words, tunes] = await Promise.all([
+  const [scores, words, tunes, secRows] = await Promise.all([
     supabase.from("daily_scores").select("user_id,day,tries").gte("day", since),
     supabase.from("word_results").select("user_id,day,guesses,grid").gte("day", since),
     supabase
       .from("tune_results" as never)
       .select("user_id,day,ms,stage")
+      .gte("day" as never, since as never),
+    supabase
+      .from("sec25_scores" as never)
+      .select("user_id,day,tries")
       .gte("day" as never, since as never),
   ]);
   const who = (id: string) => (id === me ? "me" : id);
@@ -203,8 +214,15 @@ async function loadLive(me: string) {
     stage: number | null;
   }[])
     (t[r.day] ??= {})[who(r.user_id)] = { ms: r.ms, stage: r.stage };
+  const sc: DailyState["secs"] = {};
+  for (const r of (secRows.data ?? []) as unknown as {
+    user_id: string;
+    day: string;
+    tries: number[];
+  }[])
+    (sc[r.day] ??= {})[who(r.user_id)] = r.tries;
   if (liveFor !== me) return;
-  store = { board, words: w, tunes: t, loaded: true };
+  store = { board, words: w, tunes: t, secs: sc, loaded: true };
   listeners.forEach((l) => l());
 }
 
@@ -225,6 +243,7 @@ function ensureLoaded() {
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_scores" }, reload)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "word_results" }, reload)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "tune_results" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "sec25_scores" }, reload)
       .subscribe();
   } else if (s.mode === "demo" && (liveFor !== "demo" || !store.loaded)) {
     liveFor = "demo";
@@ -307,20 +326,94 @@ export async function saveTune(day: string, result: TuneResult) {
   }
 }
 
-/** Daily Name That Tune: quickest first; missed it = 2 points for playing. */
+// ---------- 25 Sec ----------
+export const SEC_TARGET = 25_000;
+export function mySecs(day = today()) {
+  return store.secs[day]?.me ?? [];
+}
+/** Uses up one of today's 25 Sec tries (the clock starts when this returns). */
+export async function startSec(): Promise<string> {
+  const day = today();
+  if (mySecs(day).length >= TRIES) throw new Error("No tries left today. Back at midnight.");
+  track("game_started", { game: "sec25", daily: true, try: mySecs(day).length + 1 });
+  let d = day;
+  if (_get().mode === "live") {
+    const { data, error } = await supabase.rpc("start_sec25_try" as never);
+    if (error) throw new Error(error.message);
+    d = (data as unknown as { day: string }).day;
+  }
+  setStore((s) => ({
+    ...s,
+    secs: { ...s.secs, [d]: { ...s.secs[d], me: [...mySecs(d), -1] } },
+  }));
+  return d;
+}
+/** Stop the clock: how long they held (ms). Returns how far off 25 s it was. */
+export async function finishSec(day: string, heldMs: number): Promise<number> {
+  const held = Math.max(0, Math.min(120_000, Math.round(heldMs)));
+  const off = Math.abs(held - SEC_TARGET);
+  const tries = [...mySecs(day)];
+  const i = tries.lastIndexOf(-1);
+  if (i >= 0) tries[i] = off;
+  setStore((s) => ({ ...s, secs: { ...s.secs, [day]: { ...s.secs[day], me: tries } } }));
+  if (_get().mode === "live") {
+    const { error } = await supabase.rpc(
+      "finish_sec25_try" as never,
+      {
+        p_day: day,
+        p_ms: held,
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+  }
+  return off;
+}
+export const secBest = (tries: number[]) => {
+  const done = tries.filter((t) => t >= 0);
+  return done.length ? Math.min(...done) : null;
+};
+/** 25 Sec board: closest to 25 s first (ties share a place). */
+export function secRanking(d: DailyState, day: string) {
+  const rows = Object.entries(d.secs[day] ?? {})
+    .map(([id, tries]) => ({ id, tries, best: secBest(tries) }))
+    .filter((r): r is { id: string; tries: number[]; best: number } => r.best !== null)
+    .sort((a, b) => a.best - b.best);
+  let rank = 0;
+  return rows.map((r, i) => {
+    if (i === 0 || r.best !== rows[i - 1].best) rank = i + 1;
+    return { ...r, rank, points: POINTS[rank - 1] ?? PLAYED_POINTS };
+  });
+}
+
+/**
+ * Daily Name That Tune: fewest skips first (named on the shortest clip wins).
+ * Time doesn't count; the same number of skips shares a place. Missed it = 2
+ * points for playing.
+ */
 export function tuneRanking(d: DailyState, day: string) {
   const list = Object.entries(d.tunes[day] ?? {});
-  const named = list.filter(([, r]) => r.ms != null).sort((a, b) => a[1].ms! - b[1].ms!);
+  const skips = (r: TuneResult) => r.stage ?? 0;
+  const named = list.filter(([, r]) => r.ms != null).sort((a, b) => skips(a[1]) - skips(b[1]));
   const missed = list.filter(([, r]) => r.ms == null);
   let rank = 0;
   const out = named.map(([id, r], i) => {
-    if (i === 0 || r.ms !== named[i - 1][1].ms) rank = i + 1;
-    return { id, ms: r.ms, rank, points: POINTS[rank - 1] ?? PLAYED_POINTS };
+    if (i === 0 || skips(r) !== skips(named[i - 1][1])) rank = i + 1;
+    return {
+      id,
+      skips: skips(r) as number | null,
+      rank,
+      points: POINTS[rank - 1] ?? PLAYED_POINTS,
+    };
   });
   const last = named.length + 1;
   return [
     ...out,
-    ...missed.map(([id]) => ({ id, ms: null as number | null, rank: last, points: PLAYED_POINTS })),
+    ...missed.map(([id]) => ({
+      id,
+      skips: null as number | null,
+      rank: last,
+      points: PLAYED_POINTS,
+    })),
   ];
 }
 

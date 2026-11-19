@@ -17,7 +17,8 @@ export type ArtKind =
   | "pair-up"
   | "odd-one-out"
   | "pattern"
-  | "reflex";
+  | "reflex"
+  | "sec25";
 
 export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
   return (
@@ -44,6 +45,7 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "odd-one-out" && <OddOne />}
       {kind === "pattern" && <Simon />}
       {kind === "reflex" && <Stopwatch />}
+      {kind === "sec25" && <Sec25Art />}
     </svg>
   );
 }
@@ -353,6 +355,38 @@ function Stopwatch() {
       <path d="M32 36V24" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
       <path d="M32 36l8 5" stroke="#F15B91" strokeWidth="3" strokeLinecap="round" />
       <circle cx="32" cy="36" r="2.5" fill={EDGE} />
+    </g>
+  );
+}
+
+/** 25 Sec: a stopwatch with "25" on its face. */
+function Sec25Art() {
+  return (
+    <g strokeLinejoin="round">
+      <rect
+        x="27"
+        y="3"
+        width="10"
+        height="7"
+        rx="2"
+        fill="#B8F25C"
+        stroke={EDGE}
+        strokeWidth="2"
+      />
+      <path d="M50 14l4-4" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
+      <circle cx="32" cy="36" r="24" fill="#8C6CF0" stroke={EDGE} strokeWidth="2.5" />
+      <circle cx="32" cy="36" r="18" fill="#FFF8EC" stroke={EDGE} strokeWidth="2" />
+      <text
+        x="32"
+        y="43"
+        textAnchor="middle"
+        fontSize="19"
+        fontWeight="900"
+        fill={EDGE}
+        fontFamily="system-ui, sans-serif"
+      >
+        25
+      </text>
     </g>
   );
 }

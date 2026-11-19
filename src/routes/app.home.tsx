@@ -68,6 +68,7 @@ import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
 import { PushPrompt } from "@/components/PushPrompt";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
+import { BirthdayPop } from "@/components/BirthdayPop";
 import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
 import { PER_WEEK, daysToNewPolls, myVotesThisWeek } from "@/lib/polls";
 
@@ -217,26 +218,40 @@ function Table({
   const faceSize = Math.round(
     Math.min(46, Math.max(30, (seatLine / Math.max(people.slice(0, SEATS).length, 1)) * 0.8)),
   );
+  // Birthdays in the next 7 days get a party hat.
+  const bdays = useBirthdays();
+  const bdayIn = new Map(
+    bdays
+      .filter((b) => b.id !== "me")
+      .map((b) => [b.id, daysUntil(b)] as const)
+      .filter(([, d]) => d <= 7),
+  );
+  // Birthday today: they take the middle of the table, bigger, hat on.
+  const star = seated.findIndex((f) => bdayIn.get(f.id) === 0);
   // Anyone doing something right now (playing, on the Drop, dancing to a song)
   // gets up from their seat and comes onto the table, in a ring around the dice.
   const busy = seated
     .map((f, i) => {
       const n = live.get(f.id);
-      return (n?.here && n.doing) || isListening(f) ? i : -1;
+      return i !== star && ((n?.here && n.doing) || isListening(f)) ? i : -1;
     })
     .filter((i) => i >= 0)
     .slice(0, 8);
   // Everyone still in their seat spreads out evenly, so no seat is left empty.
-  const sittingIdx = seated.map((_, i) => i).filter((i) => !busy.includes(i));
+  const sittingIdx = seated.map((_, i) => i).filter((i) => !busy.includes(i) && i !== star);
   const sittingSeats = seatPath(sittingIdx.length, W, H, faceSize);
   const places = seated.map((_, i) => {
+    if (i === star) return { x: 50, y: 40, ring: 0 as const };
     const k = busy.indexOf(i);
     if (k < 0) return sittingSeats[sittingIdx.indexOf(i)];
     const a =
       -Math.PI / 2 + (k * 2 * Math.PI) / busy.length + (busy.length === 2 ? Math.PI / 2 : 0);
-    return { x: 50 + Math.cos(a) * 19, y: 50 + Math.sin(a) * 23, ring: 0 as const };
+    const rx = star >= 0 ? 27 : 19;
+    const ry = star >= 0 ? 29 : 23;
+    return { x: 50 + Math.cos(a) * rx, y: 50 + Math.sin(a) * ry, ring: 0 as const };
   }); // A birthday cake sits on the table's edge, right in front of that person's seat.
   const cakeAt = (i: number) => {
+    if (i === star) return { x: 50, y: 58 };
     const tw = W * (1 - 2 * TABLE_INSET);
     const th = H * (1 - 2 * TABLE_INSET);
     const r = tw / 2;
@@ -264,14 +279,6 @@ function Table({
       seated.some((f, i) => bdayIn.get(f.id) === 0 && near(cakeAt(i).x, cakeAt(i).y, W * 0.075))
     );
   };
-  // Birthdays in the next 7 days get a party hat.
-  const bdays = useBirthdays();
-  const bdayIn = new Map(
-    bdays
-      .filter((b) => b.id !== "me")
-      .map((b) => [b.id, daysUntil(b)] as const)
-      .filter(([, d]) => d <= 7),
-  );
 
   useEffect(() => {
     preloadSprites([
@@ -539,7 +546,10 @@ function Table({
               "0 18px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -10px 30px rgba(0,0,0,0.25)",
           }}
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={star >= 0 ? { transform: `translateY(${H * 0.2}px)` } : undefined}
+        >
           <button
             onClick={onRoll}
             disabled={rolling || !seated.length}
@@ -590,7 +600,8 @@ function Table({
         {/* Friends */}
         {seated.map((f, i) => {
           const { x, y } = places[i];
-          const size = faceSize;
+          const isStar = i === star;
+          const size = isStar ? Math.round(Math.min(W * 0.26, faceSize * 2)) : faceSize;
           const lit = spot === i;
           const oneWay = f.mutual === false;
           const score = scores[f.id];
@@ -639,7 +650,7 @@ function Table({
                 left: `${x}%`,
                 top: `${y}%`,
                 transform: "translate(-50%, -50%)",
-                zIndex: lit ? 3 : busy.includes(i) ? 2 : 1,
+                zIndex: lit ? 3 : busy.includes(i) || isStar ? 2 : 1,
                 transition: "left 0.9s cubic-bezier(.2,.8,.2,1), top 0.9s cubic-bezier(.2,.8,.2,1)",
               }}
               aria-label={`${f.name}${score ? `, got ${score.score}/${score.total} on your quiz` : ""}${oneWay ? ", hasn't seated you back" : ""}${bdayDays !== undefined ? (bdayDays === 0 ? ", birthday today" : `, birthday in ${bdayDays} day${bdayDays === 1 ? "" : "s"}`) : ""}${now ? `, ${nowText(now)}` : ""}`}
@@ -653,7 +664,9 @@ function Table({
                   style={{
                     boxShadow: lit
                       ? "0 0 0 4px var(--lime), 0 0 28px rgba(193,239,98,0.8)"
-                      : "0 0 0 2px rgba(255,255,255,0.22), 0 10px 22px rgba(0,0,0,0.6)",
+                      : isStar
+                        ? "0 0 0 3px var(--pink), 0 0 0 7px rgba(242,125,166,0.25), 0 0 46px rgba(242,125,166,0.75)"
+                        : "0 0 0 2px rgba(255,255,255,0.22), 0 10px 22px rgba(0,0,0,0.6)",
                     transform: lit ? "scale(1.18)" : "scale(1)",
                   }}
                 >
@@ -683,6 +696,19 @@ function Table({
                     </span>
                   )}
                 </span>
+                {isStar && (
+                  <span
+                    className="mt-2 rounded-full px-2.5 py-1 text-[12px] font-extrabold whitespace-nowrap"
+                    style={{
+                      background: "linear-gradient(90deg, var(--pink), #F6A6C3)",
+                      color: "#1B1724",
+                      boxShadow: "0 6px 18px rgba(242,125,166,0.45)",
+                      animation: "float 2.4s ease-in-out infinite",
+                    }}
+                  >
+                    🎂 {f.name.split(" ")[0]}'s birthday · Wish
+                  </span>
+                )}
               </span>
             </button>
           );
@@ -1848,23 +1874,7 @@ function Home() {
   // Songs your 25 shared since you last looked (clears when you open it).
   const newSongs = useNewSongs();
   const [confetti, setConfetti] = useState(0);
-  // Your birthday: confetti the first time you open the app that day.
-  const myBday = useBirthdays().find((b) => b.id === "me");
-  useEffect(() => {
-    if (!myBday || daysUntil(myBday) !== 0) return;
-    const key = `tf.bday.confetti.${dayKey()}`;
-    try {
-      if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, "1");
-    } catch {
-      // ignore
-    }
-    const t = setTimeout(() => {
-      setConfetti((n) => n + 1);
-      buzz(40);
-    }, 600);
-    return () => clearTimeout(t);
-  }, [myBday]);
+  // Birthdays: a pop-up to wish them (or to open your own card) is in <BirthdayPop />.
   const [rolling, setRolling] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -2072,6 +2082,7 @@ function Home() {
       />
 
       <Confetti fire={confetti} />
+      <BirthdayPop />
       {pickSong && (
         <NowPlayingPicker
           onClose={() => {

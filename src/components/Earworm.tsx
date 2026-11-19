@@ -1492,7 +1492,6 @@ export function EarwormLobby({
 }
 
 // ---------- The daily song (third daily game) ----------
-const fmtSecs = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
 /** Today's Name That Tune: one song, same for everyone, quickest wins. */
 export function DailyTune({ onClose }: { onClose: () => void }) {
@@ -1603,7 +1602,11 @@ export function DailyTune({ onClose }: { onClose: () => void }) {
                 className="display mt-8"
                 style={{ fontSize: 56, color: mine.ms != null ? LIME : "#FF8A98" }}
               >
-                {mine.ms != null ? fmtSecs(mine.ms) : "Missed"}
+                {mine.ms != null
+                  ? (mine.stage ?? 0) === 0
+                    ? "No skips"
+                    : `${mine.stage} skip${(mine.stage ?? 0) > 1 ? "s" : ""}`
+                  : "Missed"}
               </p>
               <p className="mt-2" style={{ color: "rgba(255,255,255,0.7)" }}>
                 {mine.ms != null
@@ -1624,8 +1627,8 @@ export function DailyTune({ onClose }: { onClose: () => void }) {
                 className="mt-6 max-w-[300px]"
                 style={{ color: "rgba(255,255,255,0.75)", lineHeight: 1.5 }}
               >
-                One song, the same for your whole 25. The clock starts when you tap Start. Quickest
-                to name it wins. One go: leaving counts as missed.
+                One song, the same for your whole 25. Name it with the fewest skips to win. No
+                clock, take your time. One go: leaving counts as missed.
               </p>
               {err && (
                 <p className="mt-4" style={{ color: "#FF8A98" }}>

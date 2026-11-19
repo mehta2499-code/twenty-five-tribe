@@ -21,6 +21,16 @@ export const Route = createFileRoute("/app/card/$id")({
 });
 
 const TONES = ["var(--lime)", "var(--pink)", "var(--sky)", "var(--sun)"];
+const CONFETTI: [number, number, string, number][] = [
+  [6, 4, "#F27DA6", 20],
+  [18, 10, "#C1EF62", -30],
+  [84, 5, "#7CC7FF", 40],
+  [93, 14, "#FFD25E", -15],
+  [3, 40, "#FFD25E", 60],
+  [96, 46, "#F27DA6", -50],
+  [8, 86, "#7CC7FF", 25],
+  [90, 92, "#C1EF62", -20],
+];
 
 function CardScreen() {
   const { id } = Route.useParams();
@@ -94,7 +104,7 @@ function CardScreen() {
         <section className="px-5 mt-6">
           <div className="card p-4">
             <p className="font-bold text-cream">Sign {first}'s card</p>
-            <p className="meta mt-0.5">Only {first} and the people who sign can read the card.</p>
+            <p className="meta mt-0.5">{first} and your 25 can read the card.</p>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 280))}
@@ -139,43 +149,92 @@ function CardScreen() {
           </p>
         </section>
       ) : (
-        <section className="px-5 mt-6">
-          <h2 className="heading" style={{ fontSize: 19 }}>
-            {notes?.length
-              ? `${notes.length} signature${notes.length > 1 ? "s" : ""}`
-              : "No signatures yet"}
-          </h2>
-          {!mine && !signed && (notes?.length ?? 0) > 0 && (
-            <p className="meta mt-1">Sign it to read what everyone wrote</p>
-          )}
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {(notes ?? []).map((n, i) => {
-              const who = n.author === "me" ? meView() : friendById(n.author);
-              const hidden = !mine && !signed;
-              return (
-                <div
-                  key={i}
-                  className="rounded-2xl p-3.5"
+        <section className="px-4 mt-6">
+          {/* The card itself: a folded greeting card your 25 signed. */}
+          <div
+            className="relative rounded-[26px] px-4 pt-6 pb-5 overflow-hidden"
+            style={{
+              background:
+                "radial-gradient(90% 60% at 0% 0%, rgba(242,125,166,0.35), transparent 60%), radial-gradient(80% 60% at 100% 100%, rgba(193,239,98,0.25), transparent 60%), linear-gradient(180deg, #FFF8F1, #FDEFE6)",
+              color: "#2A2233",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.6)",
+            }}
+          >
+            <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+              {CONFETTI.map(([x, y, c, r], k) => (
+                <span
+                  key={k}
+                  className="absolute rounded-[2px]"
                   style={{
-                    background: TONES[i % TONES.length],
-                    color: "var(--on-accent)",
-                    border: "var(--bd)",
-                    boxShadow: "var(--pop)",
-                    transform: `rotate(${i % 2 ? 2 : -2}deg)`,
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    width: 7,
+                    height: 12,
+                    background: c,
+                    transform: `rotate(${r}deg)`,
+                    opacity: 0.7,
                   }}
-                >
-                  <p
-                    className="font-bold text-[14px] leading-snug"
-                    style={{ filter: hidden ? "blur(6px)" : "none" }}
+                />
+              ))}
+            </div>
+            <p
+              className="relative text-center font-black leading-none"
+              style={{
+                fontSize: 34,
+                letterSpacing: "-0.02em",
+                fontStyle: "italic",
+                color: "#E0457B",
+              }}
+            >
+              Happy Birthday
+            </p>
+            <p className="relative text-center font-extrabold mt-1" style={{ fontSize: 22 }}>
+              {mine ? (s.me?.name.split(" ")[0] ?? "you") : first} 🎉
+            </p>
+            <p className="relative text-center text-[13px] font-bold mt-1 opacity-60">
+              {notes?.length
+                ? `${notes.length} wish${notes.length > 1 ? "es" : ""} from ${mine ? "your" : "their"} 25`
+                : mine
+                  ? "No wishes yet. They're coming 💌"
+                  : `No wishes yet. Be the first!`}
+            </p>
+            <div className="relative mt-5 space-y-3">
+              {(notes ?? []).map((n, i) => {
+                const who = n.author === "me" ? meView() : friendById(n.author);
+                return (
+                  <div
+                    key={i}
+                    className="rounded-2xl p-3.5 flex gap-3 items-start"
+                    style={{
+                      background: TONES[i % TONES.length],
+                      color: "var(--on-accent)",
+                      boxShadow: "0 6px 16px rgba(42,34,51,0.18)",
+                      transform: `rotate(${i % 2 ? 0.8 : -0.8}deg)`,
+                    }}
                   >
-                    {n.body}
-                  </p>
-                  <p className="mt-2 text-[12px] font-extrabold opacity-80">
-                    — {n.author === "me" ? "you" : (who?.name.split(" ")[0] ?? "someone")}
-                  </p>
-                </div>
-              );
-            })}
+                    <span
+                      className="shrink-0 rounded-full"
+                      style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.8)" }}
+                    >
+                      <Avatar
+                        src={who?.avatar || undefined}
+                        initials={who?.initials ?? "?"}
+                        size={36}
+                      />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-extrabold opacity-75">
+                        {n.author === "me" ? "You" : (who?.name.split(" ")[0] ?? "Someone")}
+                      </p>
+                      <p className="font-bold text-[15px] leading-snug break-words">{n.body}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="relative text-center text-[12px] font-bold mt-5 opacity-50">
+              with love, from {mine ? "your" : first + "'s"} 25 💛
+            </p>
           </div>
         </section>
       )}

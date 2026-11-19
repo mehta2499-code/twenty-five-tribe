@@ -20,6 +20,7 @@ import {
   Type,
   Vote,
   type LucideIcon,
+  Swords,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, friendById, seatedFriends, showBanner, useSocial } from "@/lib/social";
@@ -215,6 +216,7 @@ export function linkFor(a: Activity): string {
     case "daily_score":
     case "daily_top":
     case "word_daily":
+    case "beat":
       return "/app/games";
     case "mention_all":
       return ref.startsWith("group:") ? `/app/group/${ref.slice(6)}` : "/app/chats";
@@ -328,6 +330,12 @@ export function describe(a: Activity): { Icon: LucideIcon; tone: string; text: s
       return { Icon: Gamepad2, tone: "var(--lime)", text: `${who} scored ${a.body}` };
     case "word_daily":
       return { Icon: Type, tone: "var(--sun)", text: `${who} ${a.body}` };
+    case "beat":
+      return {
+        Icon: Swords,
+        tone: "var(--pink)",
+        text: `${who} just beat you in ${a.body}. Hit back!`,
+      };
     case "daily_top":
       return { Icon: Crown, tone: "var(--sun)", text: `${who} took #1 in today's game: ${a.body}` };
     case "drop":
