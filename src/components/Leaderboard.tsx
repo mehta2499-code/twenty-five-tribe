@@ -326,8 +326,9 @@ export function GameOverBoard({
           )}
         </div>
         {children}
-        {roast && rows.some((r) => r.me) && rows.length > 1 && (
-          <RoastButton rows={rows} roast={roast} mode={iWon ? "roast" : "result"} />
+        {/* Only the winner gets to roast (in every game). */}
+        {roast && iWon && winners.length === 1 && rows.length > 1 && (
+          <RoastButton rows={rows} roast={roast} mode="roast" />
         )}
         <div className="mt-8 flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">

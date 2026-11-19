@@ -325,11 +325,24 @@ export function KachufulBoard({
     } else status = `${turnName} is playing…`;
   }
 
+  // Game over: the results (and the roast) come upright, not sideways.
+  if (state.phase === "over")
+    return (
+      <RoundSummary
+        state={state}
+        mySeat={mySeat}
+        onNext={onNext}
+        onClose={onClose}
+        onPlayAgain={onPlayAgain}
+      />
+    );
+
+  const bidding = state.phase === "bidding" && myTurn;
   return (
     <Landscape>
       {(W, H) => {
         // Fit the hand across the table: bigger cards when there are few.
-        const cardW = Math.round(Math.min(78, Math.max(54, H * 0.19)));
+        const cardW = Math.round(Math.min(78, Math.max(48, H * (bidding ? 0.16 : 0.19))));
         const handRoom = W - SIDE - 40;
         const step =
           hand.length > 1 ? Math.min(cardW * 0.92, (handRoom - cardW) / (hand.length - 1)) : 0;
@@ -459,10 +472,49 @@ export function KachufulBoard({
                   );
                 })}
 
+                {/* Your call: a row of numbers under your cards */}
+                {bidding && (
+                  <div
+                    className="absolute left-0 right-0 z-[20] flex items-center justify-center gap-1.5 animate-soft-in"
+                    style={{ bottom: 6 }}
+                  >
+                    <span
+                      className="text-[11.5px] font-bold mr-1 whitespace-nowrap"
+                      style={{ color: "#CBC5D8" }}
+                    >
+                      Call ·{" "}
+                      {forbidden !== null
+                        ? `not ${forbidden}`
+                        : `${myTrumps} trump${myTrumps === 1 ? "" : "s"}`}
+                    </span>
+                    {Array.from({ length: cards + 1 }, (_, b) => {
+                      const ok = bidOptions(state).includes(b);
+                      return (
+                        <button
+                          key={b}
+                          disabled={!ok}
+                          onClick={() => act({ type: "bid", bid: b })}
+                          aria-label={ok ? `Call ${b}` : `${b} not allowed for the dealer`}
+                          className={ok ? "btn-primary tabular-nums" : "btn-secondary tabular-nums"}
+                          style={{
+                            width: 42,
+                            minWidth: 42,
+                            minHeight: 40,
+                            paddingInline: 0,
+                            fontSize: 17,
+                          }}
+                        >
+                          {b}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* My hand, fanned along the bottom of the table */}
                 <div
                   className="absolute left-0 right-0 flex justify-center items-end"
-                  style={{ bottom: 6, height: Math.round(cardW * 1.4) + 20 }}
+                  style={{ bottom: bidding ? 52 : 6, height: Math.round(cardW * 1.4) + 20 }}
                 >
                   {hand.map((c, i) => {
                     const canPlay = legal.includes(c);
@@ -544,48 +596,13 @@ export function KachufulBoard({
                   )}
                 </div>
 
-                {state.phase === "bidding" && myTurn && (
-                  <div
-                    className="rounded-2xl p-2 animate-soft-in"
-                    style={{ background: "rgba(7,6,11,0.5)" }}
-                  >
-                    <p className="text-center text-[11.5px]" style={{ color: "#CBC5D8" }}>
-                      {myTrumps} trump{myTrumps === 1 ? "" : "s"} in hand
-                    </p>
-                    <div className="mt-1.5 grid grid-cols-4 gap-1.5">
-                      {Array.from({ length: cards + 1 }, (_, b) => {
-                        const ok = bidOptions(state).includes(b);
-                        return (
-                          <button
-                            key={b}
-                            disabled={!ok}
-                            onClick={() => act({ type: "bid", bid: b })}
-                            aria-label={ok ? `Call ${b}` : `${b} not allowed for the dealer`}
-                            className={
-                              ok ? "btn-primary tabular-nums" : "btn-secondary tabular-nums"
-                            }
-                            style={{ minHeight: 40, minWidth: 0, paddingInline: 0, fontSize: 17 }}
-                          >
-                            {b}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {forbidden !== null && (
-                      <p className="mt-1.5 text-center text-[11px]" style={{ color: "#CBC5D8" }}>
-                        Dealer can't call {forbidden}.
-                      </p>
-                    )}
-                  </div>
-                )}
-
                 <div className="mt-auto">
                   <ChatStrip lines={3} openable={false} />
                 </div>
               </aside>
             </div>
 
-            {(state.phase === "roundEnd" || state.phase === "over") && (
+            {state.phase === "roundEnd" && (
               <RoundSummary
                 state={state}
                 mySeat={mySeat}
@@ -628,6 +645,30 @@ function Landscape({ children }: { children: (w: number, h: number) => React.Rea
   const upright = vp.h > vp.w;
   const W = upright ? vp.h : vp.w;
   const H = upright ? vp.w : vp.h;
+  // The game area, kept clear of the status bar, notch and home bar. Turned
+  // sideways, the phone's top edge is the game's left, its bottom the right.
+  const inner = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = inner.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [upright]);
+  const safe: React.CSSProperties = upright
+    ? {
+        left: "max(8px, env(safe-area-inset-top))",
+        right: "max(8px, env(safe-area-inset-bottom))",
+        top: 0,
+        bottom: 0,
+      }
+    : {
+        left: "env(safe-area-inset-left)",
+        right: "env(safe-area-inset-right)",
+        top: 0,
+        bottom: "env(safe-area-inset-bottom)",
+      };
   return (
     <div className="fixed inset-0 z-50 overflow-hidden" style={{ background: "#121019" }}>
       <div
@@ -645,9 +686,11 @@ function Landscape({ children }: { children: (w: number, h: number) => React.Rea
             : { inset: 0 }
         }
       >
-        <StageCtx.Provider value={upright ? { w: W, h: H } : null}>
-          {children(W, H)}
-        </StageCtx.Provider>
+        <div ref={inner} className="absolute" style={safe}>
+          <StageCtx.Provider value={upright ? { w: W, h: H } : null}>
+            {children(size?.w ?? W, size?.h ?? H)}
+          </StageCtx.Provider>
+        </div>
       </div>
     </div>
   );
