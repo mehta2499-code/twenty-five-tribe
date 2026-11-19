@@ -581,6 +581,13 @@ export function loadWords() {
   return dictLoad;
 }
 export const isWord = (w: string) => !dict || dict.has(w) || ANSWERS.includes(w);
+/** Strict: only once the list has loaded (setting a word for a friend). */
+export const inWordList = (w: string) => !!dict && (dict.has(w) || ANSWERS.includes(w));
+/** Load the list, then check. */
+export async function checkWord(w: string) {
+  await loadWords();
+  return inWordList(w);
+}
 
 export type Mark = "hit" | "near" | "miss";
 export function score(guess: string, answer: string): Mark[] {

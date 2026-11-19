@@ -204,6 +204,7 @@ const GAME_NAMES: Record<string, string> = {
   word: "Word Up",
   imposter: "Imposter",
   chess: "Chess",
+  connect4: "Connect 4",
   poker: "Poker",
   earworm: "Name That Tune",
 };

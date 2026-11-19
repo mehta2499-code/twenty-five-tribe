@@ -18,7 +18,8 @@ export type ArtKind =
   | "odd-one-out"
   | "pattern"
   | "reflex"
-  | "sec25";
+  | "sec25"
+  | "connect4";
 
 export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
   return (
@@ -46,6 +47,7 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "pattern" && <Simon />}
       {kind === "reflex" && <Stopwatch />}
       {kind === "sec25" && <Sec25Art />}
+      {kind === "connect4" && <Connect4Art />}
     </svg>
   );
 }
@@ -355,6 +357,38 @@ function Stopwatch() {
       <path d="M32 36V24" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
       <path d="M32 36l8 5" stroke="#F15B91" strokeWidth="3" strokeLinecap="round" />
       <circle cx="32" cy="36" r="2.5" fill={EDGE} />
+    </g>
+  );
+}
+
+/** Connect 4: a little blue frame with red and yellow discs. */
+function Connect4Art() {
+  const cells: [number, number, string][] = [];
+  const fill = ["", "", "", "", "y", "", "", "r", "y", "", "r", "r", "y", "r", "y", "r"];
+  for (let r = 0; r < 4; r++)
+    for (let c = 0; c < 4; c++) {
+      const v = fill[r * 4 + c];
+      cells.push([
+        14 + c * 12,
+        16 + r * 12,
+        v === "r" ? "#F2506A" : v === "y" ? "#FFD34D" : "#0D1440",
+      ]);
+    }
+  return (
+    <g strokeLinejoin="round">
+      <rect
+        x="5"
+        y="7"
+        width="54"
+        height="52"
+        rx="9"
+        fill="#2F5BE0"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      {cells.map(([x, y, f], k) => (
+        <circle key={k} cx={x + 4} cy={y + 2} r="4.6" fill={f} stroke={EDGE} strokeWidth="1.2" />
+      ))}
     </g>
   );
 }

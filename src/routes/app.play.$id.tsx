@@ -48,6 +48,8 @@ import { GameChat } from "@/components/GameChat";
 import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
 import { ChessTable } from "@/components/Chess";
+import { Connect4Table } from "@/components/Connect4";
+import { dropDisc, resignC4, type C4State } from "@/lib/connect4";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
 import { claimTimeout, makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
 import {
@@ -69,6 +71,7 @@ import {
   quitGame,
   saveEarworm,
   startChess,
+  startConnect4,
   startLiveEarworm,
 } from "@/lib/games";
 import { EarwormLobby, EarwormPlay, EarwormStandings, type LiveCtl } from "@/components/Earworm";
@@ -109,7 +112,15 @@ type Live<S> = ReturnType<typeof useGame<S>>;
 
 function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: () => void }) {
   const live = useGame<
-    KState | TriviaState | WordState | LudoState | ImpState | ChessState | PokerState | EarState
+    | KState
+    | TriviaState
+    | WordState
+    | LudoState
+    | ImpState
+    | ChessState
+    | PokerState
+    | EarState
+    | C4State
   >(id);
   const { game, error } = live;
   // Your 25 see you playing at the Table.
@@ -191,6 +202,8 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   const board =
     game.kind === "earworm" ? (
       <OnlineEarworm live={live as Live<EarState>} meId={meId} onClose={close} />
+    ) : game.kind === "connect4" ? (
+      <OnlineConnect4 live={live as Live<C4State>} meId={meId} onClose={onClose} />
     ) : game.kind === "chess" ? (
       <OnlineChess live={live as Live<ChessState>} meId={meId} onClose={onClose} />
     ) : game.kind === "poker" ? (
@@ -240,7 +253,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
           meId={meId}
           myName={_get().me?.name ?? "You"}
           kind={game.kind}
-          hideTab={game.kind === "poker" || game.kind === "kachuful" || game.kind === "ludo"}
+          hideTab={["poker", "kachuful", "ludo", "connect4"].includes(game.kind)}
         />
       )}
     </>
@@ -619,6 +632,63 @@ function OnlineLudo({
         }).then(() => leaveGame(game.id));
       }}
       onClose={onClose}
+    />
+  );
+}
+
+function OnlineConnect4({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<C4State>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game, save } = live;
+  const navigate = useNavigate();
+  const s = useSocial();
+  if (!game) return null;
+  const st = game.state;
+  const me = st.red === meId ? "r" : "y";
+  const otherId = me === "r" ? st.yellow : st.red;
+  const other = friendById(otherId);
+  return (
+    <Connect4Table
+      state={st}
+      me={me}
+      you={{
+        id: meId,
+        name: s.me?.name ?? "You",
+        avatar: s.me?.avatar,
+        initials: s.me?.initials ?? "YO",
+      }}
+      them={{
+        id: otherId,
+        name: other?.name ?? "Your friend",
+        avatar: other?.avatar || undefined,
+        initials: other?.initials ?? "?",
+        color: other?.color,
+      }}
+      onDrop={(c) => {
+        if (st.turn !== me) return;
+        const next = dropDisc(st, c);
+        if (next) void save(next, next.result ? "done" : undefined);
+      }}
+      onResign={() =>
+        void changeLatest<C4State>(game.id, (cur) =>
+          cur.result ? null : { state: resignC4(cur, me), status: "done" },
+        )
+      }
+      onClose={onClose}
+      onPlayAgain={
+        other
+          ? () =>
+              void startConnect4(other).then((id) =>
+                navigate({ to: "/app/play/$id", params: { id } }),
+              )
+          : undefined
+      }
     />
   );
 }

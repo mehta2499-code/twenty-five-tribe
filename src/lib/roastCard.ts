@@ -53,6 +53,13 @@ const THEMES: Record<string, Theme> = {
     ink: "#fff",
     lines: ["Checkmate. ♟️", "Saw it ten moves ago.", "Resign next time. 👑"],
   },
+  "connect 4": {
+    art: "connect4",
+    from: "#3D6BFF",
+    to: "#14216B",
+    ink: "#fff",
+    lines: ["Four in a row. Bye. 🔴", "Saw that diagonal coming.", "Dropped the mic (and a disc)."],
+  },
   poker: {
     label: "Hold'em",
     art: "poker",

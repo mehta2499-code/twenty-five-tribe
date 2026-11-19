@@ -222,6 +222,7 @@ export function GameChat({
 /** Where the tab starts in each game: clear of boards, cards and scores. */
 const START_Y: Record<string, number> = {
   chess: 0.8, // under the board, beside "Your move"
+  connect4: 0.86, // under the board
   ludo: 0.82, // under the board and the dice card
 };
 

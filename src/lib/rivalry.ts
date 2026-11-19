@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { _get } from "@/lib/social";
 import { revealWord, type GameRow, type TriviaState, type WordState } from "@/lib/games";
 import type { ChessState } from "@/lib/chess";
+import type { C4State } from "@/lib/connect4";
 import type { PokerState } from "@/lib/poker";
 import type { LudoState } from "@/lib/ludo";
 import type { KState } from "@/lib/kachuful";
@@ -17,6 +18,7 @@ const NAMES: Record<string, string> = {
   trivia: "Trivia",
   ludo: "Ludo",
   chess: "Chess",
+  connect4: "Connect 4",
   poker: "Hold'em",
   kachuful: "Judgement",
   earworm: "Name That Tune",
@@ -26,8 +28,7 @@ const NAMES: Record<string, string> = {
 /** 1 = you won, -1 = they won, 0 = a draw / can't tell. */
 function winner(g: GameRow, me: string, them: string): number {
   const st = g.state as unknown;
-  const cmp = (a?: number, b?: number) =>
-    a == null || b == null || a === b ? 0 : a > b ? 1 : -1;
+  const cmp = (a?: number, b?: number) => (a == null || b == null || a === b ? 0 : a > b ? 1 : -1);
   switch (g.kind) {
     case "trivia": {
       const t = st as TriviaState;
@@ -45,6 +46,13 @@ function winner(g: GameRow, me: string, them: string): number {
       const w = c.result?.winner;
       if (!w) return 0;
       const winId = w === "w" ? c.white : c.black;
+      return winId === me ? 1 : winId === them ? -1 : 0;
+    }
+    case "connect4": {
+      const c = st as C4State;
+      const w = c.result?.winner;
+      if (!w) return 0;
+      const winId = w === "r" ? c.red : c.yellow;
       return winId === me ? 1 : winId === them ? -1 : 0;
     }
     case "ludo": {
@@ -74,7 +82,13 @@ function winner(g: GameRow, me: string, them: string): number {
       } catch {
         // an old or odd game
       }
-      const winId = w.gaveUp ? (w.gaveUp === w.guesser ? w.setter : w.guesser) : solved ? w.guesser : w.setter;
+      const winId = w.gaveUp
+        ? w.gaveUp === w.guesser
+          ? w.setter
+          : w.guesser
+        : solved
+          ? w.guesser
+          : w.setter;
       return winId === me ? 1 : winId === them ? -1 : 0;
     }
     default:

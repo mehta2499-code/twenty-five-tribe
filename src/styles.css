@@ -912,3 +912,4 @@ button, a, [role="button"] { touch-action: manipulation; }
 @keyframes chat-tab-ping { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 10px rgba(193, 239, 98, 0.9)); } }
 .chat-tab-ping { animation: chat-tab-ping 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .chat-tab-ping { animation: none; } }
+@keyframes c4-drop { from { transform: translateY(var(--from, -300px)); } to { transform: none; } }

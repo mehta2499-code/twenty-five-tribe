@@ -2,6 +2,8 @@ import { Tour } from "@/components/Tour";
 import { DailyTune, EarwormSetup, SoloEarworm, SongsLoading } from "@/components/Earworm";
 import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
+import { Connect4Lobby, LocalConnect4 } from "@/components/Connect4";
+import type { C4State } from "@/lib/connect4";
 import { PokerSetup } from "@/components/Poker";
 import type { ChessState } from "@/lib/chess";
 import type { PokerState } from "@/lib/poker";
@@ -13,7 +15,7 @@ import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
 import { DailyRunner } from "@/components/ArcadeGames";
 import { SeasonCard } from "@/components/Scoreboard";
 import { TodaySection } from "@/components/DayResults";
-import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
+import { WordDaily, checkWord, inWordList, loadWords, WORD_LEN } from "@/components/WordUp";
 import { gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { LocalLudo, LudoLobby } from "@/components/Ludo";
@@ -34,6 +36,7 @@ import {
   quitGame,
   startLudo,
   startChess,
+  startConnect4,
   startEarworm,
   startPoker,
   startParty,
@@ -124,6 +127,12 @@ function YourGames({ meId }: { meId: string }) {
           const left = g.players.filter((p) => !e.results[p]).length;
           status = yourTurn ? "Your turn" : `Waiting for ${left}`;
         }
+      } else if (g.kind === "connect4") {
+        const c = g.state as C4State;
+        const mine = c.red === meId ? "r" : "y";
+        yourTurn = c.turn === mine && !c.result;
+        title = `Connect 4 vs ${others[0]?.name.split(" ")[0] ?? "a friend"}`;
+        status = yourTurn ? "Your move" : "Their move";
       } else if (g.kind === "chess") {
         const c = g.state as ChessState;
         const mine = c.white === meId ? "w" : "b";
@@ -179,6 +188,7 @@ function YourGames({ meId }: { meId: string }) {
     word: "#2FA76A",
     earworm: "#2A3416",
     chess: "#7E6CD6",
+    connect4: "#2F5BE0",
     poker: "#1F8150",
     imposter: "#3A2E4A",
     trivia: "#5BA6DD",
@@ -363,6 +373,11 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
     }
   }, []);
   const [wordSheet, setWordSheet] = useState(false);
+  // The word list, loaded when you go to set a word (only real words can be sent).
+  const [listReady, setListReady] = useState(false);
+  useEffect(() => {
+    if (wordSheet) void loadWords().then(() => setListReady(true));
+  }, [wordSheet]);
   const [secret, setSecret] = useState("");
   const [wordFor, setWordFor] = useState<string | null>(null);
   const [lobby, setLobby] = useState(false);
@@ -379,6 +394,8 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [packs, setPacks] = useState(false);
   const [ludo, setLudo] = useState(false);
   const [chess, setChess] = useState(false);
+  const [c4, setC4] = useState(false);
+  const [c4Bot, setC4Bot] = useState<{ level: 1 | 2 | 3; first: boolean } | null>(null);
   const [chessBot, setChessBot] = useState<{
     level: 1 | 2 | 3;
     color: "w" | "b";
@@ -434,7 +451,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         <div className="flex items-baseline justify-between mb-2 px-1">
           <h2 className="label-caps">Play with your 25</h2>
           <span className="meta font-semibold" style={{ fontSize: 12.5 }}>
-            8 games
+            9 games
           </span>
         </div>
         <div className="grid grid-cols-3 gap-2.5">
@@ -452,6 +469,13 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             onClick={() => (live ? setPoker(true) : setToast("Sign in to open a table."))}
           />
           <GameTile tone="#7E6CD6" art="chess" title="Chess" onClick={() => setChess(true)} />
+          <GameTile
+            tone="#2F5BE0"
+            art="connect4"
+            badge="NEW"
+            title="Connect 4"
+            onClick={() => setC4(true)}
+          />
           <GameTile
             tone="#2E2A3A"
             art="kachuful"
@@ -507,6 +531,28 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             }
           }}
         />
+      )}
+      {c4 && (
+        <Connect4Lobby
+          onClose={() => setC4(false)}
+          onBot={(level, first) => {
+            setC4(false);
+            setC4Bot({ level, first });
+          }}
+          onFriend={async (f) => {
+            setC4(false);
+            if (!live) return setToast("Sign in to challenge a friend.");
+            try {
+              const id = await startConnect4(f);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
+      {c4Bot && (
+        <LocalConnect4 level={c4Bot.level} first={c4Bot.first} onClose={() => setC4Bot(null)} />
       )}
       {chessBot && (
         <LocalChess
@@ -764,11 +810,13 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             autoComplete="off"
             className="input mt-4 text-center uppercase tracking-[0.4em] text-2xl font-bold"
           />
-          {secret.length === WORD_LEN && !isWord(secret) && (
-            <p className="meta mt-2 text-center">Not in our word list. Try another.</p>
+          {secret.length === WORD_LEN && listReady && !inWordList(secret) && (
+            <p className="meta mt-2 text-center" style={{ color: "var(--hot)" }}>
+              Not in our word list. Try another.
+            </p>
           )}
           <button
-            disabled={secret.length !== WORD_LEN || !isWord(secret)}
+            disabled={secret.length !== WORD_LEN || !listReady || !inWordList(secret)}
             onClick={() => {
               setWordFor(secret);
               setWordSheet(false);
@@ -790,6 +838,8 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             const word = wordFor;
             setWordFor(null);
             if (!friend) return;
+            // Never send a word that isn't in the list.
+            if (!(await checkWord(word))) return setToast("That word isn't in our word list.");
             try {
               const id = await startWordChallenge(friend, word);
               navigate({ to: "/app/play/$id", params: { id } });
