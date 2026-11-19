@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { _get, seatedFriends, useSocial } from "@/lib/social";
-import { today } from "@/lib/daily";
+import { calendarDay as today } from "@/lib/daily";
 
 export type Bday = { id: string; month: number; day: number };
 /** body is null when it isn't yours to read (only the birthday person reads them all). */

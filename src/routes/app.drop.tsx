@@ -32,7 +32,7 @@ import {
   type DropPost,
 } from "@/lib/drop";
 import { personOf } from "@/components/FeedUI";
-import { today } from "@/lib/daily";
+import { calendarDay as today } from "@/lib/daily";
 
 export const Route = createFileRoute("/app/drop")({
   head: () => ({ meta: [{ title: "The 25 Drop · 25" }] }),

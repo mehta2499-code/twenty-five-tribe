@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Flame, Heart, Share2, Timer, Camera } from "lucide-react";
 import { PageBand, Toast, clientOnly } from "@/components/SocialUI";
 import { useSocial } from "@/lib/social";
-import { today } from "@/lib/daily";
+import { calendarDay as today } from "@/lib/daily";
 import {
   addMonths,
   defaultRecapMonth,

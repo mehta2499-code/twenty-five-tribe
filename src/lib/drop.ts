@@ -6,7 +6,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { _get, mutualFriends } from "@/lib/social";
-import { today } from "@/lib/daily";
+import { calendarDay as today } from "@/lib/daily";
 import { signedMedia, uploadMedia } from "@/lib/live";
 
 export const WINDOW_MIN = 10;

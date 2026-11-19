@@ -1002,7 +1002,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                       Practice once (doesn't count)
                     </button>
                   )}
-                  <p className="meta">Come back at midnight for tomorrow's game.</p>
+                  <p className="meta">Come back at 10:30 PM for the next game.</p>
                 </>
               )}
             </div>

@@ -5,7 +5,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { _get, mutualFriends, type Person } from "@/lib/social";
-import { addDays, today } from "@/lib/daily";
+import { addDays, calendarDay as today } from "@/lib/daily";
 
 /** The Sunday this poll week started (India time), as "YYYY-MM-DD". */
 export function pollWeek(day = today()) {

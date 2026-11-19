@@ -117,7 +117,7 @@ function SeasonBanner({
       </div>
       <p className="meta mt-2.5" style={{ fontSize: 13 }}>
         {season.left === 0
-          ? "Last day. Whoever's on top at midnight takes the title."
+          ? "Last day. Whoever's on top at 10:30 PM takes the title."
           : `${season.left} day${season.left === 1 ? "" : "s"} left. Top of your 25 wins the Season ${season.n} title.`}
       </p>
       {champs.length > 0 && (

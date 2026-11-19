@@ -54,10 +54,20 @@ export const gameFor = (k: string) => {
 };
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 /** "Thursday's game" — what we call today's daily game before it's revealed. */
-export const dayGameName = (k: string = dayKey()) => `${WEEKDAYS[weekdayOf(k)]}'s game`;
-export const today = () => dayKey();
-export const thisWeek = () => weekKey();
-export const lastWeek = () => addDays(weekKey(), -7);
+export const dayGameName = (k: string = today()) => `${WEEKDAYS[weekdayOf(k)]}'s game`;
+/**
+ * The daily games' day turns over at 10:30 PM India time, not midnight: from
+ * 10:30 PM it's already the next game day. (Keep in sync with
+ * public.game_day() in the database.) Birthdays, polls and the Drop still go
+ * by the calendar day: use calendarDay() for those.
+ */
+export const GAME_SHIFT = 90 * 60_000;
+export function today() {
+  return dayKey(Date.now() + GAME_SHIFT);
+}
+export const calendarDay = () => dayKey();
+export const thisWeek = () => weekKey(Date.now() + GAME_SHIFT);
+export const lastWeek = () => addDays(thisWeek(), -7);
 /** Seasons: 25 days each, season 1 starts 16 Nov 2026 (keep in sync with public.season_of). */
 export const SEASON_DAYS = 25;
 const SEASON_ONE = "2026-11-16";
@@ -71,10 +81,10 @@ export function seasonOf(day: string = today()) {
 }
 export const weekDays = (start: string) => Array.from({ length: 7 }, (_, i) => addDays(start, i));
 
-/** Time until the next game (midnight India time). */
+/** Time until the next game (10:30 PM India time). */
 export function untilMidnight() {
   const now = Date.now();
-  const ist = now + 5.5 * 3_600_000;
+  const ist = now + 5.5 * 3_600_000 + GAME_SHIFT;
   const left = DAY - (ist % DAY);
   const h = Math.floor(left / 3_600_000);
   const m = Math.floor((left % 3_600_000) / 60_000);
@@ -268,7 +278,7 @@ export function myTries(day = today()) {
 /** Uses up one of today's tries. Returns which day and try it was. */
 export async function startTry(): Promise<{ day: string; tryNo: number }> {
   const day = today();
-  if (myTries(day).length >= TRIES) throw new Error("No tries left today. New game at midnight.");
+  if (myTries(day).length >= TRIES) throw new Error("No tries left today. New game at 10:30 PM.");
   track("game_started", { game: gameFor(day), daily: true, try: myTries(day).length + 1 });
   if (_get().mode === "live") {
     const { data, error } = await supabase.rpc("start_daily_try");
