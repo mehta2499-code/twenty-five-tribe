@@ -13,7 +13,6 @@ import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
 import { DailyRunner } from "@/components/ArcadeGames";
 import { SeasonCard } from "@/components/Scoreboard";
 import { TodaySection } from "@/components/DayResults";
-import { Sec25 } from "@/components/Sec25";
 import { WordDaily, isWord, loadWords, WORD_LEN } from "@/components/WordUp";
 import { gameFor, today, useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
@@ -349,7 +348,6 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [daily, setDaily] = useState(false);
   const [wordDaily, setWordDaily] = useState(false);
   const [tuneDaily, setTuneDaily] = useState(false);
-  const [secDaily, setSecDaily] = useState(false);
   // Picking songs for a Name That Tune with friends (shows the loader).
   const [earLoading, setEarLoading] = useState<EarCat | null>(null);
   const earTicket = useRef(0);
@@ -429,7 +427,6 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         onPlayDaily={() => setDaily(true)}
         onPlayWord={() => setWordDaily(true)}
         onPlayTune={() => setTuneDaily(true)}
-        onPlaySec={() => setSecDaily(true)}
       />
 
       {/* Everything you play with your 25 (live, just for fun). */}
@@ -747,7 +744,6 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
       {daily && <DailyRunner game={gameFor(today())} onClose={() => setDaily(false)} />}
       {wordDaily && <WordDaily onClose={() => setWordDaily(false)} />}
       {tuneDaily && <DailyTune onClose={() => setTuneDaily(false)} />}
-      {secDaily && <Sec25 onClose={() => setSecDaily(false)} />}
       {wordSheet && (
         <Sheet title="Set a secret word" onClose={() => setWordSheet(false)}>
           <p className="text-sm text-cool">

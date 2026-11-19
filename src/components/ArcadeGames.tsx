@@ -14,7 +14,9 @@ import {
   Timer,
   X,
   type LucideIcon,
+  Hourglass,
 } from "lucide-react";
+import { Sec25Round, secOff } from "@/components/Sec25";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
 import { GameArt } from "@/components/GameArt";
 import { friendById, social } from "@/lib/social";
@@ -41,6 +43,8 @@ export const GAMES: Record<
     blurb: string;
     how: string;
     unit: string;
+    /** How a score reads, when it isn't just the number (25 Sec: "0.347s off"). */
+    show?: (score: number) => string;
     Round: (p: RoundProps) => React.ReactElement;
   }
 > = {
@@ -114,7 +118,21 @@ export const GAMES: Record<
     unit: "points",
     Round: Reflex,
   },
+  sec25: {
+    name: "25 Sec",
+    emoji: "⏱️",
+    Icon: Hourglass,
+    tone: "#8C6CF0",
+    blurb: "Count 25 seconds in your head. No clock. Stop as close as you can.",
+    how: "Tap Start, count, tap Stop. Closest to 25.000 seconds wins.",
+    unit: "",
+    show: secOff,
+    Round: Sec25Round,
+  },
 };
+
+/** A daily score as it should read. */
+export const showScore = (id: DailyId, n: number) => GAMES[id].show?.(n) ?? String(n);
 
 // ---------- Shared pieces ----------
 
@@ -948,10 +966,11 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
             {tries.length > 0 && (
               <div className="mt-5 card px-5 py-3">
                 <p className="font-bold text-cream">
-                  Your best: {best(tries)} {mine ? `· #${mine.rank} of ${ranking.length}` : ""}
+                  Your best: {showScore(game, best(tries))}{" "}
+                  {mine ? `· #${mine.rank} of ${ranking.length}` : ""}
                 </p>
                 <p className="meta mt-0.5">
-                  Tries: {tries.map((t) => (t < 0 ? "quit" : t)).join(" · ")}
+                  Tries: {tries.map((t) => (t < 0 ? "quit" : showScore(game, t))).join(" · ")}
                 </p>
               </div>
             )}
@@ -993,8 +1012,11 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
             <p className="label-caps">
               {session ? `try ${session.tryNo} of ${TRIES}` : "practice · didn't count"}
             </p>
-            <p className="display tabular-nums mt-2 pop" style={{ fontSize: 96, lineHeight: 1 }}>
-              {last}
+            <p
+              className="display tabular-nums mt-2 pop"
+              style={{ fontSize: g.show ? 52 : 96, lineHeight: 1 }}
+            >
+              {g.show && last != null ? g.show(last) : last}
             </p>
             <p className="meta">{g.unit}</p>
             {session && (
@@ -1003,7 +1025,9 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
                   <Dots />
                 </div>
                 <div className="mt-5 card px-5 py-3">
-                  <p className="font-bold text-cream text-lg">Today's best: {best(tries)}</p>
+                  <p className="font-bold text-cream text-lg">
+                    Today's best: {showScore(game, best(tries))}
+                  </p>
                   <p className="meta mt-0.5">
                     {mine
                       ? mine.rank === 1
@@ -1048,7 +1072,7 @@ export function DailyRunner({ game, onClose }: { game: DailyId; onClose: () => v
           onPick={([id]) => {
             social.sendMessage(
               id,
-              `Today's game is ${g.name} ${g.emoji}. My best: ${best(tries) || last}. Beat that 😏`,
+              `Today's game is ${g.name} ${g.emoji}. My best: ${showScore(game, best(tries) || last || 0)}. Beat that 😏`,
             );
             setChallenging(false);
             setToast(`Sent to ${friendById(id)?.name.split(" ")[0]}`);
