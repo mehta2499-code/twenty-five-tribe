@@ -740,7 +740,12 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             earTicket.current = ticket;
             setEarLoading(cat);
             try {
-              const songs = await pickGameSongs(cat);
+              // Skip songs anyone in this game heard lately; all checked to play.
+              const songs = await pickGameSongs(
+                cat,
+                undefined,
+                friends.map((f) => f.id),
+              );
               if (earTicket.current !== ticket) return; // cancelled
               const id = await startEarworm(friends, cat, level, songs);
               navigate({ to: "/app/play/$id", params: { id } });

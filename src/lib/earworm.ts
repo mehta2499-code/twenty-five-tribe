@@ -202,9 +202,43 @@ function recentIds(cat: EarCat): string[] {
     return [];
   }
 }
-/** Remember a game's songs on this phone (also for games a friend picked). */
+/**
+ * Remember a game's songs (also for games a friend picked): on this phone, and
+ * on your account so other phones and your friends' games skip them too.
+ */
 export function rememberSongs(cat: EarCat, songs: EarSong[]) {
   remember(cat, songs);
+  void recordHeard(songs);
+}
+async function recordHeard(songs: EarSong[]) {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const me = data.session?.user.id;
+    if (!me || !songs.length) return;
+    const at = new Date().toISOString();
+    await supabase
+      .from("ear_heard" as never)
+      .upsert(songs.map((s) => ({ user_id: me, song_id: s.id, heard_at: at })) as never, {
+        onConflict: "user_id,song_id",
+      });
+  } catch {
+    // Not saved this time; the phone still remembers.
+  }
+}
+/** Songs you or any of these players heard lately (from the server). */
+async function heardBy(players: string[]): Promise<Set<string>> {
+  try {
+    const { data: ses } = await supabase.auth.getSession();
+    if (!ses.session) return new Set();
+    const res = await Promise.race([
+      supabase.rpc("songs_heard" as never, { p_users: players } as never),
+      new Promise<null>((r) => setTimeout(() => r(null), 4000)),
+    ]);
+    const rows = (res as { data?: unknown } | null)?.data;
+    return new Set(Array.isArray(rows) ? (rows as string[]) : []);
+  } catch {
+    return new Set();
+  }
 }
 function remember(cat: EarCat, songs: EarSong[]) {
   try {
@@ -237,17 +271,30 @@ export function prefetchGameSongs(cat: EarCat) {
   early.set(cat, { at: Date.now(), run });
   run.catch(() => early.delete(cat));
 }
-export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
-  const quick = pickOnPhone(cat, n);
+/**
+ * A game's songs: none that you or anyone playing (`players`) heard lately, and
+ * all checked to actually play.
+ */
+export async function pickGameSongs(
+  cat: EarCat,
+  n = SONGS_PER_GAME,
+  players: string[] = [],
+): Promise<EarSong[]> {
+  const heard = await heardBy(players);
+  const songs = await pickFresh(cat, n, heard);
+  return ensurePlayable(cat, songs, heard);
+}
+async function pickFresh(cat: EarCat, n: number, heard: Set<string>): Promise<EarSong[]> {
+  const quick = pickOnPhone(cat, n, heard);
   if (quick) return quick;
   const e = early.get(cat);
   if (e && n === SONGS_PER_GAME && Date.now() - e.at < 5 * 60_000) {
     // Anyone asking at the same moment shares it; it's used up once it lands.
     const songs = await e.run.catch(() => [] as EarSong[]);
     setTimeout(() => early.get(cat) === e && early.delete(cat), 1000);
-    if (songs.length >= n) return songs;
+    if (songs.length >= n && !songs.some((s) => heard.has(s.id))) return songs;
   }
-  return fetchGameSongs(cat, n);
+  return fetchGameSongs(cat, n, heard);
 }
 /** The game picks in the big list saved on the phone (none if not saved yet). */
 function savedPicks(cat: EarCat): EarSong[] {
@@ -265,10 +312,10 @@ function savedPicks(cat: EarCat): EarSong[] {
  * Pick a game's songs right here from the big list on the phone: no waiting
  * on the server. One song per artist, never a song you had recently.
  */
-function pickOnPhone(cat: EarCat, n: number): EarSong[] | null {
+function pickOnPhone(cat: EarCat, n: number, heard: Set<string> = new Set()): EarSong[] | null {
   const picks = savedPicks(cat);
   if (picks.length < n * 6) return null;
-  const recent = new Set(recentIds(cat));
+  const recent = new Set([...recentIds(cat), ...heard]);
   const fresh = picks.filter((s) => !recent.has(s.id));
   const from = shuffle(fresh.length >= n * 3 ? fresh : picks);
   const titles = new Set<string>();
@@ -287,10 +334,16 @@ function pickOnPhone(cat: EarCat, n: number): EarSong[] | null {
   remember(cat, out);
   return out;
 }
-async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
-  const recent = recentIds(cat);
+async function fetchGameSongs(
+  cat: EarCat,
+  n = SONGS_PER_GAME,
+  heard: Set<string> = new Set(),
+): Promise<EarSong[]> {
+  const recent = [...new Set([...recentIds(cat), ...heard])];
   // Fresh hits from the server (asked twice if it's slow).
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // One quick ask (the server is usually instant). If it's slow (just
+  // restarted), don't keep you waiting: the hit lists below start the game now.
+  for (let attempt = 0; attempt < 1; attempt++) {
     try {
       const skip = recent
         .filter((id) => /^\d+$/.test(id))
@@ -298,7 +351,7 @@ async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[
         .join(",");
       const r = await fetch(`/api/song?game=${cat}&n=${n}&skip=${skip}`, {
         headers: await authHeader(),
-        signal: within(attempt ? 15000 : 9000),
+        signal: within(4000),
       });
       if (r.ok) {
         const songs = asSongs(await r.json());
@@ -313,7 +366,9 @@ async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[
   }
   // Server slow or down: the category's big list kept on the phone (~1,000
   // hits), then the small built-in one. Never the songs you had recently.
-  const big = await loadNames(cat).catch(() => [] as EarSong[]);
+  // (Only what's already on the phone: never wait for the big list here.)
+  void loadNames(cat).catch(() => []);
+  const big = savedPicks(cat);
   for (const pool of [big, backupFor(cat)]) {
     const fresh = pool.filter((s) => !recent.includes(s.id));
     const from = shuffle(fresh.length >= n * 3 ? fresh : pool);
@@ -520,12 +575,14 @@ export type Preview = {
   link: string | null;
 };
 /** A song's 30-second preview, played through our server. */
-export async function loadPreview(s: EarSong): Promise<Preview | null> {
+export async function loadPreview(s: EarSong, fresh = false): Promise<Preview | null> {
   const q = s.id.startsWith("q:")
     ? `t=${encodeURIComponent(s.title)}&a=${encodeURIComponent(s.artist)}`
     : `id=${encodeURIComponent(s.id)}`;
   try {
-    const r = await fetch(`/api/song?${q}`, {
+    // `fresh`: skip any copy the phone kept (clip links expire after ~15 minutes).
+    const r = await fetch(`/api/song?${q}${fresh ? `&n=${Date.now()}` : ""}`, {
+      cache: fresh ? "no-store" : "default",
       headers: await authHeader(),
       signal: within(8000),
     });
@@ -559,19 +616,7 @@ const clips = new Map<string, Promise<Preview | null>>();
 export function loadClip(s: EarSong): Promise<Preview | null> {
   let run = clips.get(s.id);
   if (!run) {
-    run = loadPreview(s).then(async (p) => {
-      if (!p) return null;
-      try {
-        const r = await fetch(p.url, { signal: within(12000) });
-        if (!r.ok) return p;
-        const blob = await r.blob();
-        // Only keep it if it's really audio (an error page would never play).
-        if (!/^audio\//.test(blob.type) || blob.size < 1000) return p;
-        return { ...p, url: URL.createObjectURL(blob), stream: p.url };
-      } catch {
-        return p;
-      }
-    });
+    run = fetchClip(s);
     // A failed lookup can be tried again later.
     run.then((p) => !p && clips.delete(s.id));
     if (clips.size > 40) {
@@ -582,6 +627,77 @@ export function loadClip(s: EarSong): Promise<Preview | null> {
     clips.set(s.id, run);
   }
   return run;
+}
+
+/**
+ * Get a song's clip, trying hard: its Deezer link; if that's dead (links expire,
+ * some songs have no clip here), a freshly signed one; then the same song
+ * looked up by name (Deezer search, then Apple).
+ */
+async function fetchClip(s: EarSong): Promise<Preview | null> {
+  // "dead": the link answered with an error. "slow": no answer in time (stream it).
+  const download = async (p: Preview): Promise<Preview | "dead" | "slow"> => {
+    try {
+      const r = await fetch(p.url, { signal: within(12000) });
+      if (!r.ok) return "dead";
+      const blob = await r.blob();
+      // Only keep it if it's really audio (an error page would never play).
+      if (!/^audio\//.test(blob.type) || blob.size < 1000) return "dead";
+      return { ...p, url: URL.createObjectURL(blob), stream: p.url };
+    } catch {
+      return "slow";
+    }
+  };
+  const attempt = async (song: EarSong, fresh: boolean) => {
+    const p = await loadPreview(song, fresh);
+    if (!p) return null;
+    const got = await download(p);
+    if (got === "slow") return p; // play it streaming
+    return got === "dead" ? null : got;
+  };
+  const byName: EarSong = { id: `q:${s.title}|${s.artist}`, title: s.title, artist: s.artist };
+  return (
+    (await attempt(s, false)) ??
+    (s.id.startsWith("q:") ? null : await attempt(s, true)) ??
+    (s.id.startsWith("q:") ? null : await attempt(byName, true))
+  );
+}
+
+/**
+ * Make sure every song in a game actually plays before it starts: any that
+ * won't are swapped for others from the same category (never one in `skip`).
+ */
+export async function ensurePlayable(
+  cat: EarCat,
+  songs: EarSong[],
+  skip: Set<string> = new Set(),
+): Promise<EarSong[]> {
+  const ok = await Promise.all(
+    songs.map((s) =>
+      Promise.race([
+        loadClip(s).then((p) => !!p),
+        new Promise<boolean>((r) => setTimeout(() => r(true), 6000)), // too slow to tell: keep it
+      ]),
+    ),
+  );
+  if (ok.every(Boolean)) return songs;
+  const out = [...songs];
+  const used = new Set([...skip, ...songs.map((s) => s.id)]);
+  const titles = new Set(songs.map((s) => norm(s.title)));
+  const spare = shuffle([...savedPicks(cat), ...backupFor(cat)]).filter(
+    (s) => !used.has(s.id) && !titles.has(norm(s.title)),
+  );
+  for (let i = 0; i < out.length; i++) {
+    if (ok[i]) continue;
+    while (spare.length) {
+      const c = spare.shift()!;
+      if (await loadClip(c)) {
+        out[i] = { id: c.id, title: c.title, artist: c.artist };
+        break;
+      }
+    }
+  }
+  return out;
 }
 
 // ---------- Backup lists (big, safe hits) ----------

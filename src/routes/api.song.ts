@@ -319,6 +319,10 @@ function warmUp() {
     for (const cat of Object.keys(ARTISTS)) await categoryNames(cat).catch(() => []);
   })();
 }
+// Start building them as soon as the server has this loaded (after a deploy),
+// not when the first player asks.
+if (typeof window === "undefined") setTimeout(warmUp, 2000);
+
 export async function categoryNames(cat: string): Promise<PoolSong[]> {
   const c = names.get(cat);
   if (c && Date.now() - c.at < 24 * 3_600_000) return c.songs;
@@ -441,23 +445,25 @@ export const Route = createFileRoute("/api/song")({
         if (id) {
           if (!/^\d{1,15}$/.test(id)) return json({ error: "Bad id." }, 400, "no-store");
           const hit = await byId(id);
-          return hit ? json(hit, 200, "private, max-age=1800") : json({ error: "Not found" }, 404);
+          // Deezer's clip links are signed and die after ~15 minutes: never reuse one.
+          return hit ? json(hit, 200, "no-store") : json({ error: "Not found" }, 404, "no-store");
         }
         const title = (u.searchParams.get("t") ?? "").trim().slice(0, 120);
         const artist = (u.searchParams.get("a") ?? "").trim().slice(0, 120);
         if (!title) return json({ error: "Which song?" }, 400, "no-store");
         const k = `${title}|${artist}`.toLowerCase();
         const c = cache.get(k);
-        // Preview links are signed and expire, so don't keep them too long.
-        if (c && Date.now() - c.at < 3 * 3_600_000)
-          return c.hit ? json(c.hit) : json({ error: "Not found" }, 404);
+        // Preview links are signed and expire (~15 min): keep a found one 10 minutes,
+        // a miss a bit longer.
+        if (c && Date.now() - c.at < (c.hit ? 10 * 60_000 : 3 * 3_600_000))
+          return c.hit ? json(c.hit, 200, "no-store") : json({ error: "Not found" }, 404);
         try {
           const hit =
             (await deezer(title, artist).catch(() => null)) ??
             (await itunes(title, artist).catch(() => null));
           if (cache.size > 3000) cache.clear();
           cache.set(k, { at: Date.now(), hit });
-          return hit ? json(hit) : json({ error: "Not found" }, 404);
+          return hit ? json(hit, 200, "no-store") : json({ error: "Not found" }, 404);
         } catch (e) {
           console.error("[song]", e);
           return json({ error: "Couldn't find that song." }, 502, "no-store");
