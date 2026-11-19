@@ -188,19 +188,30 @@ export function within(ms: number): AbortSignal {
 const backupFor = (cat: EarCat): EarSong[] =>
   BACKUP[cat].map(([title, artist]) => ({ id: `q:${title}|${artist}`, title, artist }));
 
-function recentIds(): string[] {
+/**
+ * Songs you've had recently, per category (the last 400), so a game doesn't
+ * bring back ones you just heard. Older phones kept one shared list of 150.
+ */
+const recentKey = (cat: EarCat) => `tf.earworm.recent.${cat}`;
+function recentIds(cat: EarCat): string[] {
   try {
-    return JSON.parse(localStorage.getItem("tf.earworm.recent") ?? "[]");
+    const mine = JSON.parse(localStorage.getItem(recentKey(cat)) ?? "[]");
+    const old = JSON.parse(localStorage.getItem("tf.earworm.recent") ?? "[]");
+    return [...(Array.isArray(mine) ? mine : []), ...(Array.isArray(old) ? old : [])];
   } catch {
     return [];
   }
 }
-function remember(songs: EarSong[]) {
+/** Remember a game's songs on this phone (also for games a friend picked). */
+export function rememberSongs(cat: EarCat, songs: EarSong[]) {
+  remember(cat, songs);
+}
+function remember(cat: EarCat, songs: EarSong[]) {
   try {
-    localStorage.setItem(
-      "tf.earworm.recent",
-      JSON.stringify([...songs.map((s) => s.id), ...recentIds()].slice(0, 150)),
-    );
+    const mine = JSON.parse(localStorage.getItem(recentKey(cat)) ?? "[]");
+    const ids = songs.map((s) => s.id);
+    const rest = (Array.isArray(mine) ? mine : []).filter((id: string) => !ids.includes(id));
+    localStorage.setItem(recentKey(cat), JSON.stringify([...ids, ...rest].slice(0, 400)));
   } catch {
     // ignore
   }
@@ -242,7 +253,10 @@ export async function pickGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<Ea
 function savedPicks(cat: EarCat): EarSong[] {
   try {
     const saved = JSON.parse(localStorage.getItem(`tf.ntt.names.${cat}`) ?? "null");
-    return asSongs(saved?.songs).filter((s) => s.g === 1);
+    const all = asSongs(saved?.songs);
+    const marked = all.filter((s) => s.g === 1);
+    // A list saved before picks were marked: its most popular part (it's sorted).
+    return marked.length ? marked : all.slice(0, Math.floor(all.length * 0.4));
   } catch {
     return [];
   }
@@ -254,7 +268,7 @@ function savedPicks(cat: EarCat): EarSong[] {
 function pickOnPhone(cat: EarCat, n: number): EarSong[] | null {
   const picks = savedPicks(cat);
   if (picks.length < n * 6) return null;
-  const recent = new Set(recentIds());
+  const recent = new Set(recentIds(cat));
   const fresh = picks.filter((s) => !recent.has(s.id));
   const from = shuffle(fresh.length >= n * 3 ? fresh : picks);
   const titles = new Set<string>();
@@ -270,17 +284,17 @@ function pickOnPhone(cat: EarCat, n: number): EarSong[] | null {
     if (out.length >= n) break;
   }
   if (out.length < n) return null;
-  remember(out);
+  remember(cat, out);
   return out;
 }
 async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[]> {
-  const recent = recentIds();
+  const recent = recentIds(cat);
   // Fresh hits from the server (asked twice if it's slow).
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const skip = recent
         .filter((id) => /^\d+$/.test(id))
-        .slice(0, 120)
+        .slice(0, 300)
         .join(",");
       const r = await fetch(`/api/song?game=${cat}&n=${n}&skip=${skip}`, {
         headers: await authHeader(),
@@ -289,7 +303,7 @@ async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[
       if (r.ok) {
         const songs = asSongs(await r.json());
         if (songs.length >= n) {
-          remember(songs);
+          remember(cat, songs);
           return songs;
         }
       }
@@ -313,7 +327,7 @@ async function fetchGameSongs(cat: EarCat, n = SONGS_PER_GAME): Promise<EarSong[
       if (out.length >= n) break;
     }
     if (out.length >= n) {
-      remember(out);
+      remember(cat, out);
       return out;
     }
   }

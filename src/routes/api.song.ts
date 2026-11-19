@@ -130,6 +130,9 @@ const ARTISTS: Record<string, number[]> = {
     133646, 1212166, 5561521, 4717745, 106752, 126453, 5301812, 4485080, 1452924, 1393198, 129840,
     1680753, 70024, 7269486, 124682, 2630, 8033, 73805, 10984, 111054, 71797, 106729, 71794,
     1532482, 4694401, 4661688, 12788789, 56237412,
+    // Anuv Jain, Jasleen Royal, Lucky Ali, Sonu Kakkar, Hariharan, Shekhar Ravjiani,
+    // Shalmali Kholgade, Aditya Rikhari, Faheem Abdullah, Pritam (second profile)
+    64116612, 5425304, 71349, 70377, 70045, 4282640, 1703175, 91432112, 103585472, 16587,
   ],
   // Diljit Dosanjh, AP Dhillon, Sidhu Moose Wala, Karan Aujla, Shubh, Guru Randhawa…
   punjabi: [
@@ -220,31 +223,57 @@ async function artistTop(id: number) {
 }
 
 /**
+ * Which of an artist's songs are good game picks: their own songs (not ones
+ * they only feature on), among their 40 most played, and well-known enough.
+ * (Going 40 deep, not 12, roughly triples the Bollywood and Punjabi pools,
+ * so the same hits don't keep coming back.)
+ */
+const DEPTH = 40;
+const pickFloor = (cat: string) => Math.round((FLOOR[cat] ?? 0) * 0.75);
+function gamePicks(cat: string, songs: (PoolSong & { rank: number; own: boolean })[]) {
+  const floor = pickFloor(cat);
+  return songs
+    .filter((s) => s.own)
+    .slice(0, DEPTH)
+    .filter((s) => s.rank >= floor);
+}
+
+/**
  * Songs for one game: random artists from the category, and from each a
  * random song among their most popular (top 12). No artist twice; skips
  * songs the player had recently.
  */
 export async function gameSongs(cat: string, n: number, skip: Set<string>): Promise<PoolSong[]> {
-  const list = [...(ARTISTS[cat] ?? [])].sort(() => Math.random() - 0.5);
+  const ids = ARTISTS[cat] ?? [];
+  // Everyone already in the server's memory (the guess lists keep it warm).
+  const cached = ids.filter((id) => tops.has(id));
+  let pool: (PoolSong & { artistId: number })[] = [];
+  const add = (id: number, songs: (PoolSong & { rank: number; own: boolean })[]) => {
+    for (const s of gamePicks(cat, songs))
+      pool.push({ id: s.id, title: s.title, artist: s.artist, artistId: id });
+  };
+  if (cached.length >= Math.min(15, ids.length)) {
+    for (const id of cached) add(id, tops.get(id)!.songs);
+  } else {
+    // Cold start: a few random artists (Deezer allows ~50 requests per 5 seconds).
+    const some = [...ids].sort(() => Math.random() - 0.5).slice(0, n * 3);
+    const lists = await Promise.all(some.map((id) => artistTop(id).catch(() => [])));
+    some.forEach((id, k) => add(id, lists[k]));
+  }
+  // Every song equally likely (not every artist), never one you had recently,
+  // no artist or title twice in a game.
+  const fresh = pool.filter((s) => !skip.has(s.id));
+  if (fresh.length >= n * 3) pool = fresh;
+  pool.sort(() => Math.random() - 0.5);
   const out: PoolSong[] = [];
-  const seenTitles = new Set<string>();
-  const floor = FLOOR[cat] ?? 0;
-  for (let i = 0; i < list.length && out.length < n; i += n) {
-    // A few artists at a time (Deezer allows ~50 requests per 5 seconds).
-    const batch = await Promise.all(
-      list.slice(i, i + n + 1).map((id) => artistTop(id).catch(() => [])),
-    );
-    for (const songs of batch) {
-      if (out.length >= n) break;
-      const pool = songs
-        .filter((s) => s.own)
-        .slice(0, 12)
-        .filter((s) => s.rank >= floor && !skip.has(s.id) && !seenTitles.has(norm(s.title)));
-      if (!pool.length) continue;
-      const s = pool[Math.floor(Math.random() * pool.length)];
-      seenTitles.add(norm(s.title));
-      out.push({ id: s.id, title: s.title, artist: s.artist });
-    }
+  const artists = new Set<number>();
+  const titles = new Set<string>();
+  for (const s of pool) {
+    if (artists.has(s.artistId) || titles.has(norm(s.title))) continue;
+    artists.add(s.artistId);
+    titles.add(norm(s.title));
+    out.push({ id: s.id, title: s.title, artist: s.artist });
+    if (out.length >= n) break;
   }
   return out;
 }
@@ -260,20 +289,13 @@ async function buildNames(cat: string): Promise<PoolSong[]> {
   const ids = ARTISTS[cat] ?? [];
   const out: (PoolSong & { rank: number; g?: 1 })[] = [];
   const seen = new Set<string>();
-  const floor = FLOOR[cat] ?? 0;
   // Gently: 5 artists every 1.5 s, leaving room under Deezer's limit for games.
   for (let i = 0; i < ids.length; i += 5) {
     const lists = await Promise.all(ids.slice(i, i + 5).map((id) => artistTop(id).catch(() => [])));
     for (const songs of lists) {
       // Game picks: the same ones a server-picked game would use (their own
       // song, in their top 12, popular enough). The phone picks from these.
-      const pickable = new Set(
-        songs
-          .filter((s) => s.own)
-          .slice(0, 12)
-          .filter((s) => s.rank >= floor)
-          .map((s) => s.id),
-      );
+      const pickable = new Set(gamePicks(cat, songs).map((s) => s.id));
       for (const s of songs) {
         const k = norm(s.title);
         if (seen.has(k)) continue;

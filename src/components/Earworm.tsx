@@ -31,6 +31,7 @@ import {
   matchSongs,
   allBackup,
   loadDailyTune,
+  rememberSongs,
   tuneOf,
   type EarCat,
   type EarLevel,
@@ -256,6 +257,11 @@ export function EarwormPlay({
 }) {
   const [soloK, setK] = useState(0);
   const k = live ? live.k : soloK;
+  // Whoever picked them, these songs count as heard on this phone.
+  useEffect(() => {
+    if (songs.length) rememberSongs(cat, songs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cat, songs.map((x) => x.id).join()]);
   const tier = tierOf(level, k);
   const stages = STAGES[tier];
   const [stage, setStage] = useState(0);
