@@ -139,13 +139,13 @@ function seatPoint(slot: number, others: number) {
   const end = 368;
   const a = others === 1 ? 270 : start + ((end - start) * slot) / (others - 1);
   const rad = (a * Math.PI) / 180;
-  return { x: 50 + 43 * Math.cos(rad), y: 42 + 31 * Math.sin(rad), angle: a };
+  return { x: 50 + 43 * Math.cos(rad), y: 51 + 26 * Math.sin(rad), angle: a };
 }
 
 /** Where a seat's played card lands, part-way from the centre toward them. */
 function trickPoint(angle: number, reach = 0.5) {
   const rad = (angle * Math.PI) / 180;
-  return { x: 50 + 30 * reach * Math.cos(rad), y: 42 + 30 * reach * Math.sin(rad) };
+  return { x: 50 + 30 * reach * Math.cos(rad), y: 47 + 28 * reach * Math.sin(rad) };
 }
 
 function Seat({
@@ -310,7 +310,7 @@ export function KachufulBoard({
 
   let status = "";
   if (state.phase === "bidding")
-    status = myTurn ? `Your call: how many tricks will you win?` : `${turnName} is calling…`;
+    status = myTurn ? "Your call: how many tricks?" : `${turnName} is calling…`;
   else if (state.phase === "playing") {
     if (lastWinner !== null)
       status = `${lastWinner === mySeat ? "You" : state.seats[lastWinner].name.split(" ")[0]} won the trick`;
@@ -343,7 +343,8 @@ export function KachufulBoard({
       {(W, H) => {
         // Fit the hand across the table: bigger cards when there are few.
         const cardW = Math.round(Math.min(78, Math.max(48, H * (bidding ? 0.16 : 0.19))));
-        const handRoom = W - SIDE - 40;
+        // Keep the hand clear of the chat box in the corner.
+        const handRoom = W - 2 * (CHAT_W + 16);
         const step =
           hand.length > 1 ? Math.min(cardW * 0.92, (handRoom - cardW) / (hand.length - 1)) : 0;
         return (
@@ -362,8 +363,8 @@ export function KachufulBoard({
                   style={{
                     left: "4%",
                     right: "4%",
-                    top: "9%",
-                    bottom: "24%",
+                    top: "17%",
+                    bottom: "22%",
                     borderRadius: "50%",
                     background:
                       "radial-gradient(ellipse at 50% 40%, #2E7A57 0%, #1F5A40 55%, #174632 100%)",
@@ -393,22 +394,68 @@ export function KachufulBoard({
                   </span>
                 </div>
 
-                {/* Trump: just the suit. */}
+                {/* Top-right: trump (just the suit) · how to play · sound · scores */}
                 <div
-                  className="absolute z-10 flex items-center justify-center rounded-2xl"
-                  style={{
-                    right: 10,
-                    top: 8,
-                    width: 46,
-                    height: 46,
-                    background: "#fff",
-                    boxShadow: "0 0 0 2px #0B0A10, 0 6px 14px rgba(0,0,0,0.5)",
-                  }}
-                  role="img"
-                  aria-label={`Trump: ${SUIT_NAME[state.trump]}`}
-                  title={`Trump: ${SUIT_NAME[state.trump]}`}
+                  className="absolute z-10 flex items-center gap-1.5"
+                  style={{ right: 8, top: 8 }}
                 >
-                  <SuitIcon suit={state.trump} size={30} />
+                  <span
+                    className="flex items-center justify-center rounded-xl"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      background: "#fff",
+                      boxShadow: "0 0 0 2px #0B0A10, 0 6px 14px rgba(0,0,0,0.5)",
+                    }}
+                    role="img"
+                    aria-label={`Trump: ${SUIT_NAME[state.trump]}`}
+                    title={`Trump: ${SUIT_NAME[state.trump]}`}
+                  >
+                    <SuitIcon suit={state.trump} size={26} />
+                  </span>
+                  <button
+                    onClick={() => setHelpOpen(true)}
+                    aria-label="How to play"
+                    className="w-9 h-9 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(7,6,11,0.6)", color: "#fff" }}
+                  >
+                    <HelpCircle size={17} />
+                  </button>
+                  <SoundToggle />
+                  <button
+                    onClick={() => setScoresOpen(true)}
+                    aria-label="Scorecard"
+                    className="w-9 h-9 rounded-full flex items-center justify-center"
+                    style={{ background: "rgba(7,6,11,0.6)", color: "#fff" }}
+                  >
+                    <ListOrdered size={17} />
+                  </button>
+                </div>
+
+                {/* What's happening: one line at the top, between the round and the buttons */}
+                <div
+                  className="absolute z-[15] left-1/2 -translate-x-1/2 rounded-full px-3.5 py-1.5 text-center whitespace-nowrap max-w-[40%] overflow-hidden text-ellipsis"
+                  style={{
+                    top: 10,
+                    background: "rgba(7,6,11,0.72)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    fontSize: 14,
+                  }}
+                  role="status"
+                >
+                  <b>{error ?? status}</b>
+                  {!error && myBid !== null && (
+                    <span style={{ color: "#CBC5D8" }}>
+                      {" "}
+                      · won {state.won[mySeat]}/{myBid}
+                    </span>
+                  )}
+                  {!error && note && <span style={{ color: "#CBC5D8" }}> · {note}</span>}
+                </div>
+
+                {/* Game chat, tucked in the bottom-right corner (online games) */}
+                <div className="absolute z-[12]" style={{ right: 8, bottom: 6, width: CHAT_W }}>
+                  <ChatStrip lines={2} openable={false} />
                 </div>
 
                 {/* Played cards land in front of whoever played them */}
@@ -425,7 +472,7 @@ export function KachufulBoard({
                         transform: `translate(-50%,-50%) rotate(${((k * 37) % 17) - 8}deg)`,
                         zIndex: 5 + k,
                         ["--from-x" as string]: `${(p.x - 50) * 3}px`,
-                        ["--from-y" as string]: `${(p.y - 42) * 3}px`,
+                        ["--from-y" as string]: `${(p.y - 47) * 3}px`,
                       }}
                     >
                       <PlayingCard
@@ -443,7 +490,7 @@ export function KachufulBoard({
                     className="absolute text-center text-[13px] font-semibold"
                     style={{
                       left: "50%",
-                      top: "44%",
+                      top: "50%",
                       transform: "translate(-50%,-50%)",
                       color: "rgba(255,255,255,0.7)",
                       width: "50%",
@@ -545,61 +592,6 @@ export function KachufulBoard({
                   })}
                 </div>
               </div>
-
-              {/* Side panel: you, what's happening, your call, chat */}
-              <aside
-                className="shrink-0 flex flex-col gap-2 p-2 pl-0 min-h-0"
-                style={{ width: SIDE }}
-              >
-                <div className="flex items-center justify-end gap-1.5">
-                  <button
-                    onClick={() => setHelpOpen(true)}
-                    aria-label="How to play"
-                    className="w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}
-                  >
-                    <HelpCircle size={17} />
-                  </button>
-                  <SoundToggle />
-                  <button
-                    onClick={() => setScoresOpen(true)}
-                    aria-label="Scorecard"
-                    className="w-9 h-9 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}
-                  >
-                    <ListOrdered size={17} />
-                  </button>
-                </div>
-                <div
-                  className="rounded-2xl px-3 py-2"
-                  style={{ background: "rgba(7,6,11,0.5)" }}
-                  role="status"
-                >
-                  <p className="text-[12px] font-bold" style={{ color: "#CBC5D8" }}>
-                    You
-                    {myBid !== null && (
-                      <>
-                        {" "}
-                        · won <b style={{ color: "#fff" }}>{state.won[mySeat]}</b> of {myBid}
-                      </>
-                    )}
-                    {state.dealer === mySeat && " · dealer"}
-                  </p>
-                  <p className="font-extrabold leading-tight mt-0.5" style={{ fontSize: 15 }}>
-                    {status}
-                  </p>
-                  {note && <p className="text-[11px] text-faint mt-0.5">{note}</p>}
-                  {error && (
-                    <p className="mt-1 text-[12px] font-bold" style={{ color: "var(--hot)" }}>
-                      {error}
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-auto">
-                  <ChatStrip lines={3} openable={false} />
-                </div>
-              </aside>
             </div>
 
             {state.phase === "roundEnd" && (
@@ -620,8 +612,8 @@ export function KachufulBoard({
   );
 }
 
-/** The side panel's width on the landscape table. */
-const SIDE = 216;
+/** The game chat box in the table's bottom-right corner. */
+const CHAT_W = 200;
 
 /**
  * Judgement is played sideways. On a phone held upright the whole game turns
