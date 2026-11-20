@@ -254,6 +254,8 @@ export function Connect4Table({
     value: state.result?.winner === d ? "Won" : state.result?.winner === null ? "Draw" : "Lost",
     link: !isMe && side.id !== "bot",
     me: isMe,
+    // Never dropped a disc (left before playing): can't be roasted.
+    played: isMe || side.id === "bot" || state.board.includes(d),
   }));
 
   const Player = ({ side, d, active }: { side: C4Side; d: Disc; active: boolean }) => (

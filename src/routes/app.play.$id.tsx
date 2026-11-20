@@ -856,7 +856,8 @@ function OnlineConnect4({
     initials: other?.initials ?? "?",
     color: other?.color,
   };
-  if (!c4Started(st))
+  // Called off (someone left before playing): nobody won.
+  if (!c4Started(st) || (game.status === "done" && !st.result))
     return (
       <Connect4Waiting
         you={youSide}
@@ -895,7 +896,12 @@ function OnlineConnect4({
       }}
       onResign={() =>
         void changeLatest<C4State>(game.id, (cur) =>
-          cur.result ? null : { state: resignC4(cur, me), status: "done" },
+          cur.result
+            ? null
+            : // Before your first disc, leaving calls it off instead of losing.
+              cur.board.includes(me)
+              ? { state: resignC4(cur, me), status: "done" }
+              : { state: cur, status: "done" },
         )
       }
       onClose={onClose}

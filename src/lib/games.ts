@@ -19,7 +19,7 @@ import {
 import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
-import { newConnect4, type C4State } from "@/lib/connect4";
+import { c4Started, newConnect4, type C4State } from "@/lib/connect4";
 import { newPenFight, penStarted, resignPen, type PenState } from "@/lib/penfight";
 import { myPenId } from "@/lib/penSkins";
 import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
@@ -526,17 +526,16 @@ export async function quitGame(g: GameRow, meId: string) {
         return { state: next, status: next.winner !== undefined ? "done" : undefined };
       });
     } else if (g.kind === "connect4") {
-      await changeLatest<C4State>(g.id, (cur) =>
-        cur.result
-          ? null
-          : {
-              state: {
-                ...cur,
-                result: { winner: cur.red === meId ? "y" : "r", reason: "resign" },
-              },
-              status: "done",
-            },
-      );
+      await changeLatest<C4State>(g.id, (cur) => {
+        if (cur.result) return null;
+        // Leaving before you've dropped a disc calls the game off: nobody wins.
+        const mine = cur.red === meId ? "r" : "y";
+        if (!c4Started(cur) || !cur.board.includes(mine)) return { state: cur, status: "done" };
+        return {
+          state: { ...cur, result: { winner: mine === "r" ? "y" : "r", reason: "resign" } },
+          status: "done",
+        };
+      });
     } else if (g.kind === "poker") {
       await changeLatest<PokerState>(g.id, (cur) => {
         if (cur.phase === "lobby")
