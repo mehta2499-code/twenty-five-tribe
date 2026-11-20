@@ -49,6 +49,8 @@ import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
 import { ChessTable } from "@/components/Chess";
 import { Connect4Table, Connect4Waiting } from "@/components/Connect4";
+import { PenTable } from "@/components/PenFight";
+import { applyShot, penStarted, resignPen, type PenState } from "@/lib/penfight";
 import { c4Started, dropDisc, resignC4, type C4State } from "@/lib/connect4";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
 import { claimTimeout, makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
@@ -72,6 +74,7 @@ import {
   saveEarworm,
   startChess,
   startConnect4,
+  startPenFight,
   startLiveEarworm,
 } from "@/lib/games";
 import { EarwormLobby, EarwormPlay, EarwormStandings, type LiveCtl } from "@/components/Earworm";
@@ -121,6 +124,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
     | PokerState
     | EarState
     | C4State
+    | PenState
   >(id);
   const { game, error } = live;
   // Your 25 see you playing at the Table.
@@ -202,6 +206,8 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   const board =
     game.kind === "earworm" ? (
       <OnlineEarworm live={live as Live<EarState>} meId={meId} onClose={close} />
+    ) : game.kind === "penfight" ? (
+      <OnlinePenFight live={live as Live<PenState>} meId={meId} onClose={onClose} />
     ) : game.kind === "connect4" ? (
       <OnlineConnect4 live={live as Live<C4State>} meId={meId} onClose={onClose} />
     ) : game.kind === "chess" ? (
@@ -253,7 +259,7 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
           meId={meId}
           myName={_get().me?.name ?? "You"}
           kind={game.kind}
-          hideTab={["poker", "kachuful", "ludo", "connect4"].includes(game.kind)}
+          hideTab={["poker", "kachuful", "ludo", "connect4", "penfight"].includes(game.kind)}
         />
       )}
     </>
@@ -632,6 +638,92 @@ function OnlineLudo({
         }).then(() => leaveGame(game.id));
       }}
       onClose={onClose}
+    />
+  );
+}
+
+function OnlinePenFight({
+  live,
+  meId,
+  onClose,
+}: {
+  live: Live<PenState>;
+  meId: string;
+  onClose: () => void;
+}) {
+  const { game, save } = live;
+  const navigate = useNavigate();
+  const s = useSocial();
+  // Waiting room: say I'm in. It starts as soon as both of you are.
+  const needsJoin =
+    !!game && game.status !== "done" && !!game.state.joined && !game.state.joined.includes(meId);
+  useEffect(() => {
+    if (!needsJoin || !game) return;
+    void changeLatest<PenState>(game.id, (cur) =>
+      !cur.joined || cur.joined.includes(meId)
+        ? null
+        : { state: { ...cur, joined: [...cur.joined, meId] } },
+    );
+  }, [needsJoin, game?.id, meId]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!game) return null;
+  const st = game.state;
+  const mySeat = (st.players[0] === meId ? 0 : 1) as 0 | 1;
+  const otherId = st.players[mySeat === 0 ? 1 : 0];
+  const other = friendById(otherId);
+  const youSide = {
+    id: meId,
+    name: s.me?.name ?? "You",
+    avatar: s.me?.avatar,
+    initials: s.me?.initials ?? "YO",
+  };
+  const themSide = {
+    id: otherId,
+    name: other?.name ?? "Your friend",
+    avatar: other?.avatar || undefined,
+    initials: other?.initials ?? "?",
+    color: other?.color,
+  };
+  if (!penStarted(st))
+    return (
+      <Connect4Waiting
+        title="Pen fight"
+        you={youSide}
+        them={themSide}
+        themIn={(st.joined ?? []).includes(otherId)}
+        cancelled={game.status === "done"}
+        onCancel={() =>
+          void changeLatest<PenState>(game.id, (cur) =>
+            penStarted(cur) ? null : { state: cur, status: "done" },
+          ).then(onClose)
+        }
+        onClose={onClose}
+      />
+    );
+  return (
+    <PenTable
+      state={st}
+      mySeat={mySeat}
+      you={youSide}
+      them={themSide}
+      onShot={(shot) => {
+        if (st.turn !== mySeat || st.winner !== undefined) return;
+        const next = applyShot(st, shot);
+        void save(next, next.winner !== undefined ? "done" : undefined);
+      }}
+      onResign={() =>
+        void changeLatest<PenState>(game.id, (cur) =>
+          cur.winner !== undefined ? null : { state: resignPen(cur, mySeat), status: "done" },
+        )
+      }
+      onClose={onClose}
+      onPlayAgain={
+        other
+          ? () =>
+              void startPenFight(other).then((id) =>
+                navigate({ to: "/app/play/$id", params: { id } }),
+              )
+          : undefined
+      }
     />
   );
 }

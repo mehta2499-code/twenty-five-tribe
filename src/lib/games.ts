@@ -20,6 +20,7 @@ import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
 import { newConnect4, type C4State } from "@/lib/connect4";
+import { newPenFight, type PenState } from "@/lib/penfight";
 import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
 import { liveActive, liveResults } from "@/lib/earworm";
 import {
@@ -66,7 +67,8 @@ export type GameRow<
     | ChessState
     | PokerState
     | EarState
-    | C4State,
+    | C4State
+    | PenState,
 > = {
   id: string;
   kind:
@@ -78,7 +80,8 @@ export type GameRow<
     | "chess"
     | "poker"
     | "earworm"
-    | "connect4";
+    | "connect4"
+    | "penfight";
   host: string;
   players: string[];
   status: "playing" | "done";
@@ -359,6 +362,20 @@ export async function startConnect4(friend: Person) {
   return id;
 }
 
+/** Challenge a friend to a pen fight (who flicks first is random). */
+export async function startPenFight(friend: Person) {
+  track("game_started", { game: "penfight" });
+  const me = myId();
+  const id = uuid();
+  const state = { ...newPenFight(me, friend.id), joined: [me] };
+  const { error } = await supabase
+    .from("games")
+    .insert({ id, kind: "penfight", host: me, players: [me, friend.id], state, version: 0 });
+  if (error) throw new Error(error.message);
+  await invite([friend.id], id, "Pen fight? Loser buys chai 🖊️");
+  return id;
+}
+
 /** Open a poker table: the host picks seats, buy-in and blinds, then invites friends. */
 export async function startPoker(
   friends: Person[],
@@ -465,6 +482,15 @@ export async function quitGame(g: GameRow, meId: string) {
                 ...cur,
                 result: { winner: cur.white === meId ? "b" : "w", reason: "resign" },
               },
+              status: "done",
+            },
+      );
+    } else if (g.kind === "penfight") {
+      await changeLatest<PenState>(g.id, (cur) =>
+        cur.winner !== undefined
+          ? null
+          : {
+              state: { ...cur, winner: cur.players[0] === meId ? 1 : 0, how: "knocked" },
               status: "done",
             },
       );

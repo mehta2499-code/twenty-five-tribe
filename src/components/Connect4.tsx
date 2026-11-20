@@ -86,7 +86,9 @@ export function Connect4Waiting({
   cancelled,
   onCancel,
   onClose,
+  title = "Connect 4",
 }: {
+  title?: string;
   you: C4Side;
   them: C4Side;
   themIn: boolean;
@@ -106,7 +108,7 @@ export function Connect4Waiting({
       <div className="mx-auto w-full max-w-md px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-8 min-h-full flex flex-col">
         <header className="flex items-center justify-between">
           <span className="font-extrabold" style={{ fontSize: 19 }}>
-            Connect 4 · waiting room
+            {title} · waiting room
           </span>
           <button
             onClick={onClose}

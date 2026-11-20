@@ -19,7 +19,8 @@ export type ArtKind =
   | "pattern"
   | "reflex"
   | "sec25"
-  | "connect4";
+  | "connect4"
+  | "penfight";
 
 export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
   return (
@@ -48,6 +49,7 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "reflex" && <Stopwatch />}
       {kind === "sec25" && <Sec25Art />}
       {kind === "connect4" && <Connect4Art />}
+      {kind === "penfight" && <PenFightArt />}
     </svg>
   );
 }
@@ -357,6 +359,52 @@ function Stopwatch() {
       <path d="M32 36V24" stroke={EDGE} strokeWidth="3" strokeLinecap="round" />
       <path d="M32 36l8 5" stroke="#F15B91" strokeWidth="3" strokeLinecap="round" />
       <circle cx="32" cy="36" r="2.5" fill={EDGE} />
+    </g>
+  );
+}
+
+/** Pen fight: two crossed pens on a desk. */
+function PenFightArt() {
+  return (
+    <g strokeLinejoin="round">
+      <rect
+        x="4"
+        y="14"
+        width="56"
+        height="40"
+        rx="8"
+        fill="#B07440"
+        stroke={EDGE}
+        strokeWidth="2.5"
+      />
+      <g transform="rotate(-28 32 34)">
+        <rect
+          x="8"
+          y="29"
+          width="44"
+          height="9"
+          rx="4.5"
+          fill="#5B8CFF"
+          stroke={EDGE}
+          strokeWidth="2"
+        />
+        <rect x="8" y="29" width="12" height="9" rx="4.5" fill="#13256B" />
+        <path d="M52 29 L59 33.5 L52 38 Z" fill="#C9CED8" stroke={EDGE} strokeWidth="1.5" />
+      </g>
+      <g transform="rotate(24 32 34)">
+        <rect
+          x="8"
+          y="29"
+          width="44"
+          height="9"
+          rx="4.5"
+          fill="#FF6B7F"
+          stroke={EDGE}
+          strokeWidth="2"
+        />
+        <rect x="8" y="29" width="12" height="9" rx="4.5" fill="#6E0E1F" />
+        <path d="M52 29 L59 33.5 L52 38 Z" fill="#C9CED8" stroke={EDGE} strokeWidth="1.5" />
+      </g>
     </g>
   );
 }

@@ -3,6 +3,8 @@ import { DailyTune, EarwormSetup, SoloEarworm, SongsLoading } from "@/components
 import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { Connect4Lobby, LocalConnect4 } from "@/components/Connect4";
+import { LocalPenFight, PenLobby } from "@/components/PenFight";
+import type { PenState } from "@/lib/penfight";
 import type { C4State } from "@/lib/connect4";
 import { PokerSetup } from "@/components/Poker";
 import type { ChessState } from "@/lib/chess";
@@ -39,6 +41,7 @@ import {
   startLudo,
   startChess,
   startConnect4,
+  startPenFight,
   startEarworm,
   startPoker,
   startParty,
@@ -129,6 +132,19 @@ function YourGames({ meId }: { meId: string }) {
           const left = g.players.filter((p) => !e.results[p]).length;
           status = yourTurn ? "Your turn" : `Waiting for ${left}`;
         }
+      } else if (g.kind === "penfight") {
+        const p = g.state as PenState;
+        const seat = p.players[0] === meId ? 0 : 1;
+        const waiting = p.joined && p.joined.length < 2;
+        yourTurn = waiting ? !p.joined!.includes(meId) : p.turn === seat && p.winner === undefined;
+        title = `Pen fight vs ${others[0]?.name.split(" ")[0] ?? "a friend"}`;
+        status = waiting
+          ? yourTurn
+            ? "Join the game"
+            : "Waiting room"
+          : yourTurn
+            ? "Your flick"
+            : "Their flick";
       } else if (g.kind === "connect4") {
         const c = g.state as C4State;
         const mine = c.red === meId ? "r" : "y";
@@ -199,6 +215,7 @@ function YourGames({ meId }: { meId: string }) {
     earworm: "#2A3416",
     chess: "#7E6CD6",
     connect4: "#2F5BE0",
+    penfight: "#8E5A2E",
     poker: "#1F8150",
     imposter: "#3A2E4A",
     trivia: "#5BA6DD",
@@ -312,6 +329,7 @@ const CARD: Record<string, { from: string; to: string; glow: string }> = {
   word: { from: "#D13E9E", to: "#5A1E8C", glow: "#F472B6" },
   imposter: { from: "#3B3A9E", to: "#1A1650", glow: "#818CF8" },
   connect4: { from: "#1E9BD7", to: "#123A8A", glow: "#38BDF8" },
+  penfight: { from: "#C98B52", to: "#5A3518", glow: "#F6B26B" },
 };
 
 /** A wooden letter tile (Word Up's art). */
@@ -402,6 +420,8 @@ function CardArt({ kind }: { kind: string }) {
       );
     case "imposter":
       return g("🥷", 64);
+    case "penfight":
+      return g("🖊️", 66, { transform: "rotate(-20deg)" });
     case "connect4":
       return (
         <span className="relative inline-block" style={{ width: 74, height: 62 }}>
@@ -552,6 +572,8 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [ludo, setLudo] = useState(false);
   const [chess, setChess] = useState(false);
   const [c4, setC4] = useState(false);
+  const [pen, setPen] = useState(false);
+  const [penBot, setPenBot] = useState<1 | 2 | 3 | null>(null);
   const [c4Bot, setC4Bot] = useState<{ level: 1 | 2 | 3; first: boolean } | null>(null);
   const [chessBot, setChessBot] = useState<{
     level: 1 | 2 | 3;
@@ -614,7 +636,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             className="flex items-center gap-1.5 font-bold"
             style={{ fontSize: 13, color: "#B9A8F5" }}
           >
-            <Users size={15} aria-hidden="true" /> 9 games
+            <Users size={15} aria-hidden="true" /> 10 games
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -632,6 +654,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             title="Connect 4"
             onClick={() => setC4(true)}
           />
+          <GameTile art="penfight" badge="NEW" title="Pen fight" onClick={() => setPen(true)} />
           <GameTile
             tone="#1F8150"
             art="poker"
@@ -657,7 +680,6 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
             tone="#3A2E4A"
             art="imposter"
             tour="imposter"
-            wide
             title="Imposter"
             onClick={async () => {
               if (!live) return setToast("Sign in to start a party.");
@@ -715,6 +737,26 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           }}
         />
       )}
+      {pen && (
+        <PenLobby
+          onClose={() => setPen(false)}
+          onBot={(level) => {
+            setPen(false);
+            setPenBot(level);
+          }}
+          onFriend={async (f) => {
+            setPen(false);
+            if (!live) return setToast("Sign in to challenge a friend.");
+            try {
+              const id = await startPenFight(f);
+              navigate({ to: "/app/play/$id", params: { id } });
+            } catch (e) {
+              setToast((e as Error).message);
+            }
+          }}
+        />
+      )}
+      {penBot && <LocalPenFight level={penBot} onClose={() => setPenBot(null)} />}
       {c4Bot && (
         <LocalConnect4 level={c4Bot.level} first={c4Bot.first} onClose={() => setC4Bot(null)} />
       )}

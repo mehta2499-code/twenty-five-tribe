@@ -223,6 +223,7 @@ export function GameChat({
 const START_Y: Record<string, number> = {
   chess: 0.8, // under the board, beside "Your move"
   connect4: 0.86, // under the board
+  penfight: 0.86,
   ludo: 0.82, // under the board and the dice card
 };
 

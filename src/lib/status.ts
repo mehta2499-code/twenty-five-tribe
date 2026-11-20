@@ -219,6 +219,7 @@ const GAME_NAMES: Record<string, string> = {
   imposter: "Imposter",
   chess: "Chess",
   connect4: "Connect 4",
+  penfight: "Pen fight",
   poker: "Poker",
   earworm: "Name That Tune",
 };

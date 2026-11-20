@@ -7,6 +7,7 @@ import { _get } from "@/lib/social";
 import { revealWord, type GameRow, type TriviaState, type WordState } from "@/lib/games";
 import type { ChessState } from "@/lib/chess";
 import type { C4State } from "@/lib/connect4";
+import type { PenState } from "@/lib/penfight";
 import type { PokerState } from "@/lib/poker";
 import type { LudoState } from "@/lib/ludo";
 import type { KState } from "@/lib/kachuful";
@@ -19,6 +20,7 @@ const NAMES: Record<string, string> = {
   ludo: "Ludo",
   chess: "Chess",
   connect4: "Connect 4",
+  penfight: "Pen fight",
   poker: "Hold'em",
   kachuful: "Judgement",
   earworm: "Name That Tune",
@@ -46,6 +48,12 @@ function winner(g: GameRow, me: string, them: string): number {
       const w = c.result?.winner;
       if (!w) return 0;
       const winId = w === "w" ? c.white : c.black;
+      return winId === me ? 1 : winId === them ? -1 : 0;
+    }
+    case "penfight": {
+      const p = st as PenState;
+      if (p.winner === undefined) return 0;
+      const winId = p.players[p.winner];
       return winId === me ? 1 : winId === them ? -1 : 0;
     }
     case "connect4": {
