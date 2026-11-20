@@ -373,7 +373,7 @@ function MiniCard({ rank, suit, rot }: { rank: string; suit: "S" | "H"; rot: num
       <span className="absolute left-1.5 top-0.5 font-black" style={{ fontSize: 15 }}>
         {rank}
       </span>
-      <SuitIcon suit={suit} size={20} style={{ position: "absolute", right: 4, bottom: 4 }} />
+      <SuitIcon suit={suit} size={15} style={{ position: "absolute", left: 6, top: 21 }} />
     </span>
   );
 }
