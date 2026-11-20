@@ -28,7 +28,8 @@ function spaced(s: string) {
 type Item = {
   label: string;
   note: string;
-  to: "/app/privacy" | "/app/people" | "/vibe";
+  to: "/app/privacy" | "/app/people" | "/vibe" | "/app/card/$id";
+  params?: { id: string };
   live: boolean; // available with your real 25 (the rest are demo-only for now)
 };
 const ITEMS: Item[] = [
@@ -42,6 +43,13 @@ const ITEMS: Item[] = [
     label: "Vibe check",
     note: "Change your this-or-that answers and birthday.",
     to: "/vibe",
+    live: true,
+  },
+  {
+    label: "Birthday cards",
+    note: "Your card this year, and every one your 25 signed before.",
+    to: "/app/card/$id",
+    params: { id: "me" },
     live: true,
   },
   {
@@ -240,6 +248,7 @@ function Profile() {
           <li key={i.label}>
             <Link
               to={i.to}
+              params={i.params as never}
               className="w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-[var(--fill)]"
             >
               <span className="flex-1 min-w-0">

@@ -88,9 +88,30 @@ export function upcoming(list: Bday[], within = 30) {
 
 // ---------- Cards ----------
 const cardYear = () => Number(today().slice(0, 4));
+/**
+ * The year of someone's next card: their birthday's year. (Signed the day
+ * before a 1 Jan birthday, it's next year's card, not this one's.)
+ */
+function cardYearFor(target: string) {
+  const me = _get().me?.id;
+  const b = cache?.list.find((x) => x.id === (target === me ? "me" : target));
+  if (!b) return cardYear();
+  const next = Date.parse(`${today()}T00:00:00Z`) + daysUntil(b) * DAY;
+  return new Date(next).getUTCFullYear();
+}
 const DEMO_KEY = "tf.cards.v1";
 
-export async function loadCard(target: string): Promise<CardNote[]> {
+/** Your own past birthday cards: which years, and how many wishes each. */
+export async function loadMyCardYears(): Promise<{ year: number; wishes: number }[]> {
+  if (_get().mode !== "live") return [{ year: cardYear() - 1, wishes: 3 }];
+  const { data } = await supabase.rpc("my_card_years" as never);
+  return ((data ?? []) as unknown as { year: number; wishes: number }[]).map((r) => ({
+    year: Number(r.year),
+    wishes: Number(r.wishes),
+  }));
+}
+
+export async function loadCard(target: string, year?: number): Promise<CardNote[]> {
   const s = _get();
   if (s.mode !== "live") {
     try {
@@ -115,7 +136,10 @@ export async function loadCard(target: string): Promise<CardNote[]> {
     }
   }
   // Who wished; the words only for the birthday person (and your own wish).
-  const { data } = await supabase.rpc("card_wishes" as never, { p_target: target } as never);
+  const { data } = await supabase.rpc(
+    "card_wishes" as never,
+    { p_target: target, p_year: year ?? cardYearFor(target) } as never,
+  );
   const me = s.me?.id;
   return (
     (data ?? []) as unknown as { author: string; body: string | null; created_at: string }[]
@@ -136,7 +160,7 @@ export async function signCard(target: string, body: string) {
   }
   const { error } = await supabase
     .from("birthday_cards")
-    .insert({ target, year: cardYear(), author: s.me!.id, body });
+    .insert({ target, year: cardYearFor(target), author: s.me!.id, body });
   if (error)
     throw new Error(/duplicate/i.test(error.message) ? "You've already signed." : error.message);
 }

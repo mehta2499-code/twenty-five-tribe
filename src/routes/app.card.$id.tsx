@@ -9,6 +9,7 @@ import {
   cardOpen,
   daysUntil,
   loadCard,
+  loadMyCardYears,
   signCard,
   useBirthdays,
   type CardNote,
@@ -54,15 +55,23 @@ function CardScreen() {
   const [toast, setToast] = useState<string | null>(null);
   const [party, setParty] = useState(0);
 
-  const reload = () => void loadCard(target).then(setNotes);
-  useEffect(reload, [target]);
+  // Your own card: this year's, or a past year's from your birthday memories.
+  const [year, setYear] = useState<number | null>(null);
+  const [years, setYears] = useState<{ year: number; wishes: number }[]>([]);
+  const reload = () => void loadCard(target, year ?? undefined).then(setNotes);
+  useEffect(reload, [target, year]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (mine) void loadMyCardYears().then(setYears);
+  }, [mine]);
   useEffect(() => {
     if (mine && b && daysUntil(b) === 0) setParty(1);
   }, [mine, b]);
 
   const first = person?.name.split(" ")[0] ?? "them";
   // Your own card stays shut until your birthday (the database enforces it too).
-  const locked = mine && !!b && !cardOpen(b);
+  const locked = mine && year === null && !!b && !cardOpen(b);
+  const thisYear = new Date().getFullYear();
+  const memories = years.filter((y) => y.year !== (year ?? thisYear));
   const signed = notes?.some((n) => n.author === "me");
 
   return (
@@ -254,7 +263,52 @@ function CardScreen() {
             </div>
             <p className="relative text-center text-[12px] font-bold mt-5 opacity-50">
               with love, from {mine ? "your" : first + "'s"} 25 💛
+              {year !== null && ` · ${year}`}
             </p>
+          </div>
+        </section>
+      )}
+
+      {/* Your birthday memories: every past year's card. */}
+      {mine && (memories.length > 0 || year !== null) && (
+        <section className="px-5 mt-8">
+          <h2 className="heading" style={{ fontSize: 19 }}>
+            Birthday memories
+          </h2>
+          <p className="meta mt-0.5">Every card your 25 signed for you.</p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {year !== null && (
+              <button
+                onClick={() => setYear(null)}
+                className="card p-4 text-left"
+                style={{ borderColor: "var(--pink)" }}
+              >
+                <span className="block text-[13px] font-bold" style={{ color: "var(--pink)" }}>
+                  This year
+                </span>
+                <span className="block font-extrabold mt-1" style={{ fontSize: 18 }}>
+                  {thisYear}
+                </span>
+              </button>
+            )}
+            {memories.map((y) => (
+              <button
+                key={y.year}
+                onClick={() => {
+                  setYear(y.year);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  document.getElementById("app-scroll")?.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="card p-4 text-left"
+              >
+                <span className="block text-[13px] font-bold" style={{ color: "var(--ink-2)" }}>
+                  🎂 {y.wishes} wish{y.wishes === 1 ? "" : "es"}
+                </span>
+                <span className="block font-extrabold mt-1" style={{ fontSize: 18 }}>
+                  {y.year}
+                </span>
+              </button>
+            ))}
           </div>
         </section>
       )}

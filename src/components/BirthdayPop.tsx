@@ -10,7 +10,8 @@ import { Confetti, buzz } from "@/components/SocialUI";
 import { daysUntil, loadCard, useBirthdays } from "@/lib/birthdays";
 import { dayKey, friendById, meView, useSocial } from "@/lib/social";
 
-type Pop = { id: string; mine: boolean };
+/** eve: their birthday is tomorrow (sign tonight, they open it at 12 AM). */
+type Pop = { id: string; mine: boolean; eve: boolean };
 
 export function BirthdayPop() {
   const s = useSocial();
@@ -22,11 +23,11 @@ export function BirthdayPop() {
 
   useEffect(() => {
     if (pop) return;
-    const today = list.filter((b) => daysUntil(b) === 0);
-    for (const b of [
-      ...today.filter((x) => x.id === "me"),
-      ...today.filter((x) => x.id !== "me"),
-    ]) {
+    // Your own birthday (today); friends' birthdays tomorrow (sign the card the
+    // evening before) and today (if you haven't signed yet).
+    const mine = list.filter((b) => b.id === "me" && daysUntil(b) === 0);
+    const soon = list.filter((b) => b.id !== "me" && daysUntil(b) <= 1);
+    for (const b of [...mine, ...soon]) {
       if (b.id !== "me" && !friendById(b.id)) continue;
       const key = `tf.bday.pop.${dayKey()}.${b.id}`;
       try {
@@ -35,7 +36,7 @@ export function BirthdayPop() {
       } catch {
         continue;
       }
-      setPop({ id: b.id, mine: b.id === "me" });
+      setPop({ id: b.id, mine: b.id === "me", eve: daysUntil(b) === 1 });
       return;
     }
   }, [list, pop]);
@@ -48,7 +49,12 @@ export function BirthdayPop() {
       buzz(40);
     }, 350);
     if (pop.mine && s.me) void loadCard(s.me.id).then((n) => setCount(n.length));
-    else void loadCard(pop.id).then((n) => setCount(n.length));
+    else
+      void loadCard(pop.id).then((n) => {
+        // Already signed: nothing to ask.
+        if (n.some((x) => x.author === "me")) setPop(null);
+        else setCount(n.length);
+      });
     return () => clearTimeout(t);
   }, [pop, s.me]);
 
@@ -102,22 +108,28 @@ export function BirthdayPop() {
           className="mt-5 text-[13px] font-extrabold tracking-[0.18em] uppercase"
           style={{ color: "var(--pink)" }}
         >
-          🎂 Today
+          🎂 {pop.eve ? "Tomorrow" : "Today"}
         </p>
         <h2 className="title mt-1" style={{ fontSize: 28, lineHeight: 1.1 }}>
-          {pop.mine ? `Happy birthday, ${first}!` : `It's ${first}'s birthday!`}
+          {pop.mine
+            ? `Happy birthday, ${first}!`
+            : pop.eve
+              ? `${first}'s birthday is tomorrow!`
+              : `It's ${first}'s birthday!`}
         </h2>
         <p className="mt-2 text-[15px]" style={{ color: "var(--ink-2)" }}>
           {pop.mine
             ? count
               ? `Your 25 left you ${count} wish${count === 1 ? "" : "es"}. Open your card 🎁`
               : "Your 25 are signing your card. Open it 🎁"
-            : count
-              ? `${count} of your 25 already wished. Add yours ✍️`
-              : `Be the first to wish ${first} ✍️`}
+            : pop.eve
+              ? `Sign their card tonight. ${first} opens it at 12 AM 🎁${count ? ` · ${count} already signed` : ""}`
+              : count
+                ? `${count} of your 25 already wished. Add yours ✍️`
+                : `Be the first to wish ${first} ✍️`}
         </p>
         <button onClick={go} className="btn-primary w-full mt-5">
-          {pop.mine ? "Open my card" : `Wish ${first}`}
+          {pop.mine ? "Open my card" : pop.eve ? "Sign the card" : `Wish ${first}`}
         </button>
         <button
           onClick={close}
