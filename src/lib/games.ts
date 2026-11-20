@@ -21,7 +21,7 @@ import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
 import { newConnect4, type C4State } from "@/lib/connect4";
 import { newPenFight, penStarted, resignPen, type PenState } from "@/lib/penfight";
-import { savedSkinId } from "@/lib/penSkins";
+import { myPenId } from "@/lib/penSkins";
 import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
 import { liveActive, liveResults } from "@/lib/earworm";
 import {
@@ -370,11 +370,12 @@ export async function startPenFight(friends: Person[]) {
   const me = myId();
   const id = uuid();
   const ids = [me, ...friends.map((f) => f.id)];
+  const myPen = await myPenId();
   const state: PenState = {
     ...newPenFight(
       ids,
       undefined,
-      ids.map((_, i) => (i === 0 ? savedSkinId() : "classic")),
+      ids.map((_, i) => (i === 0 ? myPen : "classic")),
     ),
     joined: [me],
     lobby: friends.length > 1,
@@ -387,8 +388,8 @@ export async function startPenFight(friends: Person[]) {
     friends.map((f) => f.id),
     id,
     friends.length > 1
-      ? `Pen fight, ${ids.length} of us. Last pen on the desk wins 🖊️`
-      : "Pen fight? Loser buys chai 🖊️",
+      ? `Pen fight, ${ids.length} of us. Last pen on the table wins 🖊️`
+      : "Pen fight? Last pen on the table wins 🖊️",
   );
   return id;
 }

@@ -8,6 +8,7 @@
  * A small 2D rigid-body sim: each pen is a capsule (a line with a radius) that
  * slides with friction, spins, and bounces off the other pens.
  */
+/** The table used before tables came in different shapes and sizes. */
 export const DESK = { w: 360, h: 520 };
 export const PEN = { len: 128, r: 7 };
 const MASS = 1;
@@ -20,6 +21,28 @@ const DT = 1 / 120;
 /** Frames (at 60 a second) a pen takes to drop off the desk on screen. */
 export const FALL_FRAMES = 26;
 export const MAX_PLAYERS = 6;
+
+/** The tables (one is picked at random each game). */
+export type TableKind = "wood" | "school" | "round" | "marble";
+export type Table = { kind: TableKind; w: number; h: number };
+export const TABLES: Record<TableKind, { name: string; w: number; h: number }> = {
+  wood: { name: "Teacher's desk", w: 360, h: 520 },
+  school: { name: "School bench", w: 320, h: 560 },
+  round: { name: "Café table", w: 430, h: 430 },
+  marble: { name: "Marble slab", w: 410, h: 470 },
+};
+/** A table for n players: more players, a bigger table. */
+export function makeTable(n: number, kind?: TableKind): Table {
+  const kinds = Object.keys(TABLES) as TableKind[];
+  const k = kind ?? kinds[Math.floor(Math.random() * kinds.length)];
+  const scale = n <= 2 ? 1 : n <= 4 ? 1.1 : 1.2;
+  return { kind: k, w: Math.round(TABLES[k].w * scale), h: Math.round(TABLES[k].h * scale) };
+}
+export const tableOf = (s: { table?: Table }): Table => s.table ?? { kind: "wood", ...DESK };
+
+/** How far a pen sent at this speed slides on its own (for the aiming dots). */
+export const slideDistance = (speed: number) => Math.min(speed, MAX_PUSH) ** 2 / (2 * SLIDE);
+export const MAX_SPEED = MAX_PUSH;
 
 export type Pen = { x: number; y: number; a: number; vx: number; vy: number; w: number };
 export type PenPose = { x: number; y: number; a: number };
@@ -52,30 +75,40 @@ export type PenState = {
   lobby?: boolean;
   /** Each player's pen (looks only). */
   skins?: string[];
+  /** The table (shape and size); old games used the plain desk. */
+  table?: Table;
 };
 
 /** Where n pens start: spread round the middle of the desk, each at an angle. */
-function startPoses(n: number): PenPose[] {
+function startPoses(n: number, t: Table): PenPose[] {
+  const round = t.kind === "round";
   if (n === 2)
     return [
-      { x: DESK.w * 0.5, y: DESK.h * 0.72, a: 0.18 },
-      { x: DESK.w * 0.5, y: DESK.h * 0.28, a: -0.18 },
+      { x: t.w * 0.5, y: t.h * (round ? 0.68 : 0.72), a: 0.18 },
+      { x: t.w * 0.5, y: t.h * (round ? 0.32 : 0.28), a: -0.18 },
     ];
   return Array.from({ length: n }, (_, i) => {
-    const t = Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const a = Math.PI / 2 + (i * 2 * Math.PI) / n;
     return {
-      x: DESK.w / 2 + Math.cos(t) * DESK.w * 0.27,
-      y: DESK.h / 2 + Math.sin(t) * DESK.h * 0.3,
-      a: t + Math.PI / 2 + (Math.random() - 0.5) * 0.4,
+      x: t.w / 2 + Math.cos(a) * t.w * (round ? 0.24 : 0.27),
+      y: t.h / 2 + Math.sin(a) * t.h * (round ? 0.24 : 0.3),
+      a: a + Math.PI / 2 + (Math.random() - 0.5) * 0.4,
     };
   });
 }
 
-export function newPenFight(players: string[], level?: 1 | 2 | 3, skins?: string[]): PenState {
+export function newPenFight(
+  players: string[],
+  level?: 1 | 2 | 3,
+  skins?: string[],
+  kind?: TableKind,
+): PenState {
   const n = players.length;
+  const table = makeTable(n, kind);
   return {
     players,
-    pens: startPoses(n),
+    table,
+    pens: startPoses(n, table),
     out: players.map(() => false),
     fellOrder: [],
     turn: Math.floor(Math.random() * n),
@@ -92,11 +125,13 @@ export const outOf = (s: PenState) => s.out ?? s.pens.map(() => false);
 export function beginPenFight(s: PenState): PenState {
   const keep = s.players.map((_, i) => i).filter((i) => (s.joined ?? []).includes(s.players[i]));
   const players = keep.map((i) => s.players[i]);
+  const table = makeTable(players.length, s.table?.kind);
   return {
     ...s,
     players,
+    table,
     skins: keep.map((i) => s.skins?.[i] ?? "classic"),
-    pens: startPoses(players.length),
+    pens: startPoses(players.length, table),
     out: players.map(() => false),
     fellOrder: [],
     lobby: false,
@@ -111,14 +146,17 @@ const tip = (p: Pen | PenPose, s: 1 | -1) => ({
 });
 
 /** Is this desk point on the pen (within a finger's reach)? */
-export function onPen(p: PenPose, x: number, y: number, slack = 22) {
+export function onPen(p: PenPose, x: number, y: number, slack = 30) {
   const a = tip(p, -1);
   const b = tip(p, 1);
   return segDist(x, y, a.x, a.y, b.x, b.y).d <= PEN.r + slack;
 }
 
 /** It tips off once its middle (where it balances) has gone past the edge. */
-export const offDesk = (p: PenPose) => p.x < 0 || p.x > DESK.w || p.y < 0 || p.y > DESK.h;
+export const offDesk = (p: PenPose, t: Table = tableOf({})) =>
+  t.kind === "round"
+    ? Math.hypot(p.x - t.w / 2, p.y - t.h / 2) > t.w / 2
+    : p.x < 0 || p.x > t.w || p.y < 0 || p.y > t.h;
 
 function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
   const dx = bx - ax;
@@ -136,12 +174,7 @@ function closest(a: Pen, b: Pen) {
   const b1 = tip(b, -1);
   const b2 = tip(b, 1);
   let best = { d: Infinity, pa: { x: 0, y: 0 }, pb: { x: 0, y: 0 } };
-  const consider = (
-    p: { x: number; y: number },
-    s1: typeof a1,
-    s2: typeof a1,
-    pIsA: boolean,
-  ) => {
+  const consider = (p: { x: number; y: number }, s1: typeof a1, s2: typeof a1, pIsA: boolean) => {
     const r = segDist(p.x, p.y, s1.x, s1.y, s2.x, s2.y);
     if (r.d < best.d)
       best = pIsA
@@ -225,7 +258,13 @@ const toPose = (p: Pen): PenPose => ({ x: p.x, y: p.y, a: p.a });
  * drops (no more friction or bumping) and is out. Returns every frame (for
  * the animation, 60 a second), where the pens stop, and who fell.
  */
-export function simulate(from: PenPose[], outBefore: boolean[], seat: number, shot: Shot) {
+export function simulate(
+  from: PenPose[],
+  outBefore: boolean[],
+  seat: number,
+  shot: Shot,
+  t: Table = tableOf({}),
+) {
   const pens = from.map(toPen);
   const fallAt: number[] = from.map(() => -1); // step it went over, or -1
   flick(pens[seat], shot);
@@ -248,16 +287,22 @@ export function simulate(from: PenPose[], outBefore: boolean[], seat: number, sh
       }
       p.w *= Math.max(0, 1 - SPIN_DRAG * DT);
       if (Math.abs(p.w) < 0.02) p.w = 0;
-      if (offDesk(p)) {
+      if (offDesk(p, t)) {
         fallAt[k] = i;
-        // It tips over the edge and keeps going outwards as it drops.
-        const ox = p.x < 0 ? -1 : p.x > DESK.w ? 1 : 0;
-        const oy = p.y < 0 ? -1 : p.y > DESK.h ? 1 : 0;
+        // It tips over the edge and keeps going outwards as it drops (the
+        // same on every phone: no randomness).
+        let ox = p.x < 0 ? -1 : p.x > t.w ? 1 : 0;
+        let oy = p.y < 0 ? -1 : p.y > t.h ? 1 : 0;
+        if (t.kind === "round") {
+          const d = Math.hypot(p.x - t.w / 2, p.y - t.h / 2) || 1;
+          ox = (p.x - t.w / 2) / d;
+          oy = (p.y - t.h / 2) / d;
+        }
         if (Math.hypot(p.vx, p.vy) < 80) {
           p.vx = ox * 80;
           p.vy = oy * 80;
         }
-        p.w += (Math.random() - 0.5) * 2;
+        p.w += k % 2 ? 0.8 : -0.8;
       }
     }
     for (let a = 0; a < pens.length; a++)
@@ -293,7 +338,7 @@ function nextIn(out: boolean[], seat: number) {
 export function applyShot(s: PenState, shot: Shot): PenState {
   const seat = s.turn;
   const outBefore = outOf(s);
-  const { end, fell } = simulate(s.pens, outBefore, seat, shot);
+  const { end, fell } = simulate(s.pens, outBefore, seat, shot, tableOf(s));
   const out = outBefore.map((o, i) => o || fell[i]);
   // Your own pen going off on your flick counts as falling first.
   const newly = fell.map((f, i) => (f ? i : -1)).filter((i) => i >= 0);
@@ -346,20 +391,22 @@ export function resignPen(s: PenState, seat: number): PenState {
 /** Final places: the winner first, then whoever fell last. */
 export function penPlaces(s: PenState): number[] {
   const fell = [...(s.fellOrder ?? [])].reverse().filter((i) => i !== s.winner);
-  const rest = s.players
-    .map((_, i) => i)
-    .filter((i) => i !== s.winner && !fell.includes(i));
+  const rest = s.players.map((_, i) => i).filter((i) => i !== s.winner && !fell.includes(i));
   return [...(s.winner !== undefined ? [s.winner] : []), ...rest, ...fell];
 }
 
 // ---------- The bot ----------
 /** How close a pen is to falling off (0 = on the edge). */
-const edgeRoom = (p: PenPose) => Math.min(p.x, DESK.w - p.x, p.y, DESK.h - p.y);
+const edgeRoom = (p: PenPose, t: Table) =>
+  t.kind === "round"
+    ? t.w / 2 - Math.hypot(p.x - t.w / 2, p.y - t.h / 2)
+    : Math.min(p.x, t.w - p.x, p.y, t.h - p.y);
 
 /** The bot's flick: try many, keep the best. Easy tries few and aims loosely. */
 export function botShot(s: PenState, level: 1 | 2 | 3): Shot {
   const seat = s.turn;
   const outBefore = outOf(s);
+  const table = tableOf(s);
   const me = s.pens[seat];
   const targets = s.pens.map((p, i) => ({ p, i })).filter(({ i }) => i !== seat && !outBefore[i]);
   const tries = level === 1 ? 12 : level === 2 ? 50 : Math.max(60, 160 - targets.length * 15);
@@ -379,14 +426,14 @@ export function botShot(s: PenState, level: 1 | 2 | 3): Shot {
     if (Math.random() < 0.15) ang += (Math.random() - 0.5) * 1.2; // try something different
     const power = 150 + Math.random() * (MAX_PUSH - 150);
     const shot = { px, py, ix: Math.cos(ang) * power, iy: Math.sin(ang) * power };
-    const { end, fell } = simulate(s.pens, outBefore, seat, shot);
+    const { end, fell } = simulate(s.pens, outBefore, seat, shot, table);
     let score = 0;
     if (fell[seat]) score -= 2000;
     for (const { i } of targets) {
       if (fell[i]) score += 1000;
-      else score -= edgeRoom(end[i]) / targets.length;
+      else score -= edgeRoom(end[i], table) / targets.length;
     }
-    if (!fell[seat]) score += edgeRoom(end[seat]) * 0.6;
+    if (!fell[seat]) score += edgeRoom(end[seat], table) * 0.6;
     if (score > bestScore) {
       bestScore = score;
       best = shot;

@@ -2,8 +2,7 @@
  * Pen fight pens and medals. Pens are looks only (every pen plays the same);
  * you unlock them by winning. Our own designs in classic pen styles.
  *
- * Wins that count: against your 25 (the server counts them) and against the
- * Medium or Hard bot (kept on this phone).
+ * Only wins against your 25 count (the server counts them), not bot games.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { _get } from "@/lib/social";
@@ -167,31 +166,12 @@ export function medalFor(wins: number) {
 export const unlocked = (s: Skin, wins: number) => wins >= s.wins;
 
 // ---- Wins ----
-const BOT_KEY = "tf.pen.botwins";
 const SKIN_KEY = "tf.pen.skin";
-function botWins() {
-  try {
-    return Number(localStorage.getItem(BOT_KEY) ?? "0") || 0;
-  } catch {
-    return 0;
-  }
-}
-/** A win against the Medium or Hard bot. */
-export function addBotWin() {
-  try {
-    localStorage.setItem(BOT_KEY, String(botWins() + 1));
-  } catch {
-    // ignore
-  }
-}
-/** Your pen fight wins: against your 25 (server) plus the bot (this phone). */
+/** Your pen fight wins against your 25 (the server counts them; bots don't count). */
 export async function loadPenWins(): Promise<number> {
-  let friends = 0;
-  if (_get().mode === "live") {
-    const { data } = await supabase.rpc("my_pen_wins" as never);
-    friends = Number(data ?? 0) || 0;
-  }
-  return friends + botWins();
+  if (_get().mode !== "live") return 0;
+  const { data } = await supabase.rpc("my_pen_wins" as never);
+  return Number(data ?? 0) || 0;
 }
 
 /** The pen you play with (only one you've unlocked). */
@@ -212,14 +192,10 @@ export function chooseSkin(id: string) {
     // ignore
   }
 }
-/** The pen id saved on this phone (for starting an online game). */
-export const savedSkinId = () => {
-  try {
-    return localStorage.getItem(SKIN_KEY) ?? "classic";
-  } catch {
-    return "classic";
-  }
-};
+/** The pen to bring to an online game: your pick, if you've unlocked it. */
+export async function myPenId(): Promise<string> {
+  return chosenSkin(await loadPenWins()).id;
+}
 
 /** What a win just earned: a new pen and/or a medal (or nothing). */
 export function unlockNote(before: number, after: number): string | undefined {

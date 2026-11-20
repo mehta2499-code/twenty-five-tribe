@@ -58,7 +58,7 @@ import {
   skipTurn as skipPenTurn,
   type PenState,
 } from "@/lib/penfight";
-import { loadPenWins, savedSkinId, unlockNote } from "@/lib/penSkins";
+import { loadPenWins, myPenId, unlockNote } from "@/lib/penSkins";
 import { c4Started, dropDisc, resignC4, type C4State } from "@/lib/connect4";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
 import { claimTimeout, makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
@@ -667,19 +667,21 @@ function OnlinePenFight({
     !!game && game.status !== "done" && !!game.state.joined && !game.state.joined.includes(meId);
   useEffect(() => {
     if (!needsJoin || !game) return;
-    void changeLatest<PenState>(game.id, (cur) => {
-      const seat = cur.players.indexOf(meId);
-      if (!cur.joined || cur.joined.includes(meId) || seat < 0) return null;
-      const skins = cur.players.map((_, i) => cur.skins?.[i] ?? "classic");
-      skins[seat] = savedSkinId();
-      const joined = [...cur.joined, meId];
-      const next: PenState = { ...cur, joined, skins };
-      // Everyone's here: off we go.
-      return {
-        state:
-          cur.lobby && cur.players.every((p) => joined.includes(p)) ? beginPenFight(next) : next,
-      };
-    });
+    void myPenId().then((pen) =>
+      changeLatest<PenState>(game.id, (cur) => {
+        const seat = cur.players.indexOf(meId);
+        if (!cur.joined || cur.joined.includes(meId) || seat < 0) return null;
+        const skins = cur.players.map((_, i) => cur.skins?.[i] ?? "classic");
+        skins[seat] = pen;
+        const joined = [...cur.joined, meId];
+        const next: PenState = { ...cur, joined, skins };
+        // Everyone's here: off we go.
+        return {
+          state:
+            cur.lobby && cur.players.every((p) => joined.includes(p)) ? beginPenFight(next) : next,
+        };
+      }),
+    );
   }, [needsJoin, game?.id, meId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Your wins before this game, to say if winning it unlocks something.
   const [winsBefore, setWinsBefore] = useState<number | null>(null);
@@ -707,9 +709,22 @@ function OnlinePenFight({
   };
   const sides = st.players.map(sideOf);
   const mySeat = st.players.indexOf(meId);
+  const pickSkin = (id: string) =>
+    void changeLatest<PenState>(game.id, (cur) => {
+      const seat = cur.players.indexOf(meId);
+      if (seat < 0 || cur.shots > 0 || cur.skins?.[seat] === id) return null;
+      return {
+        state: {
+          ...cur,
+          skins: cur.players.map((_, i) => (i === seat ? id : (cur.skins?.[i] ?? "classic"))),
+        },
+      };
+    });
   if (!penStarted(st))
     return (
       <PenWaiting
+        pick={st.skins?.[mySeat] ?? "classic"}
+        onPick={pickSkin}
         sides={sides}
         joined={st.joined ?? []}
         isHost={game.host === meId}
@@ -749,6 +764,7 @@ function OnlinePenFight({
         const next = applyShot(st, shot);
         void save(next, next.winner !== undefined ? "done" : undefined);
       }}
+      onPickSkin={pickSkin}
       onSkip={() =>
         void changeLatest<PenState>(game.id, (cur) =>
           cur.winner !== undefined || cur.turn !== st.turn ? null : { state: skipPenTurn(cur) },
