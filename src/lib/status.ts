@@ -53,7 +53,9 @@ if (typeof window !== "undefined") {
       sendStatus();
     }
   };
-  for (const ev of ["pointerdown", "keydown", "touchstart", "wheel", "scroll"])
+  // Only things a person does: the app also scrolls by itself (new chat
+  // messages), which must not count. A finger scroll starts with a touch.
+  for (const ev of ["pointerdown", "keydown", "touchstart", "wheel"])
     window.addEventListener(ev, touch, { passive: true, capture: true });
 }
 const reallyHere = () =>
