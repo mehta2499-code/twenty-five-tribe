@@ -21,6 +21,7 @@ import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
 import { newConnect4, type C4State } from "@/lib/connect4";
 import { newPenFight, type PenState } from "@/lib/penfight";
+import { savedSkinId } from "@/lib/penSkins";
 import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
 import { liveActive, liveResults } from "@/lib/earworm";
 import {
@@ -367,7 +368,10 @@ export async function startPenFight(friend: Person) {
   track("game_started", { game: "penfight" });
   const me = myId();
   const id = uuid();
-  const state = { ...newPenFight(me, friend.id), joined: [me] };
+  const state = {
+    ...newPenFight(me, friend.id, undefined, [savedSkinId(), "classic"]),
+    joined: [me],
+  };
   const { error } = await supabase
     .from("games")
     .insert({ id, kind: "penfight", host: me, players: [me, friend.id], state, version: 0 });

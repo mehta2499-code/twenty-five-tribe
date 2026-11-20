@@ -36,10 +36,18 @@ export type PenState = {
   level?: 1 | 2 | 3;
   /** Online: who has opened it (starts once both are in). */
   joined?: string[];
+  /** Each player's pen (looks only). */
+  skins?: [string, string];
 };
 
-export function newPenFight(a: string, b: string, level?: 1 | 2 | 3): PenState {
+export function newPenFight(
+  a: string,
+  b: string,
+  level?: 1 | 2 | 3,
+  skins?: [string, string],
+): PenState {
   return {
+    skins,
     players: [a, b],
     pens: [
       { x: DESK.w * 0.5, y: DESK.h * 0.72, a: 0.18 },

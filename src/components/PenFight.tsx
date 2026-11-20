@@ -27,6 +27,20 @@ import {
   type PenState,
   type Shot,
 } from "@/lib/penfight";
+import {
+  MEDALS,
+  RIVAL,
+  SKINS,
+  addBotWin,
+  chooseSkin,
+  chosenSkin,
+  loadPenWins,
+  medalFor,
+  skinById,
+  unlockNote,
+  unlocked,
+  type Skin,
+} from "@/lib/penSkins";
 
 export type PenSide = {
   id: string;
@@ -36,28 +50,46 @@ export type PenSide = {
   color?: string;
 };
 
-/** Your pen is always blue, theirs red. */
-const INK = [
-  { body: ["#5B8CFF", "#2448C9"], cap: "#13256B", name: "Blue" },
-  { body: ["#FF6B7F", "#C81E3A"], cap: "#6E0E1F", name: "Red" },
-];
 const FULL_SWIPE = 140; // desk units of swipe for a full-power push
 const MAX_POWER = 800;
 const MARGIN = 26; // floor showing round the desk
 
-/** One pen, drawn: a glossy barrel, a cap at one end, a metal tip at the other. */
-function PenShape({ p, ink, lit }: { p: PenPose; ink: (typeof INK)[number]; lit?: boolean }) {
+/** One pen, drawn in its style: barrel, cap and clip, and a ball, fountain or click tip. */
+export function PenShape({
+  p,
+  skin,
+  lit,
+  uid,
+}: {
+  p: PenPose;
+  skin: Skin;
+  lit?: boolean;
+  /** Unique per pen on screen (for its gradients). */
+  uid: string;
+}) {
   const L = PEN.len;
   const r = PEN.r;
-  const gid = `pen-${ink.name}`;
+  const gid = `pen-${uid}`;
+  const rain = ["#FF6B7F", "#FFB547", "#FFE36B", "#6BE3A0", "#5BB8FF", "#9B7BFF"];
   return (
     <g transform={`translate(${p.x} ${p.y}) rotate(${(p.a * 180) / Math.PI})`}>
       <defs>
-        <linearGradient id={gid} x1="0" y1="-1" x2="0" y2="1">
-          <stop offset="0" stopColor={ink.body[0]} />
-          <stop offset="0.45" stopColor={ink.body[0]} />
-          <stop offset="1" stopColor={ink.body[1]} />
-        </linearGradient>
+        {skin.pattern === "rainbow" ? (
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="0">
+            {rain.map((c, k) => (
+              <stop key={k} offset={k / (rain.length - 1)} stopColor={c} />
+            ))}
+          </linearGradient>
+        ) : (
+          <linearGradient id={gid} x1="0" y1="-1" x2="0" y2="1">
+            <stop offset="0" stopColor={skin.body[0]} />
+            <stop offset="0.45" stopColor={skin.body[0]} />
+            <stop offset="1" stopColor={skin.body[1]} />
+          </linearGradient>
+        )}
+        <clipPath id={`${gid}-c`}>
+          <rect x={-L / 2} y={-r} width={L - 16} height={r * 2} rx={r} />
+        </clipPath>
       </defs>
       {/* Shadow */}
       <rect x={-L / 2 + 3} y={-r + 5} width={L} height={r * 2} rx={r} fill="rgba(0,0,0,0.28)" />
@@ -74,29 +106,75 @@ function PenShape({ p, ink, lit }: { p: PenPose; ink: (typeof INK)[number]; lit?
           opacity={0.9}
         />
       )}
-      {/* Tip: a metal cone and the nib */}
-      <path
-        d={`M ${L / 2 - 16} ${-r} L ${L / 2} -1.5 L ${L / 2} 1.5 L ${L / 2 - 16} ${r} Z`}
-        fill="#C9CED8"
-      />
-      <circle cx={L / 2 + 1} cy={0} r={1.6} fill="#2A2F3A" />
+      {/* Tip */}
+      {skin.tip === "fountain" ? (
+        <>
+          <path
+            d={`M ${L / 2 - 18} ${-r} L ${L / 2 + 2} -0.8 L ${L / 2 + 2} 0.8 L ${L / 2 - 18} ${r} Z`}
+            fill={skin.clip}
+          />
+          <line
+            x1={L / 2 - 10}
+            y1={0}
+            x2={L / 2 + 2}
+            y2={0}
+            stroke="rgba(0,0,0,0.45)"
+            strokeWidth={0.8}
+          />
+          <circle cx={L / 2 - 11} cy={0} r={1.3} fill="rgba(0,0,0,0.45)" />
+        </>
+      ) : (
+        <>
+          <path
+            d={`M ${L / 2 - 16} ${-r} L ${L / 2} -1.5 L ${L / 2} 1.5 L ${L / 2 - 16} ${r} Z`}
+            fill="#C9CED8"
+          />
+          <circle cx={L / 2 + 1} cy={0} r={1.6} fill="#2A2F3A" />
+        </>
+      )}
       {/* Barrel */}
       <rect x={-L / 2} y={-r} width={L - 16} height={r * 2} rx={r} fill={`url(#${gid})`} />
+      <g clipPath={`url(#${gid}-c)`}>
+        {skin.pattern === "stripes" &&
+          Array.from({ length: 12 }, (_, k) => (
+            <rect
+              key={k}
+              x={-L / 2 + k * 11}
+              y={-r - 4}
+              width={4}
+              height={r * 2 + 8}
+              fill="rgba(255,255,255,0.75)"
+              transform={`skewX(-30)`}
+            />
+          ))}
+        {skin.pattern === "stars" &&
+          [
+            [-30, -3],
+            [-12, 2],
+            [5, -2],
+            [20, 3],
+            [34, -1],
+            [-44, 1],
+          ].map(([x, y], k) => <circle key={k} cx={x} cy={y} r={k % 2 ? 0.9 : 1.4} fill="#fff" />)}
+      </g>
       {/* Grip rings */}
       {[0, 4, 8].map((k) => (
         <rect key={k} x={L / 2 - 30 + k} y={-r} width={2} height={r * 2} fill="rgba(0,0,0,0.18)" />
       ))}
-      {/* Cap with a clip */}
-      <rect x={-L / 2} y={-r - 0.5} width={34} height={r * 2 + 1} rx={r} fill={ink.cap} />
-      <rect x={-L / 2 + 6} y={-r - 3} width={26} height={3} rx={1.5} fill="#D9DEE7" />
+      {/* Cap with a clip (and a button on click pens) */}
+      {skin.tip === "click" && (
+        <rect x={-L / 2 - 7} y={-r + 2.5} width={9} height={r * 2 - 5} rx={2} fill={skin.clip} />
+      )}
+      <rect x={-L / 2} y={-r - 0.5} width={34} height={r * 2 + 1} rx={r} fill={skin.cap} />
+      <rect x={-L / 2 + 6} y={-r - 3} width={26} height={3} rx={1.5} fill={skin.clip} />
       {/* Shine */}
       <rect
         x={-L / 2 + 36}
         y={-r + 2}
         width={L - 60}
-        height={2.2}
+        height={skin.pattern === "shine" ? 3 : 2.2}
         rx={1.1}
-        fill="rgba(255,255,255,0.55)"
+        fill={skin.pattern === "shine" ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.55)"}
       />
     </g>
   );
@@ -113,7 +191,10 @@ export function PenTable({
   onResign,
   onClose,
   onPlayAgain,
+  unlock,
 }: {
+  /** What winning this game unlocked ("Unlocked: Ink Fountain pen"). */
+  unlock?: string;
   state: PenState;
   mySeat: 0 | 1;
   you: PenSide;
@@ -126,7 +207,11 @@ export function PenTable({
 }) {
   useGameMusic(state.winner === undefined);
   const theirSeat = (mySeat === 0 ? 1 : 0) as 0 | 1;
-  const inkOf = (seat: 0 | 1) => INK[seat === mySeat ? 0 : 1];
+  // Each player's pen; if both picked the same one, theirs turns red.
+  const mySkin = skinById(state.skins?.[mySeat]);
+  const theirPick = skinById(state.skins?.[theirSeat]);
+  const theirSkin = theirPick.id === mySkin.id ? RIVAL : theirPick;
+  const skinOf = (seat: 0 | 1) => (seat === mySeat ? mySkin : theirSkin);
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [over, setOver] = useState(false);
@@ -225,7 +310,7 @@ export function PenTable({
     <div className="flex items-center gap-3 px-1 py-1.5">
       <span
         className="rounded-full"
-        style={{ boxShadow: active ? `0 0 0 3px ${inkOf(seat).body[0]}` : undefined }}
+        style={{ boxShadow: active ? `0 0 0 3px ${skinOf(seat).body[0]}` : undefined }}
       >
         <Avatar src={side.avatar} initials={side.initials} color={side.color} size={40} />
       </span>
@@ -237,9 +322,9 @@ export function PenTable({
         style={{
           width: 34,
           height: 9,
-          background: `linear-gradient(90deg, ${inkOf(seat).cap} 30%, ${inkOf(seat).body[0]} 30%)`,
+          background: `linear-gradient(90deg, ${skinOf(seat).cap} 30%, ${skinOf(seat).body[0]} 30%)`,
         }}
-        aria-label={`${inkOf(seat).name} pen`}
+        aria-label={`${skinOf(seat).name} pen`}
       />
     </div>
   );
@@ -365,8 +450,8 @@ export function PenTable({
                 <circle cx={drag.x0} cy={drag.y0} r={9} fill="none" stroke="#fff" strokeWidth={3} />
               </g>
             )}
-            <PenShape p={poses[theirSeat]} ink={inkOf(theirSeat)} />
-            <PenShape p={poses[mySeat]} ink={inkOf(mySeat)} lit={myTurn && !drag} />
+            <PenShape p={poses[theirSeat]} skin={theirSkin} uid="them" />
+            <PenShape p={poses[mySeat]} skin={mySkin} uid="me" lit={myTurn && !drag} />
           </svg>
         </div>
 
@@ -434,7 +519,9 @@ export function PenTable({
         <GameOverBoard
           game="Pen fight"
           headline={state.winner === mySeat ? "You win!" : `${first} wins`}
-          note={`${state.shots} flick${state.shots === 1 ? "" : "s"}`}
+          note={[`${state.shots} flick${state.shots === 1 ? "" : "s"}`, unlock]
+            .filter(Boolean)
+            .join(" · ")}
           rows={rows}
           roast={them.id !== "bot" ? { game: "Pen fight" } : undefined}
           onClose={onClose}
@@ -452,11 +539,33 @@ const BOT_NAMES: Record<1 | 2 | 3, string> = {
 };
 
 /** Pen fight against the computer (nothing saved). */
-export function LocalPenFight({ level, onClose }: { level: 1 | 2 | 3; onClose: () => void }) {
+const BOT_PEN: Record<1 | 2 | 3, string> = { 1: "exam", 2: "fountain", 3: "gold" };
+
+export function LocalPenFight({
+  level,
+  wins,
+  onClose,
+}: {
+  level: 1 | 2 | 3;
+  /** Your wins so far (picks your pen, says what a win unlocks). */
+  wins: number;
+  onClose: () => void;
+}) {
   const me = meView();
-  const fresh = () => newPenFight("me", "bot", level);
+  const [myWins, setMyWins] = useState(wins);
+  const fresh = () => newPenFight("me", "bot", level, [chosenSkin(myWins).id, BOT_PEN[level]]);
   const [state, setState] = useState<PenState>(fresh);
   const [thinking, setThinking] = useState(false);
+  const [unlock, setUnlock] = useState<string | undefined>();
+  // A win against the Medium or Hard bot counts towards medals and pens.
+  const counted = useRef<number | null>(null);
+  useEffect(() => {
+    if (state.winner !== 0 || level < 2 || counted.current === state.shots) return;
+    counted.current = state.shots;
+    addBotWin();
+    setUnlock(unlockNote(myWins, myWins + 1));
+    setMyWins((w) => w + 1);
+  }, [state.winner, state.shots, level]); // eslint-disable-line react-hooks/exhaustive-deps
   // The bot's turn: wait for the last shot to finish on screen, aim a moment, flick.
   useEffect(() => {
     if (state.winner !== undefined || state.turn !== 1) return;
@@ -486,7 +595,11 @@ export function LocalPenFight({ level, onClose }: { level: 1 | 2 | 3; onClose: (
       }
       onResign={() => setState((s) => resignPen(s, 0))}
       onClose={onClose}
-      onPlayAgain={() => setState(fresh())}
+      unlock={unlock}
+      onPlayAgain={() => {
+        setUnlock(undefined);
+        setState(fresh());
+      }}
     />
   );
 }
@@ -498,11 +611,19 @@ export function PenLobby({
   onFriend,
 }: {
   onClose: () => void;
-  onBot: (level: 1 | 2 | 3) => void;
+  onBot: (level: 1 | 2 | 3, wins: number) => void;
   onFriend: (f: Person) => void;
 }) {
   const [level, setLevel] = useState<1 | 2 | 3>(2);
   const [picking, setPicking] = useState(false);
+  const [wins, setWins] = useState<number | null>(null);
+  const [pick, setPick] = useState("classic");
+  useEffect(() => {
+    void loadPenWins().then((w) => {
+      setWins(w);
+      setPick(chosenSkin(w).id);
+    });
+  }, []);
   const friends = useMemo(() => mutualFriends(), []);
   if (picking)
     return (
@@ -526,6 +647,16 @@ export function PenLobby({
       <p className="meta mb-4" style={{ fontSize: 13.5 }}>
         Swipe your pen to flick it. Knock theirs off the desk to win, but don't fall off yourself.
       </p>
+      {wins !== null && (
+        <PenLocker
+          wins={wins}
+          pick={pick}
+          onPick={(id) => {
+            chooseSkin(id);
+            setPick(id);
+          }}
+        />
+      )}
       <button
         onClick={() => setPicking(true)}
         disabled={!friends.length}
@@ -558,10 +689,125 @@ export function PenLobby({
             </button>
           ))}
         </div>
-        <button onClick={() => onBot(level)} className="btn-secondary w-full mt-4">
+        <p className="meta mt-2" style={{ fontSize: 12 }}>
+          Wins against the Medium and Hard bot count towards medals.
+        </p>
+        <button onClick={() => onBot(level, wins ?? 0)} className="btn-secondary w-full mt-3">
           Play the bot
         </button>
       </div>
     </Sheet>
+  );
+}
+
+/** Your medal, progress to the next, and every pen (locked ones show what it takes). */
+function PenLocker({
+  wins,
+  pick,
+  onPick,
+}: {
+  wins: number;
+  pick: string;
+  onPick: (id: string) => void;
+}) {
+  const { have, next } = medalFor(wins);
+  return (
+    <div className="mb-5">
+      <div
+        className="rounded-2xl p-3.5 flex items-center gap-3"
+        style={{ background: "var(--fill)", border: "1px solid var(--line)" }}
+      >
+        <span className="text-[34px] leading-none" aria-hidden="true">
+          {have?.emoji ?? "🖊️"}
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-extrabold" style={{ fontSize: 16 }}>
+            {have ? `${have.name} medal` : "No medal yet"} · {wins} win{wins === 1 ? "" : "s"}
+          </span>
+          {next ? (
+            <>
+              <span className="block meta" style={{ fontSize: 12.5 }}>
+                {next.wins - wins} more for {next.emoji} {next.name}
+              </span>
+              <span
+                className="block mt-1.5 h-1.5 rounded-full overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.1)" }}
+              >
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, (wins / next.wins) * 100)}%`,
+                    background: next.color,
+                  }}
+                />
+              </span>
+            </>
+          ) : (
+            <span className="block meta" style={{ fontSize: 12.5 }}>
+              Every medal won. Legend.
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="mt-2 flex gap-1.5" aria-hidden="true">
+        {MEDALS.map((m) => (
+          <span
+            key={m.name}
+            className="flex-1 rounded-lg py-1 text-center text-[11.5px] font-bold"
+            style={{
+              background: wins >= m.wins ? `${m.color}33` : "var(--fill)",
+              color: wins >= m.wins ? "#fff" : "var(--ink-3)",
+            }}
+          >
+            {m.emoji} {m.wins}
+          </span>
+        ))}
+      </div>
+      <p className="label-caps mt-4 mb-2">Your pen</p>
+      <div className="grid grid-cols-2 gap-2">
+        {SKINS.map((sk) => {
+          const open = unlocked(sk, wins);
+          const on = pick === sk.id;
+          return (
+            <button
+              key={sk.id}
+              disabled={!open}
+              onClick={() => open && onPick(sk.id)}
+              aria-pressed={on}
+              aria-label={open ? sk.name : `${sk.name}: ${sk.wins} wins to unlock`}
+              className="rounded-2xl p-2.5 text-left relative"
+              style={{
+                background: on ? "rgba(184,242,92,0.12)" : "var(--fill)",
+                border: `1.5px solid ${on ? "var(--lime)" : "var(--line)"}`,
+              }}
+            >
+              <svg
+                viewBox="-72 -14 150 28"
+                className="w-full"
+                style={{ height: 28, opacity: open ? 1 : 0.35 }}
+              >
+                <PenShape p={{ x: 0, y: 0, a: 0 }} skin={sk} uid={`pick-${sk.id}`} />
+              </svg>
+              <span className="block mt-1 text-[12.5px] font-bold truncate">{sk.name}</span>
+              <span
+                className="block text-[11px] font-bold"
+                style={{
+                  color: open
+                    ? {
+                        Common: "var(--ink-3)",
+                        Rare: "#5BB8FF",
+                        Epic: "#B28BFF",
+                        Legendary: "#F7C948",
+                      }[sk.rarity]
+                    : "var(--ink-3)",
+                }}
+              >
+                {open ? sk.rarity : `🔒 ${sk.wins} win${sk.wins === 1 ? "" : "s"}`}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

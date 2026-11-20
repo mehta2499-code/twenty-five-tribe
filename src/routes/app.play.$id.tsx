@@ -51,6 +51,7 @@ import { ChessTable } from "@/components/Chess";
 import { Connect4Table, Connect4Waiting } from "@/components/Connect4";
 import { PenTable } from "@/components/PenFight";
 import { applyShot, penStarted, resignPen, type PenState } from "@/lib/penfight";
+import { loadPenWins, savedSkinId, unlockNote } from "@/lib/penSkins";
 import { c4Started, dropDisc, resignC4, type C4State } from "@/lib/connect4";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
 import { claimTimeout, makeMove, resign as resignChess, type ChessState } from "@/lib/chess";
@@ -662,9 +663,23 @@ function OnlinePenFight({
     void changeLatest<PenState>(game.id, (cur) =>
       !cur.joined || cur.joined.includes(meId)
         ? null
-        : { state: { ...cur, joined: [...cur.joined, meId] } },
+        : {
+            state: {
+              ...cur,
+              joined: [...cur.joined, meId],
+              // Bring your pen to the desk.
+              skins: (cur.players[0] === meId
+                ? [savedSkinId(), cur.skins?.[1] ?? "classic"]
+                : [cur.skins?.[0] ?? "classic", savedSkinId()]) as [string, string],
+            },
+          },
     );
   }, [needsJoin, game?.id, meId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Your wins before this game, to say if winning it unlocks something.
+  const [winsBefore, setWinsBefore] = useState<number | null>(null);
+  useEffect(() => {
+    void loadPenWins().then(setWinsBefore);
+  }, []);
   if (!game) return null;
   const st = game.state;
   const mySeat = (st.players[0] === meId ? 0 : 1) as 0 | 1;
@@ -705,6 +720,11 @@ function OnlinePenFight({
       mySeat={mySeat}
       you={youSide}
       them={themSide}
+      unlock={
+        st.winner === mySeat && winsBefore !== null && game.status === "done"
+          ? unlockNote(winsBefore, winsBefore + 1)
+          : undefined
+      }
       onShot={(shot) => {
         if (st.turn !== mySeat || st.winner !== undefined) return;
         const next = applyShot(st, shot);

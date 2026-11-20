@@ -573,7 +573,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [chess, setChess] = useState(false);
   const [c4, setC4] = useState(false);
   const [pen, setPen] = useState(false);
-  const [penBot, setPenBot] = useState<1 | 2 | 3 | null>(null);
+  const [penBot, setPenBot] = useState<{ level: 1 | 2 | 3; wins: number } | null>(null);
   const [c4Bot, setC4Bot] = useState<{ level: 1 | 2 | 3; first: boolean } | null>(null);
   const [chessBot, setChessBot] = useState<{
     level: 1 | 2 | 3;
@@ -740,9 +740,9 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
       {pen && (
         <PenLobby
           onClose={() => setPen(false)}
-          onBot={(level) => {
+          onBot={(level, wins) => {
             setPen(false);
-            setPenBot(level);
+            setPenBot({ level, wins });
           }}
           onFriend={async (f) => {
             setPen(false);
@@ -756,7 +756,9 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
           }}
         />
       )}
-      {penBot && <LocalPenFight level={penBot} onClose={() => setPenBot(null)} />}
+      {penBot && (
+        <LocalPenFight level={penBot.level} wins={penBot.wins} onClose={() => setPenBot(null)} />
+      )}
       {c4Bot && (
         <LocalConnect4 level={c4Bot.level} first={c4Bot.first} onClose={() => setC4Bot(null)} />
       )}
