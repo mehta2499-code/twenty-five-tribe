@@ -30,6 +30,7 @@ import {
   addSecondDrop,
   toggleDropLike,
   type DropPost,
+  type DropTeaser,
 } from "@/lib/drop";
 import { personOf } from "@/components/FeedUI";
 import { calendarDay as today } from "@/lib/daily";
@@ -67,7 +68,11 @@ function DropScreen() {
   useSocial();
   const now = useNow();
   const [at, setAt] = useState<number | null>(null);
-  const [data, setData] = useState<{ mine: DropPost | null; others: DropPost[] } | null>(null);
+  const [data, setData] = useState<{
+    mine: DropPost | null;
+    others: DropPost[];
+    teasers: DropTeaser[];
+  } | null>(null);
   const [image, setImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
@@ -377,9 +382,22 @@ function DropScreen() {
           <div className="card p-4 flex items-center gap-3">
             <Lock size={20} className="text-faint shrink-0" />
             <p className="text-cool text-[14px] leading-snug">
-              Your 25's drops stay hidden until you post yours. That's the deal.
+              {data.teasers.length
+                ? `${data.teasers.length} of your 25 dropped. Post yours to see them.`
+                : "Your 25's drops stay blurred until you post yours. That's the deal."}
             </p>
           </div>
+          {data.teasers.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {data.teasers.map((t) => (
+                <TeaserCard
+                  key={t.id}
+                  t={t}
+                  onTap={() => setToast("Post your Drop to see theirs 🔒")}
+                />
+              ))}
+            </div>
+          )}
         </section>
       )}
       {open && data && (
@@ -392,6 +410,87 @@ function DropScreen() {
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
       <Confetti fire={party} />
     </div>
+  );
+}
+
+/** A friend's Drop before you've posted: blurred, locked, just who and when. */
+function TeaserCard({ t, onTap }: { t: DropTeaser; onTap: () => void }) {
+  const f = friendById(t.id);
+  return (
+    <figure className="card overflow-hidden p-0 cursor-pointer" onClick={onTap}>
+      <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
+        {t.blur ? (
+          <img
+            src={t.blur}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: "blur(14px) saturate(1.2)", transform: "scale(1.25)" }}
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(160deg, #4B3A6B, #1E1A2E)" }}
+          />
+        )}
+        <span
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1.5"
+          style={{ background: "rgba(10,8,18,0.25)" }}
+        >
+          <span
+            className="w-11 h-11 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(10,8,18,0.55)", color: "#fff" }}
+          >
+            <Lock size={20} aria-hidden="true" />
+          </span>
+          <span className="text-[12px] font-extrabold" style={{ color: "#fff" }}>
+            Post yours to see
+          </span>
+        </span>
+        <span
+          className={`sticker ${t.late ? "pink" : ""} absolute top-2 left-2 !text-[11px]`}
+          style={{ transform: "rotate(-4deg)" }}
+        >
+          {t.late ? (
+            <>
+              <Ico i={Clock} size={11} /> {t.late}m late
+            </>
+          ) : (
+            <>
+              <Ico i={Zap} size={11} /> on time
+            </>
+          )}
+        </span>
+        {(t.streak ?? 0) > 0 && (
+          <span
+            className="absolute top-2 right-2 rounded-full px-2 py-0.5 font-extrabold text-[11px]"
+            style={{ background: "rgba(0,0,0,0.62)", color: "#fff" }}
+          >
+            🔥 Day {t.streak}
+          </span>
+        )}
+        {t.two && (
+          <span
+            className="absolute bottom-2 right-2 rounded-full w-6 h-6 flex items-center justify-center font-black text-[12px]"
+            style={{ background: "var(--lime)", color: "var(--on-accent)", border: "var(--bd)" }}
+            aria-label="Two photos"
+          >
+            2
+          </span>
+        )}
+      </div>
+      <figcaption className="p-2.5 flex items-center gap-2">
+        <Avatar
+          src={f?.avatar || undefined}
+          initials={f?.initials ?? "?"}
+          color={f?.color}
+          size={26}
+        />
+        <span className="text-[13px] font-bold text-cream truncate">
+          {f?.name.split(" ")[0] ?? "Someone"}
+        </span>
+      </figcaption>
+    </figure>
   );
 }
 

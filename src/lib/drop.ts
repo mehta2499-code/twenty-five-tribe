@@ -31,6 +31,43 @@ export type DropPost = {
 };
 export const MAX_DROPS_A_DAY = 2;
 
+/** A friend's Drop before you've posted yours: who, when, and a blurred thumbnail. */
+export type DropTeaser = {
+  id: string;
+  /** A tiny blurred copy of the photo (data URL), or none for older drops. */
+  blur?: string;
+  two: boolean;
+  late: number;
+  at: number;
+  streak?: number;
+};
+
+/**
+ * A tiny, already-blurred copy of a photo (about 1 KB) for friends who haven't
+ * posted yet. Made here on the phone, so the real photo never has to be sent
+ * to them blurred (a blur on screen could be undone).
+ */
+export async function makeBlur(image: string): Promise<string | undefined> {
+  try {
+    const img = new Image();
+    img.src = image;
+    await img.decode();
+    const w = 24;
+    const h = Math.max(1, Math.round((img.naturalHeight / img.naturalWidth) * w));
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.filter = "blur(1.5px)";
+    ctx.drawImage(img, 0, 0, w, h);
+    const out = c.toDataURL("image/jpeg", 0.5);
+    return out.length <= 4000 ? out : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function hash(s: string) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -74,7 +111,11 @@ const PHOTOS = [
 ];
 
 /** Today's drops: yours, then your mutual 25's (empty until you post). */
-export async function loadDrops(): Promise<{ mine: DropPost | null; others: DropPost[] }> {
+export async function loadDrops(): Promise<{
+  mine: DropPost | null;
+  others: DropPost[];
+  teasers: DropTeaser[];
+}> {
   const s = _get();
   const day = today();
   if (s.mode !== "live") {
@@ -98,7 +139,18 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
             at: Date.now() - i * 600_000,
           }))
       : [];
-    return { mine, others };
+    const teasers: DropTeaser[] = mine
+      ? []
+      : mutualFriends()
+          .slice(0, 5)
+          .map((f, i) => ({
+            id: f.id,
+            blur: PHOTOS[i],
+            two: i === 1,
+            late: [0, 0, 34, 0, 112][i],
+            at: Date.now() - i * 600_000,
+          }));
+    return { mine, others, teasers };
   }
   const { data } = await supabase
     .from("drops")
@@ -152,9 +204,33 @@ export async function loadDrops(): Promise<{ mine: DropPost | null; others: Drop
     at2: r.at_2 ? Date.parse(r.at_2) : undefined,
     streak: streaks[r.user_id],
   }));
+  const mine = posts.find((p) => p.id === "me") ?? null;
+  // Not posted yet: who dropped, as blurred thumbnails (the photos stay locked).
+  let teasers: DropTeaser[] = [];
+  if (!mine) {
+    const { data: t } = await supabase.rpc("drop_teasers" as never);
+    const tRows = (t ?? []) as unknown as {
+      user_id: string;
+      blur: string | null;
+      blur_2: string | null;
+      two: boolean;
+      late_minutes: number;
+      created_at: string;
+    }[];
+    const tStreaks = await loadStreaks(tRows.map((r) => r.user_id));
+    teasers = tRows.map((r) => ({
+      id: r.user_id,
+      blur: r.blur ?? undefined,
+      two: r.two,
+      late: r.late_minutes,
+      at: Date.parse(r.created_at),
+      streak: tStreaks[r.user_id],
+    }));
+  }
   return {
-    mine: posts.find((p) => p.id === "me") ?? null,
+    mine,
     others: posts.filter((p) => p.id !== "me").sort((a, b) => a.at - b.at),
+    teasers,
   };
 }
 
@@ -180,10 +256,10 @@ export async function addSecondDrop(image: string, caption: string) {
     );
     return;
   }
-  const path = await uploadMedia(image, "jpg");
+  const [path, blur] = await Promise.all([uploadMedia(image, "jpg"), makeBlur(image)]);
   const { error } = await supabase
     .from("drops")
-    .update({ image_path_2: path, caption_2: caption.slice(0, 120) } as never)
+    .update({ image_path_2: path, caption_2: caption.slice(0, 120), blur_2: blur ?? null } as never)
     .eq("user_id", s.me!.id)
     .eq("day", today());
   if (error)
@@ -200,10 +276,13 @@ export async function postDrop(image: string, caption: string, at: number) {
     );
     return;
   }
-  const path = await uploadMedia(image, "jpg");
-  const { error } = await supabase
-    .from("drops")
-    .insert({ user_id: s.me!.id, image_path: path, caption: caption.slice(0, 120) });
+  const [path, blur] = await Promise.all([uploadMedia(image, "jpg"), makeBlur(image)]);
+  const { error } = await supabase.from("drops").insert({
+    user_id: s.me!.id,
+    image_path: path,
+    caption: caption.slice(0, 120),
+    blur: blur ?? null,
+  } as never);
   if (error) {
     throw new Error(
       /duplicate/i.test(error.message)
