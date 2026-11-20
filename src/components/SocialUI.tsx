@@ -275,7 +275,10 @@ export function FriendPicker({
   single = false,
   note,
   only,
+  max,
 }: {
+  /** Most people that can be picked. */
+  max?: number;
   /** Limit the list to these people (e.g. who can see a post). */
   only?: string[];
   title: string;
@@ -291,7 +294,9 @@ export function FriendPicker({
   const all = picked.length === people.length && people.length > 0;
   const toggle = (id: string) => {
     if (single) return onPick([id]);
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    setPicked((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : max && p.length >= max ? p : [...p, id],
+    );
   };
   return (
     <Sheet title={title} onClose={onClose}>
@@ -310,15 +315,23 @@ export function FriendPicker({
         <>
           {!single && (
             <div className="flex items-center justify-between mb-3">
-              <span className="meta">
-                {picked.length ? `${picked.length} selected` : "Choose who gets it"}
-              </span>
-              <button
-                onClick={() => setPicked(all ? [] : people.map((p) => p.id))}
-                className="text-sm font-semibold text-bronze px-1 py-1"
-              >
-                {all ? "Clear" : "Select all"}
-              </button>
+              {max && people.length > max ? (
+                <span className="meta">
+                  {picked.length ? `${picked.length} of ${max} picked` : `Pick up to ${max}`}
+                </span>
+              ) : (
+                <>
+                  <span className="meta">
+                    {picked.length ? `${picked.length} selected` : "Choose who gets it"}
+                  </span>
+                  <button
+                    onClick={() => setPicked(all ? [] : people.map((p) => p.id))}
+                    className="text-sm font-semibold text-bronze px-1 py-1"
+                  >
+                    {all ? "Clear" : "Select all"}
+                  </button>
+                </>
+              )}
             </div>
           )}
           <div className="grid grid-cols-4 gap-x-2 gap-y-4">

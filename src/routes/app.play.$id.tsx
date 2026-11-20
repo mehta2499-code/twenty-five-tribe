@@ -49,8 +49,15 @@ import { ImposterGame } from "@/components/Imposter";
 import type { ImpState } from "@/lib/imposter";
 import { ChessTable } from "@/components/Chess";
 import { Connect4Table, Connect4Waiting } from "@/components/Connect4";
-import { PenTable } from "@/components/PenFight";
-import { applyShot, penStarted, resignPen, type PenState } from "@/lib/penfight";
+import { PenTable, PenWaiting } from "@/components/PenFight";
+import {
+  applyShot,
+  beginPenFight,
+  penStarted,
+  resignPen,
+  skipTurn as skipPenTurn,
+  type PenState,
+} from "@/lib/penfight";
 import { loadPenWins, savedSkinId, unlockNote } from "@/lib/penSkins";
 import { c4Started, dropDisc, resignC4, type C4State } from "@/lib/connect4";
 import { PokerTable, PokerWaiting } from "@/components/Poker";
@@ -655,25 +662,24 @@ function OnlinePenFight({
   const { game, save } = live;
   const navigate = useNavigate();
   const s = useSocial();
-  // Waiting room: say I'm in. It starts as soon as both of you are.
+  // Waiting room: say I'm in, and bring my pen.
   const needsJoin =
     !!game && game.status !== "done" && !!game.state.joined && !game.state.joined.includes(meId);
   useEffect(() => {
     if (!needsJoin || !game) return;
-    void changeLatest<PenState>(game.id, (cur) =>
-      !cur.joined || cur.joined.includes(meId)
-        ? null
-        : {
-            state: {
-              ...cur,
-              joined: [...cur.joined, meId],
-              // Bring your pen to the desk.
-              skins: (cur.players[0] === meId
-                ? [savedSkinId(), cur.skins?.[1] ?? "classic"]
-                : [cur.skins?.[0] ?? "classic", savedSkinId()]) as [string, string],
-            },
-          },
-    );
+    void changeLatest<PenState>(game.id, (cur) => {
+      const seat = cur.players.indexOf(meId);
+      if (!cur.joined || cur.joined.includes(meId) || seat < 0) return null;
+      const skins = cur.players.map((_, i) => cur.skins?.[i] ?? "classic");
+      skins[seat] = savedSkinId();
+      const joined = [...cur.joined, meId];
+      const next: PenState = { ...cur, joined, skins };
+      // Everyone's here: off we go.
+      return {
+        state:
+          cur.lobby && cur.players.every((p) => joined.includes(p)) ? beginPenFight(next) : next,
+      };
+    });
   }, [needsJoin, game?.id, meId]); // eslint-disable-line react-hooks/exhaustive-deps
   // Your wins before this game, to say if winning it unlocks something.
   const [winsBefore, setWinsBefore] = useState<number | null>(null);
@@ -682,44 +688,57 @@ function OnlinePenFight({
   }, []);
   if (!game) return null;
   const st = game.state;
-  const mySeat = (st.players[0] === meId ? 0 : 1) as 0 | 1;
-  const otherId = st.players[mySeat === 0 ? 1 : 0];
-  const other = friendById(otherId);
-  const youSide = {
-    id: meId,
-    name: s.me?.name ?? "You",
-    avatar: s.me?.avatar,
-    initials: s.me?.initials ?? "YO",
+  const sideOf = (id: string) => {
+    if (id === meId)
+      return {
+        id: meId,
+        name: s.me?.name ?? "You",
+        avatar: s.me?.avatar,
+        initials: s.me?.initials ?? "YO",
+      };
+    const f = friendById(id);
+    return {
+      id,
+      name: f?.name ?? "Your friend",
+      avatar: f?.avatar || undefined,
+      initials: f?.initials ?? "?",
+      color: f?.color,
+    };
   };
-  const themSide = {
-    id: otherId,
-    name: other?.name ?? "Your friend",
-    avatar: other?.avatar || undefined,
-    initials: other?.initials ?? "?",
-    color: other?.color,
-  };
+  const sides = st.players.map(sideOf);
+  const mySeat = st.players.indexOf(meId);
   if (!penStarted(st))
     return (
-      <Connect4Waiting
-        title="Pen fight"
-        you={youSide}
-        them={themSide}
-        themIn={(st.joined ?? []).includes(otherId)}
+      <PenWaiting
+        sides={sides}
+        joined={st.joined ?? []}
+        isHost={game.host === meId}
         cancelled={game.status === "done"}
-        onCancel={() =>
+        onStart={() =>
           void changeLatest<PenState>(game.id, (cur) =>
-            penStarted(cur) ? null : { state: cur, status: "done" },
-          ).then(onClose)
+            penStarted(cur) || (cur.joined ?? []).length < 2 ? null : { state: beginPenFight(cur) },
+          )
+        }
+        onCancel={() =>
+          game.host === meId
+            ? void changeLatest<PenState>(game.id, (cur) =>
+                penStarted(cur) ? null : { state: cur, status: "done" },
+              ).then(onClose)
+            : void quitGame(game, meId).then(onClose)
         }
         onClose={onClose}
       />
     );
+  if (mySeat < 0) return null;
+  const friends = st.players
+    .filter((p) => p !== meId)
+    .map((p) => friendById(p))
+    .filter((f): f is NonNullable<typeof f> => !!f);
   return (
     <PenTable
       state={st}
       mySeat={mySeat}
-      you={youSide}
-      them={themSide}
+      sides={sides}
       unlock={
         st.winner === mySeat && winsBefore !== null && game.status === "done"
           ? unlockNote(winsBefore, winsBefore + 1)
@@ -730,16 +749,23 @@ function OnlinePenFight({
         const next = applyShot(st, shot);
         void save(next, next.winner !== undefined ? "done" : undefined);
       }}
-      onResign={() =>
+      onSkip={() =>
         void changeLatest<PenState>(game.id, (cur) =>
-          cur.winner !== undefined ? null : { state: resignPen(cur, mySeat), status: "done" },
+          cur.winner !== undefined || cur.turn !== st.turn ? null : { state: skipPenTurn(cur) },
         )
+      }
+      onResign={() =>
+        void changeLatest<PenState>(game.id, (cur) => {
+          if (cur.winner !== undefined) return null;
+          const next = resignPen(cur, mySeat);
+          return { state: next, status: next.winner !== undefined ? "done" : undefined };
+        })
       }
       onClose={onClose}
       onPlayAgain={
-        other
+        friends.length
           ? () =>
-              void startPenFight(other).then((id) =>
+              void startPenFight(friends).then((id) =>
                 navigate({ to: "/app/play/$id", params: { id } }),
               )
           : undefined

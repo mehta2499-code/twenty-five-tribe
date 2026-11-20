@@ -20,7 +20,7 @@ import { newParty, type ImpState } from "@/lib/imposter";
 import { leaveLobby, newLudo, resign, type LudoState } from "@/lib/ludo";
 import { newChess, type ChessState } from "@/lib/chess";
 import { newConnect4, type C4State } from "@/lib/connect4";
-import { newPenFight, type PenState } from "@/lib/penfight";
+import { newPenFight, penStarted, resignPen, type PenState } from "@/lib/penfight";
 import { savedSkinId } from "@/lib/penSkins";
 import type { EarCat, EarLevel, EarSong, EarState } from "@/lib/earworm";
 import { liveActive, liveResults } from "@/lib/earworm";
@@ -363,20 +363,33 @@ export async function startConnect4(friend: Person) {
   return id;
 }
 
-/** Challenge a friend to a pen fight (who flicks first is random). */
-export async function startPenFight(friend: Person) {
+/** Challenge up to 5 friends to a pen fight. It starts when everyone's in
+ * (or the host starts with whoever is). Who flicks first is random. */
+export async function startPenFight(friends: Person[]) {
   track("game_started", { game: "penfight" });
   const me = myId();
   const id = uuid();
-  const state = {
-    ...newPenFight(me, friend.id, undefined, [savedSkinId(), "classic"]),
+  const ids = [me, ...friends.map((f) => f.id)];
+  const state: PenState = {
+    ...newPenFight(
+      ids,
+      undefined,
+      ids.map((_, i) => (i === 0 ? savedSkinId() : "classic")),
+    ),
     joined: [me],
+    lobby: friends.length > 1,
   };
   const { error } = await supabase
     .from("games")
-    .insert({ id, kind: "penfight", host: me, players: [me, friend.id], state, version: 0 });
+    .insert({ id, kind: "penfight", host: me, players: ids, state, version: 0 });
   if (error) throw new Error(error.message);
-  await invite([friend.id], id, "Pen fight? Loser buys chai 🖊️");
+  await invite(
+    friends.map((f) => f.id),
+    id,
+    friends.length > 1
+      ? `Pen fight, ${ids.length} of us. Last pen on the desk wins 🖊️`
+      : "Pen fight? Loser buys chai 🖊️",
+  );
   return id;
 }
 
@@ -490,14 +503,27 @@ export async function quitGame(g: GameRow, meId: string) {
             },
       );
     } else if (g.kind === "penfight") {
-      await changeLatest<PenState>(g.id, (cur) =>
-        cur.winner !== undefined
-          ? null
-          : {
-              state: { ...cur, winner: cur.players[0] === meId ? 1 : 0, how: "knocked" },
-              status: "done",
-            },
-      );
+      await changeLatest<PenState>(g.id, (cur) => {
+        if (cur.winner !== undefined) return null;
+        const seat = cur.players.indexOf(meId);
+        if (seat < 0) return null;
+        if (!penStarted(cur)) {
+          // Still in the waiting room: just leave it.
+          const keep = cur.players.map((_, i) => i).filter((i) => i !== seat);
+          const left: PenState = {
+            ...cur,
+            players: keep.map((i) => cur.players[i]),
+            skins: keep.map((i) => cur.skins?.[i] ?? "classic"),
+            pens: keep.map((i) => cur.pens[i]),
+            out: keep.map(() => false),
+            joined: (cur.joined ?? []).filter((x) => x !== meId),
+            turn: 0,
+          };
+          return { state: left, status: left.players.length < 2 ? "done" : undefined };
+        }
+        const next = resignPen(cur, seat);
+        return { state: next, status: next.winner !== undefined ? "done" : undefined };
+      });
     } else if (g.kind === "connect4") {
       await changeLatest<C4State>(g.id, (cur) =>
         cur.result

@@ -4,7 +4,7 @@ import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { Connect4Lobby, LocalConnect4 } from "@/components/Connect4";
 import { LocalPenFight, PenLobby } from "@/components/PenFight";
-import type { PenState } from "@/lib/penfight";
+import { outOf, penStarted, type PenState } from "@/lib/penfight";
 import type { C4State } from "@/lib/connect4";
 import { PokerSetup } from "@/components/Poker";
 import type { ChessState } from "@/lib/chess";
@@ -134,17 +134,24 @@ function YourGames({ meId }: { meId: string }) {
         }
       } else if (g.kind === "penfight") {
         const p = g.state as PenState;
-        const seat = p.players[0] === meId ? 0 : 1;
-        const waiting = p.joined && p.joined.length < 2;
-        yourTurn = waiting ? !p.joined!.includes(meId) : p.turn === seat && p.winner === undefined;
-        title = `Pen fight vs ${others[0]?.name.split(" ")[0] ?? "a friend"}`;
+        const seat = p.players.indexOf(meId);
+        const waiting = !penStarted(p);
+        yourTurn = waiting
+          ? !(p.joined ?? []).includes(meId)
+          : p.turn === seat && p.winner === undefined;
+        title =
+          p.players.length > 2
+            ? `Pen fight · ${p.players.length} players`
+            : `Pen fight vs ${others[0]?.name.split(" ")[0] ?? "a friend"}`;
         status = waiting
           ? yourTurn
             ? "Join the game"
             : "Waiting room"
           : yourTurn
             ? "Your flick"
-            : "Their flick";
+            : outOf(p)[seat]
+              ? "You're out"
+              : "Their flick";
       } else if (g.kind === "connect4") {
         const c = g.state as C4State;
         const mine = c.red === meId ? "r" : "y";
@@ -573,7 +580,9 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   const [chess, setChess] = useState(false);
   const [c4, setC4] = useState(false);
   const [pen, setPen] = useState(false);
-  const [penBot, setPenBot] = useState<{ level: 1 | 2 | 3; wins: number } | null>(null);
+  const [penBot, setPenBot] = useState<{ level: 1 | 2 | 3; bots: number; wins: number } | null>(
+    null,
+  );
   const [c4Bot, setC4Bot] = useState<{ level: 1 | 2 | 3; first: boolean } | null>(null);
   const [chessBot, setChessBot] = useState<{
     level: 1 | 2 | 3;
@@ -740,11 +749,11 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
       {pen && (
         <PenLobby
           onClose={() => setPen(false)}
-          onBot={(level, wins) => {
+          onBot={(level, bots, wins) => {
             setPen(false);
-            setPenBot({ level, wins });
+            setPenBot({ level, bots, wins });
           }}
-          onFriend={async (f) => {
+          onFriends={async (f) => {
             setPen(false);
             if (!live) return setToast("Sign in to challenge a friend.");
             try {
@@ -757,7 +766,12 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         />
       )}
       {penBot && (
-        <LocalPenFight level={penBot.level} wins={penBot.wins} onClose={() => setPenBot(null)} />
+        <LocalPenFight
+          level={penBot.level}
+          bots={penBot.bots}
+          wins={penBot.wins}
+          onClose={() => setPenBot(null)}
+        />
       )}
       {c4Bot && (
         <LocalConnect4 level={c4Bot.level} first={c4Bot.first} onClose={() => setC4Bot(null)} />
