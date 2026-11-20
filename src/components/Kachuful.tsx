@@ -917,6 +917,7 @@ function RoundSummary({
             value: total[i],
             link: !p.bot,
             me: i === mySeat,
+            played: p.bot || !state.acted || state.acted.includes(p.id),
           };
         })}
         onClose={onClose}

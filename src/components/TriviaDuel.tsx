@@ -348,6 +348,8 @@ export function TriviaDuel({
             color: them.color,
             value: theirPoints,
             link: true,
+            // Left before answering anything: nothing to roast.
+            played: Object.keys(theirs).length > 0,
           },
         ].sort((x, y) => x.rank - y.rank)}
         onClose={onClose}

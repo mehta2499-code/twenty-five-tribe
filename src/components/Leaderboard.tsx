@@ -25,6 +25,9 @@ export type LeaderRow = {
   /** Link to their profile (not for bots / guests). */
   link?: boolean;
   me?: boolean;
+  /** false: never actually played (e.g. never opened it and the timer moved
+   * for them). They can't be roasted. */
+  played?: boolean;
 };
 
 const ordinal = (n: number) => {
@@ -327,9 +330,17 @@ export function GameOverBoard({
         </div>
         {children}
         {/* Only the winner gets to roast (in every game). */}
-        {roast && iWon && winners.length === 1 && rows.length > 1 && (
-          <RoastButton rows={rows} roast={roast} mode="roast" />
-        )}
+        {/* Only people who actually played can be roasted. */}
+        {roast &&
+          iWon &&
+          winners.length === 1 &&
+          rows.filter((r) => r.me || r.played !== false).length > 1 && (
+            <RoastButton
+              rows={rows.filter((r) => r.me || r.played !== false)}
+              roast={roast}
+              mode="roast"
+            />
+          )}
         <div className="mt-8 flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">
             Done

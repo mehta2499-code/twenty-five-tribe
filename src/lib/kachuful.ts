@@ -47,6 +47,8 @@ export type KState = {
   turnSeconds?: number;
   /** When the current turn started (for the timer). */
   turnStartedAt?: number;
+  /** People who made a move themselves (not just timed out). Missing in older games. */
+  acted?: string[];
 };
 
 export type Scoring = "classic" | "x10";
@@ -164,6 +166,7 @@ export function newGame(
     scores: [],
     scoring,
     turnSeconds: turnSeconds || undefined,
+    acted: [],
   };
   return dealRound(base, rand);
 }

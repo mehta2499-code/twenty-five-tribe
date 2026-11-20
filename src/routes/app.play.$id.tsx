@@ -277,6 +277,10 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   );
 }
 
+/** Note that this person moved themselves (so they really played). */
+const actedBy = (s: KState, id: string): KState =>
+  s.acted?.includes(id) ? s : { ...s, acted: [...(s.acted ?? []), id] };
+
 function OnlineKachuful({
   live,
   meId,
@@ -311,8 +315,8 @@ function OnlineKachuful({
       state={state}
       mySeat={mySeat}
       note={note}
-      onMove={(m: Move) => commit(applyMove(state, m))}
-      onNext={() => commit(nextRound(state))}
+      onMove={(m: Move) => commit(actedBy(applyMove(state, m), meId))}
+      onNext={() => commit(actedBy(nextRound(state), meId))}
       onClose={onClose}
     />
   );

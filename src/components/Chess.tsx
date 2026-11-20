@@ -432,7 +432,15 @@ export function ChessTable({
   const rows: LeaderRow[] = (() => {
     const w = state.result?.winner;
     const mine = { ...you, rank: w && w !== me ? 2 : 1, me: true };
-    const theirs = { ...them, rank: w && w === me ? 2 : 1, link: them.id !== "bot" };
+    // Did they ever make a move? (Not if they never opened it and their clock ran out.)
+    const theirMoves =
+      me === "w" ? Math.floor(state.san.length / 2) : Math.ceil(state.san.length / 2);
+    const theirs = {
+      ...them,
+      rank: w && w === me ? 2 : 1,
+      link: them.id !== "bot",
+      played: them.id === "bot" || theirMoves > 0,
+    };
     return mine.rank <= theirs.rank ? [mine, theirs] : [theirs, mine];
   })();
 
