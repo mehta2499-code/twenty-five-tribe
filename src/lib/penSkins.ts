@@ -1,6 +1,7 @@
 /**
  * Pen fight pens and medals. Pens are looks only (every pen plays the same);
- * you unlock them by winning. Our own designs in classic pen styles.
+ * you unlock them by winning. Named after real pens for now; the drawings are
+ * our own (no logos).
  *
  * Only wins against your 25 count (the server counts them), not bot games.
  */
@@ -25,7 +26,7 @@ export type Skin = {
 export const SKINS: Skin[] = [
   {
     id: "classic",
-    name: "Classic Blue",
+    name: "Reynolds 045",
     wins: 0,
     rarity: "Common",
     body: ["#5B8CFF", "#2448C9"],
@@ -35,7 +36,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "exam",
-    name: "Exam Black",
+    name: "Cello Gripper",
     wins: 1,
     rarity: "Common",
     body: ["#4A4A55", "#16161C"],
@@ -45,7 +46,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "gel",
-    name: "Gel Glide",
+    name: "Linc Pentonic",
     wins: 2,
     rarity: "Common",
     body: ["#E8F1FF", "#9DB7E8"],
@@ -56,7 +57,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "neon",
-    name: "Neon Click",
+    name: "Flair Writometer",
     wins: 3,
     rarity: "Rare",
     body: ["#C6FF6B", "#5FB51E"],
@@ -66,7 +67,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "fountain",
-    name: "Ink Fountain",
+    name: "Hero Fountain",
     wins: 5,
     rarity: "Rare",
     body: ["#2E2E38", "#08080C"],
@@ -76,7 +77,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "candy",
-    name: "Candy Stripe",
+    name: "Cello Butterflow",
     wins: 7,
     rarity: "Rare",
     body: ["#FF9EC7", "#E0457B"],
@@ -87,7 +88,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "chrome",
-    name: "Chrome Steel",
+    name: "Parker Vector",
     wins: 10,
     rarity: "Epic",
     body: ["#F2F4F8", "#7D8594"],
@@ -98,7 +99,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "rainbow",
-    name: "Rainbow Gel",
+    name: "Uni-ball Signo",
     wins: 15,
     rarity: "Epic",
     body: ["#FF6B7F", "#6B5BFF"],
@@ -109,7 +110,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "gold",
-    name: "Gold Executive",
+    name: "Parker Sonnet",
     wins: 25,
     rarity: "Legendary",
     body: ["#FFE48A", "#B8860B"],
@@ -120,7 +121,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "galaxy",
-    name: "Galaxy",
+    name: "Lamy Safari",
     wins: 40,
     rarity: "Legendary",
     body: ["#6B4BD6", "#160B3A"],
@@ -131,7 +132,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "diamond",
-    name: "Diamond",
+    name: "Montblanc",
     wins: 50,
     rarity: "Legendary",
     body: ["#E6FBFF", "#7FD3E8"],

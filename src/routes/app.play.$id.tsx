@@ -53,7 +53,10 @@ import { PenTable, PenWaiting } from "@/components/PenFight";
 import {
   applyShot,
   beginPenFight,
+  endSetup,
+  markReady,
   penStarted,
+  placePen,
   resignPen,
   skipTurn as skipPenTurn,
   type PenState,
@@ -674,7 +677,8 @@ function OnlinePenFight({
         const skins = cur.players.map((_, i) => cur.skins?.[i] ?? "classic");
         skins[seat] = pen;
         const joined = [...cur.joined, meId];
-        const next: PenState = { ...cur, joined, skins };
+        // The setup clock starts once everyone needed is in.
+        const next: PenState = { ...cur, joined, skins, turnAt: Date.now() };
         // Everyone's here: off we go.
         return {
           state:
@@ -765,6 +769,23 @@ function OnlinePenFight({
         void save(next, next.winner !== undefined ? "done" : undefined);
       }}
       onPickSkin={pickSkin}
+      onPlace={(pose) =>
+        void changeLatest<PenState>(game.id, (cur) => {
+          const seat = cur.players.indexOf(meId);
+          const next = placePen(cur, seat, pose);
+          return next === cur ? null : { state: next };
+        })
+      }
+      onReady={() =>
+        void changeLatest<PenState>(game.id, (cur) =>
+          cur.setup ? { state: markReady(cur, meId) } : null,
+        )
+      }
+      onStartNow={() =>
+        void changeLatest<PenState>(game.id, (cur) =>
+          cur.setup && Date.now() - (cur.turnAt ?? 0) > 40_000 ? { state: endSetup(cur) } : null,
+        )
+      }
       onSkip={() =>
         void changeLatest<PenState>(game.id, (cur) =>
           cur.winner !== undefined || cur.turn !== st.turn ? null : { state: skipPenTurn(cur) },

@@ -6,7 +6,7 @@
  * wins. The table (one of four) is picked at random, and grows with players.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Flag, Minus, MoreHorizontal, Plus, X } from "lucide-react";
+import { Bot, Flag, Minus, MoreHorizontal, Plus, RotateCw, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { FriendPicker, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, type LeaderRow } from "@/components/Leaderboard";
@@ -22,7 +22,10 @@ import {
   TABLES,
   applyShot,
   botShot,
+  canPlace,
+  markReady,
   newPenFight,
+  placePen,
   onPen,
   outOf,
   penPlaces,
@@ -422,7 +425,7 @@ export function PenStrip({ pick, onPick }: { pick: string; onPick: (id: string) 
               aria-label={open ? sk.name : `${sk.name}: ${sk.wins} wins to unlock`}
               className="shrink-0 rounded-xl px-2 pt-1.5 pb-1 text-center"
               style={{
-                width: 92,
+                width: 108,
                 background: on ? "rgba(184,242,92,0.16)" : "rgba(255,255,255,0.06)",
                 border: `1.5px solid ${on ? "#B8F25C" : "transparent"}`,
               }}
@@ -463,8 +466,17 @@ export function PenTable({
   onClose,
   onPlayAgain,
   onPickSkin,
+  onPlace,
+  onReady,
+  onStartNow,
   unlock,
 }: {
+  /** Setup: move your pen to here (checked again by whoever saves it). */
+  onPlace?: (pose: PenPose) => void;
+  /** Setup: you've placed your pen. */
+  onReady?: () => void;
+  /** Setup: start without the slowpokes (online, after a while). */
+  onStartNow?: () => void;
   state: PenState;
   mySeat: number;
   sides: PenSide[];
@@ -494,7 +506,10 @@ export function PenTable({
   const shown = useRef(state.shots);
   const playing = anim !== null;
   const iAmOut = out[mySeat];
-  const myTurn = state.winner === undefined && state.turn === mySeat && !playing && !iAmOut;
+  const setup = !!state.setup && state.winner === undefined;
+  const iReady = (state.ready ?? []).includes(state.players[mySeat]);
+  const myTurn =
+    state.winner === undefined && !setup && state.turn === mySeat && !playing && !iAmOut;
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 5000);
@@ -607,12 +622,41 @@ export function PenTable({
   };
   const power = drag?.pull ?? 0;
 
+  // ---- Setup: drag your pen where you want it ----
+  const [move, setMove] = useState<{ ox: number; oy: number; pose: PenPose; ok: boolean } | null>(
+    null,
+  );
+  // Where you just put it (until the saved game catches up).
+  const [placed, setPlaced] = useState<PenPose | null>(null);
+  const saved = state.pens[mySeat];
+  useEffect(() => setPlaced(null), [saved?.x, saved?.y, saved?.a]);
+  const [noRoom, setNoRoom] = useState(false);
+  const rotate = () => {
+    const base = placed ?? saved;
+    for (const turn of [Math.PI / 12, -Math.PI / 12, Math.PI / 6]) {
+      const pose = { ...base, a: base.a + turn };
+      if (canPlace(state, mySeat, pose)) {
+        buzz(8);
+        setPlaced(pose);
+        onPlace?.(pose);
+        return;
+      }
+    }
+    setNoRoom(true);
+    setTimeout(() => setNoRoom(false), 1400);
+  };
+  const waitingOn = state.players
+    .map((id, i) => ({ id, i }))
+    .filter(({ id }) => !(state.ready ?? []).includes(id))
+    .map(({ i }) => nameOf(i));
+
   function nameOf(i: number) {
     return i === mySeat ? "You" : (sides[i]?.name.split(" ")[0] ?? "Someone");
   }
   const turnName = nameOf(state.turn);
   const quiet =
     !!onSkip &&
+    !setup &&
     !myTurn &&
     !playing &&
     state.winner === undefined &&
@@ -623,17 +667,27 @@ export function PenTable({
       ? state.winner === mySeat
         ? "Last pen on the table. You win! 🎉"
         : `${nameOf(state.winner)} wins`
-      : iAmOut
-        ? `You're out · ${turnName}'s turn`
-        : myTurn
-          ? drag
-            ? power < 0.12
-              ? "Pull further back…"
-              : `Let go to flick · ${Math.round(power * 100)}%`
-            : "Your turn · hold your pen, pull back, let go"
-          : thinking
-            ? `${turnName} is aiming…`
-            : `${turnName}'s turn`;
+      : setup
+        ? !iReady
+          ? move
+            ? move.ok
+              ? "Let go to put it there"
+              : "Can't go there"
+            : noRoom
+              ? "No room to turn it there"
+              : "Drag your pen where you want it"
+          : `Waiting for ${waitingOn.join(", ")}…`
+        : iAmOut
+          ? `You're out · ${turnName}'s turn`
+          : myTurn
+            ? drag
+              ? power < 0.12
+                ? "Pull further back…"
+                : `Let go to flick · ${Math.round(power * 100)}%`
+              : "Your turn · hold your pen, pull back, let go"
+            : thinking
+              ? `${turnName} is aiming…`
+              : `${turnName}'s turn`;
 
   const places = penPlaces(state);
   const rows: LeaderRow[] = places.map((seat, k) => ({
@@ -648,11 +702,14 @@ export function PenTable({
     me: seat === mySeat,
   }));
   const humanRivals = sides.some((s, i) => i !== mySeat && !s.id.startsWith("bot"));
-  const picking = !!onPickSkin && state.shots === 0 && state.winner === undefined && !iAmOut;
+  const picking =
+    !!onPickSkin &&
+    state.winner === undefined &&
+    (state.setup === undefined ? state.shots === 0 && !iAmOut : setup && !iReady);
 
   const W = table.w + MARGIN * 2;
   const H = table.h + MARGIN * 2;
-  const me = poses[mySeat];
+  const me = move?.pose ?? placed ?? poses[mySeat];
   // The aiming dots: roughly where your pen will slide to on its own.
   const reach = drag ? slideDistance(power * MAX_SPEED) : 0;
   const dots = drag && power >= 0.12 ? Math.max(2, Math.floor(reach / 18)) : 0;
@@ -722,6 +779,15 @@ export function PenTable({
                       ❌
                     </span>
                   )}
+                  {setup && (state.ready ?? []).includes(state.players[i]) && (
+                    <span
+                      className="absolute -right-1 -bottom-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black"
+                      style={{ background: "#B8F25C", color: "#14200A" }}
+                      aria-hidden="true"
+                    >
+                      ✓
+                    </span>
+                  )}
                 </span>
                 <span
                   className="mt-0.5 w-full truncate text-center text-[11.5px] font-bold"
@@ -751,6 +817,14 @@ export function PenTable({
             className="max-h-full max-w-full touch-none"
             style={{ aspectRatio: `${W} / ${H}` }}
             onPointerDown={(e) => {
+              if (setup && !iReady && onPlace) {
+                const p = toDesk(e.clientX, e.clientY);
+                if (!onPen(me, p.x, p.y)) return;
+                (e.currentTarget as Element).setPointerCapture(e.pointerId);
+                buzz(8);
+                setMove({ ox: me.x - p.x, oy: me.y - p.y, pose: me, ok: true });
+                return;
+              }
               if (!myTurn) return;
               const p = toDesk(e.clientX, e.clientY);
               if (!onPen(me, p.x, p.y)) return;
@@ -769,6 +843,12 @@ export function PenTable({
               });
             }}
             onPointerMove={(e) => {
+              if (move) {
+                const p = toDesk(e.clientX, e.clientY);
+                const pose = { ...move.pose, x: p.x + move.ox, y: p.y + move.oy };
+                setMove({ ...move, pose, ok: canPlace(state, mySeat, pose) });
+                return;
+              }
               if (!drag) return;
               const p = toDesk(e.clientX, e.clientY);
               const px = drag.cx0 - e.clientX;
@@ -786,6 +866,15 @@ export function PenTable({
               });
             }}
             onPointerUp={() => {
+              if (move) {
+                setMove(null);
+                if (move.ok) {
+                  buzz(10);
+                  setPlaced(move.pose);
+                  onPlace?.(move.pose);
+                }
+                return;
+              }
               if (!drag) return;
               setDrag(null);
               if (drag.pull < 0.12) return; // barely pulled: not a flick
@@ -793,7 +882,10 @@ export function PenTable({
               buzz(20);
               onShot({ px: drag.ax, py: drag.ay, ix: drag.dx * pw, iy: drag.dy * pw });
             }}
-            onPointerCancel={() => setDrag(null)}
+            onPointerCancel={() => {
+              setDrag(null);
+              setMove(null);
+            }}
             aria-label="The table. Hold your pen, pull back and let go to flick it."
           >
             <TableTop t={table} />
@@ -819,13 +911,15 @@ export function PenTable({
               ),
             )}
             {fall[mySeat] < FALL_FRAMES && (
-              <PenShape
-                p={me}
-                skin={skins[mySeat]}
-                uid="me"
-                fall={fall[mySeat]}
-                lit={myTurn && !drag}
-              />
+              <g opacity={move && !move.ok ? 0.45 : 1}>
+                <PenShape
+                  p={me}
+                  skin={skins[mySeat]}
+                  uid="me"
+                  fall={fall[mySeat]}
+                  lit={(myTurn && !drag) || (setup && !iReady && !move)}
+                />
+              </g>
             )}
             {/* The sling: a band from your pen to your finger */}
             {drag && drag.pull > 0.02 && (
@@ -918,6 +1012,36 @@ export function PenTable({
             style={{ color: "#fff" }}
           >
             Skip {turnName}'s turn
+          </button>
+        )}
+        {setup && !iReady && onReady && (
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={rotate}
+              className="flex-1 min-h-[46px] rounded-2xl font-bold flex items-center justify-center gap-1.5"
+              style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+            >
+              <RotateCw size={17} aria-hidden="true" /> Turn it
+            </button>
+            <button
+              onClick={() => {
+                buzz(15);
+                onReady();
+              }}
+              className="btn-primary flex-[1.4]"
+              style={{ minHeight: 46 }}
+            >
+              Ready ✓
+            </button>
+          </div>
+        )}
+        {setup && iReady && onStartNow && now - (state.turnAt ?? now) > 45_000 && (
+          <button
+            onClick={onStartNow}
+            className="btn-quiet mx-auto mt-1 px-3 min-h-[34px] text-sm"
+            style={{ color: "#fff" }}
+          >
+            Start without them
           </button>
         )}
         <div className="mt-2">
@@ -1047,12 +1171,13 @@ export function LocalPenFight({
       ...list.map((b) => b.pen),
     ]),
     turn: 0,
+    ready: list.map((_, i) => `bot${i + 1}`),
   });
   const [state, setState] = useState<PenState>(fresh);
   const [thinking, setThinking] = useState(false);
   // A bot's turn: wait for the last flick to finish on screen, aim a moment, flick.
   useEffect(() => {
-    if (state.winner !== undefined || state.turn === 0) return;
+    if (state.winner !== undefined || state.turn === 0 || state.setup) return;
     setThinking(true);
     const last = state.last;
     const lastFrames = last
@@ -1095,6 +1220,8 @@ export function LocalPenFight({
           skins: s.players.map((_, i) => (i === 0 ? id : (s.skins?.[i] ?? "classic"))),
         }))
       }
+      onPlace={(pose) => setState((s) => placePen(s, 0, pose))}
+      onReady={() => setState((s) => markReady(s, "me"))}
       onPlayAgain={() => setState(fresh())}
     />
   );

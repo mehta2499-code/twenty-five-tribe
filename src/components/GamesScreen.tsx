@@ -136,9 +136,12 @@ function YourGames({ meId }: { meId: string }) {
         const p = g.state as PenState;
         const seat = p.players.indexOf(meId);
         const waiting = !penStarted(p);
+        const placing = !waiting && !!p.setup && p.winner === undefined;
         yourTurn = waiting
           ? !(p.joined ?? []).includes(meId)
-          : p.turn === seat && p.winner === undefined;
+          : placing
+            ? !(p.ready ?? []).includes(meId)
+            : p.turn === seat && p.winner === undefined;
         title =
           p.players.length > 2
             ? `Pen fight · ${p.players.length} players`
@@ -147,11 +150,15 @@ function YourGames({ meId }: { meId: string }) {
           ? yourTurn
             ? "Join the game"
             : "Waiting room"
-          : yourTurn
-            ? "Your flick"
-            : outOf(p)[seat]
-              ? "You're out"
-              : "Their flick";
+          : placing
+            ? yourTurn
+              ? "Place your pen"
+              : "Others placing pens"
+            : yourTurn
+              ? "Your flick"
+              : outOf(p)[seat]
+                ? "You're out"
+                : "Their flick";
       } else if (g.kind === "connect4") {
         const c = g.state as C4State;
         const mine = c.red === meId ? "r" : "y";

@@ -77,6 +77,10 @@ export type PenState = {
   skins?: string[];
   /** The table (shape and size); old games used the plain desk. */
   table?: Table;
+  /** Before the first flick: everyone places their pen, then says ready. */
+  setup?: boolean;
+  /** Who has placed their pen and is ready (player ids). */
+  ready?: string[];
 };
 
 /** Where n pens start: spread round the middle of the desk, each at an angle. */
@@ -116,6 +120,8 @@ export function newPenFight(
     turnAt: Date.now(),
     level,
     skins,
+    setup: true,
+    ready: [],
   };
 }
 export const penStarted = (s: PenState) => !s.lobby && (!s.joined || s.joined.length >= 2);
@@ -137,6 +143,8 @@ export function beginPenFight(s: PenState): PenState {
     lobby: false,
     turn: Math.floor(Math.random() * players.length),
     turnAt: Date.now(),
+    setup: true,
+    ready: [],
   };
 }
 
@@ -364,6 +372,36 @@ export function applyShot(s: PenState, shot: Shot): PenState {
     winner,
     how: winner === undefined ? undefined : out[seat] && winner !== seat ? "fell" : "knocked",
   };
+}
+
+// ---------- Placing pens before the first flick ----------
+/** Can this pen sit here: wholly on the table, not on top of another pen? */
+export function canPlace(s: PenState, seat: number, pose: PenPose): boolean {
+  const t = tableOf(s);
+  const ends = [tip(pose, -1), tip(pose, 1)];
+  const inside = (q: { x: number; y: number }) =>
+    t.kind === "round"
+      ? Math.hypot(q.x - t.w / 2, q.y - t.h / 2) <= t.w / 2 - PEN.r - 4
+      : q.x >= PEN.r + 4 && q.x <= t.w - PEN.r - 4 && q.y >= PEN.r + 4 && q.y <= t.h - PEN.r - 4;
+  if (!ends.every(inside)) return false;
+  const me = toPen(pose);
+  return s.pens.every((p, i) => i === seat || closest(me, toPen(p)).d >= PEN.r * 2 + 2);
+}
+/** Move your pen during setup (ignored if it doesn't fit there). */
+export function placePen(s: PenState, seat: number, pose: PenPose): PenState {
+  if (!s.setup || !canPlace(s, seat, pose)) return s;
+  return { ...s, pens: s.pens.map((p, i) => (i === seat ? pose : p)) };
+}
+/** Say you're ready; the first flick comes once everyone is. */
+export function markReady(s: PenState, id: string): PenState {
+  if (!s.setup) return s;
+  const ready = [...new Set([...(s.ready ?? []), id])];
+  return s.players.every((p) => ready.includes(p)) ? endSetup({ ...s, ready }) : { ...s, ready };
+}
+/** Start flicking now (everyone ready, or someone took too long). */
+export function endSetup(s: PenState): PenState {
+  if (!s.setup) return s;
+  return { ...s, setup: false, turnAt: Date.now() };
 }
 
 /** Skip whoever's turn it is (gone quiet online). */
