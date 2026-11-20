@@ -131,11 +131,23 @@ const subs = new Set<() => void>();
 let timer: ReturnType<typeof setInterval> | null = null;
 let users = 0;
 
+let lastOk = Date.now();
 async function refresh() {
   if (_get().mode !== "live" || document.visibilityState !== "visible") return;
   const { data } = await supabase.rpc("friends_now" as never);
   const next = new Map<string, FriendNow>();
-  if (!data) return;
+  if (!data) {
+    // The check keeps failing (no signal, an expired sign-in): don't freeze
+    // whoever was online last time. After 30 s nobody shows as here.
+    if (Date.now() - lastOk > 30_000 && [...friends.values()].some((f) => f.here)) {
+      friends = new Map(
+        [...friends].map(([id, f]) => [id, { ...f, here: false, doing: null }] as const),
+      );
+      subs.forEach((f) => f());
+    }
+    return;
+  }
+  lastOk = Date.now();
   for (const r of data as {
     user_id: string;
     here: boolean;
@@ -211,3 +223,28 @@ const GAME_NAMES: Record<string, string> = {
   earworm: "Name That Tune",
 };
 export const gameLabel = (kind: string) => GAME_NAMES[kind] ?? "a game";
+
+// ---------- A new version is out: reload ----------
+// Home-screen apps on iPhone resume the copy already in memory (sometimes days
+// old) instead of loading the new one. Coming back to the app, check the
+// server's build and reload if it's newer.
+let lastHidden = 0;
+async function checkVersion() {
+  try {
+    if (typeof __BUILD_ID__ === "undefined" || import.meta.env.DEV) return;
+    const r = await fetch("/api/version", { cache: "no-store" });
+    if (!r.ok) return;
+    const { build } = (await r.json()) as { build?: string };
+    if (build && build !== __BUILD_ID__) location.reload();
+  } catch {
+    // offline: try next time
+  }
+}
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") lastHidden = Date.now();
+    else if (Date.now() - lastHidden > 20_000) void checkVersion();
+  });
+  // And once a while after opening, in case it was opened from an old copy.
+  setTimeout(() => void checkVersion(), 15_000);
+}

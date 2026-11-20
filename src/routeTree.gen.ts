@@ -30,6 +30,7 @@ import { Route as AppDropRouteImport } from './routes/app.drop'
 import { Route as AppChatsRouteImport } from './routes/app.chats'
 import { Route as AppArcadeRouteImport } from './routes/app.arcade'
 import { Route as AppActivityRouteImport } from './routes/app.activity'
+import { Route as ApiVersionRouteImport } from './routes/api.version'
 import { Route as ApiSpotifyRouteImport } from './routes/api.spotify'
 import { Route as ApiSongAudioRouteImport } from './routes/api.song-audio'
 import { Route as ApiSongRouteImport } from './routes/api.song'
@@ -148,6 +149,11 @@ const AppActivityRoute = AppActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiVersionRoute = ApiVersionRouteImport.update({
+  id: '/api/version',
+  path: '/api/version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSpotifyRoute = ApiSpotifyRouteImport.update({
   id: '/api/spotify',
   path: '/api/spotify',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/api/song': typeof ApiSongRoute
   '/api/song-audio': typeof ApiSongAudioRoute
   '/api/spotify': typeof ApiSpotifyRoute
+  '/api/version': typeof ApiVersionRoute
   '/app/activity': typeof AppActivityRoute
   '/app/arcade': typeof AppArcadeRoute
   '/app/chats': typeof AppChatsRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/api/song': typeof ApiSongRoute
   '/api/song-audio': typeof ApiSongAudioRoute
   '/api/spotify': typeof ApiSpotifyRoute
+  '/api/version': typeof ApiVersionRoute
   '/app/activity': typeof AppActivityRoute
   '/app/arcade': typeof AppArcadeRoute
   '/app/chats': typeof AppChatsRoute
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/api/song': typeof ApiSongRoute
   '/api/song-audio': typeof ApiSongAudioRoute
   '/api/spotify': typeof ApiSpotifyRoute
+  '/api/version': typeof ApiVersionRoute
   '/app/activity': typeof AppActivityRoute
   '/app/arcade': typeof AppArcadeRoute
   '/app/chats': typeof AppChatsRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/api/song'
     | '/api/song-audio'
     | '/api/spotify'
+    | '/api/version'
     | '/app/activity'
     | '/app/arcade'
     | '/app/chats'
@@ -364,6 +374,7 @@ export interface FileRouteTypes {
     | '/api/song'
     | '/api/song-audio'
     | '/api/spotify'
+    | '/api/version'
     | '/app/activity'
     | '/app/arcade'
     | '/app/chats'
@@ -399,6 +410,7 @@ export interface FileRouteTypes {
     | '/api/song'
     | '/api/song-audio'
     | '/api/spotify'
+    | '/api/version'
     | '/app/activity'
     | '/app/arcade'
     | '/app/chats'
@@ -435,6 +447,7 @@ export interface RootRouteChildren {
   ApiSongRoute: typeof ApiSongRoute
   ApiSongAudioRoute: typeof ApiSongAudioRoute
   ApiSpotifyRoute: typeof ApiSpotifyRoute
+  ApiVersionRoute: typeof ApiVersionRoute
   InUsernameRoute: typeof InUsernameRoute
 }
 
@@ -587,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/version': {
+      id: '/api/version'
+      path: '/api/version'
+      fullPath: '/api/version'
+      preLoaderRoute: typeof ApiVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/spotify': {
       id: '/api/spotify'
       path: '/api/spotify'
@@ -734,6 +754,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSongRoute: ApiSongRoute,
   ApiSongAudioRoute: ApiSongAudioRoute,
   ApiSpotifyRoute: ApiSpotifyRoute,
+  ApiVersionRoute: ApiVersionRoute,
   InUsernameRoute: InUsernameRoute,
 }
 export const routeTree = rootRouteImport
