@@ -1,6 +1,6 @@
 /**
  * Pen fight pens and medals. Pens are looks only (every pen plays the same);
- * you unlock them by winning. Named after real pens for now; the drawings are
+ * you unlock them by winning. Named after real pens for now, cheapest to most expensive; the drawings are
  * our own (no logos).
  *
  * Only wins against your 25 count (the server counts them), not bot games.
@@ -26,7 +26,7 @@ export type Skin = {
 export const SKINS: Skin[] = [
   {
     id: "classic",
-    name: "Reynolds 045",
+    name: "Saino",
     wins: 0,
     rarity: "Common",
     body: ["#5B8CFF", "#2448C9"],
@@ -57,7 +57,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "neon",
-    name: "Flair Writometer",
+    name: "Reynolds Trimax",
     wins: 3,
     rarity: "Rare",
     body: ["#C6FF6B", "#5FB51E"],
@@ -67,17 +67,17 @@ export const SKINS: Skin[] = [
   },
   {
     id: "fountain",
-    name: "Hero Fountain",
+    name: "Pilot V7",
     wins: 5,
     rarity: "Rare",
     body: ["#2E2E38", "#08080C"],
     cap: "#08080C",
     clip: "#F2C14E",
-    tip: "fountain",
+    tip: "ball",
   },
   {
     id: "candy",
-    name: "Cello Butterflow",
+    name: "Uni-ball Signo",
     wins: 7,
     rarity: "Rare",
     body: ["#FF9EC7", "#E0457B"],
@@ -88,7 +88,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "chrome",
-    name: "Parker Vector",
+    name: "Parker Jotter",
     wins: 10,
     rarity: "Epic",
     body: ["#F2F4F8", "#7D8594"],
@@ -99,7 +99,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "rainbow",
-    name: "Uni-ball Signo",
+    name: "Parker Vector",
     wins: 15,
     rarity: "Epic",
     body: ["#FF6B7F", "#6B5BFF"],
@@ -110,7 +110,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "gold",
-    name: "Parker Sonnet",
+    name: "Lamy Safari",
     wins: 25,
     rarity: "Legendary",
     body: ["#FFE48A", "#B8860B"],
@@ -121,7 +121,7 @@ export const SKINS: Skin[] = [
   },
   {
     id: "galaxy",
-    name: "Lamy Safari",
+    name: "Lamy Studio",
     wins: 40,
     rarity: "Legendary",
     body: ["#6B4BD6", "#160B3A"],
@@ -138,7 +138,7 @@ export const SKINS: Skin[] = [
     body: ["#E6FBFF", "#7FD3E8"],
     cap: "#FFFFFF",
     clip: "#B8F2FF",
-    tip: "click",
+    tip: "fountain",
     pattern: "shine",
   },
 ];
