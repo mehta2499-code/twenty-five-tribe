@@ -1,8 +1,10 @@
 import { ChatsGlyph, DropGlyph, FeedGlyph, GamesGlyph, TableGlyph } from "@/components/Brand";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useRef } from "react";
+import { Camera } from "lucide-react";
 import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
-import { useDropBadge } from "@/lib/dropBadge";
+import { giveShot, useDropBadge } from "@/lib/dropBadge";
 
 const tabs = [
   { to: "/app/home", label: "Table", Icon: TableGlyph },
@@ -18,6 +20,8 @@ export function BottomNav() {
   const unread = Object.values(social.unread).reduce((a, b) => a + b, 0);
   // The Drop tab: a lime dot at Drop time, a pulse once you've missed it.
   const drop = useDropBadge(pathname);
+  const navigate = useNavigate();
+  const shootRef = useRef<HTMLInputElement>(null);
 
   return (
     <nav
@@ -35,6 +39,49 @@ export function BottomNav() {
           const badge = to === "/app/chats" ? unread : 0;
           const dropDot = to === "/app/drop" && !active ? drop : null;
           const color = active ? "var(--lime)" : "var(--ink-2)";
+          // Drop time and you haven't posted: the Drop tab is the camera.
+          if (to === "/app/drop" && drop === "now")
+            return (
+              <li key={to} className="flex justify-center">
+                <button
+                  onClick={() => {
+                    buzz(15);
+                    shootRef.current?.click();
+                  }}
+                  aria-label="It's Drop time. Take your Drop"
+                  className="flex flex-col items-center gap-0.5 pb-1 -mt-5"
+                >
+                  <span
+                    className="pulse-lime w-[60px] h-[60px] rounded-full flex items-center justify-center"
+                    style={{
+                      background: "var(--lime)",
+                      color: "var(--on-accent)",
+                      border: "3px solid var(--surface)",
+                      boxShadow: "0 0 0 2px var(--lime), 0 10px 26px rgba(193,239,98,0.55)",
+                    }}
+                  >
+                    <Camera size={28} strokeWidth={2.4} aria-hidden="true" />
+                  </span>
+                  <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--lime)" }}>
+                    Drop
+                  </span>
+                </button>
+                <input
+                  ref={shootRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f) return;
+                    giveShot(f);
+                    if (!pathname.startsWith("/app/drop")) void navigate({ to: "/app/drop" });
+                  }}
+                />
+              </li>
+            );
           return (
             <li key={to}>
               <Link

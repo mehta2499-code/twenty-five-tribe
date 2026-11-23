@@ -34,6 +34,7 @@ import {
 } from "@/lib/drop";
 import { personOf } from "@/components/FeedUI";
 import { calendarDay as today } from "@/lib/daily";
+import { onShot, refreshDropBadge, takeShot } from "@/lib/dropBadge";
 
 export const Route = createFileRoute("/app/drop")({
   head: () => ({ meta: [{ title: "The 25 Drop · 25" }] }),
@@ -85,6 +86,15 @@ function DropScreen() {
   const [caption2, setCaption2] = useState("");
 
   const reload = () => void loadDrops().then(setData);
+  // A photo from the tab-bar camera: straight into your Drop.
+  useEffect(() => {
+    const pickUp = () => {
+      const f = takeShot();
+      if (f) void fileToImage(f, 1080).then(setImage);
+    };
+    pickUp();
+    return onShot(pickUp);
+  }, []);
   const [open, setOpen] = useState<string | null>(null);
   useEffect(() => {
     void dropTime().then(setAt);
@@ -133,6 +143,23 @@ function DropScreen() {
           </span>
           <span aria-hidden="true">→</span>
         </Link>
+      )}
+
+      {/* Your 25's Drops, blurred until you post: up top, so you see who's in. */}
+      {!data.mine && data.teasers.length > 0 && (
+        <section className="mb-4">
+          <p className="px-5 mb-2 flex items-center gap-1.5 text-[13.5px] font-bold text-cool">
+            <Lock size={14} aria-hidden="true" />
+            {data.teasers.length} of your 25 dropped · post yours to see them
+          </p>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar px-5 snap-x snap-mandatory">
+            {data.teasers.map((t) => (
+              <div key={t.id} className="w-[132px] shrink-0 snap-start">
+                <TeaserCard t={t} onTap={() => setToast("Post your Drop to see theirs 🔒")} />
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {phase === "before" && !data.mine && (
@@ -255,6 +282,7 @@ function DropScreen() {
                     setParty((n) => n + 1);
                     buzz(40);
                     reload();
+                    void refreshDropBadge();
                   } catch (e) {
                     setToast((e as Error).message);
                   } finally {
@@ -377,27 +405,14 @@ function DropScreen() {
         </section>
       )}
 
-      {!data.mine && (
+      {!data.mine && !data.teasers.length && (
         <section className="px-5 mt-6">
           <div className="card p-4 flex items-center gap-3">
             <Lock size={20} className="text-faint shrink-0" />
             <p className="text-cool text-[14px] leading-snug">
-              {data.teasers.length
-                ? `${data.teasers.length} of your 25 dropped. Post yours to see them.`
-                : "Your 25's drops stay blurred until you post yours. That's the deal."}
+              Your 25's drops stay blurred until you post yours. That's the deal.
             </p>
           </div>
-          {data.teasers.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              {data.teasers.map((t) => (
-                <TeaserCard
-                  key={t.id}
-                  t={t}
-                  onTap={() => setToast("Post your Drop to see theirs 🔒")}
-                />
-              ))}
-            </div>
-          )}
         </section>
       )}
       {open && data && (
