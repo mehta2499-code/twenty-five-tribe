@@ -11,6 +11,7 @@ import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { clientOnly } from "@/components/SocialUI";
 import { NotFoundComponent } from "@/routes/__root";
+import { AdminRetention } from "@/components/AdminRetention";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "25" }, { name: "robots", content: "noindex, nofollow" }] }),
@@ -28,13 +29,6 @@ type Stats = {
     active_7d: number;
   };
   funnel: { step: string; n: number }[];
-  retention: {
-    day: string;
-    signed_up: number;
-    d1: number | null;
-    d7: number | null;
-    d14: number | null;
-  }[];
   features_7d: Record<string, number>;
   games_7d: Record<string, number>;
   daily: { day: string; signups: number; active: number; visitors: number }[];
@@ -124,13 +118,8 @@ function Admin() {
           <Features f={s.features_7d} games={s.games_7d} />
         </Section>
 
-        {/* Retention */}
-        <Section
-          title="Retention"
-          note="Of people who signed up that day: came back exactly on day 1, 7 and 14."
-        >
-          <Retention rows={s.retention} />
-        </Section>
+        {/* Retention (its own controls and data: admin_retention) */}
+        <AdminRetention refresh={s.generated_at} />
 
         {/* Recent sign-ups */}
         <Section title="Recent sign-ups">
@@ -365,54 +354,6 @@ function Features({ f, games }: { f: Record<string, number>; games: Record<strin
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function Retention({ rows }: { rows: Stats["retention"] }) {
-  const shown = rows.filter((r) => r.signed_up > 0).slice(0, 21);
-  if (!shown.length) return <p className="card p-4 meta">No sign-ups in the last 30 days yet.</p>;
-  const cell = (n: number | null, of: number) =>
-    n === null ? (
-      <span className="meta">–</span>
-    ) : (
-      <span className="tabular-nums">
-        {n}
-        <span className="meta block" style={{ fontSize: 11 }}>
-          {pct(n, of)}
-        </span>
-      </span>
-    );
-  return (
-    <div className="card overflow-x-auto">
-      <table className="w-full text-[13.5px]">
-        <thead>
-          <tr className="meta text-left" style={{ fontSize: 12 }}>
-            <th className="px-2 py-2 font-semibold">Signed up</th>
-            <th className="px-2 py-2 font-semibold text-right">People</th>
-            <th className="px-2 py-2 font-semibold text-right">Day 1</th>
-            <th className="px-2 py-2 font-semibold text-right">Day 7</th>
-            <th className="px-2 py-2 font-semibold text-right">Day 14</th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((r) => (
-            <tr key={r.day} style={{ borderTop: "1px solid var(--line)" }}>
-              <td className="px-2 py-2 whitespace-nowrap">
-                {new Date(`${r.day}T00:00:00Z`).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  timeZone: "UTC",
-                })}
-              </td>
-              <td className="px-2 py-2 text-right tabular-nums font-bold">{r.signed_up}</td>
-              <td className="px-2 py-2 text-right whitespace-nowrap">{cell(r.d1, r.signed_up)}</td>
-              <td className="px-2 py-2 text-right whitespace-nowrap">{cell(r.d7, r.signed_up)}</td>
-              <td className="px-2 py-2 text-right whitespace-nowrap">{cell(r.d14, r.signed_up)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }
