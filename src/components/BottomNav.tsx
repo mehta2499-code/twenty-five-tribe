@@ -39,8 +39,8 @@ export function BottomNav() {
           const badge = to === "/app/chats" ? unread : 0;
           const dropDot = to === "/app/drop" && !active ? drop : null;
           const color = active ? "var(--lime)" : "var(--ink-2)";
-          // Drop time and you haven't posted: the Drop tab is the camera.
-          if (to === "/app/drop" && drop === "now")
+          // From Drop time until you post (late too): the Drop tab is the camera.
+          if (to === "/app/drop" && (drop === "now" || drop === "missed"))
             return (
               <li key={to} className="flex justify-center">
                 <button
@@ -48,7 +48,9 @@ export function BottomNav() {
                     buzz(15);
                     shootRef.current?.click();
                   }}
-                  aria-label="It's Drop time. Take your Drop"
+                  aria-label={
+                    drop === "now" ? "It's Drop time. Take your Drop" : "Take your Drop (late)"
+                  }
                   className="flex flex-col items-center gap-0.5 pb-1 -mt-5"
                 >
                   <span
