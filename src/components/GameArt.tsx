@@ -20,7 +20,14 @@ export type ArtKind =
   | "reflex"
   | "sec25"
   | "connect4"
-  | "penfight";
+  | "penfight"
+  | "tile-dash"
+  | "stack-up"
+  | "arrow-swipe"
+  | "one-to-25"
+  | "rickshaw"
+  | "chai-catch"
+  | "hot-cold";
 
 export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
   return (
@@ -50,6 +57,13 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "sec25" && <Sec25Art />}
       {kind === "connect4" && <Connect4Art />}
       {kind === "penfight" && <PenFightArt />}
+      {kind === "tile-dash" && <TileDashArt />}
+      {kind === "stack-up" && <StackArt />}
+      {kind === "arrow-swipe" && <ArrowArt />}
+      {kind === "one-to-25" && <NumbersArt />}
+      {kind === "rickshaw" && <RickshawArt />}
+      {kind === "chai-catch" && <ChaiArt />}
+      {kind === "hot-cold" && <HotColdArt />}
     </svg>
   );
 }
@@ -634,6 +648,145 @@ function EarArt() {
         fill="#F15B91"
         stroke={EDGE}
         strokeWidth="2"
+      />
+    </g>
+  );
+}
+
+function TileDashArt() {
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      <rect x="6" y="8" width="52" height="48" rx="8" fill="#F6F3FF" />
+      <path d="M19 8v48M32 8v48M45 8v48" strokeWidth="1.5" />
+      <rect x="8" y="12" width="9" height="18" rx="2.5" fill="#1D1636" />
+      <rect x="34" y="22" width="9" height="18" rx="2.5" fill="#1D1636" />
+      <rect x="21" y="34" width="9" height="18" rx="2.5" fill="#5BE0E8" />
+      <rect x="47" y="10" width="9" height="16" rx="2.5" fill="#1D1636" />
+    </g>
+  );
+}
+
+function StackArt() {
+  const blocks = [
+    { x: 10, y: 46, w: 44, c: "#6B5BFF" },
+    { x: 12, y: 36, w: 40, c: "#9B7BFF" },
+    { x: 16, y: 26, w: 34, c: "#C08BFF" },
+    { x: 18, y: 16, w: 28, c: "#F28BD8" },
+  ];
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      {blocks.map((b) => (
+        <rect key={b.y} x={b.x} y={b.y} width={b.w} height="10" rx="2.5" fill={b.c} />
+      ))}
+      <rect
+        x="40"
+        y="6"
+        width="18"
+        height="9"
+        rx="2.5"
+        fill="#FFE36B"
+        transform="rotate(14 49 10)"
+      />
+    </g>
+  );
+}
+
+function ArrowArt() {
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      <rect x="6" y="6" width="52" height="52" rx="14" fill="#2FD08A" />
+      <path d="M32 14 L48 32 H38 V50 H26 V32 H16 Z" fill="#FFF8EC" />
+    </g>
+  );
+}
+
+function NumbersArt() {
+  const cells = [
+    [8, 8, "7"],
+    [24, 8, "1"],
+    [40, 8, "4"],
+    [8, 24, "2"],
+    [24, 24, "9"],
+    [40, 24, "5"],
+    [8, 40, "8"],
+    [24, 40, "3"],
+    [40, 40, "6"],
+  ] as const;
+  return (
+    <g strokeLinejoin="round">
+      {cells.map(([x, y, t]) => (
+        <g key={t}>
+          <rect
+            x={x}
+            y={y}
+            width="15"
+            height="15"
+            rx="4"
+            fill={t === "1" ? "#B8F25C" : "#FFB547"}
+            stroke={EDGE}
+            strokeWidth="2"
+          />
+          <text
+            x={x + 7.5}
+            y={y + 11.5}
+            textAnchor="middle"
+            fontSize="10"
+            fontWeight="900"
+            fill={EDGE}
+            fontFamily="system-ui, sans-serif"
+          >
+            {t}
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+function RickshawArt() {
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      <path d="M10 42 V24 Q10 12 26 12 H40 Q50 12 52 24 L56 42 Z" fill="#F7C948" />
+      <path d="M14 26 Q14 16 26 16 H34 V30 H14 Z" fill="#BDE3FF" />
+      <path d="M38 16 H40 Q48 16 49 26 L50 30 H38 Z" fill="#BDE3FF" />
+      <rect x="8" y="38" width="50" height="8" rx="3" fill="#2FD08A" />
+      <circle cx="18" cy="48" r="7" fill="#2A2733" />
+      <circle cx="48" cy="48" r="7" fill="#2A2733" />
+      <circle cx="18" cy="48" r="2.5" fill="#D9DEE7" />
+      <circle cx="48" cy="48" r="2.5" fill="#D9DEE7" />
+    </g>
+  );
+}
+
+function ChaiArt() {
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      <path d="M24 6 q-4 5 0 9 q4 4 0 9" fill="none" strokeWidth="2" strokeLinecap="round" />
+      <path d="M34 4 q-4 5 0 9 q4 4 0 9" fill="none" strokeWidth="2" strokeLinecap="round" />
+      <path d="M46 34 h4 a7 7 0 0 1 0 14 h-5" fill="none" strokeWidth="3" />
+      <path d="M12 28 H48 L44 54 Q43 58 38 58 H22 Q17 58 16 54 Z" fill="#E08A4B" />
+      <ellipse cx="30" cy="28" rx="18" ry="4" fill="#C4703A" />
+      <circle cx="52" cy="14" r="6" fill="#F7C948" />
+    </g>
+  );
+}
+
+function HotColdArt() {
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      <path d="M32 6 A26 26 0 0 0 32 58 Z" fill="#FF7A45" />
+      <path d="M32 6 A26 26 0 0 1 32 58 Z" fill="#6EC8FF" />
+      <path
+        d="M19 44 q-7 -7 0 -16 q1 5 4 6 q-1 -8 5 -13 q0 8 4 12 q3 7 -3 11 q-5 3 -10 0 Z"
+        fill="#FFE36B"
+        strokeWidth="2"
+      />
+      <path
+        d="M45 20 V44 M35 26 L55 38 M55 26 L35 38"
+        fill="none"
+        stroke="#FFF8EC"
+        strokeWidth="3"
+        strokeLinecap="round"
       />
     </g>
   );

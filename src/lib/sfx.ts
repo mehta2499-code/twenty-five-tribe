@@ -147,6 +147,13 @@ const play = (fn: () => void) => {
 };
 
 export const sfx = {
+  /** A soft piano-like note (Tile Dash plays a tune with these). */
+  note(freq: number) {
+    play(() => {
+      tone(freq, 0.6, { type: "triangle", gain: 0.24 });
+      tone(freq * 2, 0.3, { type: "sine", gain: 0.06 });
+    });
+  },
   /** Dice shaken and thrown: a clatter, then it lands. */
   dice(ms = 600) {
     play(() => {
