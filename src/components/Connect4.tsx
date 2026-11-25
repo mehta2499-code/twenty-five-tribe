@@ -467,7 +467,10 @@ export function Connect4Table({
                 : undefined
           }
           rows={rows}
-          roast={them.id !== "bot" ? { game: "Connect 4" } : undefined}
+          // Only a win on the board (four in a row) can be roasted, not a resign.
+          roast={
+            them.id !== "bot" && state.result.reason === "four" ? { game: "Connect 4" } : undefined
+          }
           onClose={onClose}
           onPlayAgain={onPlayAgain}
         />

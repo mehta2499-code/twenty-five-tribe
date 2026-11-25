@@ -668,7 +668,10 @@ export function ChessTable({
           }
           note={REASON[state.result.reason]}
           rows={rows}
-          roast={them.id !== "bot" ? { game: "Chess" } : undefined}
+          // Only checkmate can be roasted, not a resign, timeout or someone leaving.
+          roast={
+            them.id !== "bot" && state.result.reason === "checkmate" ? { game: "Chess" } : undefined
+          }
           onClose={onClose}
           onPlayAgain={onPlayAgain}
         />
