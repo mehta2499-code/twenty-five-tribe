@@ -41,6 +41,8 @@ export type LudoState = {
   /** Last thing that happened, for the screen. */
   last?: { player: number; dice: number; token?: number; captured?: boolean; note?: string };
   turnStartedAt: number;
+  /** Online: people who made a move themselves (not timed out for them). */
+  acted?: string[];
 };
 
 export const HOME = 56;

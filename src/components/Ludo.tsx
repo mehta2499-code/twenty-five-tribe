@@ -729,6 +729,7 @@ export function LudoTable({
         <GameOverBoard
           game="Ludo"
           roast={{ game: "Ludo" }}
+          played={state.acted}
           rows={ludoPlaces(state, mine)}
           onClose={onClose}
           onPlayAgain={onPlayAgain}

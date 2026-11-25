@@ -81,6 +81,8 @@ export type PenState = {
   setup?: boolean;
   /** Who has placed their pen and is ready (player ids). */
   ready?: string[];
+  /** Online: people who have flicked at least once. */
+  acted?: string[];
 };
 
 /** Where n pens start: spread round the middle of the desk, each at an angle. */

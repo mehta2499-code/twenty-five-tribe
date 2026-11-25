@@ -1109,6 +1109,7 @@ export function PenTable({
             .join(" · ")}
           rows={rows}
           roast={humanRivals ? { game: "Pen fight" } : undefined}
+          played={state.acted}
           onClose={onClose}
           onPlayAgain={onPlayAgain}
         />

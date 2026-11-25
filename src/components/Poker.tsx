@@ -1213,6 +1213,7 @@ export function PokerTable({
             me: p.id === meId,
           }))}
           roast={{ game: "poker" }}
+          played={s.acted}
           onClose={onClose}
         />
       )}

@@ -277,8 +277,8 @@ function OnlineGame({ id, meId, onClose }: { id: string; meId: string; onClose: 
   );
 }
 
-/** Note that this person moved themselves (so they really played). */
-const actedBy = (s: KState, id: string): KState =>
+/** Note that this person moved themselves (so they really played, and can be roasted). */
+const actedBy = <S extends { acted?: string[] }>(s: S, id: string): S =>
   s.acted?.includes(id) ? s : { ...s, acted: [...(s.acted ?? []), id] };
 
 function OnlineKachuful({
@@ -639,8 +639,8 @@ function OnlineLudo({
     <LudoTable
       state={st}
       mine={mine}
-      onRoll={() => commit(roll(st))}
-      onMove={(t) => commit(moveToken(st, t))}
+      onRoll={() => commit(actedBy(roll(st), meId))}
+      onMove={(t) => commit(actedBy(moveToken(st, t), meId))}
       onSkip={() => commit(skipTurn(st))}
       onResign={() => {
         const next = resign(st, mine);
@@ -769,7 +769,7 @@ function OnlinePenFight({
       }
       onShot={(shot) => {
         if (st.turn !== mySeat || st.winner !== undefined) return;
-        const next = applyShot(st, shot);
+        const next = actedBy(applyShot(st, shot), meId);
         void save(next, next.winner !== undefined ? "done" : undefined);
       }}
       onPickSkin={pickSkin}
@@ -1059,7 +1059,8 @@ function OnlinePoker({
       hostId={game.host}
       onAction={(a) => {
         const mine = st.seats.findIndex((p) => p.id === meId);
-        commit(pokerAct(st, mine, a));
+        const next = pokerAct(st, mine, a);
+        commit(next && actedBy(next, meId));
       }}
       onNextHand={() => st.phase === "showdown" && commit(startHand(st))}
       onFoldAway={() => commit(foldAway(st))}

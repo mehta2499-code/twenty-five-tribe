@@ -1176,6 +1176,12 @@ export function EarwormStandings({
         game={`Name That Tune · ${cat.name}`}
         rows={rows}
         roast={{ game: "Name That Tune", detail: cat.name }}
+        // Live: only people who answered at least once can be roasted.
+        played={
+          st.mode === "live"
+            ? players.filter((p) => (st.picks?.[p] ?? []).some((g) => g != null))
+            : undefined
+        }
         onClose={onClose}
       />
     );

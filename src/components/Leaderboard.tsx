@@ -267,6 +267,13 @@ export function withRanks<T>(list: T[], key: (r: T) => number | string) {
  * End of a multiplayer game. Pass everyone best-first with their rank. Two
  * players: only the winner stands on the podium (a tie shows both).
  */
+/** Who can be roasted: you, plus everyone who actually played. */
+function roastable(rows: LeaderRow[], played?: string[]) {
+  return rows.filter(
+    (r) => r.me || (r.played !== false && (!played || played.includes(r.id) || /^bot/.test(r.id))),
+  );
+}
+
 export function GameOverBoard({
   game,
   rows,
@@ -276,7 +283,11 @@ export function GameOverBoard({
   onPlayAgain,
   children,
   roast,
+  played,
 }: {
+  /** Online games: who actually made a move. Anyone else (not a bot) can't be
+   * roasted: they never played (their turns timed out, or they were skipped). */
+  played?: string[];
   game: string;
   rows: LeaderRow[];
   /** Winners can roast the people they beat, as a post in Scenes. */
@@ -331,16 +342,9 @@ export function GameOverBoard({
         {children}
         {/* Only the winner gets to roast (in every game). */}
         {/* Only people who actually played can be roasted. */}
-        {roast &&
-          iWon &&
-          winners.length === 1 &&
-          rows.filter((r) => r.me || r.played !== false).length > 1 && (
-            <RoastButton
-              rows={rows.filter((r) => r.me || r.played !== false)}
-              roast={roast}
-              mode="roast"
-            />
-          )}
+        {roast && iWon && winners.length === 1 && roastable(rows, played).length > 1 && (
+          <RoastButton rows={roastable(rows, played)} roast={roast} mode="roast" />
+        )}
         <div className="mt-8 flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">
             Done

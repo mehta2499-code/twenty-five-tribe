@@ -37,6 +37,8 @@ export type PokerResult = {
   uncontested: boolean;
 };
 export type PokerState = {
+  /** Online: people who acted themselves (not folded away for them). */
+  acted?: string[];
   phase: "lobby" | "betting" | "showdown" | "over";
   seats: PSeat[];
   /** Online lobby: who has opened the game. */
@@ -72,7 +74,13 @@ const unhide = (h: string): Card[] =>
 export const holeCards = (s: PokerState, seat: number) => unhide(s.seats[seat]?.cards ?? "");
 
 // ---------- Setup ----------
-export type PokerPlayer = { id: string; name: string; avatar?: string; initials: string; color?: string };
+export type PokerPlayer = {
+  id: string;
+  name: string;
+  avatar?: string;
+  initials: string;
+  color?: string;
+};
 const seatOf = (p: PokerPlayer, stack: number): PSeat => ({
   ...p,
   stack,
@@ -169,7 +177,10 @@ export function startHand(prev: PokerState): PokerState {
     s.bb = prev.bb * 2;
     s.sb = prev.sb * 2;
   }
-  s.dealer = s.handNo === 1 && !s.seats[s.dealer].out ? s.dealer : nextFrom(s, s.dealer, (i) => !s.seats[i].out);
+  s.dealer =
+    s.handNo === 1 && !s.seats[s.dealer].out
+      ? s.dealer
+      : nextFrom(s, s.dealer, (i) => !s.seats[i].out);
   for (const p of s.seats)
     Object.assign(p, {
       bet: 0,
@@ -343,7 +354,9 @@ function award(s: PokerState, uncontested: boolean): PokerState {
       ranks.set(i, rank7([...cards, ...s.board]));
     }
     // Side pots: each level of contribution is its own pot.
-    const levels = [...new Set(s.seats.map((p) => p.inHand).filter((x) => x > 0))].sort((a, b) => a - b);
+    const levels = [...new Set(s.seats.map((p) => p.inHand).filter((x) => x > 0))].sort(
+      (a, b) => a - b,
+    );
     let prev = 0;
     const paid = new Map<number, number>();
     for (const level of levels) {
@@ -373,7 +386,9 @@ function award(s: PokerState, uncontested: boolean): PokerState {
       const share = Math.floor(amount / best.length);
       let odd = amount - share * best.length;
       const order = [...best].sort(
-        (a, b) => ((a - s.dealer + s.seats.length) % s.seats.length) - ((b - s.dealer + s.seats.length) % s.seats.length),
+        (a, b) =>
+          ((a - s.dealer + s.seats.length) % s.seats.length) -
+          ((b - s.dealer + s.seats.length) % s.seats.length),
       );
       for (const i of order) {
         const win = share + (odd > 0 ? 1 : 0);
@@ -419,9 +434,7 @@ export function leave(prev: PokerState, id: string): PokerState {
 
 /** Places at the end: most chips first. */
 export function standings(s: PokerState) {
-  return s.seats
-    .map((p, i) => ({ i, chips: p.stack }))
-    .sort((a, b) => b.chips - a.chips);
+  return s.seats.map((p, i) => ({ i, chips: p.stack })).sort((a, b) => b.chips - a.chips);
 }
 
 // ---------- Hand ranking ----------
@@ -501,13 +514,19 @@ export function rank7(cards: Card[]): Ranked {
   }
   if (groups[0][1] === 2 && groups[1]?.[1] === 2) {
     const [a, b] = [groups[0][0], groups[1][0]].sort((x, y) => y - x);
-    return { score: [2, a, b, ...kick([a, b], 1)], name: `Two pair, ${RANK_NAME[a]} and ${RANK_NAME[b]}` };
+    return {
+      score: [2, a, b, ...kick([a, b], 1)],
+      name: `Two pair, ${RANK_NAME[a]} and ${RANK_NAME[b]}`,
+    };
   }
   if (groups[0][1] === 2) {
     const pr = groups[0][0];
     return { score: [1, pr, ...kick([pr], 3)], name: `Pair of ${RANK_NAME[pr]}` };
   }
-  return { score: [0, ...vals.slice(0, 5)], name: `${NAMES[0]}, ${RANK_NAME[vals[0]].replace(/s$/, "")}` };
+  return {
+    score: [0, ...vals.slice(0, 5)],
+    name: `${NAMES[0]}, ${RANK_NAME[vals[0]].replace(/s$/, "")}`,
+  };
 }
 
 export function compare(a: number[], b: number[]) {
