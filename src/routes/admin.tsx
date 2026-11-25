@@ -30,6 +30,15 @@ type Stats = {
   };
   funnel: { step: string; n: number }[];
   features_7d: Record<string, number>;
+  /** The weekly numbers to watch (this week vs the week before). */
+  health?: {
+    wau: number;
+    wau_prev: number;
+    stickiness: number | null;
+    stickiness_prev: number | null;
+    week1: { of: number; returned: number };
+    week1_prev: { of: number; returned: number };
+  };
   games_7d: Record<string, number>;
   daily: { day: string; signups: number; active: number; visitors: number }[];
   recent: {
@@ -90,7 +99,11 @@ function Admin() {
 
         {/* Top cards */}
         <section className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Card label="Visitors" value={c.visitors} hint="unique browsers" />
+          <Card
+            label="Visitors"
+            value={c.visitors}
+            hint="unique people (one per person once signed in)"
+          />
           <Card label="Sign-ups" value={c.signups} />
           <Card
             label="Home-screen users"
@@ -102,6 +115,16 @@ function Admin() {
           <Card label="Active today" value={c.active_today} />
           <Card label="Active 7 days" value={c.active_7d} />
         </section>
+
+        {/* The three numbers to watch each week */}
+        {s.health && (
+          <Section
+            title="Weekly health"
+            note="Last 7 full days vs the 7 before. Active = any real use that day."
+          >
+            <Health h={s.health} />
+          </Section>
+        )}
 
         {/* Funnel */}
         <Section title="Funnel" note="Visitors are counted from when tracking went live.">
@@ -132,6 +155,82 @@ function Admin() {
 
 const fmt = (n: number) => n.toLocaleString("en-IN");
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "–");
+
+function Health({ h }: { h: NonNullable<Stats["health"]> }) {
+  const p = (x: { of: number; returned: number }) => (x.of ? x.returned / x.of : null);
+  const items: {
+    label: string;
+    now: number | null;
+    prev: number | null;
+    show: (n: number) => string;
+    hint: string;
+    goal?: number;
+  }[] = [
+    {
+      label: "Active this week",
+      now: h.wau,
+      prev: h.wau_prev,
+      show: (n) => fmt(n),
+      hint: "people active at least once",
+    },
+    {
+      label: "Stickiness",
+      now: h.stickiness,
+      prev: h.stickiness_prev,
+      show: (n) => `${Math.round(n * 100)}%`,
+      hint: "avg daily active ÷ weekly active · aim 40%+",
+      goal: 0.4,
+    },
+    {
+      label: "Week-1 retention",
+      now: p(h.week1),
+      prev: p(h.week1_prev),
+      show: (n) => `${Math.round(n * 100)}%`,
+      hint: `signed up 8–14 days ago, back in days 1–7 (${h.week1.returned}/${h.week1.of}) · aim 50%+`,
+      goal: 0.5,
+    },
+  ];
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {items.map((it) => {
+        const diff = it.now !== null && it.prev !== null ? it.now - it.prev : null;
+        const up = diff !== null && diff > 0;
+        const good = it.goal === undefined || (it.now ?? 0) >= it.goal;
+        return (
+          <div key={it.label} className="card p-4">
+            <p className="meta" style={{ fontSize: 12.5 }}>
+              {it.label}
+            </p>
+            <p
+              className="display tabular-nums mt-1"
+              style={{ fontSize: 32, lineHeight: 1, color: good ? "var(--lime)" : undefined }}
+            >
+              {it.now === null ? "–" : it.show(it.now)}
+            </p>
+            <p className="mt-1 text-[12.5px] font-bold tabular-nums">
+              {diff === null || it.prev === null ? (
+                <span className="meta">no data last week</span>
+              ) : diff === 0 ? (
+                <span className="meta">same as last week</span>
+              ) : (
+                <span style={{ color: up ? "rgb(16,185,129)" : "var(--pink)" }}>
+                  {up ? "▲" : "▼"}{" "}
+                  {it.label === "Active this week"
+                    ? Math.abs(diff)
+                    : `${Math.abs(Math.round(diff * 100))} pts`}{" "}
+                  vs last week ({it.show(it.prev)})
+                </span>
+              )}
+            </p>
+            <p className="meta mt-1" style={{ fontSize: 11.5 }}>
+              {it.hint}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function Card({
   label,
@@ -318,6 +417,8 @@ const FEATURES: [string, string][] = [
   ["seats", "Seats added"],
   ["mutual_seats", "New mutual seats"],
   ["installs", "App installs (Android/desktop)"],
+  ["drops", "Drops posted"],
+  ["messages", "Messages sent (chats + groups)"],
 ];
 
 function Features({ f, games }: { f: Record<string, number>; games: Record<string, number> }) {

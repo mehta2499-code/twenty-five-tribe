@@ -13,6 +13,7 @@ import { PersonLink } from "@/components/PersonLink";
 import { GAMES, showScore } from "@/components/ArcadeGames";
 import { withRanks } from "@/components/Leaderboard";
 import { Sheet } from "@/components/SocialUI";
+import { track } from "@/lib/track";
 import { friendById, meView } from "@/lib/social";
 import { tuneOf } from "@/lib/earworm";
 import {
@@ -520,6 +521,7 @@ export function TodaySection({
 
 /** One daily game's board, any day back to the start of the season. */
 function DailyBoard({ kind, onClose }: { kind: DailyKind; onClose: () => void }) {
+  useEffect(() => track("leaderboard_viewed", { board: kind }), [kind]);
   const d = useDaily();
   const [day, setDay] = useState(today());
   const first = [lastWeek(), seasonOf().start].sort()[0];

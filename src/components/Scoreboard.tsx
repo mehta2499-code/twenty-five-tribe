@@ -20,6 +20,7 @@ import {
   useDaily,
 } from "@/lib/daily";
 import { Avatar } from "@/components/Avatar";
+import { track } from "@/lib/track";
 import { Sheet } from "@/components/SocialUI";
 import { Crown } from "lucide-react";
 
@@ -216,7 +217,10 @@ export function SeasonCard() {
         </span>
       </div>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          track("leaderboard_viewed", { board: "season" });
+        }}
         className="w-full text-left rounded-[22px] p-3.5"
         style={{
           background:
