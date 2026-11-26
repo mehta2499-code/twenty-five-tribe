@@ -1471,7 +1471,7 @@ export function PerfectPitch({ onFinish, onClose }: RoundProps) {
         <Intro
           art="pitch"
           title="Perfect Pitch"
-          how="You'll hear one tone, once. Then slide up and down to find it again, and lock it in. Turn your sound on 🔊"
+          how="You'll hear one tone, once. Then slide up and down to find it again, and lock it in. Turn your sound on."
           onStart={() => {
             tone.ensure(); // unlock audio on this tap
             setPhase("listen");
@@ -1484,7 +1484,7 @@ export function PerfectPitch({ onFinish, onClose }: RoundProps) {
             style={{ fontSize: 22, color: phase === "reveal" ? LIME : "#fff" }}
           >
             {phase === "listen"
-              ? "Listen… 👂"
+              ? "Listen…"
               : phase === "match"
                 ? touched
                   ? "Find it, then lock it in"
