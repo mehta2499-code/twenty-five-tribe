@@ -1322,3 +1322,273 @@ export function HotOrCold({ onFinish, onClose }: RoundProps) {
     </Stage>
   );
 }
+
+// =====================================================================
+// Perfect Pitch: hear one tone, then slide to find it again. Score is how
+// close you got (pitch, measured in cents: 100 cents = one semitone).
+// =====================================================================
+
+const PITCH_TONE = "#B28BFF";
+const LOW = 200; // Hz at the bottom of the slider
+const HIGH = 1000; // Hz at the top
+/** Slider position (0 bottom … 1 top) to frequency, on a musical (log) scale. */
+const freqAt = (p: number) => LOW * Math.pow(HIGH / LOW, Math.min(1, Math.max(0, p)));
+const posOf = (f: number) => Math.log(f / LOW) / Math.log(HIGH / LOW);
+const centsOff = (a: number, b: number) => 1200 * Math.log2(a / b);
+/** 1000 when spot on, about 780 a quarter-tone off, 600 a semitone off. */
+export const pitchScore = (cents: number) => Math.round(1000 * Math.exp(-Math.abs(cents) / 200));
+/** How a Perfect Pitch score reads: "94.2% match". */
+export const pitchShow = (score: number) => `${(score / 10).toFixed(1)}% match`;
+
+/** One soft, steady tone you can move while it plays. */
+function useTone() {
+  const ctx = useRef<AudioContext | null>(null);
+  const osc = useRef<{ o: OscillatorNode; g: GainNode } | null>(null);
+  const ensure = () => {
+    if (!ctx.current) {
+      try {
+        // Play through the silent switch on iPhone (where supported).
+        const nav = navigator as Navigator & { audioSession?: { type: string } };
+        if (nav.audioSession) nav.audioSession.type = "playback";
+      } catch {
+        // ignore
+      }
+      const AC =
+        window.AudioContext ??
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      ctx.current = new AC();
+    }
+    if (ctx.current.state === "suspended") void ctx.current.resume();
+    return ctx.current;
+  };
+  const start = (f: number) => {
+    const c = ensure();
+    stop(true);
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(f, c.currentTime);
+    g.gain.setValueAtTime(0.0001, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25, c.currentTime + 0.04);
+    o.connect(g).connect(c.destination);
+    o.start();
+    osc.current = { o, g };
+  };
+  const set = (f: number) => {
+    const c = ctx.current;
+    if (c && osc.current) osc.current.o.frequency.setTargetAtTime(f, c.currentTime, 0.015);
+  };
+  const stop = (now = false) => {
+    const c = ctx.current;
+    const cur = osc.current;
+    if (!c || !cur) return;
+    osc.current = null;
+    const t = c.currentTime + (now ? 0.01 : 0.08);
+    cur.g.gain.cancelScheduledValues(c.currentTime);
+    cur.g.gain.setValueAtTime(cur.g.gain.value, c.currentTime);
+    cur.g.gain.exponentialRampToValueAtTime(0.0001, t);
+    cur.o.stop(t + 0.02);
+  };
+  useEffect(
+    () => () => {
+      stop(true);
+      void ctx.current?.close();
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  return { ensure, start, set, stop };
+}
+
+export function PerfectPitch({ onFinish, onClose }: RoundProps) {
+  const [phase, setPhase] = useState<"intro" | "listen" | "match" | "reveal">("intro");
+  const target = useRef(freqAt(0.12 + Math.random() * 0.76)); // never right at the ends
+  const [pos, setPos] = useState(0.5);
+  const [touched, setTouched] = useState(false);
+  const [holding, setHolding] = useState(false);
+  const tone = useTone();
+  const colRef = useRef<HTMLDivElement>(null);
+  const cents = centsOff(freqAt(pos), target.current);
+  const score = pitchScore(cents);
+  useEnd(phase === "reveal", score, onFinish, 3200);
+
+  // Listen: the tone plays once, for two seconds.
+  useEffect(() => {
+    if (phase !== "listen") return;
+    const a = setTimeout(() => tone.start(target.current), 500);
+    const b = setTimeout(() => tone.stop(), 2500);
+    const c = setTimeout(() => setPhase("match"), 3000);
+    return () => [a, b, c].forEach(clearTimeout);
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const at = (clientY: number) => {
+    const r = colRef.current?.getBoundingClientRect();
+    if (!r) return pos;
+    return Math.min(1, Math.max(0, (r.bottom - clientY) / r.height));
+  };
+  const down = (e: React.PointerEvent) => {
+    if (phase !== "match") return;
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    const p = at(e.clientY);
+    setPos(p);
+    setTouched(true);
+    setHolding(true);
+    tone.start(freqAt(p));
+  };
+  const move = (e: React.PointerEvent) => {
+    if (!holding) return;
+    const p = at(e.clientY);
+    setPos(p);
+    tone.set(freqAt(p));
+  };
+  const up = () => {
+    if (!holding) return;
+    setHolding(false);
+    tone.stop();
+  };
+  const lockIn = () => {
+    tone.stop(true);
+    setPhase("reveal");
+    buzz(35);
+    if (score >= 900) sfx.win();
+    else sfx.land();
+  };
+
+  const off = Math.abs(Math.round(cents));
+  const verdict =
+    off <= 10
+      ? "Perfect pitch. Who are you? 🤯"
+      : off <= 30
+        ? "Spot on 🔥"
+        : off <= 100
+          ? `Close · ${cents > 0 ? "a bit high" : "a bit low"}`
+          : off <= 300
+            ? `${cents > 0 ? "Too high" : "Too low"} · not bad`
+            : `Way ${cents > 0 ? "too high" : "too low"} 🙉`;
+  const showMine = phase === "match" ? touched : phase === "reveal";
+  return (
+    <Stage title="Perfect Pitch" tone={PITCH_TONE} onClose={onClose} canClose={phase === "intro"}>
+      {phase === "intro" ? (
+        <Intro
+          art="pitch"
+          title="Perfect Pitch"
+          how="You'll hear one tone, once. Then slide up and down to find it again, and lock it in. Turn your sound on 🔊"
+          onStart={() => {
+            tone.ensure(); // unlock audio on this tap
+            setPhase("listen");
+          }}
+        />
+      ) : (
+        <>
+          <p
+            className="text-center font-black mt-2 shrink-0"
+            style={{ fontSize: 22, color: phase === "reveal" ? LIME : "#fff" }}
+          >
+            {phase === "listen"
+              ? "Listen… 👂"
+              : phase === "match"
+                ? touched
+                  ? "Find it, then lock it in"
+                  : "Hold and slide to play your tone"
+                : `${(score / 10).toFixed(1)}% match`}
+          </p>
+          <p className="text-center mt-1 shrink-0" style={{ color: "rgba(255,255,255,0.65)" }}>
+            {phase === "reveal"
+              ? verdict
+              : phase === "listen"
+                ? "Remember it"
+                : "Higher ↑ · Lower ↓"}
+          </p>
+          <div className="relative flex-1 flex justify-center mt-4 mb-4 min-h-0">
+            <div
+              ref={colRef}
+              onPointerDown={down}
+              onPointerMove={move}
+              onPointerUp={up}
+              onPointerCancel={up}
+              className="relative h-full rounded-[40px] overflow-hidden"
+              style={{
+                width: 150,
+                touchAction: "none",
+                background: `linear-gradient(0deg, rgba(178,139,255,0.08), rgba(178,139,255,0.22))`,
+                border: "1px solid rgba(178,139,255,0.35)",
+                boxShadow: holding ? `0 0 50px ${PITCH_TONE}66` : `0 0 24px ${PITCH_TONE}22`,
+                transition: "box-shadow 150ms",
+              }}
+              role="slider"
+              aria-label="Your tone. Slide up for higher, down for lower."
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(pos * 100)}
+            >
+              {/* Faint steps, like keys */}
+              {Array.from({ length: 12 }, (_, k) => (
+                <span
+                  key={k}
+                  className="absolute inset-x-6"
+                  style={{
+                    bottom: `${((k + 1) / 13) * 100}%`,
+                    height: 1,
+                    background: "rgba(255,255,255,0.07)",
+                  }}
+                />
+              ))}
+              {/* While the target plays: a pulse */}
+              {phase === "listen" && (
+                <span
+                  className="absolute inset-0 animate-pulse"
+                  style={{
+                    background: `radial-gradient(circle, ${PITCH_TONE}55, transparent 70%)`,
+                  }}
+                />
+              )}
+              {/* Your tone */}
+              {showMine && (
+                <span
+                  className="absolute inset-x-3 rounded-full"
+                  style={{
+                    bottom: `calc(${pos * 100}% - 7px)`,
+                    height: 14,
+                    background: "#fff",
+                    boxShadow: `0 0 18px ${PITCH_TONE}`,
+                  }}
+                />
+              )}
+              {/* The answer, once you've locked in */}
+              {phase === "reveal" && (
+                <span
+                  className="absolute inset-x-1 rounded-full pop"
+                  style={{
+                    bottom: `calc(${posOf(target.current) * 100}% - 4px)`,
+                    height: 8,
+                    background: LIME,
+                    boxShadow: `0 0 16px ${LIME}`,
+                  }}
+                />
+              )}
+            </div>
+            {phase === "reveal" && (
+              <div className="absolute right-0 top-2 text-right text-[12.5px] font-bold">
+                <p style={{ color: LIME }}>━ the tone</p>
+                <p style={{ color: "#fff" }}>━ yours</p>
+              </div>
+            )}
+          </div>
+          <div className="shrink-0">
+            {phase === "match" ? (
+              <button
+                onClick={lockIn}
+                disabled={!touched}
+                className="w-full rounded-2xl font-black disabled:opacity-40"
+                style={{ background: LIME, color: "#14200A", minHeight: 58, fontSize: 18 }}
+              >
+                Lock it in
+              </button>
+            ) : (
+              <div style={{ minHeight: 58 }} />
+            )}
+          </div>
+        </>
+      )}
+    </Stage>
+  );
+}

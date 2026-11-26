@@ -27,7 +27,8 @@ export type ArtKind =
   | "one-to-25"
   | "rickshaw"
   | "chai-catch"
-  | "hot-cold";
+  | "hot-cold"
+  | "pitch";
 
 export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
   return (
@@ -64,6 +65,7 @@ export function GameArt({ kind, size = 64 }: { kind: ArtKind; size?: number }) {
       {kind === "rickshaw" && <RickshawArt />}
       {kind === "chai-catch" && <ChaiArt />}
       {kind === "hot-cold" && <HotColdArt />}
+      {kind === "pitch" && <PitchArt />}
     </svg>
   );
 }
@@ -788,6 +790,28 @@ function HotColdArt() {
         strokeWidth="3"
         strokeLinecap="round"
       />
+    </g>
+  );
+}
+
+function PitchArt() {
+  const bars = [14, 26, 40, 22, 34, 18];
+  return (
+    <g strokeLinejoin="round" stroke={EDGE} strokeWidth="2.5">
+      <rect x="6" y="6" width="52" height="52" rx="16" fill="#B28BFF" />
+      {bars.map((h, i) => (
+        <rect
+          key={i}
+          x={11 + i * 7.5}
+          y={32 - h / 2}
+          width="5"
+          height={h}
+          rx="2.5"
+          fill="#FFF8EC"
+          strokeWidth="2"
+        />
+      ))}
+      <path d="M8 33 H56" stroke="#B8F25C" strokeWidth="2.5" strokeDasharray="3 3" />
     </g>
   );
 }

@@ -22,6 +22,7 @@ import {
   Car,
   Coffee,
   Thermometer,
+  AudioWaveform,
 } from "lucide-react";
 import {
   ArrowSwipe,
@@ -31,7 +32,9 @@ import {
   RickshawRun,
   StackUp,
   TileDash,
+  PerfectPitch,
   oneTo25Time,
+  pitchShow,
 } from "@/components/DailyMore";
 import { Sec25Round, secOff } from "@/components/Sec25";
 import { Confetti, FriendPicker, Toast, buzz } from "@/components/SocialUI";
@@ -216,6 +219,17 @@ export const GAMES: Record<
     how: "Tap 🔥 or ❄️ (or swipe). One point each; wrong ones cost a point.",
     unit: "right",
     Round: HotOrCold,
+  },
+  pitch: {
+    name: "Perfect Pitch",
+    emoji: "🎵",
+    Icon: AudioWaveform,
+    tone: "#B28BFF",
+    blurb: "Hear one tone, once. Slide to find it again. How good is your ear?",
+    how: "One tone, one guess. Closest match wins. Turn your sound on.",
+    unit: "",
+    show: pitchShow,
+    Round: PerfectPitch,
   },
 };
 

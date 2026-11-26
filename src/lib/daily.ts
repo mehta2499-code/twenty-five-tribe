@@ -24,10 +24,11 @@ export type DailyId =
   | "one-to-25"
   | "rickshaw"
   | "chai-catch"
-  | "hot-cold";
+  | "hot-cold"
+  | "pitch";
 
 /**
- * The daily game rotation: one a day, round and round (15 games, so the same
+ * The daily game rotation: one a day, round and round (16 games, so the same
  * game moves to a different weekday each week). Keep in sync with
  * public.daily_game() in the database.
  */
@@ -43,6 +44,7 @@ export const LINEUP: DailyId[] = [
   "tile-dash",
   "stack-up",
   "arrow-swipe",
+  "pitch",
   "one-to-25",
   "rickshaw",
   "chai-catch",
@@ -144,6 +146,7 @@ const SCALE: Record<DailyId, [number, number]> = {
   rickshaw: [10, 60],
   "chai-catch": [15, 50],
   "hot-cold": [15, 45],
+  pitch: [450, 960],
 };
 function hash(s: string) {
   let h = 2166136261;
