@@ -1,6 +1,6 @@
 import { peekPendingPath } from "@/lib/pending";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Logo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Confetti, buzz, clientOnly } from "@/components/SocialUI";
@@ -219,7 +219,7 @@ function Shell({
               <ArrowLeft size={18} />
             </button>
           ) : (
-            <Logo height={40} />
+            <SeatMark size={44} label="25" />
           )}
           {progress !== undefined && (
             <div

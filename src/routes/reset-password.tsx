@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Logo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { clientOnly } from "@/components/SocialUI";
@@ -97,7 +97,7 @@ function ResetPassword() {
           </Link>
         </div>
         <h1 className="mt-10">
-          <Logo height={120} />
+          <SeatMark size={120} label="25" />
         </h1>
         <form
           className="mt-8 flex flex-col gap-4 animate-soft-in"

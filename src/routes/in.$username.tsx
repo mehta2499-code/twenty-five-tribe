@@ -1,6 +1,6 @@
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Logo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Eye, Handshake } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -131,7 +131,7 @@ function InMy25() {
             </button>
           ) : (
             <Link to="/" aria-label="25 home">
-              <Logo height={44} />
+              <SeatMark size={48} label="25" />
             </Link>
           )}
           {!live && (

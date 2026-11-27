@@ -1,6 +1,6 @@
 import { takePendingPath } from "@/lib/pending";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Logo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { account, initLive, passwordProblem } from "@/lib/live";
@@ -245,7 +245,7 @@ function Login() {
         </div>
 
         <h1 className="mt-10">
-          <Logo height={120} />
+          <SeatMark size={120} label="25" />
         </h1>
 
         {step === "email" && (
