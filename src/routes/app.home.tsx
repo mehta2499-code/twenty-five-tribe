@@ -1886,42 +1886,6 @@ function Home() {
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  // The Table page fits the screen: no scrolling and no iPhone rubber-band bounce.
-  useEffect(() => {
-    // Lock the app's scroll box too (pages scroll inside it, not the page).
-    const box = document.getElementById("app-scroll");
-    const els = [document.documentElement, document.body, ...(box ? [box] : [])];
-    const prev = els.map((e) => [e.style.overflow, e.style.overscrollBehavior] as const);
-    els.forEach((e) => {
-      e.style.overflow = "hidden";
-      e.style.overscrollBehavior = "none";
-    });
-    // iPhone shifts the page up when the keyboard opens (e.g. song search) and,
-    // with scrolling locked, it would stay stuck there. Put it back once typing ends.
-    const typing = () => {
-      const a = document.activeElement as HTMLElement | null;
-      return !!a && a.matches("input, textarea, [contenteditable]");
-    };
-    const settle = () => {
-      if (!typing() && (window.scrollY !== 0 || document.documentElement.scrollTop !== 0))
-        window.scrollTo(0, 0);
-    };
-    const onFocusOut = () => setTimeout(settle, 60);
-    const vv = window.visualViewport;
-    document.addEventListener("focusout", onFocusOut);
-    vv?.addEventListener("resize", settle);
-    window.addEventListener("scroll", settle, { passive: true });
-    return () => {
-      document.removeEventListener("focusout", onFocusOut);
-      vv?.removeEventListener("resize", settle);
-      window.removeEventListener("scroll", settle);
-      els.forEach((e, i) => {
-        e.style.overflow = prev[i][0];
-        e.style.overscrollBehavior = prev[i][1];
-      });
-    };
-  }, []);
-
   // Spotlight hops around the table, slows down, lands on someone.
   const onRoll = () => {
     const seated = people.slice(0, SEATS);
@@ -2077,6 +2041,11 @@ function Home() {
             at: 'section[aria-label="Your table"]',
             title: "This is your Table",
             body: "Everyone at your table. People who got 7/7 on your quiz sit at the head (top). Tap a face for options, or the dice to pick someone.",
+          },
+          {
+            at: 'section[aria-label="Today\'s games"]',
+            title: "Three games a day",
+            body: "Today's mini game, Word Up and Name That Tune, same for your whole 25. Tap Play; tap your rank for its board.",
           },
           {
             at: 'a[aria-label="Add people"]',

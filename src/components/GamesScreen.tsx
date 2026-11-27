@@ -1,5 +1,5 @@
 import { Tour } from "@/components/Tour";
-import { DailyTune, EarwormSetup, SoloEarworm, SongsLoading } from "@/components/Earworm";
+import { EarwormSetup, SoloEarworm, SongsLoading } from "@/components/Earworm";
 import { pickGameSongs, type EarCat, type EarLevel, type EarState } from "@/lib/earworm";
 import { ChessLobby, LocalChess } from "@/components/Chess";
 import { Connect4Lobby, LocalConnect4 } from "@/components/Connect4";
@@ -16,11 +16,9 @@ import { Glyph3D } from "@/components/Glyph3D";
 import { SuitIcon } from "@/components/SuitIcon";
 import { GameArt, type ArtKind } from "@/components/GameArt";
 import { FriendPicker, PageBand, Sheet, Toast } from "@/components/SocialUI";
-import { DailyRunner } from "@/components/ArcadeGames";
 import { SeasonCard } from "@/components/Scoreboard";
-import { TodaySection } from "@/components/DayResults";
 import { WordDaily, checkWord, inWordList, loadWords, WORD_LEN } from "@/components/WordUp";
-import { gameFor, today, useDaily } from "@/lib/daily";
+import { useDaily } from "@/lib/daily";
 import { KachufulLobby, LocalKachuful } from "@/components/Kachuful";
 import { LocalLudo, LudoLobby } from "@/components/Ludo";
 import type { LudoState } from "@/lib/ludo";
@@ -546,9 +544,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
   }, [mode]);
   const live = s.mode === "live" && !!s.me;
   useDaily();
-  const [daily, setDaily] = useState(false);
   const [wordDaily, setWordDaily] = useState(false);
-  const [tuneDaily, setTuneDaily] = useState(false);
   // Picking songs for a Name That Tune with friends (shows the loader).
   const [earLoading, setEarLoading] = useState<EarCat | null>(null);
   const earTicket = useRef(0);
@@ -617,11 +613,6 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         id="games"
         steps={[
           {
-            at: 'section[aria-label="Today\'s games"]',
-            title: "Three games a day",
-            body: "Today's mini game, Word Up and Name That Tune, same for your whole 25. Tap a game to play; tap your rank for its board.",
-          },
-          {
             at: 'section[aria-label="All games"]',
             title: "Play with your 25",
             body: "Chess, Hold'em, Ludo, Trivia, Name That Tune and more, live with your friends. Just for fun.",
@@ -635,11 +626,6 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
       />
       <PageBand ring title="Games" />
       {live && <YourGames meId={s.me!.id} />}
-      <TodaySection
-        onPlayDaily={() => setDaily(true)}
-        onPlayWord={() => setWordDaily(true)}
-        onPlayTune={() => setTuneDaily(true)}
-      />
 
       {/* Everything you play with your 25 (live, just for fun). */}
       <section className="px-5 mt-7" aria-label="All games" id="play-with-your-25">
@@ -1021,9 +1007,7 @@ export function GamesScreen({ mode }: { mode: "home" | "more" }) {
         />
       )}
 
-      {daily && <DailyRunner game={gameFor(today())} onClose={() => setDaily(false)} />}
       {wordDaily && <WordDaily onClose={() => setWordDaily(false)} />}
-      {tuneDaily && <DailyTune onClose={() => setTuneDaily(false)} />}
       {wordSheet && (
         <Sheet title="Set a secret word" onClose={() => setWordSheet(false)}>
           <p className="text-sm text-cool">
