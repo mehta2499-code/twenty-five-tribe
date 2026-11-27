@@ -2,7 +2,7 @@ import { Tour } from "@/components/Tour";
 import { sfx } from "@/lib/sfx";
 import { Ico, TONE } from "@/components/Ico";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { SeatLogo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Armchair,
@@ -1927,7 +1927,7 @@ function Home() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <Link to="/app/home" aria-label="Your Table" className="inline-flex">
-              <SeatLogo filled={people.length} height={56} />
+              <SeatMark filled={people.length} size={56} />
             </Link>
             <p className="hidden min-[340px]:block leading-tight min-w-0 whitespace-nowrap">
               <span

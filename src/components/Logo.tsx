@@ -147,3 +147,56 @@ export function SeatLogo({
     </svg>
   );
 }
+
+/**
+ * The app icon (a bold "25" in a dark circle, ringed by 25 dots) as a live
+ * seat counter: one dot lights up lime for each filled seat, clockwise from
+ * the top. Same drawing as the home-screen icon and favicon.
+ */
+export function SeatMark({
+  filled = 25,
+  size = 48,
+  label,
+}: {
+  filled?: number;
+  size?: number;
+  label?: string;
+}) {
+  const n = Math.max(0, Math.min(25, filled));
+  const dots = Array.from({ length: 25 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 25;
+    return { x: 32 + Math.cos(a) * 25, y: 32 + Math.sin(a) * 25, on: i < n };
+  });
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label={label ?? `${n} of 25 seats filled`}
+    >
+      <circle cx="32" cy="32" r="18.5" fill="#211E2B" />
+      {dots.map((d, i) => (
+        <circle
+          key={i}
+          cx={d.x.toFixed(2)}
+          cy={d.y.toFixed(2)}
+          r="2.4"
+          fill={d.on ? "var(--lime)" : "rgba(245,241,250,0.16)"}
+        />
+      ))}
+      <text
+        x="32"
+        y="39.5"
+        textAnchor="middle"
+        fontFamily="-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, system-ui, Arial, sans-serif"
+        fontWeight="800"
+        fontSize="20"
+        fill="#F5F1FA"
+        letterSpacing="-1"
+      >
+        25
+      </text>
+    </svg>
+  );
+}

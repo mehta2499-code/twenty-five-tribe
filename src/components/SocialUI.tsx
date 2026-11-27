@@ -1,4 +1,4 @@
-import { SeatLogo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import {
   createContext,
   useContext,
@@ -517,7 +517,7 @@ function HeaderRing() {
   const n = s.people.length;
   return (
     <Link to="/app/home" aria-label="Back to your Table" className="inline-flex">
-      <SeatLogo filled={n} height={50} />
+      <SeatMark filled={n} size={50} />
     </Link>
   );
 }
