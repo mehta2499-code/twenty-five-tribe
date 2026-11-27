@@ -69,6 +69,7 @@ import { Glyph3D, preloadSprites } from "@/components/Glyph3D";
 import { thisWeeksPacks } from "@/lib/data";
 import { inviteToDuel, startLudo, startTriviaChallenge } from "@/lib/games";
 import { PushPrompt } from "@/components/PushPrompt";
+import { FillTable, useFillTable } from "@/components/FillTable";
 import { unreadCount, useActivity } from "@/lib/activity";
 import { daysUntil, upcoming, useBirthdays } from "@/lib/birthdays";
 import { BirthdayPop } from "@/components/BirthdayPop";
@@ -1877,6 +1878,8 @@ function Home() {
   const [pickSong, setPickSong] = useState(false);
   // Today's games, played right here under the table.
   const [playing, setPlaying] = useState<"daily" | "word" | "tune" | null>(null);
+  // New here (or still nearly empty): "Set your table" first, before any tips.
+  const [fillOpen, closeFill] = useFillTable();
   // Songs your 25 shared since you last looked (clears when you open it).
   const newSongs = useNewSongs();
   const [confetti, setConfetti] = useState(0);
@@ -2033,37 +2036,40 @@ function Home() {
       {pollsLeft !== null && pollsLeft > 0 && <PollsBar left={pollsLeft} />}
 
       <PushPrompt />
-      <Tour
-        id="table"
-        delay={1200}
-        steps={[
-          {
-            at: 'section[aria-label="Your table"]',
-            title: "This is your Table",
-            body: "Everyone at your table. People who got 7/7 on your quiz sit at the head (top). Tap a face for options, or the dice to pick someone.",
-          },
-          {
-            at: 'section[aria-label="Today\'s games"]',
-            title: "Three games a day",
-            body: "Today's mini game, Word Up and Name That Tune, same for your whole 25. Tap Play; tap your rank for its board.",
-          },
-          {
-            at: 'a[aria-label="Add people"]',
-            title: "Fill your seats",
-            body: "Add people you actually know. When you're in each other's 25, chats and games unlock.",
-          },
-          {
-            at: 'a[href="/app/drop"]',
-            title: "Every day",
-            body: "The Drop: everyone posts at the same surprise time. Weekly Polls: anonymous picks about your 25, new every Thursday at 9 PM.",
-          },
-          {
-            at: 'nav[aria-label="Main"]',
-            title: "Everything else",
-            body: "Your Table is the first tab, then Scenes, the Drop, Chats and Games. Swipe left and right to move between them.",
-          },
-        ]}
-      />
+      {fillOpen && <FillTable onClose={closeFill} />}
+      {!fillOpen && (
+        <Tour
+          id="table"
+          delay={1200}
+          steps={[
+            {
+              at: 'section[aria-label="Your table"]',
+              title: "This is your Table",
+              body: "Everyone at your table. People who got 7/7 on your quiz sit at the head (top). Tap a face for options, or the dice to pick someone.",
+            },
+            {
+              at: 'section[aria-label="Today\'s games"]',
+              title: "Three games a day",
+              body: "Today's mini game, Word Up and Name That Tune, same for your whole 25. Tap Play; tap your rank for its board.",
+            },
+            {
+              at: 'a[aria-label="Add people"]',
+              title: "Fill your seats",
+              body: "Add people you actually know. When you're in each other's 25, chats and games unlock.",
+            },
+            {
+              at: 'a[href="/app/drop"]',
+              title: "Every day",
+              body: "The Drop: everyone posts at the same surprise time. Weekly Polls: anonymous picks about your 25, new every Thursday at 9 PM.",
+            },
+            {
+              at: 'nav[aria-label="Main"]',
+              title: "Everything else",
+              body: "Your Table is the first tab, then Scenes, the Drop, Chats and Games. Swipe left and right to move between them.",
+            },
+          ]}
+        />
+      )}
 
       {playing === "daily" && (
         <DailyRunner game={gameFor(today())} onClose={() => setPlaying(null)} />
@@ -2072,7 +2078,7 @@ function Home() {
       {playing === "tune" && <DailyTune onClose={() => setPlaying(null)} />}
       <Confetti fire={confetti} />
       <BirthdayPop />
-      <PollsPop />
+      {!fillOpen && <PollsPop />}
       {pickSong && (
         <NowPlayingPicker
           onClose={() => {
