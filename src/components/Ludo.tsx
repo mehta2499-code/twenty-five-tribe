@@ -3,6 +3,7 @@ import { Ico, TONE } from "@/components/Ico";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Flag, House, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PickPeople } from "@/components/PickPeople";
 import { Confetti, Sheet, buzz } from "@/components/SocialUI";
 import { GameOverBoard, withRanks } from "@/components/Leaderboard";
 import { ChatStrip } from "@/components/GameChat";
@@ -881,34 +882,7 @@ export function LudoLobby({
       {people.length === 0 ? (
         <p className="text-sm text-faint">No mutual seats yet. Play the bots for now.</p>
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-1">
-          {people.map((p) => {
-            const on = picked.includes(p.id);
-            return (
-              <button
-                key={p.id}
-                onClick={() => toggle(p.id)}
-                className="flex flex-col items-center shrink-0"
-                style={{ width: 60 }}
-              >
-                <span
-                  className="rounded-full p-[2px]"
-                  style={{ background: on ? "var(--lime)" : "transparent" }}
-                >
-                  <Avatar
-                    src={p.avatar || undefined}
-                    initials={p.initials}
-                    color={p.color}
-                    size={48}
-                  />
-                </span>
-                <span className="text-[11px] mt-1 truncate w-full text-center text-cream">
-                  {p.name.split(" ")[0]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <PickPeople people={people} picked={picked} onToggle={toggle} max={3} />
       )}
       <p className="label-caps mt-5 mb-2">Bots</p>
       <div className="flex gap-2">

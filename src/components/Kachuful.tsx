@@ -4,6 +4,7 @@ import { useGameMusic } from "@/lib/sfx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HelpCircle, ListOrdered, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { PickPeople } from "@/components/PickPeople";
 import { Confetti, Sheet, StageCtx, buzz } from "@/components/SocialUI";
 import { ChatStrip } from "@/components/GameChat";
 import { GameOverBoard, withRanks } from "@/components/Leaderboard";
@@ -1231,34 +1232,7 @@ export function KachufulLobby({
       {live && people.length > 0 && (
         <>
           <p className="label-caps mt-5 mb-2">Invite from your 25</p>
-          <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-            {people.map((p) => {
-              const on = picked.includes(p.id);
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => toggle(p.id)}
-                  className="flex flex-col items-center shrink-0"
-                  style={{ width: 60 }}
-                >
-                  <span
-                    className="rounded-full p-[2px]"
-                    style={{ background: on ? "var(--lime)" : "transparent" }}
-                  >
-                    <Avatar
-                      src={p.avatar || undefined}
-                      initials={p.initials}
-                      color={p.color}
-                      size={48}
-                    />
-                  </span>
-                  <span className="text-[11px] mt-1 truncate w-full text-center text-cream">
-                    {p.name.split(" ")[0]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <PickPeople people={people} picked={picked} onToggle={toggle} max={6} />
         </>
       )}
 
