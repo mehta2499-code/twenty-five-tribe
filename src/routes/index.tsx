@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "25 seats. Choose wisely. The social app built around Dunbar's number — for the only people that matter.",
+          "25 seats. Choose wisely. A private social app for your closest 25: chats, a daily surprise photo Drop, daily games and game nights, anonymous polls and birthday cards. Only the people who matter.",
       },
     ],
   }),
@@ -165,7 +165,7 @@ function Landing() {
           }}
         >
           <h1 className="leading-none" style={{ animation: "floatY 7s ease-in-out infinite" }}>
-            <Logo height={260} color={C.coral} title="25" />
+            <SeatMark size={230} label="25" />
           </h1>
 
           <p className="mt-8 chalk-title relative">
@@ -246,7 +246,7 @@ function Landing() {
             {[
               { tag: "Instagram", line: "You follow 500 people. You know 12." },
               { tag: "WhatsApp", line: "47 groups. 43 muted." },
-              { tag: "BeReal", line: "73M users. Dead in 2 years." },
+              { tag: "Group chats", line: "200 people in it. You talk to 6." },
             ].map((s, i) => (
               <Reveal key={s.tag} delay={i * 120}>
                 <div className="glass rounded-2xl p-7 h-full">
@@ -336,23 +336,23 @@ function Landing() {
             {[
               {
                 icon: "◍",
-                tag: "The Seats",
-                line: "25 seats at your table. Who sits there is everything.",
+                tag: "The Table",
+                line: "25 seats. See who's around right now, what they're playing and what they're listening to.",
               },
               {
                 icon: "✓",
                 tag: "Prove it",
-                line: "Pizza or pasta? Cats or dogs? Get 4 of 7 right about them or no seat.",
+                line: "Pizza or pasta? Cats or dogs? Get 4 of 7 right about them to take a seat. 7 of 7 sits at the head.",
               },
               {
                 icon: "❍",
                 tag: "Chats",
-                line: "Seat anyone you know. DMs only open when it's mutual.",
+                line: "Private and group chats that open only when it's mutual. Voice notes, GIFs and reactions.",
               },
               {
                 icon: "↯",
                 tag: "The Drop",
-                line: "Once a day, at a surprise time, everyone posts one real photo. Ten minutes. Go.",
+                line: "Once a day, at a surprise time, everyone posts one real photo. Theirs stay blurred until you post yours.",
               },
               {
                 icon: "✦",
@@ -360,9 +360,19 @@ function Landing() {
                 line: "Thoughts, photos and videos from your people only. It ends when you're caught up.",
               },
               {
+                icon: "?",
+                tag: "Weekly Polls",
+                line: "Spicy anonymous polls about your 25. Most likely to text their ex at 2 AM? New every Thursday night.",
+              },
+              {
+                icon: "✧",
+                tag: "Birthdays",
+                line: "Your 25 sign one card the night before. It opens at midnight, and every year's card is kept.",
+              },
+              {
                 icon: "◆",
                 tag: "Games",
-                line: "Quick rounds, trivia and Judgement, with a weekly leaderboard.",
+                line: "Three daily games, a season leaderboard, and game nights with your 25.",
               },
             ].map((f, i) => (
               <Reveal key={f.tag} delay={i * 90}>
@@ -397,6 +407,9 @@ function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ============ GAMES ============ */}
+      <GamesSection />
 
       {/* ============ GET IT ON YOUR PHONE ============ */}
       <InstallSection />
@@ -456,6 +469,117 @@ function Landing() {
         </div>
       </section>
     </main>
+  );
+}
+
+const DAILY = [
+  "Tap Rush",
+  "Quick Maths",
+  "Colour Clash",
+  "Pair Up",
+  "Odd One Out",
+  "Pattern Recall",
+  "Reflex",
+  "25 Sec",
+  "Tile Dash",
+  "Stack Up",
+  "Arrow Swipe",
+  "Perfect Pitch",
+  "1 to 25",
+  "Rickshaw Run",
+  "Chai Catch",
+  "Hot or Cold",
+];
+const TOGETHER = [
+  "Chess",
+  "Texas Hold'em",
+  "Ludo",
+  "Judgement",
+  "Connect 4",
+  "Pen fight",
+  "Imposter",
+  "Trivia duels",
+  "Name That Tune",
+  "Word Up",
+];
+
+/** The games: three a day for everyone, and game nights with your 25. */
+function GamesSection() {
+  const chip = (t: string) => (
+    <span
+      key={t}
+      className="rounded-full px-3.5 py-1.5 text-sm font-semibold text-white"
+      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.16)" }}
+    >
+      {t}
+    </span>
+  );
+  return (
+    <section className="px-6 py-28 md:py-36" style={{ background: C.blueDeep }}>
+      <div className="mx-auto max-w-5xl">
+        <Reveal>
+          <h2
+            className="h-serif text-white text-center"
+            style={{ fontSize: "clamp(2.25rem, 5vw, 3.5rem)", lineHeight: 1.1 }}
+          >
+            Play with the people who matter.
+          </h2>
+          <p className="mt-5 text-center text-white/80 text-lg max-w-2xl mx-auto">
+            Short, silly, competitive. Every score is ranked against your 25, not the internet.
+          </p>
+        </Reveal>
+        <div className="mt-16 grid gap-6 md:grid-cols-2">
+          <Reveal>
+            <div className="glass rounded-3xl p-8 h-full">
+              <p
+                className="uppercase mb-3"
+                style={{
+                  color: C.coral,
+                  fontSize: "0.7rem",
+                  letterSpacing: "0.28em",
+                  fontWeight: 600,
+                }}
+              >
+                Every day
+              </p>
+              <p className="h-serif text-white text-2xl leading-snug">
+                Three games a day, the same for your whole 25.
+              </p>
+              <p className="mt-4 text-white/75 leading-relaxed">
+                A new mini game every day from a rotation of 16 (three tries, best one counts), plus
+                Word Up (the daily word) and Name That Tune. Points add up over a 25-day season, and
+                the top of your 25 takes the title.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">{DAILY.map(chip)}</div>
+            </div>
+          </Reveal>
+          <Reveal delay={120}>
+            <div className="glass rounded-3xl p-8 h-full">
+              <p
+                className="uppercase mb-3"
+                style={{
+                  color: C.coral,
+                  fontSize: "0.7rem",
+                  letterSpacing: "0.28em",
+                  fontWeight: 600,
+                }}
+              >
+                Game night
+              </p>
+              <p className="h-serif text-white text-2xl leading-snug">
+                Play live with your 25, chat while you play, and roast them when you win.
+              </p>
+              <p className="mt-4 text-white/75 leading-relaxed">
+                Start a game from the Games tab and they get a challenge in chat. Practice against
+                bots in most of them. Pens to unlock, medals to earn and a rivalry record with each
+                of your 25.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">{TOGETHER.map(chip)}</div>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
   );
 }
 

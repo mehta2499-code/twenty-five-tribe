@@ -2055,7 +2055,7 @@ function Home() {
           {
             at: 'a[href="/app/drop"]',
             title: "Every day",
-            body: "The Drop: everyone posts at the same surprise time. Weekly Polls: anonymous picks about your 25, new every Sunday.",
+            body: "The Drop: everyone posts at the same surprise time. Weekly Polls: anonymous picks about your 25, new every Thursday at 9 PM.",
           },
           {
             at: 'nav[aria-label="Main"]',

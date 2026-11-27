@@ -22,6 +22,11 @@ const CARDS = [
     title: "Share moments, thoughts and memories with the people who matter most.",
     body: "Seat anyone you know. Mutual seats unlock chats and games. No strangers, ever.",
   },
+  {
+    eyebrow: "every day",
+    title: "A surprise Drop, three games and your 25.",
+    body: "One real photo at a random time. Daily games ranked against your people. Polls every Thursday.",
+  },
 ];
 
 function Walkthrough() {
