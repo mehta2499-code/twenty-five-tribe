@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { InAppBanner } from "@/components/InAppBanner";
-import { AnimatedLogo, SeatLogo } from "@/components/Logo";
+import { SeatMark } from "@/components/Logo";
 import { Toast } from "@/components/SocialUI";
 import { catchUpMessages, initLive } from "@/lib/live";
 import { refreshGroups } from "@/lib/groups";
@@ -226,7 +226,7 @@ function AppLayout() {
         <div className="flex flex-col items-center px-8 text-center">
           {firstEver ? (
             <>
-              <AnimatedLogo height={230} />
+              <SeatMark loading size={200} label="Loading your 25" />
               <p
                 className="tagline-in display mt-6"
                 style={{ fontSize: 26, letterSpacing: "-0.01em" }}
@@ -236,7 +236,7 @@ function AppLayout() {
             </>
           ) : (
             // Returning: just a quiet loader while your 25 loads.
-            <SeatLogo animate height={120} label="Loading your 25" />
+            <SeatMark loading size={120} label="Loading your 25" />
           )}
           {!s.loading && s.error && (
             <>

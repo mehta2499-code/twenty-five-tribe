@@ -550,6 +550,14 @@ button, a, [role="button"] { touch-action: manipulation; }
 }
 @media (prefers-reduced-motion: reduce) { .seatlogo-anim circle { animation: none; fill: var(--lime); } }
 
+/* The app icon while loading: a bright wave chases round its ring of 25 dots. */
+.seatmark-load circle[r="2.4"] { animation: seat-chase 1.25s linear infinite; }
+@keyframes seat-chase {
+  0% { opacity: 1; filter: drop-shadow(0 0 3px rgba(193, 239, 98, 0.85)); }
+  45%, 100% { opacity: 0.2; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) { .seatmark-load circle[r="2.4"] { animation: none; } }
+
 /* Living table: cheers lean, the 🥂 pop and the 🏓 paddles. */
 @keyframes lean {
   0%, 100% { transform: none; }

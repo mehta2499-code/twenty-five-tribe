@@ -157,10 +157,13 @@ export function SeatMark({
   filled = 25,
   size = 48,
   label,
+  loading = false,
 }: {
   filled?: number;
   size?: number;
   label?: string;
+  /** Loading: a bright wave chases round the ring of dots. */
+  loading?: boolean;
 }) {
   const n = Math.max(0, Math.min(25, filled));
   const dots = Array.from({ length: 25 }, (_, i) => {
@@ -173,7 +176,8 @@ export function SeatMark({
       height={size}
       viewBox="0 0 64 64"
       role="img"
-      aria-label={label ?? `${n} of 25 seats filled`}
+      aria-label={label ?? (loading ? "Loading" : `${n} of 25 seats filled`)}
+      className={loading ? "seatmark-load" : undefined}
     >
       <circle cx="32" cy="32" r="18.5" fill="#211E2B" />
       {dots.map((d, i) => (
@@ -182,7 +186,9 @@ export function SeatMark({
           cx={d.x.toFixed(2)}
           cy={d.y.toFixed(2)}
           r="2.4"
-          fill={d.on ? "var(--lime)" : "rgba(245,241,250,0.16)"}
+          fill={loading || d.on ? "var(--lime)" : "rgba(245,241,250,0.16)"}
+          // Each dot lights up a beat after the one before: the wave goes clockwise.
+          style={loading ? { animationDelay: `${(i / 25 - 1) * 1.25}s` } : undefined}
         />
       ))}
       <text
