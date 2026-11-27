@@ -40,7 +40,10 @@ import {
   type Person,
   type SocialState,
 } from "@/lib/social";
-import { GAMES } from "@/components/ArcadeGames";
+import { DailyRunner, GAMES } from "@/components/ArcadeGames";
+import { TodaySection } from "@/components/DayResults";
+import { WordDaily } from "@/components/WordUp";
+import { DailyTune } from "@/components/Earworm";
 import { DropGlyph } from "@/components/Brand";
 import {
   TRIES,
@@ -1872,6 +1875,8 @@ function Home() {
   const [spot, setSpot] = useState<number | null>(null);
   const [picked, setPicked] = useState<Person | null>(null);
   const [pickSong, setPickSong] = useState(false);
+  // Today's games, played right here under the table.
+  const [playing, setPlaying] = useState<"daily" | "word" | "tune" | null>(null);
   // Songs your 25 shared since you last looked (clears when you open it).
   const newSongs = useNewSongs();
   const [confetti, setConfetti] = useState(0);
@@ -1953,7 +1958,7 @@ function Home() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100dvh - 8rem)" }}>
+    <div className="flex flex-col" style={{ minHeight: "calc(100dvh - 8rem)" }}>
       <header className="topband px-4 pt-[max(1.1rem,calc(env(safe-area-inset-top)+0.85rem))] pb-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -2051,6 +2056,15 @@ function Home() {
         bottomRight={pollsLeft === 0 ? <PollsButton /> : undefined}
       />
 
+      {/* Today's games, right under the table, so they're the first thing to play. */}
+      <div className="-mt-3">
+        <TodaySection
+          onPlayDaily={() => setPlaying("daily")}
+          onPlayWord={() => setPlaying("word")}
+          onPlayTune={() => setPlaying("tune")}
+        />
+      </div>
+
       {/* Picks left this week: a full Weekly Polls bar. Done: just the corner button. */}
       {pollsLeft !== null && pollsLeft > 0 && <PollsBar left={pollsLeft} />}
 
@@ -2082,6 +2096,11 @@ function Home() {
         ]}
       />
 
+      {playing === "daily" && (
+        <DailyRunner game={gameFor(today())} onClose={() => setPlaying(null)} />
+      )}
+      {playing === "word" && <WordDaily onClose={() => setPlaying(null)} />}
+      {playing === "tune" && <DailyTune onClose={() => setPlaying(null)} />}
       <Confetti fire={confetti} />
       <BirthdayPop />
       <PollsPop />
