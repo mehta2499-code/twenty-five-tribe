@@ -67,8 +67,10 @@ export function DropCamera({
     const open = async () => {
       const video = {
         facingMode: { ideal: facing },
-        width: { ideal: 1080 },
-        height: { ideal: 1920 },
+        // The sensor's own 4:3 shape: asking for a tall 9:16 picture makes the
+        // phone crop the middle of the sensor, which looks zoomed in.
+        width: { ideal: 1920 },
+        height: { ideal: 1440 },
       };
       try {
         let s: MediaStream;
@@ -112,16 +114,24 @@ export function DropCamera({
     [],
   );
 
-  /** The current frame as a JPEG (selfies saved the right way round). */
+  /**
+   * The current frame as a JPEG, cut to the 3:4 frame you saw (selfies saved
+   * the right way round).
+   */
   const grab = () => {
     const v = videoRef.current!;
-    const w = v.videoWidth || 1080;
+    const w = v.videoWidth || 1440;
     const h = v.videoHeight || 1920;
-    const scale = Math.min(1, 1080 / Math.max(w, h));
+    // The middle 3:4 of the frame, exactly what the viewfinder showed.
+    let sw = w;
+    let sh = h;
+    if (w / h > 3 / 4) sw = Math.round((h * 3) / 4);
+    else sh = Math.round((w * 4) / 3);
+    const scale = Math.min(1, 1440 / sh);
     const c = document.createElement("canvas");
-    c.width = Math.round(w * scale);
-    c.height = Math.round(h * scale);
-    c.getContext("2d")!.drawImage(v, 0, 0, c.width, c.height);
+    c.width = Math.round(sw * scale);
+    c.height = Math.round(sh * scale);
+    c.getContext("2d")!.drawImage(v, (w - sw) / 2, (h - sh) / 2, sw, sh, 0, 0, c.width, c.height);
     return c.toDataURL("image/jpeg", 0.88);
   };
 
@@ -205,15 +215,6 @@ export function DropCamera({
       aria-modal="true"
       aria-label="Drop camera"
     >
-      <video
-        ref={videoRef}
-        muted
-        playsInline
-        autoPlay
-        className="absolute inset-0 w-full h-full object-cover"
-        // Selfie preview mirrored, like a mirror (the saved photo isn't).
-        style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
-      />
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <button
@@ -248,42 +249,66 @@ export function DropCamera({
         </button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-8">
-        {blocked && (
-          <div className="relative z-10 text-center" style={{ color: "#fff" }}>
-            <p className="font-extrabold" style={{ fontSize: 20 }}>
-              Camera's not available here
-            </p>
-            <p className="mt-2 text-[14.5px]" style={{ color: "rgba(255,255,255,0.75)" }}>
-              Allow camera access for 25 in your phone's settings, or use your phone's camera.
-            </p>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="btn-primary mt-5 px-6"
-              style={{ minHeight: 50 }}
+      <div className="flex-1 min-h-0 flex items-center justify-center px-3 py-3">
+        {/* The viewfinder: a 3:4 frame, the same shape a Drop is shown in. */}
+        <div
+          className="relative overflow-hidden rounded-[28px]"
+          style={{
+            aspectRatio: "3 / 4",
+            width: "100%",
+            maxHeight: "100%",
+            maxWidth: "calc((100dvh - 15rem) * 0.75)",
+            background: "#111",
+          }}
+        >
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            autoPlay
+            className="absolute inset-0 w-full h-full object-cover"
+            // Selfie preview mirrored, like a mirror (the saved photo isn't).
+            style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
+          />
+          {blocked && (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center"
+              style={{ color: "#fff" }}
             >
-              Open phone camera
-            </button>
-            {err && (
-              <p className="mt-3 text-[13.5px]" style={{ color: "#FF8FA3" }} role="alert">
-                {err}
+              <p className="font-extrabold" style={{ fontSize: 20 }}>
+                Camera's not available here
               </p>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,video/*"
-              capture="environment"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (!f) return;
-                readDropFile(f).then(onShot, (x: Error) => setErr(x.message));
-              }}
-            />
-          </div>
-        )}
+              <p className="mt-2 text-[14.5px]" style={{ color: "rgba(255,255,255,0.75)" }}>
+                Allow camera access for 25 in your phone's settings, or use your phone's camera.
+              </p>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="btn-primary mt-5 px-6"
+                style={{ minHeight: 50 }}
+              >
+                Open phone camera
+              </button>
+              {err && (
+                <p className="mt-3 text-[13.5px]" style={{ color: "#FF8FA3" }} role="alert">
+                  {err}
+                </p>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,video/*"
+                capture="environment"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  readDropFile(f).then(onShot, (x: Error) => setErr(x.message));
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Shutter */}
