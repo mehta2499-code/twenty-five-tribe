@@ -1,6 +1,8 @@
 import { ChatsGlyph, DropGlyph, FeedGlyph, GamesGlyph, TableGlyph } from "@/components/Brand";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useRef } from "react";
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { DropCamera } from "@/components/DropCamera";
 import { Camera } from "lucide-react";
 import { useSocial } from "@/lib/social";
 import { buzz } from "@/components/SocialUI";
@@ -21,7 +23,7 @@ export function BottomNav() {
   // The Drop tab: a lime dot at Drop time, a pulse once you've missed it.
   const drop = useDropBadge(pathname);
   const navigate = useNavigate();
-  const shootRef = useRef<HTMLInputElement>(null);
+  const [cam, setCam] = useState(false);
 
   return (
     <nav
@@ -46,7 +48,7 @@ export function BottomNav() {
                 <button
                   onClick={() => {
                     buzz(15);
-                    shootRef.current?.click();
+                    setCam(true);
                   }}
                   aria-label={
                     drop === "now" ? "It's Drop time. Take your Drop" : "Take your Drop (late)"
@@ -68,20 +70,18 @@ export function BottomNav() {
                     Drop
                   </span>
                 </button>
-                <input
-                  ref={shootRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  hidden
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!f) return;
-                    giveShot(f);
-                    if (!pathname.startsWith("/app/drop")) void navigate({ to: "/app/drop" });
-                  }}
-                />
+                {cam &&
+                  createPortal(
+                    <DropCamera
+                      onClose={() => setCam(false)}
+                      onShot={(shot) => {
+                        setCam(false);
+                        giveShot(shot);
+                        if (!pathname.startsWith("/app/drop")) void navigate({ to: "/app/drop" });
+                      }}
+                    />,
+                    document.body,
+                  )}
               </li>
             );
           return (

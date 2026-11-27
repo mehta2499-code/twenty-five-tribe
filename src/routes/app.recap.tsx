@@ -11,6 +11,7 @@ import { calendarDay as today } from "@/lib/daily";
 import {
   addMonths,
   defaultRecapMonth,
+  isVideo,
   loadRecap,
   monthKey,
   monthName,
@@ -121,13 +122,24 @@ function RecapScreen() {
                 Your most-loved Drop
               </h2>
               <div className="mt-3 card overflow-hidden">
-                <img
-                  src={recap.best.image}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full aspect-[4/5] object-cover"
-                />
+                {isVideo(recap.best.image) ? (
+                  <video
+                    src={recap.best.image}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full aspect-[4/5] object-cover"
+                  />
+                ) : (
+                  <img
+                    src={recap.best.image}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full aspect-[4/5] object-cover"
+                  />
+                )}
                 <p className="p-3 meta">
                   {new Date(`${recap.best.day}T00:00:00Z`).toLocaleDateString("en-IN", {
                     day: "numeric",
@@ -223,13 +235,23 @@ function Calendar({ recap }: { recap: Recap }) {
             }}
           >
             {d?.image ? (
-              <img
-                src={d.image}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+              isVideo(d.image) ? (
+                <video
+                  src={d.image}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={d.image}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )
             ) : null}
             <span
               className="relative text-[10px] font-bold"
@@ -298,7 +320,7 @@ async function drawCard(recap: Recap, name: string): Promise<Blob> {
 
   // Up to 9 photos, most-loved first.
   const pics = [...recap.days]
-    .filter((d) => d.image)
+    .filter((d) => d.image && !isVideo(d.image)) // the card is a picture: photos only
     .sort((a, b) => b.likes + b.comments - (a.likes + a.comments))
     .slice(0, 9);
   const imgs = await Promise.all(pics.map((d) => loadImg(d.image)));

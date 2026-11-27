@@ -1,15 +1,78 @@
 /**
  * The 25 Drop: once a day, at a surprise time (same for everyone, 10:00–22:00
- * India time), everyone gets 10 minutes to post an unfiltered photo, and can add
+ * India time), everyone gets 10 minutes to post an unfiltered photo (or a
+ * video of up to 10 seconds), and can add
  * one more later that day (two max). Each Drop shows the poster's streak.
  * You only see your mutual 25's drops after posting yours.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { _get, mutualFriends } from "@/lib/social";
+import { _get, fileToImage, mutualFriends } from "@/lib/social";
 import { calendarDay as today } from "@/lib/daily";
 import { signedMedia, uploadMedia } from "@/lib/live";
 
 export const WINDOW_MIN = 10;
+/** Longest video Drop, in seconds. */
+export const MAX_VIDEO_SECONDS = 10;
+const MAX_VIDEO_MB = 60;
+
+/** A Drop ready to post: a photo, or a video plus its first frame as a photo. */
+export type DropShot = { image: string; video?: File };
+
+/** Is this Drop a video? (Video Drops are stored as .mp4 / .mov / .webm files.) */
+export const isVideo = (url?: string) => !!url && /\.(mp4|mov|m4v|webm)(\?|#|$)/i.test(url);
+
+/** The first frame of a video, as a JPEG (for the preview and the blurred teaser). */
+export async function firstFrame(src: string | Blob): Promise<{ image: string; seconds: number }> {
+  const url = typeof src === "string" ? src : URL.createObjectURL(src);
+  try {
+    const v = document.createElement("video");
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.src = url;
+    await new Promise<void>((ok, bad) => {
+      v.onloadeddata = () => ok();
+      v.onerror = () => bad(new Error("Couldn't open that video. Try recording it again."));
+    });
+    await new Promise<void>((ok) => {
+      v.onseeked = () => ok();
+      v.currentTime = 0.05;
+      setTimeout(ok, 1500);
+    });
+    const w = v.videoWidth || 720;
+    const h = v.videoHeight || 1280;
+    const scale = Math.min(1, 1080 / Math.max(w, h));
+    const c = document.createElement("canvas");
+    c.width = Math.round(w * scale);
+    c.height = Math.round(h * scale);
+    c.getContext("2d")!.drawImage(v, 0, 0, c.width, c.height);
+    return { image: c.toDataURL("image/jpeg", 0.85), seconds: v.duration };
+  } finally {
+    if (typeof src !== "string") URL.revokeObjectURL(url);
+  }
+}
+
+/** A photo or video picked with the phone's own camera (when ours can't open). */
+export async function readDropFile(f: File): Promise<DropShot> {
+  if (!f.type.startsWith("video/")) return { image: await fileToImage(f, 1080) };
+  if (f.size > MAX_VIDEO_MB * 1024 * 1024)
+    throw new Error(`That video is too big. Keep it under ${MAX_VIDEO_SECONDS} seconds.`);
+  const { image, seconds } = await firstFrame(f);
+  if (Number.isFinite(seconds) && seconds > MAX_VIDEO_SECONDS + 0.5)
+    throw new Error(
+      `Drops are up to ${MAX_VIDEO_SECONDS} seconds. That one's ${Math.round(seconds)}. Record a shorter one.`,
+    );
+  return { image, video: f };
+}
+
+/** Upload a Drop: the video if there is one, else the photo. */
+const uploadDrop = (image: string, video?: File) =>
+  video
+    ? uploadMedia(
+        video,
+        /quicktime|mov/i.test(video.type) ? "mov" : video.type.includes("webm") ? "webm" : "mp4",
+      )
+    : uploadMedia(image, "jpg");
 export type DropComment = { id: string; by: string; body: string; at: number };
 export type DropPost = {
   /** "me" or the owner's id. */
@@ -244,7 +307,7 @@ export async function loadStreaks(ids: string[]): Promise<Record<string, number>
 }
 
 /** Your second Drop today (two max). */
-export async function addSecondDrop(image: string, caption: string) {
+export async function addSecondDrop(image: string, caption: string, video?: File) {
   const s = _get();
   if (s.mode !== "live") {
     const saved = JSON.parse(localStorage.getItem(DEMO_KEY) ?? "null");
@@ -256,7 +319,7 @@ export async function addSecondDrop(image: string, caption: string) {
     );
     return;
   }
-  const [path, blur] = await Promise.all([uploadMedia(image, "jpg"), makeBlur(image)]);
+  const [path, blur] = await Promise.all([uploadDrop(image, video), makeBlur(image)]);
   const { error } = await supabase
     .from("drops")
     .update({ image_path_2: path, caption_2: caption.slice(0, 120), blur_2: blur ?? null } as never)
@@ -266,7 +329,7 @@ export async function addSecondDrop(image: string, caption: string) {
     throw new Error(/max/i.test(error.message) ? "Two Drops a day is the max." : error.message);
 }
 
-export async function postDrop(image: string, caption: string, at: number) {
+export async function postDrop(image: string, caption: string, at: number, video?: File) {
   const s = _get();
   if (s.mode !== "live") {
     const late = Math.max(0, Math.floor((Date.now() - at) / 60_000) - WINDOW_MIN);
@@ -276,7 +339,7 @@ export async function postDrop(image: string, caption: string, at: number) {
     );
     return;
   }
-  const [path, blur] = await Promise.all([uploadMedia(image, "jpg"), makeBlur(image)]);
+  const [path, blur] = await Promise.all([uploadDrop(image, video), makeBlur(image)]);
   const { error } = await supabase.from("drops").insert({
     user_id: s.me!.id,
     image_path: path,

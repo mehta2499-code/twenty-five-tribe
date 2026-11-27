@@ -7,7 +7,7 @@
  * the Drop page here (takeShot) so you land there ready to post.
  */
 import { useEffect, useState } from "react";
-import { dropTime, loadDrops, phaseOf } from "@/lib/drop";
+import { dropTime, loadDrops, phaseOf, type DropShot } from "@/lib/drop";
 
 export type DropBadge = "now" | "missed" | null;
 
@@ -55,14 +55,14 @@ export function useDropBadge(pathname: string): DropBadge {
 }
 
 // ---- A photo taken with the tab-bar camera, on its way to the Drop page ----
-let shot: File | null = null;
+let shot: DropShot | null = null;
 const shotListeners = new Set<() => void>();
-export function giveShot(f: File) {
+export function giveShot(f: DropShot) {
   shot = f;
   shotListeners.forEach((l) => l());
 }
 /** The waiting photo, if any (taken once). */
-export function takeShot(): File | null {
+export function takeShot(): DropShot | null {
   const f = shot;
   shot = null;
   return f;

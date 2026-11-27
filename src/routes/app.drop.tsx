@@ -28,6 +28,7 @@ import {
   phaseOf,
   postDrop,
   addSecondDrop,
+  isVideo,
   toggleDropLike,
   type DropPost,
   type DropTeaser,
@@ -35,6 +36,7 @@ import {
 import { personOf } from "@/components/FeedUI";
 import { calendarDay as today } from "@/lib/daily";
 import { onShot, refreshDropBadge, takeShot } from "@/lib/dropBadge";
+import { DropCamera } from "@/components/DropCamera";
 
 export const Route = createFileRoute("/app/drop")({
   head: () => ({ meta: [{ title: "The 25 Drop · 25" }] }),
@@ -75,22 +77,28 @@ function DropScreen() {
     teasers: DropTeaser[];
   } | null>(null);
   const [image, setImage] = useState<string | null>(null);
+  // A video Drop: the clip (image is then its first frame).
+  const [video, setVideo] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [party, setParty] = useState(0);
-  const shootRef = useRef<HTMLInputElement>(null);
+  // The camera: for your Drop (1) or your second one (2).
+  const [cam, setCam] = useState<1 | 2 | null>(null);
   // Your second Drop of the day (two max).
-  const secondRef = useRef<HTMLInputElement>(null);
   const [image2, setImage2] = useState<string | null>(null);
+  const [video2, setVideo2] = useState<File | null>(null);
   const [caption2, setCaption2] = useState("");
 
   const reload = () => void loadDrops().then(setData);
   // A photo from the tab-bar camera: straight into your Drop.
   useEffect(() => {
     const pickUp = () => {
-      const f = takeShot();
-      if (f) void fileToImage(f, 1080).then(setImage);
+      const shot = takeShot();
+      if (shot) {
+        setImage(shot.image);
+        setVideo(shot.video ?? null);
+      }
     };
     pickUp();
     return onShot(pickUp);
@@ -217,15 +225,13 @@ function DropScreen() {
                 className="relative rounded-3xl overflow-hidden"
                 style={{ aspectRatio: "3 / 4", border: "var(--bd)" }}
               >
-                <img
-                  loading="lazy"
-                  decoding="async"
-                  src={image}
-                  alt="Your drop"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <ShotPreview image={image} video={video} label="Your drop" />
                 <button
-                  onClick={() => setImage(null)}
+                  onClick={() => {
+                    setImage(null);
+                    setVideo(null);
+                    setCam(1);
+                  }}
                   className="absolute top-3 left-3 btn-quiet min-h-[36px] px-3 text-sm"
                   style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}
                 >
@@ -234,7 +240,7 @@ function DropScreen() {
               </div>
             ) : (
               <button
-                onClick={() => shootRef.current?.click()}
+                onClick={() => setCam(1)}
                 className="w-full rounded-3xl flex flex-col items-center justify-center gap-3"
                 style={{
                   aspectRatio: "3 / 4",
@@ -253,21 +259,9 @@ function DropScreen() {
                   <Camera size={34} />
                 </span>
                 <span className="font-bold text-cream">Take your Drop</span>
-                <span className="meta">No filters. No retakes… okay, one retake.</span>
+                <span className="meta">Tap for a photo · hold for a 10-second video</span>
               </button>
             )}
-            <input
-              ref={shootRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              hidden
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (f) setImage(await fileToImage(f, 1080));
-                e.target.value = "";
-              }}
-            />
           </div>
           {image && (
             <>
@@ -282,7 +276,7 @@ function DropScreen() {
                 onClick={async () => {
                   setBusy(true);
                   try {
-                    await postDrop(image, caption, at);
+                    await postDrop(image, caption, at, video ?? undefined);
                     setParty((n) => n + 1);
                     buzz(40);
                     reload();
@@ -323,7 +317,7 @@ function DropScreen() {
             )}
             {!data.mine.image2 && !image2 && (
               <button
-                onClick={() => secondRef.current?.click()}
+                onClick={() => setCam(2)}
                 className="flex-1 btn-secondary min-h-[44px] text-[14px]"
               >
                 <Camera size={17} aria-hidden="true" /> Add a second Drop · 1 left today
@@ -335,31 +329,18 @@ function DropScreen() {
               </span>
             )}
           </div>
-          <input
-            ref={secondRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (f) setImage2(await fileToImage(f, 1080));
-              e.target.value = "";
-            }}
-          />
           {image2 && (
             <div className="mt-3 card p-3">
               <div
                 className="relative rounded-2xl overflow-hidden"
                 style={{ aspectRatio: "3 / 4" }}
               >
-                <img
-                  src={image2}
-                  alt="Your second drop"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                <ShotPreview image={image2} video={video2} label="Your second drop" />
                 <button
-                  onClick={() => setImage2(null)}
+                  onClick={() => {
+                    setImage2(null);
+                    setVideo2(null);
+                  }}
                   className="absolute top-3 left-3 btn-quiet min-h-[36px] px-3 text-sm"
                   style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}
                 >
@@ -377,8 +358,9 @@ function DropScreen() {
                 onClick={async () => {
                   setBusy(true);
                   try {
-                    await addSecondDrop(image2, caption2);
+                    await addSecondDrop(image2, caption2, video2 ?? undefined);
                     setImage2(null);
+                    setVideo2(null);
                     setCaption2("");
                     buzz(30);
                     reload();
@@ -424,6 +406,21 @@ function DropScreen() {
           post={[data.mine, ...data.others].find((x) => x?.id === open)!}
           onClose={() => setOpen(null)}
           onChanged={reload}
+        />
+      )}
+      {cam && (
+        <DropCamera
+          onClose={() => setCam(null)}
+          onShot={(shot) => {
+            if (cam === 2) {
+              setImage2(shot.image);
+              setVideo2(shot.video ?? null);
+            } else {
+              setImage(shot.image);
+              setVideo(shot.video ?? null);
+            }
+            setCam(null);
+          }}
         />
       )}
       {toast && <Toast text={toast} onDone={() => setToast(null)} />}
@@ -521,13 +518,7 @@ function DropCard({ post, onOpen }: { post: DropPost; onOpen: () => void }) {
     <figure className="card overflow-hidden p-0 cursor-pointer" onClick={onOpen}>
       <div className="relative" style={{ aspectRatio: "3 / 4" }}>
         {post.image ? (
-          <img
-            loading="lazy"
-            decoding="async"
-            src={post.image}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <DropMedia src={post.image} fit="cover" />
         ) : (
           <div className="absolute inset-0" style={{ background: "var(--fill)" }} />
         )}
@@ -667,16 +658,7 @@ function DropViewer({
           </button>
         </header>
         <div className="relative flex-1 min-h-0" onDoubleClick={() => !liked && like()}>
-          {cur.image && (
-            <img
-              key={page}
-              loading="lazy"
-              decoding="async"
-              src={cur.image}
-              alt=""
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-          )}
+          {cur.image && <DropMedia key={page} src={cur.image} fit="contain" tapForSound />}
           {pages.length > 1 && (
             <>
               <button
@@ -771,5 +753,84 @@ function DropViewer({
         </form>
       </div>
     </div>
+  );
+}
+
+/** Your Drop before posting: the photo, or the video playing on loop. */
+function ShotPreview({
+  image,
+  video,
+  label,
+}: {
+  image: string;
+  video: File | null;
+  label: string;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!video) return setUrl(null);
+    const u = URL.createObjectURL(video);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [video]);
+  return url ? (
+    <video
+      src={url}
+      poster={image}
+      autoPlay
+      muted
+      loop
+      playsInline
+      aria-label={label}
+      className="absolute inset-0 w-full h-full object-cover"
+    />
+  ) : (
+    <img src={image} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+  );
+}
+
+/** A posted Drop: a photo, or a short video playing silently on loop (tap for sound). */
+function DropMedia({
+  src,
+  fit,
+  tapForSound,
+}: {
+  src: string;
+  fit: "cover" | "contain";
+  tapForSound?: boolean;
+}) {
+  const [muted, setMuted] = useState(true);
+  if (!isVideo(src))
+    return (
+      <img
+        loading="lazy"
+        decoding="async"
+        src={src}
+        alt=""
+        className={`absolute inset-0 w-full h-full object-${fit}`}
+      />
+    );
+  return (
+    <>
+      <video
+        src={src}
+        autoPlay
+        muted={muted}
+        loop
+        playsInline
+        className={`absolute inset-0 w-full h-full object-${fit}`}
+        onClick={tapForSound ? () => setMuted((m) => !m) : undefined}
+      />
+      {tapForSound && (
+        <button
+          onClick={() => setMuted((m) => !m)}
+          aria-label={muted ? "Turn sound on" : "Turn sound off"}
+          className="absolute bottom-3 right-3 z-10 rounded-full px-3 py-1.5 text-[12.5px] font-bold"
+          style={{ background: "rgba(0,0,0,0.55)", color: "#fff" }}
+        >
+          {muted ? "🔇 Tap for sound" : "🔊 Sound on"}
+        </button>
+      )}
+    </>
   );
 }
